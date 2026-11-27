@@ -1,0 +1,20 @@
+# TRANCHE43 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE43
+guards:
+  # Meme perimetre que le declencheur retire du workflow (le motif
+  # `**.ipynb` couvre les carnets a la racine comme les autres),
+  # plus le detecteur, son test et les deux fichiers du moteur
+  # (convention des gardes natifs voisins : une revision qui
+  # change l.engineur ou le registre doit rejouer le garde).
+  -
+    name: "latex-control-chars"
+    argv: ["python", "scripts/notebook_tools/check_latex_control_chars.py", "--pr-diff", "{base_ref}", "HEAD"]
+    source: "notebook-latex-control-chars.yml"
+    paths: ["**.ipynb", "scripts/notebook_tools/check_latex_control_chars.py", "scripts/tests/test_check_latex_control_chars.py", ".github/workflows/notebook-latex-control-chars.yml", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py"]
+    blocking: false
+    needs_base: true
+    absorbed: true
+    warn_rc:
+      -
+        2
+    pre_argv: ["python", "-m", "unittest", "scripts.tests.test_check_latex_control_chars", "-v"]

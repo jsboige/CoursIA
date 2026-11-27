@@ -69,6 +69,29 @@ Sheafification remains required by brick 3 alone.
 - the long exact sequence (brick 3: cone or dimension-shift — it is the one
   that will require abelian sheafification).
 
+## Stacks correspondence (group #12 of #28537, surveyed 2026-11-26)
+
+The seven statements of the FR twin were compared one by one with the
+reference `AxiomMath/Stacks`, file
+`StacksFrontier/Topology/Sheaves/Cohomology/CechDerivedEffaceability/`
+(`GodementResolution.lean`); the full table sits in the FR twin, section
+« Correspondance Stacks ». The summary: **the two objects share a name but
+not a content** — Stacks' *Godement presheaf* is `god R M (V) = ∏_{W ≤ V} M(W)`,
+a product of **sections** over the sub-opens (`:149`, sections `GodSections`
+`:99`), while the lake's canonical complex has stage 0 equal to the product of
+the **stalks** `∏_{x ∈ U} Fₓ` (`Grothendieck/Godement.lean:58`). So
+`sectionsFunctorAdditive` and `godementSectionsComplex` are **divergent**,
+`godementCohomologyObj` and the two calibration theorems are **absent** at
+Stacks (which defines no Godement cohomology group, and proves exactness of
+the Čech complex of `god` by a contracting homotopy instead, `homotopyMap`
+`:457`, `homotopyMap_id` `:554`), and `godementZerothCohomologyIso` is
+**partial**: Stacks has the same mechanism — the embedding `godUnit` `:181`,
+whose component at `V` is the identity, and the monomorphism `mono_godUnit`
+`:200` — but obtains only a mono, where this lake obtains an iso. What Stacks
+establishes and this module does not: the vanishing of the higher Čech
+cohomology of `god` (`isZero_cechCohomology_god` `:594`), the route by which
+Stacks reaches the effaceability of 01EN.
+
 ## References
 
 * [God58] R. Godement, *Topologie algébrique et théorie des faisceaux*,

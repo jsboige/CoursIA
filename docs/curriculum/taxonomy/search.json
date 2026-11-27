@@ -15,26 +15,26 @@
     "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb",
     "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb",
     "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-07-MCTS-And-Beyond.ipynb",
-    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
-    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
+    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
     "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-CSharp.ipynb",
-    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb",
-    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
-    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
-    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-CSharp.ipynb",
-    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
-    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb",
-    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
-    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-CSharp.ipynb",
-    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
-    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
-    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
-    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
-    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
-    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
-    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
-    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
-    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb"
+    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Python.ipynb",
+    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
+    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
+    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-CSharp.ipynb",
+    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
+    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-CSharp.ipynb",
+    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
+    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-CSharp.ipynb",
+    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
+    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
+    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
+    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
+    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
+    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb",
+    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
+    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
+    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb"
   ],
   "notebook_tree": [
     {
@@ -112,7 +112,7 @@
       "decimal_path": "1.2.1",
       "depth": 2,
       "label_fr": "Fondamentaux des CSP",
-      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb"
     },
     {
       "level": "notebook",
@@ -120,7 +120,7 @@
       "decimal_path": "1.2.2",
       "depth": 2,
       "label_fr": "Fondamentaux des CSP (jumeau C#)",
-      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb"
     },
     {
       "level": "notebook",
@@ -128,7 +128,7 @@
       "decimal_path": "1.2.3",
       "depth": 2,
       "label_fr": "Propagation de contraintes et consistance",
-      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb"
     },
     {
       "level": "notebook",
@@ -136,7 +136,7 @@
       "decimal_path": "1.2.4",
       "depth": 2,
       "label_fr": "Propagation de contraintes et consistance (jumeau C#)",
-      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb"
     },
     {
       "level": "notebook",
@@ -144,7 +144,7 @@
       "decimal_path": "1.2.5",
       "depth": 2,
       "label_fr": "CSP avancé : contraintes globales, solveurs et LNS",
-      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb"
     },
     {
       "level": "notebook",
@@ -152,7 +152,7 @@
       "decimal_path": "1.2.6",
       "depth": 2,
       "label_fr": "CSP avancé : contraintes globales, solveurs et LNS (jumeau C#)",
-      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-CSharp.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-CSharp.ipynb"
     },
     {
       "level": "notebook",
@@ -160,7 +160,7 @@
       "decimal_path": "1.2.7",
       "depth": 2,
       "label_fr": "Problèmes d'ordonnancement",
-      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb"
     },
     {
       "level": "notebook",
@@ -168,7 +168,7 @@
       "decimal_path": "1.2.8",
       "depth": 2,
       "label_fr": "Problèmes d'ordonnancement (jumeau C#)",
-      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-CSharp.ipynb"
     },
     {
       "level": "notebook",
@@ -176,7 +176,7 @@
       "decimal_path": "1.2.9",
       "depth": 2,
       "label_fr": "Optimisation combinatoire",
-      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb"
     },
     {
       "level": "notebook",
@@ -184,7 +184,7 @@
       "decimal_path": "1.2.10",
       "depth": 2,
       "label_fr": "Optimisation combinatoire (jumeau C#)",
-      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-CSharp.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-CSharp.ipynb"
     },
     {
       "level": "notebook",
@@ -192,7 +192,7 @@
       "decimal_path": "1.2.11",
       "depth": 2,
       "label_fr": "Approches hybrides modernes",
-      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb"
     },
     {
       "level": "notebook",
@@ -200,7 +200,7 @@
       "decimal_path": "1.2.12",
       "depth": 2,
       "label_fr": "Approches hybrides modernes (jumeau C#)",
-      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb"
     },
     {
       "level": "notebook",
@@ -208,7 +208,7 @@
       "decimal_path": "1.2.13",
       "depth": 2,
       "label_fr": "Contraintes souples",
-      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb"
     },
     {
       "level": "notebook",
@@ -216,7 +216,7 @@
       "decimal_path": "1.2.14",
       "depth": 2,
       "label_fr": "Contraintes souples (jumeau C#)",
-      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb"
     },
     {
       "level": "notebook",
@@ -224,7 +224,7 @@
       "decimal_path": "1.2.15",
       "depth": 2,
       "label_fr": "Raisonnement temporel",
-      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb"
     },
     {
       "level": "notebook",
@@ -232,7 +232,7 @@
       "decimal_path": "1.2.16",
       "depth": 2,
       "label_fr": "Raisonnement temporel (jumeau C#)",
-      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb"
     },
     {
       "level": "notebook",
@@ -240,7 +240,7 @@
       "decimal_path": "1.2.17",
       "depth": 2,
       "label_fr": "CSP distribués (DisCSP)",
-      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb"
     },
     {
       "level": "notebook",
@@ -248,7 +248,7 @@
       "decimal_path": "1.2.18",
       "depth": 2,
       "label_fr": "CSP distribués (DisCSP) (jumeau C#)",
-      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb"
     },
     {
       "level": "notebook",
@@ -256,7 +256,7 @@
       "decimal_path": "1.2.19",
       "depth": 2,
       "label_fr": "Couverture minimale avec le solveur SMT Z3",
-      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Python.ipynb"
     },
     {
       "level": "notebook",
@@ -420,10 +420,24 @@
         {
           "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed.ipynb",
           "cell_id": "a11be67e"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-10"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-11"
         }
       ],
       "prerequisites": [
         "6d84ffac-0823-4304-a360-e3198f4677f6"
+      ],
+      "matches": [
+        {
+          "concept": "93058ae7-a5f0-4408-9ac0-9452b288e5f9",
+          "kind": "exact"
+        }
       ]
     },
     {
@@ -707,23 +721,23 @@
       "definition_en": "Metaheuristic that starts from a solution, destroys part of it (a subset of variables is freed), re-optimises that sub-problem with an exact solver, then repeats. On the Python notebook's 12 tasks and 4 machines, it brings the makespan from 20, obtained greedily, down to 19, the lower bound.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "section-5-lns"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "lns-demo"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "36xj38bu0fm"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "lns-interp"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-CSharp.ipynb",
           "cell_id": "835c5534"
         }
       ],
@@ -967,11 +981,11 @@
       "definition_en": "Problem defined by variables that take their values in given domains while satisfying constraints. Unlike state-space search, which walks a graph, solving exploits the constraints to discard large parts of the space.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "39d1a680"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "9f051749"
         }
       ],
@@ -990,27 +1004,27 @@
       "definition_en": "A CSP is a triple (X, D, C): variables, the domain of possible values of each, and unary, binary or global constraints over subsets of variables. A solution is a complete and consistent assignment.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "0c3268cb"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "6bbfc428"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "9f051749"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "129f2a8c"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "cell-4"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "75c9ebf3"
         }
       ],
@@ -1029,23 +1043,23 @@
       "definition_en": "Representation of a binary CSP: one node per variable, one edge between two variables linked by a constraint. A node's degree tells how constrained the variable is: the map of Australia gives seven nodes and nine edges, with five neighbours for SA and none for T.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "aa57c0af"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "8067dd64"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "26ebe55c"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "1484605f"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "72e0ef68"
         }
       ],
@@ -1065,23 +1079,23 @@
       "definition_en": "Assign a colour to each region so that two adjacent regions never share one; the running example is the map of Australia, seven regions and three colours.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "2cc4242f"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "b076149b"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "c107csp1-adjacences-comptage"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "c59de729"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "eb8596f9"
         }
       ],
@@ -1101,43 +1115,43 @@
       "definition_en": "Place N queens on an N × N board so that no two attack each other; modelled with one variable per column, it serves as a benchmark for heuristics, propagation and solvers.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "b2945b94"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "71b13f50"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "befa500c"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "7c5476d1"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "4a683ace"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "f47c5c6a"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "nqueens-cpsat-intro"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "nqueens-cpsat"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "a9560c90"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "03e05d28"
         }
       ],
@@ -1157,15 +1171,15 @@
       "definition_en": "Grid to complete, modelled with one variable per empty cell; the notebook's 4 × 4 example has 12 variables and is solved by backtracking in 28 nodes.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "c7c9917a"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "7706ac14"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "03e42870"
         }
       ],
@@ -1186,35 +1200,35 @@
       "definition_en": "Instead of stopping at the first solution, the solver walks through all of them; the count is a cross-check between engines: the map of Australia has 18 colourings, by brute force as well as with python-constraint and Choco.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "1aa70242"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "1b7d4a63"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "693c77ef"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "e32623d6"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "c7271b01"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "nqueens-all-intro"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "nqueens-count"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "nqueens-count-interp"
         }
       ],
@@ -1234,47 +1248,47 @@
       "definition_en": "Library to which one declares variables, domains and constraints, and which takes care of propagation and search; the notebooks use python-constraint, Choco and CP-SAT in place of hand-written backtracking.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "f80572be"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "2216a02e"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "2dd72411"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "a0642dfe"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "b40856f3"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "28460e99"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "ff5d9beb"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "bc53522b"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "27444f04"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "e8494c37"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-CSharp.ipynb",
           "cell_id": "3c32e742"
         }
       ],
@@ -1294,31 +1308,31 @@
       "definition_en": "Basic algorithm for solving a CSP: pick an unassigned variable, try each value of its domain while checking consistency with the partial assignment, and backtrack when no value fits. Unlike a depth-first search that checks a complete assignment, inconsistent branches are cut at every step.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "8b8fb1c0"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "f3e50923"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "189519f8"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "a1a62776"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "b1406284"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "48e72ae3"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "f73333ce"
         }
       ],
@@ -1338,31 +1352,31 @@
       "definition_en": "Enumerate every combination of values, then keep only those that satisfy the constraints: 3^7 = 2187 combinations for the map of Australia. The method is an exact reference on a small instance and becomes impractical as size grows.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "5c070f40"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "142250d0"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "a1718468"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "d0e6f2b8"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "fa31c9c5"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Python.ipynb",
           "cell_id": "093bb1c8"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Python.ipynb",
           "cell_id": "08c26991"
         },
         {
@@ -1389,19 +1403,19 @@
       "definition_en": "Each node of the tree is an attempted assignment, kept or rejected; the trace shows consistent tries, conflicts and backtracks, and the number of explored nodes measures the search effort.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "21750526"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "c121csp1-trace-zero-backtrack"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "1tm6ret8buk"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "c126csp1-noeuds-trajectoire"
         }
       ],
@@ -1420,27 +1434,27 @@
       "definition_en": "Pick first the unassigned variable with the fewest viable values left: it is the most likely to fail, and the failure is detected early (fail-first).",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "67a79e8a"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "9902b829"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "0033c586"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "742479ab"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "4e434bcb"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "c5p1tr4n"
         }
       ],
@@ -1459,19 +1473,19 @@
       "definition_en": "For the chosen variable, try first the value that rules out the fewest options for the unassigned neighbouring variables (succeed-first).",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "c112e481"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "e3d5f157"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "3757c66b"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "51b6440b"
         }
       ],
@@ -1490,35 +1504,35 @@
       "definition_en": "Backtracking combining MRV and LCV, compared with plain backtracking by the number of assignments: on the Python notebook's 8-Queens, MRV brings 876 assignments down to 572 and adding LCV gives 677; on the map of Australia the variants cannot be told apart. A value ordering is a heuristic, not a guarantee.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "353f81c5"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "5a831aba"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "980eb07f"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "f9d09728"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "c0258755"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "858509d3"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "e02b0c4f"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "f691a71f"
         }
       ],
@@ -1539,11 +1553,11 @@
       "definition_en": "Rather than waiting for an assignment to violate a constraint, propagation removes in advance the values that have become impossible from the domains; consistency levels (node, arc, path, k-consistency) set how far this filtering goes: the stronger the level, the more pruning and the costlier the propagation.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "cell-1"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "2f59658f"
         }
       ],
@@ -1562,27 +1576,27 @@
       "definition_en": "The simplest form of propagation: it only looks at unary constraints and removes from each variable's domain the values that violate them.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "cell-7"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "cell-8"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "cell-9"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "c5ec7cb3"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "5ad5527d"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "f6d09070"
         }
       ],
@@ -1601,19 +1615,19 @@
       "definition_en": "The most widely used propagation level, on binary constraints: an arc (Xi, Xj) is consistent if every value in the domain of Xi has at least one compatible value in that of Xj; revising an arc removes unsupported values from Xi.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "cell-10"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "cell-12"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "51c9d13f"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "bf302925"
         }
       ],
@@ -1632,43 +1646,43 @@
       "definition_en": "Enforces arc consistency by revising arcs until no domain changes any more. With no prior assignment it removes nothing on the map of Australia; after WA = Red it filters the neighbours NT and SA in two revisions; on a two-colour path A-B-C with A fixed, it solves the problem on its own.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "cell-14"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "cell-15"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "cell-17"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "cell-18"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "cell-24"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "xql0p2h6dl"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "c543fba3"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "d5ad161d"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "56a9c0b9"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "3637dc02"
         }
       ],
@@ -1688,35 +1702,35 @@
       "definition_en": "Propagation built into backtracking: after each assignment, incompatible values are removed from the domains of the unassigned neighbouring variables, which reveals an empty domain one step ahead.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "cell-25"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "cell-26"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "cell-28"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "cell-29"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "f0a05e54"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "40e758dc"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "c928c722"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "fb3e446c"
         }
       ],
@@ -1735,31 +1749,31 @@
       "definition_en": "Goes further than forward checking: AC-3 is rerun after each assignment, so that a domain reduction propagates beyond direct neighbours. On 8-Queens, MAC finds a solution in 20 assignments.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "cell-30"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "cell-31"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "dc499092"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "3d270c35"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "99752c32"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "912a8364"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "lecture-csp2-mac-8reines"
         }
       ],
@@ -1780,39 +1794,39 @@
       "definition_en": "Combination of the two mechanisms for solving a CSP: backtracking search enumerates choices, propagation shrinks the domains after each of them. Measured on 8-Queens, the search drops from 876 assignments without propagation to 20 with MAC, forward checking sitting in between; this gain is paid for by a higher cost per node, and the gap widens with problem size.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "cell-34"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "cell-35"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "cell-36"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "cell-39"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "cell-41"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "6b358d81"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "b3a4b064"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "lecture-csp2-bt-fc-mac"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "6adf1701"
         }
       ],
@@ -1832,11 +1846,11 @@
       "definition_en": "Level above arc consistency: instead of removing values, path consistency removes pairs of values between two variables when no value of a third one links them; k-consistency generalises the idea to k variables. The cost, O(n^3 d^3) for paths, explains why it is used only when arc consistency does not settle the matter.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "7351d09b"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "524f1d7a"
         }
       ],
@@ -1856,19 +1870,19 @@
       "definition_en": "Constraints over a group of variables that come with a specialised propagation algorithm; they state a frequent structure in one line (all-different values, resource capacity, circuit, table of tuples) and propagate more strongly than their decomposition into binary constraints.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "section-2-global"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "39e38657"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-CSharp.ipynb",
           "cell_id": "4ba1f573"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-CSharp.ipynb",
           "cell_id": "b67e8386"
         }
       ],
@@ -1888,47 +1902,47 @@
       "definition_en": "Requires all variables of a group to take distinct values. Its propagator, based on a matching in a bipartite graph, detects inconsistencies that the pairwise decomposition misses: three variables with domain {1, 2} are arc-consistent pair by pair and yet have no solution.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "alldiff-intro"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "alldiff-demo"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "alldiff-interp"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-CSharp.ipynb",
           "cell_id": "4ba1f573"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-CSharp.ipynb",
           "cell_id": "5f3c2e5b"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-CSharp.ipynb",
           "cell_id": "fee0c66f"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "d0218284"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "372b25f9"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "c155csp1-alldifferent-256-24"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "f7b629b0"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb",
           "cell_id": "c514399d"
         }
       ],
@@ -1947,39 +1961,39 @@
       "definition_en": "Requires that at any time the sum of the demands of running tasks does not exceed the capacity of the resource. It models renewable resources and generalises the disjunctive constraint, where capacity is one.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "cumulative-intro"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "cumulative-demo"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "s8zo94of1fc"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "cumulative-interp"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-CSharp.ipynb",
           "cell_id": "fee0c66f"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-CSharp.ipynb",
           "cell_id": "4ee1dccc"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-CSharp.ipynb",
           "cell_id": "c526abad"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "5b1d8e04"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-CSharp.ipynb",
           "cell_id": "d0a780bb"
         }
       ],
@@ -1998,27 +2012,27 @@
       "definition_en": "Requires the successor variables to form a single cycle through all nodes, with no sub-tour. It is the constraint that models the travelling salesman problem, solved in the notebooks on five cities.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "circuit-intro"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "circuit-demo"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "circuit-interp"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-CSharp.ipynb",
           "cell_id": "c526abad"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-CSharp.ipynb",
           "cell_id": "a0b0a67d"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-CSharp.ipynb",
           "cell_id": "0413eac6"
         }
       ],
@@ -2037,27 +2051,27 @@
       "definition_en": "Gives the explicit list of allowed or forbidden value tuples for a group of variables; it encodes a business rule or a compatibility table that does not decompose into simple constraints.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "table-intro"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "table-demo"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "table-interp"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-CSharp.ipynb",
           "cell_id": "0413eac6"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-CSharp.ipynb",
           "cell_id": "a2b85695"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-CSharp.ipynb",
           "cell_id": "835c5534"
         }
       ],
@@ -2076,19 +2090,19 @@
       "definition_en": "An operation is represented by an interval variable (start, duration, end); the no-overlap constraint forbids two intervals of the same machine from overlapping. One constraint per machine replaces one inequality per pair of operations.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "4bbbec1c"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "3f9a2c71"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-CSharp.ipynb",
           "cell_id": "955a1e8e"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-CSharp.ipynb",
           "cell_id": "acbf5ed0"
         }
       ],
@@ -2107,31 +2121,31 @@
       "definition_en": "Ties a constraint to a Boolean variable that is true if and only if the constraint holds. One can then reason about satisfaction itself: optional condition, \"exactly one of the two\", preference counted in the objective.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "wr0rxz0hj6l"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "xigolmh79cr"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "oco91jvy6h9"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "63b9a861"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-CSharp.ipynb",
           "cell_id": "5442b145"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-CSharp.ipynb",
           "cell_id": "d2dff777"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-CSharp.ipynb",
           "cell_id": "029f9672"
         }
       ],
@@ -2150,19 +2164,19 @@
       "definition_en": "Variables whose value is a set rather than a scalar, constrained by membership, cardinality, inclusion, union or intersection. Their domain grows as 2^n, hence the alternative of one Boolean variable per element.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "wr0rxz0hj6l"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "lppmj6rfz8"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "set-constraints-prose"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "oco91jvy6h9"
         }
       ],
@@ -2181,19 +2195,19 @@
       "definition_en": "A symmetric CSP has solutions that are images of one another under rotation or reflection, which the solver explores for nothing. Extra constraints discard these variants: on the notebook's 8-Queens, two constraints bring 92 solutions down to 35.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "section-4-symmetry"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "symmetry-demo"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "symmetry-interp"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "c157csp1-miroir-4reines"
         }
       ],
@@ -2214,15 +2228,15 @@
       "definition_en": "Modern solvers combine several solving techniques: constraint propagation, clause learning from SAT, linear relaxation, parallel search; upstream, machine learning or a language model can guide the search or build the model.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "p9ea5852nb"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "db9b79a7"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "14e46c95"
         }
       ],
@@ -2242,63 +2256,63 @@
       "definition_en": "Constraint programming solver built on satisfiability: one declares a model (integer and Boolean variables, linear and global constraints, objective), the solver solves it and tells whether the returned solution is proved optimal. Its architecture chains presolve, propagation, a clause-learning SAT engine and linear relaxation.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "section-3-ortools"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "nqueens-cpsat"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "22jzbure7v3"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "ffe181fd"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "7dbbabf9"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "34ddac94"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "db9b79a7"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "b98e5b0d"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "70a9c63a"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "e6c2de7c"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-CSharp.ipynb",
           "cell_id": "3c32e742"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-CSharp.ipynb",
           "cell_id": "776131ba"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-CSharp.ipynb",
           "cell_id": "cp-sat-intro"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-CSharp.ipynb",
           "cell_id": "cp-sat-bpp"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-CSharp.ipynb",
           "cell_id": "cp-sat-interp"
         }
       ],
@@ -2318,27 +2332,27 @@
       "definition_en": "Hybrid of constraint programming and SAT: constraint propagation deduces, each conflict is analysed and yields a learned clause that prevents meeting it again and guides backtracking. CP-SAT applies it internally; the notebooks observe it on N-Queens from 8 to 14.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "51f45b56"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "e3003150"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "d9bf2c20"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "c7955023"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "5869a8e2"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "b5047550"
         }
       ],
@@ -2359,19 +2373,19 @@
       "definition_en": "The solver solves a relaxed linear version of the model to obtain bounds on the objective, which spares it from expanding branches that cannot do better. The effect only shows on a non-trivial instance: on the notebook's 10 × 10 job shop, disabling it takes the search from 1248 to 7282 branches for the same makespan of 794.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "7dbbabf9"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "34ddac94"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "csp6-prongb-code"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "csp6-prongb-interp"
         }
       ],
@@ -2391,27 +2405,27 @@
       "definition_en": "Two levers inject knowledge into a solver without changing the model: a solution hint, for instance from a greedy heuristic, which the solver repairs and then improves; a decision strategy, which sets the order in which variables are decided. Neither guarantees a gain over the default search.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "g5-intro"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "g5-solver"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "ae52f7c3"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "g5-run"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "70a9c63a"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "e6c2de7c"
         }
       ],
@@ -2432,39 +2446,39 @@
       "definition_en": "Several search threads work on the same problem: splitting the space, a portfolio of different strategies, exchange of clauses and solutions between threads. On a small instance (12-Queens), the notebooks measure no significant gain: the instance is too small to pay back starting and synchronising the threads.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "960c4f67"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "6b2e443e"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "3b85c116"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "iq53h8qd9u"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "6c13b33f"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "c90e3d6b"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "c9877aa7"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "abf825f9"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "60bf394e"
         }
       ],
@@ -2484,35 +2498,35 @@
       "definition_en": "Machine learning can assist a solver: guide the choice of branching variables, or predict whether an instance is feasible before running it. The notebooks generate 50 random instances labelled by CP-SAT and evaluate a simple predictor on them, whose correlation with reality stays weak.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "19305758"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "aa73b92c"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "cab22939"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "6bebux5qvr9"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "09fbea70"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "3d37255e"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "a07f970c"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "716e573e"
         }
       ],
@@ -2531,23 +2545,23 @@
       "definition_en": "Variable selection heuristic from SAT solvers: each variable carries a score, bumped when it is involved in a conflict and decayed over the iterations; one branches on the variable with the highest score.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "333cc4ef"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "2e54113f"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "3349fbcb"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "4fbea6b4"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "4e14eb36"
         }
       ],
@@ -2567,43 +2581,43 @@
       "definition_en": "A language model translates a natural-language description into a structured specification, a JSON that conforms to the schema of a declared tool, which a program transcribes into a CP-SAT model and solves. The language model solves nothing: it states the problem, the solver solves it.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "feba21ce"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "00388391"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "c3631757"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "ba0e552d"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "0b579d13"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "543b6a02"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "04257f7e"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "8d0f8861"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "70393ab9"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "80c61fa7"
         }
       ],
@@ -2623,23 +2637,23 @@
       "definition_en": "Schema conformance is about form, not meaning: a valid JSON may reverse a precedence or omit a constraint, and the solver then solves another problem. The solution is therefore replayed against the facts of the statement, then the optimum of the transcribed model is compared with that of a hand-written reference model.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "ec68b717"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "be2c0a7a"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "80c61fa7"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "00388391"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "0b579d13"
         }
       ],
@@ -2659,15 +2673,15 @@
       "definition_en": "Placing tasks in time on limited resources, subject to precedences and capacities, to optimise a criterion, most often the total duration (makespan). The notebooks model three families: the job shop, the resource-constrained project (RCPSP) and staff rostering.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "26d096c9"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "90d3us9vo"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-CSharp.ipynb",
           "cell_id": "f85c0cac"
         }
       ],
@@ -2687,35 +2701,35 @@
       "definition_en": "Each job is an ordered sequence of operations, each on a given machine with a fixed duration; a machine processes one operation at a time. One looks for the start dates that minimise the makespan, the end date of the last operation. On the notebooks' instance with three jobs and three machines, the optimal makespan is 11.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "58a3c464"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "4bbbec1c"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "3f9a2c71"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "aefcb583"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "3b40cec9"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-CSharp.ipynb",
           "cell_id": "955a1e8e"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-CSharp.ipynb",
           "cell_id": "acbf5ed0"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-CSharp.ipynb",
           "cell_id": "c9d5e0a1"
         }
       ],
@@ -2735,43 +2749,43 @@
       "definition_en": "The tasks of a project are linked by precedences and consume renewable resources of limited capacity, handled by the cumulative constraint; the project duration is minimised. On the notebooks' six-task project, the optimal duration is 10. A non-renewable resource, such as a budget, is added through a sum constraint.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "c48f0f0a"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "2b7c4da9"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "5b1d8e04"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "f4227a69"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "59c7b658"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "942822c1"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "c98f35e5"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-CSharp.ipynb",
           "cell_id": "d0a780bb"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-CSharp.ipynb",
           "cell_id": "f60911f1"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-CSharp.ipynb",
           "cell_id": "b8e4d1f0"
         }
       ],
@@ -2792,35 +2806,35 @@
       "definition_en": "Assigning people to shifts day after day: one Boolean variable per person, day and shift, with coverage constraints (every shift staffed), uniqueness (at most one shift per day) and workload. With six nurses, seven days and three shifts, the notebooks' roster has 42 assignments.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "bedb662a"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "2091f698"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "7c4f2a96"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "97da4d4c"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "cd08ca4c"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-CSharp.ipynb",
           "cell_id": "05516294"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-CSharp.ipynb",
           "cell_id": "dc59fd3e"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-CSharp.ipynb",
           "cell_id": "a7f3c2e9"
         }
       ],
@@ -2839,19 +2853,19 @@
       "definition_en": "Giving each course a room and a time slot: two courses never share a room in the same slot, which an AllDifferent constraint states on the (room, slot) pair encoded as one integer; reified preferences enter the objective. The notebook's model places five courses in three rooms and four slots with the maximal preference score, 7 out of 7.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "section-6-combined"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "combined-model"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "31a8t3se5i3"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "combined-interp"
         }
       ],
@@ -2872,15 +2886,15 @@
       "definition_en": "Each job is given a due date; its lateness is its completion time minus its due date, negative when the job ends early, and its tardiness keeps only the positive part. The objective becomes the maximum lateness or the total tardiness, instead of the makespan or combined with it.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "78fed749"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "4911e1ea"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "f1e854ea"
         }
       ],
@@ -2900,15 +2914,15 @@
       "definition_en": "Looking, among the assignments that satisfy the constraints, for the one that minimises or maximises an objective function. Exact methods guarantee the optimum at a cost that can become exponential; approximate methods answer fast, with no guarantee.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "51095ee2"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "r3ev9tfw19"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-CSharp.ipynb",
           "cell_id": "a2be939c"
         }
       ],
@@ -2927,35 +2941,35 @@
       "definition_en": "Packing items of given sizes into the smallest number of bins of fixed capacity. On the instance shared by the twins (sizes 2, 5, 4, 7, 2 and capacity 10), the optimum is 3 bins. Greedy heuristics such as First Fit Decreasing quickly give a solution, with no optimality guarantee.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "306de6dd"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "62568836"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "b67b84bc"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "annexe-libvslib-d1"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "annexe-libvslib-i1"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-CSharp.ipynb",
           "cell_id": "722907d2"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-CSharp.ipynb",
           "cell_id": "710a6870"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-CSharp.ipynb",
           "cell_id": "cp-sat-bpp"
         }
       ],
@@ -2974,39 +2988,39 @@
       "definition_en": "Choosing a subset of items of maximal total value without exceeding the weight capacity; each item is taken or left, hence one Boolean variable per item. On the five-item, capacity-10 instance shared by the twins, the optimum is 31. The multi-knapsack extends the model to several knapsacks.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "0f823815"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "0119fcb8"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "a959f3a5"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "ceba52b5"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "da1f4020"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "annexe-libvslib-d2"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "annexe-libvslib-i2"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-CSharp.ipynb",
           "cell_id": "d7ef13e5"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-CSharp.ipynb",
           "cell_id": "d3984b1b"
         }
       ],
@@ -3025,35 +3039,35 @@
       "definition_en": "Cutting fixed-length stock bars to produce the ordered pieces, each in several copies, while minimising the number of bars used. It is a bin packing with multiple demands.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "e5dffc51"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "cutting-stock-func"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "9766c313"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "f976b227"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "annexe-libvslib-d3"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "annexe-libvslib-i3"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-CSharp.ipynb",
           "cell_id": "bdbe3a65"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-CSharp.ipynb",
           "cell_id": "9f9e08b0"
         }
       ],
@@ -3073,39 +3087,39 @@
       "definition_en": "Choosing a few assets among several to maximise the expected return, under a budget, a bounded number of assets and a capped risk. Risk, quadratic in the classical model, is replaced there by a linear approximation, the sum of the individual risks of the selected assets.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "5012b0fc"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "6f3fd960"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "ca44e3de"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "10b954fc"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "c1ddac3773e5"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "51138822929d"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-CSharp.ipynb",
           "cell_id": "d34d5215"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-CSharp.ipynb",
           "cell_id": "a9cf198a"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-CSharp.ipynb",
           "cell_id": "c131csp5-portfolio-tie"
         }
       ],
@@ -3124,19 +3138,19 @@
       "definition_en": "A solution dominates another if it is at least as good on every objective and strictly better on one of them. Dominated solutions are discarded without being explored; those that remain form the Pareto front.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "9du53myvfqi"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "h2ha8li6gbe"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "qimxekd7ur"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "2wgurgb2klh"
         }
       ],
@@ -3155,11 +3169,11 @@
       "definition_en": "When two criteria conflict, they are combined linearly with weights and the solver optimises that sum. On the notebook's job shop, the makespan weighted by 10 and the total tardiness by 1 give an objective of 110, that is a makespan of 11 with no tardiness.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "4911e1ea"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "f1e854ea"
         }
       ],
@@ -3179,15 +3193,15 @@
       "definition_en": "Choosing the smallest number of subsets whose union covers all elements. In the notebooks, each sensor placed on a grid covers the 3 × 3 square around it and every point must be covered with as few sensors as possible; the number of candidate subsets doubles with each added sensor.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Python.ipynb",
           "cell_id": "f712af94"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Python.ipynb",
           "cell_id": "a740eb2f"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Python.ipynb",
           "cell_id": "575c9022"
         },
         {
@@ -3214,19 +3228,19 @@
       "definition_en": "The problem is stated in logic: one Boolean per sensor, one disjunction per point to cover, and the solver's optimiser minimises the number of true Booleans. On the small grid it returns 2 sensors, in agreement with exhaustive enumeration; on the 10 × 6 grid it returns 8.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Python.ipynb",
           "cell_id": "56dfd01a"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Python.ipynb",
           "cell_id": "39522278"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Python.ipynb",
           "cell_id": "afa1e635"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Python.ipynb",
           "cell_id": "9c85cd32"
         },
         {
@@ -3263,15 +3277,15 @@
       "definition_en": "A solver returns a status with its solution: optimal when it has proved that no better solution exists, feasible when time ran out before that proof. Minimality can also be proved separately: the same model restricted to a strictly better value must be unsatisfiable; an unknown status proves nothing.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Python.ipynb",
           "cell_id": "afa1e635"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Python.ipynb",
           "cell_id": "9c85cd32"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Python.ipynb",
           "cell_id": "9022046f"
         },
         {
@@ -3291,11 +3305,11 @@
           "cell_id": "abb8a712"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "cadran-lecture-md"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "scaling-benchmark-interpretation"
         }
       ],
@@ -3314,19 +3328,19 @@
       "definition_en": "A classical constraint is either satisfied or violated; a soft constraint replaces that verdict with a degree of satisfaction or a violation cost, which is optimised. Hard constraints remain mandatory.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "section-1-intro"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "section-6-summary"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
           "cell_id": "64337001"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
           "cell_id": "a4eb9a27"
         }
       ],
@@ -3346,35 +3360,35 @@
       "definition_en": "Algebraic framework unifying classical, fuzzy and weighted CSPs: each constraint maps every assignment to a value, one operator aggregates the values of the constraints of an assignment (logical and, minimum, sum) and another orders assignments to keep the best (or, maximum, minimum). Changing the semiring changes the problem without changing the solver.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "section-2-semiring"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "semiring-classes"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "semiring-impl"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "soft-csp-class"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
           "cell_id": "semiring-md-1"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
           "cell_id": "semiring-code-a"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
           "cell_id": "semiring-md-2"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
           "cell_id": "semiring-code-c"
         }
       ],
@@ -3393,31 +3407,31 @@
       "definition_en": "Each constraint returns a satisfaction degree between 0 and 1; the satisfaction of an assignment is the minimum of these degrees, and one looks for the assignment that maximises it: the least satisfied constraint decides. Both notebook examples, a weekly menu in Python and a holiday plan in C#, reach a satisfaction of 0.8.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "section-3-fuzzy"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "by4l0ubymqa"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "9310777f"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "lec-csp7-3"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
           "cell_id": "fix-10382-fuzzy-intro"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
           "cell_id": "fix-10382-fuzzy-code"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
           "cell_id": "csp7-lecture-ec9"
         }
       ],
@@ -3437,43 +3451,43 @@
       "definition_en": "Each violated constraint costs its weight; the sum of the costs is minimised, which makes it possible to say that some constraints matter more than others. On the notebooks' meeting to schedule, the slot retained is 9 a.m., for a total cost of 1.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "section-4-weighted"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "weighted-functions"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "lec-csp7-1"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "675ea1bb"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "924683c0"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "lec-csp7-4"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
           "cell_id": "d67a3cc6"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
           "cell_id": "5962191c"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
           "cell_id": "de5a73dd"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
           "cell_id": "eb7560c3"
         }
       ],
@@ -3493,35 +3507,35 @@
       "definition_en": "In a constraint solver, a soft constraint becomes a term of the objective: a penalty or a score weights each decision, or each violation reified as a Boolean, while hard constraints are posted unchanged. The Python notebook's nurse roster with preferences thus ends with a total penalty of 140.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "section-5-or-tools"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "or-tools-soft"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "lec-csp7-2"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "nurse-soft-example"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "n3uw4y8shk"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "3ce6c3f6"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "906d2256"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
           "cell_id": "dc498b73"
         }
       ],
@@ -3543,27 +3557,27 @@
       "definition_en": "Relaxed versions of global constraints: SoftAllDifferent reifies the equality of each pair of variables and adds a cost per equal pair; the cost of a sequence is likewise defined as the sum of the transition costs of a weighted finite automaton.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
           "cell_id": "9021bac5"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
           "cell_id": "b7545bc8"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
           "cell_id": "dc498b73"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
           "cell_id": "6ef41c42"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
           "cell_id": "d1d5ff24"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
           "cell_id": "a53c98e9"
         }
       ],
@@ -3584,27 +3598,27 @@
       "definition_en": "Minimising the sum of penalties alone may concentrate dissatisfaction on one person; adding the weighted maximum penalty to the objective spreads the effort. In the notebook's scenario, the total penalty stays at 70 while the worst individual penalty drops from 40 to 30.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "8d4877cf"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "exercise-template"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "lec-csp7-5"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "cb4d7bcd"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "lec-csp7-6"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "lec-csp7-7"
         }
       ],
@@ -3625,31 +3639,31 @@
       "definition_en": "Constraints are ranked by priority levels: mandatory, strongly preferred, wishes. A large enough multiplicative factor guarantees that no accumulation of wishes makes up for violating a constraint of the level above. On the notebooks' configuration, the strong constraints hold and three wishes are given up, in both twins.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "8e4ee6e6"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "29b10084"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "lec-csp7-8"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb",
           "cell_id": "013d0140"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
           "cell_id": "f6efb288"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
           "cell_id": "60296aef"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
           "cell_id": "f6510b84"
         }
       ],
@@ -3669,23 +3683,23 @@
       "definition_en": "Reasoning about time with constraints, either qualitatively, through relations between intervals (Allen's algebra), or quantitatively, through numeric bounds on the gap between two time points (simple temporal problem, then with disjunctions).",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "section-1-intro"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "section-6-summary"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "984b49ca"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb",
           "cell_id": "4cb66f5a"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb",
           "cell_id": "009153c5"
         }
       ],
@@ -3705,27 +3719,27 @@
       "definition_en": "Thirteen basic relations describe all relative positions of two intervals: before, meets, overlaps, starts, during, finishes, their six converses, and equals. They are mutually exclusive and exhaustive: exactly one holds between two given intervals.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "section-2-allen"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "allen-relations"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "djqnxo5337"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb",
           "cell_id": "1c308c10"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb",
           "cell_id": "5549ad64"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb",
           "cell_id": "239a0411"
         }
       ],
@@ -3744,27 +3758,27 @@
       "definition_en": "Given the relation from A to B and the one from B to C, composition yields the set of possible relations from A to C. The notebooks generate the 169 cells by enumerating triples of intervals with integer endpoints, check that the table no longer changes when the grid grows, and compare it with the hand-entered cells: the mismatches point to wrong manual entries.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "exercise-template"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "d8536881"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "e4a08d31"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb",
           "cell_id": "40ef105f"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb",
           "cell_id": "4f2639f0"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb",
           "cell_id": "f90cdbb8"
         }
       ],
@@ -3784,43 +3798,43 @@
       "definition_en": "Time points linked by binary constraints bounding their gap, a ≤ t_j − t_i ≤ b, with a single interval per constraint. A deadline is written as a bound relative to a reference time point. Its consistency is decided in polynomial time.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "section-3-stp"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "stp-class"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "stp-example"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "769amh53sz3"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "df41fdf2"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb",
           "cell_id": "20747c70"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb",
           "cell_id": "708a34ac"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb",
           "cell_id": "f5929a1c"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb",
           "cell_id": "e3693fca"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb",
           "cell_id": "363fc862"
         }
       ],
@@ -3839,31 +3853,31 @@
       "definition_en": "The STP is translated into a weighted graph whose all-pairs shortest paths the Floyd-Warshall algorithm computes in cubic time; the problem is consistent if and only if this graph has no negative-weight cycle. In the Python notebook, a three-hour meeting in a one-hour window is thereby reported inconsistent.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "section-3-stp"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "stp-class"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "b5d783f0"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "f1b59c72"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb",
           "cell_id": "20747c70"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb",
           "cell_id": "708a34ac"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb",
           "cell_id": "f7b05018"
         }
       ],
@@ -3884,27 +3898,27 @@
       "definition_en": "Each time point becomes an integer variable and each bound a linear constraint; the solver returns one of the schedules the STP admits, not necessarily Floyd-Warshall's, and can mix temporal constraints with other combinatorial constraints or an objective.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "1de2a8a2"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "7e66ca5e"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "5c7f3b14"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb",
           "cell_id": "b1e7a2f5"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb",
           "cell_id": "26dd18d4"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb",
           "cell_id": "b47b38f7"
         }
       ],
@@ -3925,27 +3939,27 @@
       "definition_en": "Generalises the STP: the gap between two time points belongs to a union of intervals, which expresses alternatives such as \"morning or afternoon\". Solving is no longer polynomial: alternatives are enumerated, with propagation.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "section-4-tcsp"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "tcsp-example"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb",
           "cell_id": "ad2e91d3"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb",
           "cell_id": "5163d5e3"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb",
           "cell_id": "e63d094f"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb",
           "cell_id": "59d8cdea"
         }
       ],
@@ -3966,31 +3980,31 @@
       "definition_en": "Finding a common slot amounts to intersecting the participants' availability windows; placing several meetings adds durations, precedences and a no-overlap rule for each participant. In the Python notebook, three participants share a single one-hour slot, from 3 p.m. to 4 p.m.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "section-5-application"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "meeting-planner"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "4okf88refvs"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "70eeb3d6"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "6befa3b1"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "9d2e6a08"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb",
           "cell_id": "81b1d4b6"
         }
       ],
@@ -4011,27 +4025,27 @@
       "definition_en": "A CSP whose variables are spread across agents: each controls its own and communicates through asynchronous messages, with no central solver; constraints between variables of different agents are settled through these exchanges. The usual simplification gives each agent one variable.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "995917d9"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "bf924282"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "11eccc2b"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "c2017647"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "3bff6eac"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "c3afe23c"
         }
       ],
@@ -4051,19 +4065,19 @@
       "definition_en": "Agents exchange four kinds of messages: `ok?` announces the current value to lower-priority agents, `nogood` sends back to a higher-priority agent a combination of values found impossible, `addlink` requests a communication link and `stop` ends the resolution. A nogood is a learnt constraint.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "6c494cba"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "a52e94c9"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "c7e87141"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "cc993327"
         }
       ],
@@ -4082,51 +4096,51 @@
       "definition_en": "Reference algorithm for distributed CSPs: agents are ranked in a fixed priority order; each picks a value compatible with its view of higher-priority agents, announces it to lower-priority agents and sends back a nogood when no value fits, with no global synchronisation. On the notebooks' four-node cycle with three colours, ten messages suffice, with no nogood.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "a52e94c9"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "9393a18d"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "4055fe66"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "f7e21456"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "d0fc21ce"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "27c153c7"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "cc993327"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "1cecb869"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "635f3231"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "c53c4f6e"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "9798f8ab"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "d6ee1c81"
         }
       ],
@@ -4147,27 +4161,27 @@
       "definition_en": "Variant of ABT in which the agent order is no longer fixed: an agent that accumulates nogoods is promoted, which reorders propagation.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "4766a546"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "5fee8e73"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "070a53e6"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "93a92599"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "347b86d7"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "b35ae939"
         }
       ],
@@ -4187,43 +4201,43 @@
       "definition_en": "On the notebooks' benchmark (random colourings with eight agents, same iteration budget), AWC exchanges far fewer messages and nogoods than ABT; but lighter traffic is not a better result: it must be read together with the rate of solved instances, which AWC does not improve there.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "6473ecbe"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "69eff4b7"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "7d6810ce"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "ab01b036"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "033166e2"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "ad1b753b"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "efbbced8"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "c2a79964"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "2c3902fc"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "1817fd7e"
         }
       ],
@@ -4243,11 +4257,11 @@
       "definition_en": "As the density of the constraint graph grows, the share of satisfiable instances drops around a threshold. In the Python notebook (six agents, three colours), ABT's success rate goes from 100% at densities 0.2 and 0.4 to 80% then 10% at densities 0.6 and 0.8; proving that no solution exists costs it far more messages than finding one.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "4e07b2c6"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "21837d36"
         }
       ],
@@ -4267,51 +4281,51 @@
       "definition_en": "In a distributed CSP, each `ok?` message reveals its sender's value. Leakage is measured by the number of informed (sender, receiver) pairs and reduced by announcing one's value to constraint neighbours only; private constraints can also stay encapsulated within the agent and be revealed selectively.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "19074682"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "b578494c"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "fbec7ab7"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "c1c4df9f"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "917abcb1"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "81d0e9ee"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "8c81e09e"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "a572d52f"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "1e4a444d"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "c72f1676"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "74b477c0"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "0518e56f"
         }
       ],
@@ -4331,27 +4345,27 @@
       "definition_en": "Agents share out distinct resources without publishing their preferences: each tries its values in the order of its preferences, which appear in no message, and social welfare, the sum of the utilities obtained, is measured afterwards against its theoretical maximum.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "c5130b42"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "3e2a5231"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "2c475492"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb",
           "cell_id": "e6f604ca"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "d8d1125c"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb",
           "cell_id": "7d329e8f"
         }
       ],
@@ -4371,23 +4385,23 @@
       "definition_en": "A solving method is judged by measurements: attempted assignments, branches, conflicts, time, solution quality, status returned by the solver. The instance must still be hard enough to tell the methods apart, and the measurement must be checked against a reference.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "f9d09728"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "g5-intro"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "34ddac94"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "scaling-benchmark-intro"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "abf825f9"
         }
       ],
@@ -4406,47 +4420,47 @@
       "definition_en": "On too easy an instance, every method finds the solution and the measured gaps say nothing; a comparison is only meaningful on an instance large or constrained enough for the methods to diverge, even if it has to be built on purpose.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "f9d09728"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "04ee5e4d"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "ea3a9736"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "f00b5d41"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "34ddac94"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "csp6-prongb-interp"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "g5-intro"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "g5-instru"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "scaling-benchmark-interpretation"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "abf825f9"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "60bf394e"
         }
       ],
@@ -4465,39 +4479,39 @@
       "definition_en": "Running several settings of the same solver (variable order, branching strategy, time limit, number of threads) on the same instance and budget, then reading the gaps against their dispersion: when the configurations stay within the variation margin, no ranking can be concluded.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "g5-run"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "cadran-regime-md"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "cadran-regime-code"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "cadran-lecture-md"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "7dbbabf9"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb",
           "cell_id": "8b557c4c"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "70a9c63a"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "8fa5fc8b"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb",
           "cell_id": "60bf394e"
         }
       ],
@@ -4518,63 +4532,63 @@
       "definition_en": "Solving the same instance with the code written in the notebook and with an established solver, then comparing the results: agreement validates the teaching implementation, a gap points to a modelling or coding defect.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "2dd72411"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "a735ed14"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
           "cell_id": "693c77ef"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb",
           "cell_id": "bb89bb89"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb",
           "cell_id": "5340e47e"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "787472a5"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "0c70a953"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "aa91d173"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "annexe-libvslib-hdr"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "annexe-libvslib-i4"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-CSharp.ipynb",
           "cell_id": "f47a7ce9"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-CSharp.ipynb",
           "cell_id": "cp-sat-interp"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-CSharp.ipynb",
           "cell_id": "776131ba"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Python.ipynb",
           "cell_id": "093bb1c8"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Python.ipynb",
           "cell_id": "afa1e635"
         },
         {
@@ -4586,19 +4600,19 @@
           "cell_id": "5d82fb26"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
           "cell_id": "semiring-md-3"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb",
           "cell_id": "semiring-code-c"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "7e66ca5e"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb",
           "cell_id": "5c7f3b14"
         }
       ],
@@ -4618,23 +4632,23 @@
       "definition_en": "A greedy rule (a priority rule in scheduling, First Fit Decreasing in packing) quickly builds a feasible solution; the exact solver gives the optimum and thereby measures the heuristic's gap. In the scheduling notebook, the SPT rule reaches a makespan of 18 against an optimum of 11.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "26d096c9"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "8afb0eaa"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb",
           "cell_id": "9d3b6e18"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "64f599ff"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "ae6d9851"
         }
       ],
@@ -4655,27 +4669,27 @@
       "definition_en": "Measuring how solving time and answer quality evolve as the instance grows: a model solved instantly on a small instance may, within the same time budget, return only a feasible solution with no optimality proof on a large one.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "scaling-benchmark-intro"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "scaling-benchmark"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb",
           "cell_id": "scaling-benchmark-interpretation"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Python.ipynb",
           "cell_id": "9c27110b"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Python.ipynb",
           "cell_id": "9c85cd32"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Python.ipynb",
           "cell_id": "fd5f1949"
         },
         {
@@ -4691,11 +4705,11 @@
           "cell_id": "abb8a712"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "nqueens-scale"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb",
+          "notebook": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb",
           "cell_id": "nqueens-scale-interp"
         }
       ],
