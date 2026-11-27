@@ -28,12 +28,13 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from coordination import tapis_cap_livraisons, tapis_leger_rapport, tapis_repli
+from coordination import gh_bulk, tapis_cap_livraisons, tapis_leger_rapport, tapis_repli
 from coordination import tapis_qualification as tq
 
-#: La qualification a son PROPRE mur : le mur global borne la LECTURE du
-#: pool, celui-ci borne la LECTURE DES FILS. Les deux sont sequentiels, jamais
-#: simultanes.
+#: Le mur PROPRE de la qualification : il borne la LECTURE DES FILS quand
+#: l'appelant ne donne aucune echeance (appel direct). Au point d'entree, la
+#: qualification partage la part du tirage (I6 de #28114) -- lecture du pool,
+#: cap, qualification et repli -- et le temps du repli y est reserve.
 MUR_QUALIFICATION_S = 60
 
 #: Le TEMPS DU REPLI est RESERVE (reserve du coordinateur, I6 de #28114,
@@ -41,6 +42,12 @@ MUR_QUALIFICATION_S = 60
 #: il doit avoir la place meme quand la qualification a consomme le budget.
 #: La qualification s'arrete donc a `echeance - RESERVE_REPLI_S`.
 RESERVE_REPLI_S = 5
+
+#: La part minimale laissee a la QUALIFICATION par le cap de livraisons : le
+#: cap est fail-OPEN (une mesure perdue n'ecarte rien), la qualification est
+#: fail-CLOSED (un grain non qualifie n'est pas servi) -- le premier ne prend
+#: donc pas la part du second (#28884).
+RESERVE_QUALIFICATION_S = 10
 
 
 def qualifier(file: list, lane: str, maintenant: datetime, jours: int,
@@ -146,11 +153,11 @@ def servir(classe: dict, file: list, fenetre: dict, origami: dict, lane: str,
     # Le CAP lit le reseau par son PROPRE organe : son contrat de fetteur
     # (`(since, until) -> list[dict]`) n'est pas celui de la commande
     # (`(argv, timeout) -> str`) ; l'adaptation se fait dans le module du cap,
-    # au point de contact, en passant par l'argument du fetteur. Et il est
-    # BORNE par la meme echeance que la qualification, moins la reserve du
-    # repli : le cap consomme le budget de la commande, il ne s'en donne pas
-    # un neuf (#28114, I6).
-    fin_cap = (echeance - RESERVE_REPLI_S) if echeance is not None else None
+    # au point de contact, en passant par l'argument du fetteur.
+    # Le cap cede le budget restant a la qualification et au repli ; si la
+    # lecture du pool l'a deja consomme, cette reserve ne peut etre garantie.
+    fin_cap = (echeance - RESERVE_REPLI_S - RESERVE_QUALIFICATION_S
+               if echeance is not None else None)
     file, temoins_cap, cap_mesure, rendu = passer_et_replir(
         file, classe["grains"] + classe["conteneurs"], lane, maintenant,
         classe["prs"], run=None, run_commande=run, echeance=fin_cap,
@@ -164,7 +171,11 @@ def servir(classe: dict, file: list, fenetre: dict, origami: dict, lane: str,
     if erreur is not None:
         print(f"Qualification en echec ({erreur}) : repli chronologique.",
               file=sys.stderr)
-        return tapis_repli.replir(lane, grains, maintenant, jours, graine, depot)
+        try:
+            return tapis_repli.replir(lane, grains, maintenant, jours, graine, depot)
+        except gh_bulk.LectureIncomplete as exc:
+            raise gh_bulk.LectureIncomplete(exc.lecture, exc.page,
+                                            f"qualification : {erreur} ; repli : {exc.cause}") from exc
     if not file:
         # Une file CONFIRMEE VIDE n'est pas un service : la lane s'eteint
         # (mandat #28114, « file sans fin par lane »). Deux causes, un meme
@@ -174,8 +185,14 @@ def servir(classe: dict, file: list, fenetre: dict, origami: dict, lane: str,
         # le relais, comme le fait le cap de livraisons ; les grains NON
         # QUALIFIES restent DECLARES dans le rapport, jamais servis en
         # silence (fail-CLOSED).
-        r, code = tapis_repli.replir(lane, grains, maintenant, jours, graine,
-                                     depot, echeance=echeance)
+        try:
+            r, code = tapis_repli.replir(lane, grains, maintenant, jours, graine,
+                                         depot, echeance=echeance)
+        except gh_bulk.LectureIncomplete as exc:
+            cause = ("budget de qualification epuise" if qualif.get("budget_epuise")
+                     else "aucun grain confirme par la qualification")
+            raise gh_bulk.LectureIncomplete(exc.lecture, exc.page,
+                                            f"{cause} ; repli : {exc.cause}") from exc
         q = dict(r.get("qualification") or {})
         q.update(qualif or {})
         q["repli"] = ("file confirmee vide : repli chronologique")
