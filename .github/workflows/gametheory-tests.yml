@@ -108,12 +108,6 @@ jobs:
           key: pip-${{ runner.os }}-py${{ steps.py.outputs.python-version }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: pip-${{ runner.os }}-
 
-      - name: Save pip cache (main only)
-        if: github.ref == 'refs/heads/main' && steps.pip-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ steps.pip-cache.outputs.cache-primary-key }}
       # Deps minimales : numpy est l'import dominant du corpus
       # (matrix_games, extensive_form, etc.), MAIS scipy est requis par
       # game_theory_utils.py (`from scipy.optimize import linprog` --
@@ -131,6 +125,13 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install numpy scipy matplotlib pytest nashpy ortools
+
+      - name: Save pip cache (main only)
+        if: github.ref == 'refs/heads/main' && steps.pip-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ steps.pip-cache.outputs.cache-primary-key }}
 
       - name: Run GameTheory tests
         # working-directory = racine du dépôt : pytest.ini y est, donc le

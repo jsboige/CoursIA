@@ -285,17 +285,18 @@ jobs:
           key: pip-${{ runner.os }}-py${{ steps.py.outputs.python-version }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: pip-${{ runner.os }}-
 
+      - name: Install ICT-Series package
+        working-directory: MyIA.AI.Notebooks/IIT/ICT-Series
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+
       - name: Save pip cache (main only)
         if: github.ref == 'refs/heads/main' && steps.pip-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: ~/.cache/pip
           key: ${{ steps.pip-cache.outputs.cache-primary-key }}
-      - name: Install ICT-Series package
-        working-directory: MyIA.AI.Notebooks/IIT/ICT-Series
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -e .
 
       - name: Run ict-tests suite
         id: pytest
@@ -489,12 +490,6 @@ jobs:
           key: pip-${{ runner.os }}-py${{ steps.py.outputs.python-version }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: pip-${{ runner.os }}-
 
-      - name: Save pip cache (main only)
-        if: github.ref == 'refs/heads/main' && steps.pip-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ steps.pip-cache.outputs.cache-primary-key }}
       - name: "Dependances de la suite (script partage)"
         # L'environnement du lot est celui de la jambe `Scripts Tests` --
         # le MEME script d'installation (`scripts/ci/install_scripts_tests_deps.sh`),
@@ -504,6 +499,13 @@ jobs:
         # rien (une dependance manquante rend la PR « non mesurable » au
         # lieu de la faire echouer).
         run: bash scripts/ci/install_scripts_tests_deps.sh
+
+      - name: Save pip cache (main only)
+        if: github.ref == 'refs/heads/main' && steps.pip-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ steps.pip-cache.outputs.cache-primary-key }}
 
       - name: "Planifier le lot"
         env:

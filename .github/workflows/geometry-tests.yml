@@ -99,12 +99,6 @@ jobs:
           key: pip-${{ runner.os }}-py${{ steps.py.outputs.python-version }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: pip-${{ runner.os }}-
 
-      - name: Save pip cache (main only)
-        if: github.ref == 'refs/heads/main' && steps.pip-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ steps.pip-cache.outputs.cache-primary-key }}
       # Deps minimales : pytest + sympy (calcul algébrique) + z3-solver
       # (décision réelle — real_geometry_bridge.py importe z3 en dur,
       # les tests de contre-exemple échoueraient en COLLECT sans lui).
@@ -112,6 +106,13 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pytest sympy z3-solver
+
+      - name: Save pip cache (main only)
+        if: github.ref == 'refs/heads/main' && steps.pip-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ steps.pip-cache.outputs.cache-primary-key }}
 
       - name: Run Geometry tests
         # working-directory = racine du dépôt : pytest.ini y est, donc le

@@ -428,13 +428,6 @@ jobs:
           key: pip-${{ runner.os }}-py${{ steps.py.outputs.python-version }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: pip-${{ runner.os }}-
 
-      - name: Save pip cache (main only)
-        if: github.ref == 'refs/heads/main' && steps.pip-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ steps.pip-cache.outputs.cache-primary-key }}
-
       - name: Isoler le kernelspec du job (#28501)
         # Le kernelspec `python3` est enregistre dans le repertoire
         # UTILISATEUR -- partage par tous les jobs d'un meme hote. Sur le
@@ -485,6 +478,14 @@ jobs:
         # VERBATIM de cette etape le 2026-11-09 (PR #25521) : toute
         # modification de l'un doit etre portee dans l'autre.
         run: bash scripts/ci/install_scripts_tests_deps.sh
+
+      - name: Save pip cache (main only)
+        if: github.ref == 'refs/heads/main' && steps.pip-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ steps.pip-cache.outputs.cache-primary-key }}
+
       - name: Enregistrer et verifier le noyau du job (#28501)
         # L'enregistrement se fait ICI, apres l'installation : `ipykernel`
         # est alors present, et les variables d'isolation declarees plus
@@ -1053,14 +1054,15 @@ jobs:
           key: pip-${{ runner.os }}-py${{ steps.py.outputs.python-version }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: pip-${{ runner.os }}-
 
+      - name: Install dependencies
+        run: pip install "mcp==1.30.0" "pytest>=8" "requests>=2.31"
+
       - name: Save pip cache (main only)
         if: github.ref == 'refs/heads/main' && steps.pip-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: ~/.cache/pip
           key: ${{ steps.pip-cache.outputs.cache-primary-key }}
-      - name: Install dependencies
-        run: pip install "mcp==1.30.0" "pytest>=8" "requests>=2.31"
 
       - name: Run qc-mcp-lite suite
         run: |
@@ -1111,12 +1113,6 @@ jobs:
           key: pip-${{ runner.os }}-py${{ steps.py.outputs.python-version }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: pip-${{ runner.os }}-
 
-      - name: Save pip cache (main only)
-        if: github.ref == 'refs/heads/main' && steps.pip-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ steps.pip-cache.outputs.cache-primary-key }}
       - name: Install dependencies
         # Exact pin chain of 07-Orchestration-d-Agents/requirements.txt (the verified
         # compatibility chain, #13948): litellm 1.93.2 + openai 2.24.0 +
@@ -1125,6 +1121,13 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pytest "litellm==1.93.2" "openai==2.24.0" "google-adk==2.8.0" "pydantic==2.12.5" pydantic-settings python-dotenv
+
+      - name: Save pip cache (main only)
+        if: github.ref == 'refs/heads/main' && steps.pip-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ steps.pip-cache.outputs.cache-primary-key }}
 
       - name: Run ADK runtime contracts
         run: |

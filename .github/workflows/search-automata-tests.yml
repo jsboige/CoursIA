@@ -69,16 +69,17 @@ jobs:
           key: pip-${{ runner.os }}-py${{ steps.py.outputs.python-version }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: pip-${{ runner.os }}-
 
+      - name: Install deps (requirements-automata.txt)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r MyIA.AI.Notebooks/Search/Part1-Foundations/requirements-automata.txt
+
       - name: Save pip cache (main only)
         if: github.ref == 'refs/heads/main' && steps.pip-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: ~/.cache/pip
           key: ${{ steps.pip-cache.outputs.cache-primary-key }}
-      - name: Install deps (requirements-automata.txt)
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r MyIA.AI.Notebooks/Search/Part1-Foundations/requirements-automata.txt
 
       - name: Run Search Automata tests
         run: |

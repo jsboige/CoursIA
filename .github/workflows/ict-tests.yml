@@ -469,12 +469,6 @@ jobs:
           key: pip-${{ runner.os }}-py${{ steps.py.outputs.python-version }}-${{ hashFiles('MyIA.AI.Notebooks/IIT/ICT-Series/pyproject.toml') }}
           restore-keys: pip-${{ runner.os }}-
 
-      - name: Save pip cache (main only)
-        if: github.ref == 'refs/heads/main' && steps.pip-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ steps.pip-cache.outputs.cache-primary-key }}
       - name: Install ict package + deps dans venv per-job (extra [iit] -- pyphi 1.2.0, numpy<2, antropy, #25381)
         # Fix #14571a : le toolcache `/opt/hostedtoolcache/Python/3.9.x/x64` du runner
         # self-heberge `coursia-ephemeral` est PERSISTANT entre conteneurs (etiquette
@@ -515,6 +509,13 @@ jobs:
           echo "ICT install OK in venv (pip show ict-series -> $ICT_VENV)"
           python -c "import ict; print('ict import OK, __file__=', ict.__file__)"
           echo "$ICT_VENV/bin" >> "$GITHUB_PATH"
+
+      - name: Save pip cache (main only)
+        if: github.ref == 'refs/heads/main' && steps.pip-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ steps.pip-cache.outputs.cache-primary-key }}
 
       # `matrix.test-parallel` est VIDE sur la jambe ict/tests/ : l'invocation
       # y reste mot pour mot celle d'avant. Le floor-guard ci-dessous, lui,
