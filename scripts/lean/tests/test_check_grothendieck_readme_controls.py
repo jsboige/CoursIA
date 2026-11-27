@@ -32,8 +32,17 @@ stubbed), this file pins **behavioral coverage** for all six classes:
 
 Usage
 -----
-    python scripts/lean/test_check_grothendieck_readme.py            # verbose mode
-    python scripts/lean/test_check_grothendieck_readme.py --quiet    # only failures
+    python scripts/lean/tests/test_check_grothendieck_readme_controls.py          # verbose mode
+    python scripts/lean/tests/test_check_grothendieck_readme_controls.py --quiet  # only failures
+
+Why the ``_controls`` suffix
+----------------------------
+The file moved from ``scripts/lean/`` to ``scripts/lean/tests/`` with
+#28721, so pytest now collects it. ``scripts/tests/test_check_grothendieck_readme.py``
+(the pytest suite of the #17512 guard) already carried the bare name: two
+files sharing a basename force the whole run into ``--import-mode importlib``
+and the inventory ratchet (#25366 T4) refuses any *new* duplicate, so the
+moved file takes a distinct basename rather than the collision.
 
 Self-test
 ---------
@@ -68,9 +77,25 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-CHECKER = REPO_ROOT / "scripts" / "lean" / "check_grothendieck_readme.py"
+_THIS_FILE = Path(__file__).resolve()
+# The test lives either beside the organ (scripts/lean/) or in a
+# collected sub-directory (scripts/lean/tests/). Both anchors are resolved
+# from the organ's own file, never from a fixed parent index: a move must
+# not silently shift REPO_ROOT onto scripts/ (measured on #28721 — the
+# whole suite then imported a non-existent checker).
+LEAN_DIR = (
+    _THIS_FILE.parent
+    if (_THIS_FILE.parent / "check_grothendieck_readme.py").is_file()
+    else _THIS_FILE.parent.parent
+)
+REPO_ROOT = LEAN_DIR.parents[1]
+CHECKER = LEAN_DIR / "check_grothendieck_readme.py"
 DEFAULT_LAKE = REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "Grothendieck" / "grothendieck_lean"
+
+# In-process tests import the organ as a bare module; pytest's importlib
+# mode does not put the test's own directory on sys.path.
+if str(LEAN_DIR) not in sys.path:
+    sys.path.insert(0, str(LEAN_DIR))
 
 
 def _run_checker(*args: str, expect_exit: int, cwd: Path | None = None) -> subprocess.CompletedProcess:
@@ -120,16 +145,16 @@ def make_lake(
     return lake
 
 
-def _patch_disk(monkeypatch, checker_module, disk_fr: set[str], disk_en: set[str], umbrella: int = 0):
+def _patch_disk(checker_module, disk_fr: set[str], disk_en: set[str], umbrella: int = 0):
     """Patch ``_git_ls_tree_disk`` so a test can drive ``check_lake`` with a
     synthetic disk state without touching ``origin/main``.
 
     Returns the mock object the caller can inspect.
     """
-    return monkeypatch.patch.object(
+    return mock.patch.object(
         checker_module,
         "_git_ls_tree_disk",
-        lambda lake_root: (set(disk_fr), set(disk_en), umbrella),
+        lambda lake_root, ref="HEAD", **kw: (set(disk_fr), set(disk_en), umbrella),
     )
 
 
@@ -370,7 +395,7 @@ class TestCheckLakeDirect(unittest.TestCase):
             )
 
             with mock.patch.object(cgr, "_git_ls_tree_disk",
-                                   lambda lr: ({"Adjunction", "CoversCoherent", "Spaces"},
+                                   lambda lr, ref="HEAD", **kw: ({"Adjunction", "CoversCoherent", "Spaces"},
                                                {"Adjunction", "CoversCoherent", "Spaces"}, 0)), \
                  mock.patch.object(cgr, "REPO_ROOT", lake.parent):
                 rpt_advisory = cgr.check_lake(lake, strict=False)
@@ -427,7 +452,7 @@ class TestCheckLakeDirect(unittest.TestCase):
             )
 
             with mock.patch.object(cgr, "_git_ls_tree_disk",
-                                   lambda lr: ({"Adjunction", "CoversCoherent"},
+                                   lambda lr, ref="HEAD", **kw: ({"Adjunction", "CoversCoherent"},
                                                {"Adjunction", "CoversCoherent"}, 0)), \
                  mock.patch.object(cgr, "REPO_ROOT", lake.parent):
                 rpt_advisory = cgr.check_lake(lake, strict=False)
@@ -486,7 +511,7 @@ class TestCheckLakeDirect(unittest.TestCase):
             )
 
             with mock.patch.object(cgr, "_git_ls_tree_disk",
-                                   lambda lr: ({"Adjunction", "Spaces"},
+                                   lambda lr, ref="HEAD", **kw: ({"Adjunction", "Spaces"},
                                                {"Adjunction", "Spaces"}, 0)), \
                  mock.patch.object(cgr, "REPO_ROOT", lake.parent):
                 rpt_advisory = cgr.check_lake(lake, strict=False)
