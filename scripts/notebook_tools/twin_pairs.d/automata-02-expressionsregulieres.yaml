@@ -1,0 +1,12 @@
+- name: "Automata-02 ExpressionsRegulieres"
+  family: InformationCalcul/Automata
+  python: MyIA.AI.Notebooks/InformationCalcul/Automata/Automata-02-ExpressionsRegulieres-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Automata/Automata-02-ExpressionsRegulieres-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Implementation pedagogique declaree des deux cotes : la construction de Thompson (theoreme 3.7) et l'elimination d'etats (section 3.2.2 du manuel) sont ecrites a partir de zero, en collections natives. Aucun organe Automata .NET consommable n'est materialise dans le clone ; l'acceptance retient une verification independante par enumeration exhaustive bornee contre un moteur externe -- re.fullmatch cote Python, Regex.IsMatch ancre cote C#. Les deux jumeaux comparent les memes langages aux memes references et mesurent les deux regimes de cout sur les deux memes familles. SOTA-OK pour cette copie pedagogique declaree, sans moteur externe de substitution."
+  known_differences:
+    - "Copie pedagogique declaree, motif : montrer pas a pas les deux sens du theoreme de Kleene et ce que coute chaque conversion ; les series Z3 (Re/InRe), Search (automates symboliques) et Lean (derivees de Brzozowski) assurent les prolongements avec leurs organes natifs."
+    - "Python represente l'arbre par des tuples imbriques, C# par une hierarchie de records ; Python identifie un etat compose par un frozenset, C# par un HashSet<int> nomme par une cle texte triee. Les idiomes different, les expressions rendues et les langages verifies sont identiques."
+    - "L'oracle externe differe par la bibliotheque : re.fullmatch cote Python, Regex.IsMatch ancre par \\A(?:...)\\z cote C#. Les 1023, 2047, 255, 3280 et 511 mots enumeres, les 22 et 14 noeuds des deux expressions produites et les deux tables de cout coincident un a un."
+    - "Les trois exercices sont repartis dans les deux carnets et restent des stubs sains executables ; la troisieme question est un raisonnement ecrit sur l'ordre d'elimination."

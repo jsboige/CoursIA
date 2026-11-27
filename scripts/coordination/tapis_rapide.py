@@ -26,8 +26,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import (frozen_campaigns, gh_bulk, gh_recherche, tapis_acceptance, tapis_assiette,
                          tapis_dernier_grain, tapis_ecarts_fond, tapis_equilibre, tapis_origami,
-                         tapis_attente, tapis_borne, tapis_sature, tapis_service,
-                         tapis_voie_leger)
+                         tapis_attente, tapis_borne, tapis_sature, tapis_service, tapis_voie_leger)
 from coordination.tapis_marqueurs import (
     _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _age, _dt, _iso, _rouverte,
     claims_ouverts, evenements, lane_de_pr)
@@ -50,10 +49,7 @@ LABEL_CONSOLIDATION = "consolidation"
 LABELS_CONTENEUR = frozenset({"epic", "umbrella"})
 # Login partage : la lane habilitee a degeler se lit dans le marqueur, pas dans l'auteur.
 LANES_DEGEL = frozenset({"myia-ai-01:CoursIA", "myia-po-2025:CoursIA-2"})
-# Les textes de service sont dans tapis_service (#26926) : REPLI et VERIF
-# n'ont plus d'usage ici.
-# EPAISSE et SATURE : les deux barrieres de FOND d'un CONTENEUR (#26973).
-# PAUSE : une [RELEASED] qui porte une condition (#27726).
+# EPAISSE, SATURE : barrieres de FOND d'un CONTENEUR (#26973) ; PAUSE : [RELEASED] conditionnelle (#27726).
 CODES = ("HORSFLOTTE", "LABEL", "GEL", "EPAISSE", "PAUSE", "LIVREE", "MERGEE",
          "COUVERTE", "RELACHEE", "PLAFOND", "ORIGAMI", "RECLAMEE", "SATURE")
 
@@ -242,7 +238,7 @@ def _decider(e: Etat, it: dict, evts: list[Evt], ancetres: list[int], ctx: dict)
         ("PAUSE", lambda: tapis_attente.pause(evts, ctx)),
         ("COUVERTE", lambda: None if e.conteneur else _couverte(
             e.numero, ctx["lane"], ctx["prs_par_issue"])),
-        ("RELACHEE", lambda: tapis_attente.relachee(evts, ctx["maintenant"])),
+        ("RELACHEE", lambda: tapis_attente.relachee(evts, ctx["maintenant"], ctx["lane"])),
         ("PLAFOND", lambda: _plafond(e, evts, ctx["filles"].get(e.numero, []),
                                      ctx["lane"], ctx["maintenant"])),
     ]

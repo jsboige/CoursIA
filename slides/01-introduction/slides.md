@@ -767,7 +767,7 @@ Le catalogue généré du dépôt (`COURSE_CATALOG.generated.*`) fait foi pour l
 | Famille | Notebook d'entrée | Domaines principaux |
 |---|---|---|
 | Search/Part1-Foundations | Search-01-StateSpace | exploration informée/non informée |
-| Search/Part2-CSP | CSP-1-Fundamentals | satisfaction de contraintes |
+| Search/Part2-CSP | CSP-01-Fundamentals-Python | satisfaction de contraintes |
 | Search/Part3-Cas-pratiques | App-01-NQueens-Python | cas d'usage (N-Queens, Send+More=Money, planification) |
 | Sudoku | Sudoku-01-Backtracking-Python | backtracking, propagation, OR-Tools |
 | SymbolicAI | Z3-Python-01-Introduction | SMT, argumentation, Lean 4, smart-contracts |

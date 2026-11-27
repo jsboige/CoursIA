@@ -11,6 +11,8 @@ from pathlib import Path
 from queue import Empty as QueueEmpty
 from jupyter_client import KernelManager
 
+from _papermill_meta import strip_stale_papermill_metadata
+
 def execute_dotnet_notebook(notebook_path: str, timeout: int = 300):
     """
     Execute a .NET notebook cell-by-cell and save outputs.
@@ -109,7 +111,7 @@ def execute_dotnet_notebook(notebook_path: str, timeout: int = 300):
                         # inherited `idle` breaks the loop before the cell's
                         # own output arrives and every output cascades into
                         # the next cell (shift +1, observed 2026-09-04 on
-                        # CSP-8-Temporal-CSharp).
+                        # CSP-08-Temporal-CSharp).
                         if msg.get('parent_header', {}).get('msg_id') != exec_id:
                             continue
 
@@ -223,6 +225,11 @@ def execute_dotnet_notebook(notebook_path: str, timeout: int = 300):
             results['cells'].append(cell_result)
 
         # Save notebook with outputs
+        # Un bloc Papermill anterieur ne doit pas survivre a cette reecriture :
+        # il daterait ces sorties fraiches du mauvais run (STALE_BLOCK du
+        # ratchet #11155). Meme cablage que dotnet_executor.py:365, qui manquait
+        # ici — residu de couverture de #12722.
+        strip_stale_papermill_metadata(notebook)
         print(f"\nSaving notebook to: {notebook_path}")
         with open(notebook_path, 'w', encoding='utf-8') as f:
             json.dump(notebook, f, indent=1, ensure_ascii=False)

@@ -28,7 +28,18 @@ Perimetre (v1, calibre sur ICT-35 + ICT-38 pre/post #27206) :
   * derivee fractionnaire inline « 1/16 = 0.0625 » (ICT-38 post-fix) : la prose
     porte elle-meme la preuve du calcul ;
   * nombres entre backticks : identifiants de code / parametres, pas des mesures ;
-  * annees 1900-2100.
+  * annees 1900-2100 ;
+  * identifiant arXiv NU (« arXiv 2511.07312 », « arXiv:1512.06808 ») : le token
+    YYMM.NNNNN est bibliographique, pas une mesure (mesure du stock le 25/11 :
+    151 des 850 findings de cette seule classe). Les bornes de la regex gardent
+    dans le champ une mesure de forme voisine (« 1234.5678 » : le mois 34
+    n'existe pas) ;
+  * SANS exemption, et c'est deliberé : la valeur d'une version ANTERIEURE du
+    meme carnet, et la largeur DERIVEE de deux bornes d'intervalle -- bloc
+    « Deux classes » ci-dessous, fixtures 19 et 20 du self-test.
+- Rapport : encodage tolerant (« errors=replace »). Une console cp1252 tuait le
+  balayage en cours d'impression (mesure : le « ∈ » d'une prose de
+  Coalition-02), donc l'organe se taisait au milieu de son propre rapport.
 - Correspondance numerique (pas sous-chaine) : Decimal en egalite exacte, OU
   arrondi/troncature d'un nombre de sortie PLUS precis a la precision de la
   citation (« 0.0859 » correspond a une sortie « 0.0859375 » ; « 1,000 » a
@@ -95,6 +106,15 @@ _URL_RE = re.compile(r"https?://\S+")
 # suffixe) est exempt, comme une URL ; une mesure a 3+ decimales SANS slash
 # apres le prefixe reste verifiee.
 _DOI_RE = re.compile(r"\b10\.\d{4,9}/\S+")
+# Identifiant arXiv NU (sans lien ni backticks) : « arXiv 2511.07312 »,
+# « arXiv:1512.06808 », mesure du stock du 25/11 -- **156 des 863 findings**
+# (18 %) lus comme des mesures n'en sont pas. Meme classe que le DOI : le
+# token YYMM.NNNNN est un identifiant, pas une grandeur. La forme borne les
+# deux premiers chiffres a l'annee d'un identifiant moderne (07 a 99) et le
+# mois a 01-12, ce qui garde hors exemption une mesure comme « 1234.5678 »
+# (mois 34 n'existe pas) ; un identifiant entier de 4 ou 5 chiffres apres le
+# point est exempte comme le DOI.
+_ARXIV_RE = re.compile(r"\b(?:0[7-9]|[1-9]\d)(?:0[1-9]|1[0-2])\.\d{4,5}\b")
 # Valeur DECLAREE citee (litterature/theorie), pas mesuree : l'auteur dit lui-meme
 # que le nombre n'est pas le sien (« la prediction 4,267 ... est citee », seuil
 # 3-SAT de Complexity-02b/02c, mesure dans le census initial). L'exemption porte
@@ -109,6 +129,23 @@ _QUOTED_VALUE_RE = re.compile(
 _QUOTED_WINDOW = 40
 _MIN_DECIMALS = 3
 _YEAR_MIN, YEAR_MAX = 1900, 2100
+
+# Deux classes mesurees sur ICT-35 (PR #28523) restent SANS exemption, et c'est
+# un choix, pas un trou :
+#   (1) la mesure d'une version ANTERIEURE du meme carnet -- vraie, attestee au
+#       ledger (docs/ledgers/11690-ict-consolidation.md), mais absente des
+#       sorties commitees, donc invérifiable par le lecteur qui regarde le
+#       carnet. Lui ouvrir une exemption par mot-cle (« version precedente »,
+#       « ancien run ») blanchirait n'importe quelle valeur : le mot-cle est
+#       ecrit par celui qui cite, il ne prouve rien. Voie appliquee : declarer
+#       la valeur historique entre backticks avec sa taille de corpus.
+#   (2) la largeur DERIVEE de deux bornes d'intervalle (0.810 = 0.588 - (-0.222),
+#       0.554 = 0.385 - (-0.169)) : les bornes sont dans les sorties, la
+#       difference nulle part. L'exempter demanderait d'accepter TOUTE
+#       difference de deux nombres du pool -- ce qui viderait la garde sur les
+#       carnets riches en valeurs. Voie appliquee : citer les deux bornes.
+# Les fixtures 19 et 20 du self-test pinent ce verdict : un futur elargissement
+# d'exemption fait rougir le pre-controle au lieu de passer en silence.
 
 
 def _normalize_digits(text: str) -> str:
@@ -362,6 +399,7 @@ def analyze_notebook(nb: dict, rel_path: str) -> NotebookResult:
         exempt_spans += [m.span() for m in _LINK_RE.finditer(cell_norm)]
         exempt_spans += [m.span() for m in _URL_RE.finditer(cell_norm)]
         exempt_spans += [m.span() for m in _DOI_RE.finditer(cell_norm)]
+        exempt_spans += [m.span() for m in _ARXIV_RE.finditer(cell_norm)]
         derived_values = {
             _to_decimal(m.group(1))
             for m in _FRACTION_DERIVATION_RE.finditer(cell_text)
@@ -765,11 +803,57 @@ def self_test() -> int:
     if citations(r) != ["0.003"]:
         failures.append(f"controle ± fausse magnitude : {citations(r)}")
 
+    # 19. Classe 1 (#28523, ICT-35) : la mesure d'une version ANTERIEURE du
+    # meme carnet. Vraie et attestee au ledger, mais absente des sorties
+    # commitees -- donc signalee. Aucun mot-cle ne l'exempte : la valeur se
+    # declare entre backticks (voie appliquee sur ICT-35) ou se re-ancre.
+    r = analyze_notebook(
+        nb(["## Lecture 3 : le F1 de la version a 6 groupes H etait 0.217"],
+           ["F1 (12 groupes H) : 0.482"]),
+        "t.ipynb",
+    )
+    if citations(r) != ["0.217"]:
+        failures.append(f"classe 1 (version anterieure) : {citations(r)}")
+
+    # 20. Classe 2 (#28523, ICT-35) : largeur DERIVEE de deux bornes. Les
+    # bornes sont dans les sorties (pool), la largeur nulle part : 0.810 est
+    # 0.588 - (-0.222). Signalee, et le remede est de citer les deux bornes --
+    # exempter toute difference de deux sorties viderait la garde.
+    r = analyze_notebook(
+        nb(["## Lecture 5 : largeur 0.810 pour l'intervalle [-0.222, 0.588]"],
+           ["borne basse : -0.222\nborne haute : 0.588"]),
+        "t.ipynb",
+    )
+    if citations(r) != ["0.810"]:
+        failures.append(f"classe 2 (largeur derivee) : {citations(r)}")
+
+    # 21. Identifiant arXiv NU : le token YYMM.NNNNN est un identifiant, pas
+    # une mesure (stock du 25/11 : 156 des 863 findings de cette seule classe,
+    # mesuré sur GameTheory-13h, Coalition-02). La mesure voisine 0.5556,
+    # absente des sorties, reste signalee.
+    r = analyze_notebook(
+        nb(["## A retenir : Ataraxos (arXiv 2511.07312) tient un F1 de 0.5556"],
+           ["F1 : 0.4872"]),
+        "t.ipynb",
+    )
+    if citations(r) != ["0.5556"]:
+        failures.append(f"arXiv nu non exempte : {citations(r)}")
+
+    # 22. Controle : une mesure a 4 decimales n'est PAS un identifiant arXiv
+    # (le mois 34 n'existe pas) -- elle reste verifiee.
+    r = analyze_notebook(
+        nb(["## Lecture : le rapport vaut 1234.5678 sur ce fold"],
+           ["rapport : 1233.9001"]),
+        "t.ipynb",
+    )
+    if citations(r) != ["1234.5678"]:
+        failures.append(f"controle arXiv (mesure 4 decimales) : {citations(r)}")
+
     if failures:
         for f in failures:
             print(f"SELFTEST FAIL: {f}")
         return 1
-    print("selftest: OK (18 fixtures)")
+    print("selftest: OK (22 fixtures)")
     return 0
 
 
@@ -777,6 +861,16 @@ def self_test() -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Console Windows en cp1252 : le contexte d'un finding peut porter un
+    # caractere hors cp1252 (mesure : le « ∈ » de « T ∈ [10, 80] » sur
+    # Coalition-02-Assistance-Games tuait le rapport par UnicodeEncodeError au
+    # milieu du balayage -- l'organe se taisait en cours de sortie, ce qui est
+    # exactement le piege qu'il est cense denoncer). « replace » garde le
+    # rapport lisible ; la CI est en utf-8 et ne voit aucune difference.
+    try:
+        sys.stdout.reconfigure(errors="replace")
+    except (AttributeError, ValueError, OSError):
+        pass
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
         "base", nargs="?",
