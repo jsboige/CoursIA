@@ -2,6 +2,7 @@
   family: SymbolicAI/ArgumentAnalysis
   python: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03b-Value-Based-AF-Python.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03b-Value-Based-AF-CSharp.ipynb
-  parity_level: native-both
+  parity_level: semantic
   known_differences:
+    - "2026-11-25 (myia-po-2028:claudish) : parity_level corrige de native-both a semantic -- le niveau natif des deux cotes exige de nommer un moteur externe par cote (_schema.yaml) ; ici cote Python : aucun module tiers importe ; cote C# : aucune directive #r, aucun using hors System. Aucun verdict de pont n'est porte : il se juge sur le travail, pas sur l'inventaire des imports."
     - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de Argumentation-03b-Value-Based-AF-Python.ipynb. Execution reelle sur kernel .net-csharp (releve du harnais, corps de la PR) : 7 cellules, 0 erreur. Verification par l'agent critic-sol (cible configuree gpt-6.1-sol ; alias distinct du producteur notebook-coder-minimax) : approve, 1 constat. Premiere attestation ecrite par l'integration de livraison (check_twin_parity --update), en DERNIERE operation (cf #8957)."
