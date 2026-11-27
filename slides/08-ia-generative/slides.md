@@ -295,13 +295,13 @@ class: nb-map nb-k100
 
 <div class="nb-grid nb-cols-3">
 
-<div class="nb-card"><p class="nb-step">Position par rotation</p><p class="nb-what">RoPE : coder la position d’un token par une rotation de son vecteur.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00a-RoPE-from-scratch.ipynb" target="_blank" rel="noopener">TV-00a-RoPE-from-scratch</a></p></div>
+<div class="nb-card"><p class="nb-step">Position par rotation</p><p class="nb-what">RoPE : coder la position d’un token par une rotation de son vecteur.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00a-RoPE-from-scratch-Python.ipynb" target="_blank" rel="noopener">TV-00a-RoPE-from-scratch-Python</a></p></div>
 
 <div class="nb-card"><p class="nb-step">Variantes d’attention</p><p class="nb-what">MHA, MQA, GQA, fenêtre glissante : partager des têtes ou restreindre la fenêtre pour économiser mémoire et calcul.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb" target="_blank" rel="noopener">TV-00b-Attention-Variants-from-scratch</a></p></div>
 
 <div class="nb-card"><p class="nb-step">Les deux autres familles</p><p class="nb-what">Encodeur seul et encodeur-décodeur, à côté du décodeur seul des modèles de chat.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00d-Encodeurs-from-scratch-Python.ipynb" target="_blank" rel="noopener">TV-00d-Encodeurs-from-scratch-Python</a></p></div>
 
-<div class="nb-card"><p class="nb-step">Dans un modèle réel</p><p class="nb-what">Charger Mistral-7B en 4 bits et y retrouver ces variantes.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-01-Attention-Variants-SOTA.ipynb" target="_blank" rel="noopener">TV-01-Attention-Variants-SOTA</a></p></div>
+<div class="nb-card"><p class="nb-step">Dans un modèle réel</p><p class="nb-what">Charger Mistral-7B en 4 bits et y retrouver ces variantes.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-01-Attention-Variants-SOTA-Python.ipynb" target="_blank" rel="noopener">TV-01-Attention-Variants-SOTA-Python</a></p></div>
 
 <div class="nb-card"><p class="nb-step">Mélange d’experts</p><p class="nb-what">MoE : observer le routage réel des tokens vers les experts dans OLMoE-1B-7B.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-02-MoE-SOTA.ipynb" target="_blank" rel="noopener">TV-02-MoE-SOTA</a></p></div>
 
@@ -908,7 +908,7 @@ class: nb-map nb-k92
 
 <div class="nb-card"><p class="nb-step">Passer par une passerelle</p><p class="nb-what">Claudish : un protocole, plusieurs modèles par paliers de budget ; distinguer quota dépassé (429) et surcharge (529).</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claudish/notebooks/01-claude-code-via-claudish.ipynb" target="_blank" rel="noopener">01-claude-code-via-claudish</a></p></div>
 
-<div class="nb-card"><p class="nb-step">Garde-fous du code généré</p><p class="nb-what">Un analyseur Roslyn refuse à la compilation ce qu’un grep naïf laisse passer ; un REPL C# corrige une application à chaud.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Vibe-Coding/analyzers/Roslyn-Code-Guardrails.ipynb" target="_blank" rel="noopener">Roslyn-Code-Guardrails</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Vibe-Coding/docs/CSharpRepl-Live-Patching.ipynb" target="_blank" rel="noopener">CSharpRepl-Live-Patching</a></p></div>
+<div class="nb-card"><p class="nb-step">Garde-fous du code généré</p><p class="nb-what">Un analyseur Roslyn refuse à la compilation ce qu’un grep naïf laisse passer ; un REPL C# corrige une application à chaud.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Vibe-Coding/analyzers/Roslyn-Code-Guardrails.ipynb" target="_blank" rel="noopener">Roslyn-Code-Guardrails</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Integrations-DotNet/CSharpRepl/CSharpRepl-Live-Patching.ipynb" target="_blank" rel="noopener">CSharpRepl-Live-Patching</a></p></div>
 
 </div>
 
