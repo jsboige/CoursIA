@@ -1,4 +1,4 @@
-# Conformite differentielle du couple GameTheory-03b (Chambres, murs et
+# Conformite differentielle du triplet GameTheory-03b (Chambres, murs et
 # chemins, issue #27941).
 #
 # Le portage Rust (kernel evcxr, `std` seul) reprend le carnet Python a
@@ -7,15 +7,23 @@
 # `BTreeMap`, les tuples des tuples natifs, et le rendu des grandeurs
 # Python (True, {3: 24}) passe par des helpers (py_bool, rendu BTreeMap).
 #
-# Les deux cotes ont la MEME structure de cellules (70 cellules, 26 code aux
+# Les trois cotes ont la MEME structure de cellules (70 cellules, 26 code aux
 # memes index) : la correspondance des cellules est directe.
 #
-# Le cote C# est absent du triplet : le carnet C# correspondant vit dans la
-# PR #27681, non fusionnee au moment de l'ecriture de ce registre -- il
-# n'existe aucun jumeau C# dans le depot. Si cette PR fusionne, rouvrir ce
-# fichier pour ajouter le chemin et les cotes C# (le lecteur ne signale pas
-# l'absence d'un cote non declare : c'est la relecture humaine qui la
-# garantit, d'ou le present commentaire).
+# Cote C# : declare. Le carnet C# est sur main depuis #27681 (fusionnee le
+# 2026-11-23), apres l'ecriture de ce registre : le commentaire qui disait le
+# cote « absent du triplet » etait devenu faux, il est remplace ici. Ses
+# sorties sont ecrites par .NET Interactive sous Windows et portent des fins de
+# ligne CRLF ; les mesures de texte le comparent donc avec la transformation
+# `text_lf` (fins de ligne ramenees a LF, rien d'autre n'est normalise). Sur
+# les 24 mesures, 14 coincident alors avec le Python -- verifie a la tete.
+# Les 10 autres portent un ecart de RENDU mesure sur ses sorties, et sont
+# declarees `absent` avec leur motif : accents absents, tuple a un element
+# rendu (4) au lieu de (4,), tuple de tuples sans parentheses exterieures,
+# listes sans crochets ni quotes, largeur de champ des colonnes, espaces
+# autour des parentheses et des fleches. Leur parite semantique est portee par
+# `twin_pairs.d/gametheory-03b-chambres-murs-chemins-lean.yaml`, pas par cet
+# organe.
 #
 # Ecarts de forme DECLARES :
 #
@@ -39,6 +47,7 @@
 - name: "GameTheory-03b Chambres Murs Chemins Lean"
   family: GameTheory
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-03b-Chambres-Murs-Chemins-Lean-CSharp.ipynb
   rust: MyIA.AI.Notebooks/GameTheory/GameTheory-03b-Chambres-Murs-Chemins-Lean-Rust.ipynb
   measures:
     - id: c2_text
@@ -54,6 +63,10 @@
           cell: 2
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
+        csharp:
+          cell: 2
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text_lf
     - id: c4_text
       description: "Sortie de la cellule 4, texte identique au jumeau Python"
       tolerance: 0
@@ -67,6 +80,10 @@
           cell: 4
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
+        csharp:
+          cell: 4
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text_lf
     - id: c7_text
       description: "Sortie de la cellule 7, texte identique au jumeau Python"
       tolerance: 0
@@ -80,6 +97,8 @@
           cell: 7
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
+        csharp:
+          absent: "Rendu C# different mesure : tuple a un element ecrit (4) contre (4,) cote Python, dans le tableau des types de blocs."
     - id: c10_text
       description: "Sortie de la cellule 10, texte identique au jumeau Python"
       tolerance: 0
@@ -93,6 +112,10 @@
           cell: 10
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
+        csharp:
+          cell: 10
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text_lf
     - id: c13_text
       description: "Sortie de la cellule 13, texte identique au jumeau Python"
       tolerance: 0
@@ -106,6 +129,10 @@
           cell: 13
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
+        csharp:
+          cell: 13
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text_lf
     - id: c16_text
       description: "Sortie de la cellule 16, texte identique au jumeau Python"
       tolerance: 0
@@ -119,6 +146,10 @@
           cell: 16
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
+        csharp:
+          cell: 16
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text_lf
     - id: c19_text
       description: "Sortie de la cellule 19, texte identique au jumeau Python"
       tolerance: 0
@@ -132,6 +163,8 @@
           cell: 19
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
+        csharp:
+          absent: "Rendu C# different mesure : methodes en PascalCase (BriserLeTie contre briser_le_tie), tuple de tuples sans parentheses exterieures, un espace de moins dans la ligne « chambre A ... chambre B »."
     - id: c22_text
       description: "Sortie de la cellule 22, texte identique au jumeau Python"
       tolerance: 0
@@ -145,6 +178,10 @@
           cell: 22
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
+        csharp:
+          cell: 22
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text_lf
     - id: c25_text
       description: "Sortie de la cellule 25, texte identique au jumeau Python"
       tolerance: 0
@@ -158,6 +195,8 @@
           cell: 25
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
+        csharp:
+          absent: "Rendu C# different mesure : espace avant la parenthese « (codim 1 ) » et fleche collee « )-> retrouve » ; memes chambres et memes verdicts."
     - id: c28_text
       description: "Sortie de la cellule 28, texte identique au jumeau Python"
       tolerance: 0
@@ -171,6 +210,10 @@
           cell: 28
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
+        csharp:
+          cell: 28
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text_lf
     - id: c31_text
       description: "Sortie de la cellule 31, texte identique au jumeau Python"
       tolerance: 0
@@ -184,6 +227,10 @@
           cell: 31
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
+        csharp:
+          cell: 31
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text_lf
     - id: c33_text
       description: "Sortie de la cellule 33, texte identique au jumeau Python"
       tolerance: 0
@@ -197,6 +244,8 @@
           cell: 33
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
+        csharp:
+          absent: "Accents absents des sorties C# (« excentricite » contre « excentricité ») ; meme valeur, 12."
     - id: c35_text
       description: "Sortie de la cellule 35, texte identique au jumeau Python"
       tolerance: 0
@@ -210,6 +259,8 @@
           cell: 35
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
+        csharp:
+          absent: "Accents absents des sorties C# (« a cette distance » contre « à cette distance ») ; meme valeur, 12."
     - id: c38_text
       description: "Sortie de la cellule 38, texte identique au jumeau Python"
       tolerance: 0
@@ -223,6 +274,8 @@
           cell: 38
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
+        csharp:
+          absent: "Largeur de champ des colonnes differente (C# aligne d et N sur 5 colonnes, Python sur 6) ; memes series d et N, meme total 576."
     - id: c40_text
       description: "Sortie de la cellule 40, texte identique au jumeau Python"
       tolerance: 0
@@ -236,6 +289,8 @@
           cell: 40
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
+        csharp:
+          absent: "Accents absents des sorties C# (« mesuree », « coincidence ») ; meme distribution et meme verdict."
     - id: c42_text
       description: "Sortie de la cellule 42, texte identique au jumeau Python"
       tolerance: 0
@@ -249,6 +304,10 @@
           cell: 42
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
+        csharp:
+          cell: 42
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text_lf
     - id: c44_digits
       description: "Cellule 44 : compte de la verification exhaustive (chiffres seuls, la duree murale de la ligne est exclue)"
       tolerance: 0
@@ -259,6 +318,10 @@
           pattern: "paires v[ée]rifi[ée]es : (\\d+ / \\d+)"
           transform: digits
         rust:
+          cell: 44
+          pattern: "paires v[ée]rifi[ée]es : (\\d+ / \\d+)"
+          transform: digits
+        csharp:
           cell: 44
           pattern: "paires v[ée]rifi[ée]es : (\\d+ / \\d+)"
           transform: digits
@@ -275,6 +338,8 @@
           cell: 44
           pattern: "\\A(?:.*?)(?m:^paires v[ée]rifi[ée]es : \\d+ / \\d+ en \\d+(?:[.,]\\d+)?s\\r?$)\\s*(.*?)\\s*\\Z"
           transform: text
+        csharp:
+          absent: "Accents absents des sorties C# (« decomposition », « excentricites ») ; meme contenu apres la ligne de duree ecartee."
     - id: c47_text
       description: "Sortie de la cellule 47, texte identique au jumeau Python"
       tolerance: 0
@@ -288,6 +353,8 @@
           cell: 47
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
+        csharp:
+          absent: "Accents absents des sorties C# (« reduits », « cote ») ; meme valeur, 16."
     - id: c50_text
       description: "Sortie de la cellule 50, texte identique au jumeau Python"
       tolerance: 0
@@ -301,6 +368,8 @@
           cell: 50
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
+        csharp:
+          absent: "Rendu C# different mesure : listes sans crochets ni quotes (« [R12, C12] » contre « ['R12', 'C12'] ») et accent absent (« detour ») ; memes chemins et meme verdict."
     - id: c53_text
       description: "Sortie de la cellule 53 (extrait de Swaps/Basic.lean, fichier commite identique), texte identique au jumeau Python"
       tolerance: 0
@@ -314,6 +383,10 @@
           cell: 53
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
+        csharp:
+          cell: 53
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text_lf
     - id: c57_text
       description: "Sortie de la cellule 57 (banniere d'exercice), texte identique au jumeau Python"
       tolerance: 0
@@ -327,6 +400,10 @@
           cell: 57
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
+        csharp:
+          cell: 57
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text_lf
     - id: c59_text
       description: "Sortie de la cellule 59 (banniere d'exercice), texte identique au jumeau Python"
       tolerance: 0
@@ -340,6 +417,10 @@
           cell: 59
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
+        csharp:
+          cell: 59
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text_lf
     - id: c61_text
       description: "Sortie de la cellule 61 (banniere d'exercice), texte identique au jumeau Python"
       tolerance: 0
@@ -353,3 +434,7 @@
           cell: 61
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
+        csharp:
+          cell: 61
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text_lf

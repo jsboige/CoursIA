@@ -112,6 +112,12 @@ def _transform(region: str, transform: str) -> str | float | int:
         return int(match.group(0))
     if transform == "text":
         return region.strip()
+    if transform == "text_lf":
+        # Meme chose que `text`, une fois les fins de ligne ramenees a LF :
+        # un carnet C# execute sous Windows stocke ses sorties en CRLF, et le
+        # texte est identique au Python une fois cette difference de plateforme
+        # neutralisee. Rien d'autre n'est normalise (accents, espaces, casse).
+        return region.replace("\r\n", "\n").replace("\r", "\n").strip()
     raise ValueError(f"transformation inconnue : {transform!r}")
 
 
