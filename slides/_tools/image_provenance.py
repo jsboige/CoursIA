@@ -36,8 +36,10 @@ Ce que l'organe etablit, et sur quelle preuve
 **``img_NNN`` est un media embarque du PPTX, pas une decoupe de page.** Le convertisseur
 ``slides/_tools/pptx_to_marp.py`` (retire en #21361) copiait dans ``<deck>/images/`` les
 medias extraits par ``slide_tools.extract_images``, numerotes ``img_001``, ``img_002``...
-dans l'ordre des diapositives du PPTX. Tous sont entres par un seul commit, la baseline
-``29531827cf9``. La decoupe de page est ecartee par la mesure : aucun ``img_*`` du deck 06
+dans l'ordre des diapositives du PPTX. Tout fichier a rang numerique est entre par un seul
+commit, la baseline ``29531827cf9`` (679 ajouts, par aucun autre) ; cinq ``img_*`` au nom
+descriptif sont entres plus tard par quatre commits, et la regle de classement les met a part.
+La decoupe de page est ecartee par la mesure : aucun ``img_*`` du deck 06
 ne s'apparie aux rendus ``pptx-reference/`` (correlation normalisee maximale 0,89 sur 12
 images essayees a sept echelles, pour un seuil de 0,98).
 
@@ -556,10 +558,13 @@ def page_markdown(census: dict[str, Any]) -> str:
     aj("")
     aj("Un `img_NNN` est un **média embarqué du PPTX**, copié par le convertisseur")
     aj("`slides/_tools/pptx_to_marp.py` (retiré en #21361) depuis les médias extraits par")
-    aj(f"`slide_tools.extract_images`, lors d'un seul commit, la baseline `{BASELINE_COMMIT}`.")
-    aj("Ce n'est pas une découpe de page : aucun `img_*` du deck 06 ne s'apparie aux rendus")
-    aj("`pptx-reference/` (corrélation normalisée maximale 0,89 sur 12 images essayées à sept")
-    aj("échelles, pour un seuil de 0,98).")
+    aj(f"`slide_tools.extract_images`, lors d'un seul commit, la baseline `{BASELINE_COMMIT}`")
+    aj("(679 ajouts, par aucun autre commit). Cinq `img_*` au nom descriptif sont")
+    aj("entrés plus tard par quatre commits (`img_pptx_52_aspirateur.png`, `img_pptx_53_belief.png`,")
+    aj("`img_043_local_search.png`, `img_robot_extracted.png`, `img_ga_8queens_solution.png`) :")
+    aj("l'organe les classe `nomme`, jamais `PPTX-media`. Ce n'est pas une découpe de page : aucun")
+    aj("`img_*` du deck 06 ne s'apparie aux rendus `pptx-reference/` (corrélation normalisée")
+    aj("maximale 0,89 sur 12 images essayées à sept échelles, pour un seuil de 0,98).")
     aj("")
     aj("La diapositive PPTX d'origine se reconstitue en cumulant les `image_count` de")
     aj("`extracted/inventory.json`. Elle n'est publiée que jusqu'au premier rang manquant sur le")
@@ -615,12 +620,11 @@ def page_markdown(census: dict[str, Any]) -> str:
     total_non = sum(d["statuts"].get(STATUT_NON_ETABLIE, 0) for d in par_deck.values())
     total_decl = sum(d["statuts"].get(STATUT_DECLAREE, 0) for d in par_deck.values())
     total_hors = sum(d["statuts"].get(STATUT_HORS, 0) for d in par_deck.values())
-    total_disque = sum(d["non_referencees"] for d in par_deck.values())
     aj("")
     aj(
         f"**{total_ref} images référencées** : {total_non} d'origine non établie, {total_decl} d'origine "
-        f"déclarée sans licence établie, {total_hors} hors EPIC. **{total_disque} fichiers d'image** sont "
-        f"sur le disque sans qu'aucun `slides.md` ne les montre (hors du census, comptés ci-dessus)."
+        "déclarée sans licence établie, hors EPIC. Les fichiers d'image qu'aucun `slides.md` ne "
+        "montre sont hors du census, comptés par deck dans la dernière colonne du tableau."
     )
     aj("")
 

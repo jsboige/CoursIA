@@ -33,10 +33,13 @@ Sept colonnes, celles que l'EPIC demande :
 
 Un `img_NNN` est un **média embarqué du PPTX**, copié par le convertisseur
 `slides/_tools/pptx_to_marp.py` (retiré en #21361) depuis les médias extraits par
-`slide_tools.extract_images`, lors d'un seul commit, la baseline `29531827cf9`.
-Ce n'est pas une découpe de page : aucun `img_*` du deck 06 ne s'apparie aux rendus
-`pptx-reference/` (corrélation normalisée maximale 0,89 sur 12 images essayées à sept
-échelles, pour un seuil de 0,98).
+`slide_tools.extract_images`, lors d'un seul commit, la baseline `29531827cf9`
+(679 ajouts, par aucun autre commit). Cinq `img_*` au nom descriptif sont
+entrés plus tard par quatre commits (`img_pptx_52_aspirateur.png`, `img_pptx_53_belief.png`,
+`img_043_local_search.png`, `img_robot_extracted.png`, `img_ga_8queens_solution.png`) :
+l'organe les classe `nomme`, jamais `PPTX-media`. Ce n'est pas une découpe de page : aucun
+`img_*` du deck 06 ne s'apparie aux rendus `pptx-reference/` (corrélation normalisée
+maximale 0,89 sur 12 images essayées à sept échelles, pour un seuil de 0,98).
 
 La diapositive PPTX d'origine se reconstitue en cumulant les `image_count` de
 `extracted/inventory.json`. Elle n'est publiée que jusqu'au premier rang manquant sur le
@@ -85,7 +88,7 @@ grande majorité, et c'est la mesure, pas un oubli.
 | S3-acculturation | 124 | 119 | 4 | 1 | PPTX-media 122, genere 1, nomme 1 | partiel (123/135) | 64 |
 | S4-trading-algorithmique | 0 | 0 | 0 | 0 | — | — | 243 |
 
-**678 images référencées** : 663 d'origine non établie, 12 d'origine déclarée sans licence établie, 3 hors EPIC. **919 fichiers d'image** sont sur le disque sans qu'aucun `slides.md` ne les montre (hors du census, comptés ci-dessus).
+**678 images référencées** : 663 d'origine non établie, 12 d'origine déclarée sans licence établie, hors EPIC. Les fichiers d'image qu'aucun `slides.md` ne montre sont hors du census, comptés par deck dans la dernière colonne du tableau.
 
 ## La liste — images dont l'origine n'est pas établie
 
