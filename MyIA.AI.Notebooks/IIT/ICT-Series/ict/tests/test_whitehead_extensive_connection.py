@@ -284,3 +284,26 @@ def test_committed_results_match_a_fresh_run(light_report):
         assert committed["predictions"][name]["tenue"] == light_report["predictions"][name]["tenue"], name
     for key, state in light_report["substrates"].items():
         assert committed["substrates"][key]["regions"] == state["regions"], key
+
+
+def test_requalification_reaches_the_machine(light_report):
+    """Errata v2.4 section 5 : P5 et P6 echouent par construction, pas par mesure.
+
+    La distinction doit etre lisible dans l'artefact seul — sinon `tenue: false`
+    fait passer une erreur de construction pour une refutation mesuree, et le
+    bilan « P2, P3, P4 » du scelle n'est verifiable nulle part.
+    """
+    summary = light_report["summary"]
+    assert summary["echecs_mesures"] == ["P2", "P3", "P4"]
+    assert summary["echecs_structurels"] == ["P5", "P6"]
+    assert summary["echecs"] == {"P2": "mesuree", "P3": "mesuree", "P4": "mesuree",
+                                 "P5": "structurelle", "P6": "structurelle"}
+    for name in ("P5", "P6"):
+        assert light_report["predictions"][name]["structurelle"] is True
+        assert light_report["predictions"][name]["motif_structurel"], name
+    # Le controle porte le meme plafond structurel que P6, sans etre une prediction.
+    assert light_report["controle"]["structurelle"] is True
+    assert light_report["controle"]["tenue"] is False
+    assert summary["controle_tenu"] is False
+    # Le critere scelle n'est pas deplace : la jambe mesuree de P5 est tenue.
+    assert light_report["predictions"]["P5"]["identiques"] is True

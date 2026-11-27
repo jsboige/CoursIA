@@ -10943,6 +10943,8 @@
    },
    "identiques": true,
    "pleins": false,
+   "structurelle": true,
+   "motif_structurel": "jambe « tous pleins » inatteignable par le section 6.3 du scelle : S4 ne teste pas A15/A16, qui y restent « partiel » ; la jambe mesuree, quatre vecteurs identiques, est tenue",
    "tenue": false
   },
   "P6": {
@@ -10997,6 +10999,8 @@
     }
    },
    "plafond_theorique": 11,
+   "structurelle": true,
+   "motif_structurel": "seuil 12 au-dessus des 11 hypotheses violables (L7)",
    "tenue": false
   }
  },
@@ -11074,6 +11078,8 @@
    }
   },
   "plafond_theorique": 11,
+  "structurelle": true,
+  "motif_structurel": "seuil 14 au-dessus des 11 hypotheses violables (L7)",
   "tenue": false
  },
  "verdict": "NON_CONCLUSIF_INSTRUMENT",
@@ -11267,6 +11273,23 @@
    "P5": false,
    "P6": false
   },
+  "echecs": {
+   "P2": "mesuree",
+   "P3": "mesuree",
+   "P4": "mesuree",
+   "P5": "structurelle",
+   "P6": "structurelle"
+  },
+  "echecs_mesures": [
+   "P2",
+   "P3",
+   "P4"
+  ],
+  "echecs_structurels": [
+   "P5",
+   "P6"
+  ],
+  "controle_tenu": false,
   "porte_tenue": false,
   "card_necessaires": 16,
   "card_epoque": 8,

@@ -1643,6 +1643,10 @@ def run_all(seeds=TEST_SEEDS, control_seeds=CONTROL_SEEDS, with_census=True,
           "tenue": 2 in s5_failures and 3 in s5_failures}
 
     # P5 -- vecteur de S4 identique en dimension 1 a 4, et plein.
+    # Errata v2.4, section 5 : le critere scelle exige les deux jambes, mais le
+    # section 6.3 du meme scelle etablit que S4 ne teste pas A15/A16 et que ces
+    # cases y restent "partiel" — la jambe "tous pleins" est donc inatteignable.
+    # L'echec de P5 est structurel, pas mesure ; le critere n'est pas deplace.
     box_vectors = {}
     for dimension in (1, 2, 3, 4):
         key = f"S4_d{dimension}"
@@ -1652,6 +1656,11 @@ def run_all(seeds=TEST_SEEDS, control_seeds=CONTROL_SEEDS, with_census=True,
     full = all(matrix[key][number] not in ("false", "partiel", "instable")
                for key in box_keys for number in ASSUMPTIONS)
     p5 = {"vecteurs": box_vectors, "identiques": identical, "pleins": full,
+          "structurelle": True,
+          "motif_structurel": "jambe « tous pleins » inatteignable par le section 6.3 "
+                              "du scelle : S4 ne teste pas A15/A16, qui y restent "
+                              "« partiel » ; la jambe mesuree, quatre vecteurs "
+                              "identiques, est tenue",
           "tenue": identical and full}
 
     # P6 -- temoin aleatoire : au moins 12 hypotheses violees, sur 5/5 graines.
@@ -1662,8 +1671,13 @@ def run_all(seeds=TEST_SEEDS, control_seeds=CONTROL_SEEDS, with_census=True,
         null_runs[str(seed)] = {"violations": _failures(statuses),
                                 "nombre": len(_failures(statuses))}
     p6_tenue = all(run["nombre"] >= P6_MIN_VIOLATIONS for run in null_runs.values())
+    # Le seuil est hors de portee par construction (L7 : onze hypotheses violables au
+    # plus) : l'echec de P6 est structurel, pas mesure (errata v2.4, section 5).
     p6 = {"seuil": P6_MIN_VIOLATIONS, "graines": null_runs,
-          "plafond_theorique": len(VIOLABLE), "tenue": p6_tenue}
+          "plafond_theorique": len(VIOLABLE), "structurelle": True,
+          "motif_structurel": f"seuil {P6_MIN_VIOLATIONS} au-dessus des "
+                              f"{len(VIOLABLE)} hypotheses violables (L7)",
+          "tenue": p6_tenue}
 
     # Controle -- graines disjointes, seuil plus exigeant.
     control_runs = {}
@@ -1675,7 +1689,10 @@ def run_all(seeds=TEST_SEEDS, control_seeds=CONTROL_SEEDS, with_census=True,
     control_tenue = all(run["nombre"] >= CONTROL_MIN_VIOLATIONS
                         for run in control_runs.values())
     control = {"seuil": CONTROL_MIN_VIOLATIONS, "graines": control_runs,
-               "plafond_theorique": len(VIOLABLE), "tenue": control_tenue}
+               "plafond_theorique": len(VIOLABLE), "structurelle": True,
+               "motif_structurel": f"seuil {CONTROL_MIN_VIOLATIONS} au-dessus des "
+                                   f"{len(VIOLABLE)} hypotheses violables (L7)",
+               "tenue": control_tenue}
 
     # Porte de partition.
     named = {
@@ -1853,10 +1870,22 @@ def _sweep(seeds=(0, 1, 7)):
 
 def _summary(report):
     predictions = report["predictions"]
+    # Errata v2.4, section 5 : le bilan des echecs MESURES est P2, P3 et P4 ; P5 et P6
+    # echouent par construction. La distinction est portee par le champ "structurelle"
+    # de chaque prediction, et separee ici pour qu'un lecteur de l'artefact seul ne
+    # prenne pas un echec de construction pour une refutation.
+    echecs = {name: ("structurelle" if value.get("structurelle") else "mesuree")
+              for name, value in predictions.items() if not value["tenue"]}
     return {
         "verdict": report["verdict"],
         "verdict_hors_instrument": report["verdict_hors_instrument"],
         "predictions_tenues": {name: value["tenue"] for name, value in predictions.items()},
+        "echecs": echecs,
+        "echecs_mesures": sorted(name for name, classe in echecs.items()
+                                 if classe == "mesuree"),
+        "echecs_structurels": sorted(name for name, classe in echecs.items()
+                                     if classe == "structurelle"),
+        "controle_tenu": report["controle"]["tenue"],
         "porte_tenue": report["porte"]["tenue"],
         "card_necessaires": report["porte"]["card_necessaires"],
         "card_epoque": report["porte"]["card_epoque"],
@@ -1895,7 +1924,13 @@ def main(argv=None):
     print(f"epoque ({summary['card_epoque']}) : {summary['epoque']}")
     print(f"partiels : {summary['partiels']}")
     for name, value in summary["predictions_tenues"].items():
-        print(f"  {name} : {'tenue' if value else 'non tenue'}")
+        if value:
+            statut = "tenue"
+        else:
+            statut = f"non tenue ({summary['echecs'][name]})"
+        print(f"  {name} : {statut}")
+    print(f"  echecs mesures : {summary['echecs_mesures']}")
+    print(f"  echecs structurels : {summary['echecs_structurels']}")
     print(f"  porte : {'tenue' if summary['porte_tenue'] else 'non tenue'}")
     return 0
 
