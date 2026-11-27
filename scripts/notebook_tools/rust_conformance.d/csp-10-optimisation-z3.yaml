@@ -1,4 +1,4 @@
-# Conformité différentielle de CSP-10-Optimisation-Z3 (portage Rust nb_coder).
+# Conformité différentielle de CSP-10-Optimisation-Z3-Python (portage Rust nb_coder).
 #
 # Écrite à la livraison par nb_coder_integrate depuis les sorties COMMITÉES
 # des carnets : correspondance par index de cellule (le portage garde la
@@ -17,9 +17,9 @@
 #   - cellule 13 : le jumeau Python rend une figure matplotlib (image/png),
 #     le carnet Rust imprime la grille en texte ; une sortie riche contre du
 #     texte ne se compare pas à l'égalité stricte.
-- name: "CSP-10-Optimisation-Z3"
+- name: "CSP-10-Optimisation-Z3-Python"
   family: "Search/Part2-CSP"
-  python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb
+  python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Python.ipynb
   csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-CSharp.ipynb
   rust: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Rust.ipynb
   measures:

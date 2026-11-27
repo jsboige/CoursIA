@@ -1,6 +1,6 @@
 - name: SL-12b Spectral Logic Synthesis
   family: SymbolicAI/SymbolicLearning
-  python: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis.ipynb
+  python: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis-Python.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK

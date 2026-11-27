@@ -44,6 +44,16 @@ declencheurs, noms de job distincts, source unique de la logique, agregat.
 Ce qu'elle ne couvre PAS : le comportement runtime de GitHub Actions. Elle
 empeche la regression de forme, pas une erreur de logique dans les organes
 eux-memes.
+
+Mise a jour #28534 (fusion des deux workflows de la classe `edited`)
+----------------------------------------------------------------------
+`always-on-guards-body.yml` et `always-on-metadata-guards.yml` sont fusionnes
+en `always-on-guards-edited.yml` : un workflow, un job, un checkout. Les deux
+fichiers d'origine sont DORMANTS (declencheur `pull_request` retire, jobs
+conserves verbatim, patron #13384). Les invariants ci-dessous sont donc
+portes par le workflow fusionne -- et les invariants de dormance des deux
+sources sont verifies ici aussi (un fichier dormant qui redeclenche
+reintroduirait deux runs et deux slots par evenement).
 """
 from __future__ import annotations
 
@@ -56,13 +66,15 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[3]
 WORKFLOWS = REPO_ROOT / ".github" / "workflows"
 CONTENT_WF = WORKFLOWS / "always-on-guards.yml"
-BODY_WF = WORKFLOWS / "always-on-guards-body.yml"
+BODY_WF = WORKFLOWS / "always-on-guards-edited.yml"
+DORMANT_BODY_WF = WORKFLOWS / "always-on-guards-body.yml"
+DORMANT_METADATA_WF = WORKFLOWS / "always-on-metadata-guards.yml"
 COMMENTERS_WF = WORKFLOWS / "always-on-commenters.yml"
 ORGANS = REPO_ROOT / "scripts" / "ci" / "always_on_body_organs.sh"
 PR_GATE = REPO_ROOT / "scripts" / "pr_gate.py"
 
 CONTENT_JOB = "always-on-guards"
-BODY_JOB = "always-on-guards-body"
+BODY_JOB = "always-on-guards-edited"
 COMMENTERS_JOB = "always-on-commenters"
 BODY_ORGANS = ["tag_required", "prev_guard", "close_keyword", "adjacency", "lane_claim"]
 
@@ -75,6 +87,11 @@ def _trigger_types(doc: dict) -> list[str]:
     on = doc.get("on", doc.get(True))
     pr = on["pull_request"]
     return pr["types"]
+
+
+def _has_pr_trigger(doc: dict) -> bool:
+    on = doc.get("on", doc.get(True)) or {}
+    return "pull_request" in on
 
 
 # ------------------------------------------------- 1. les deux declencheurs
@@ -104,7 +121,7 @@ def test_concurrency_groups_never_cross():
     content = _load(CONTENT_WF)["concurrency"]["group"]
     body = _load(BODY_WF)["concurrency"]["group"]
     assert content != body
-    assert "always-on-guards-body" in body
+    assert "always-on-guards-edited" in body
 
 
 # ------------------------------------------------- 2. deux noms, deux verdicts
@@ -352,6 +369,32 @@ def test_commenters_concurrency_group_is_isolated():
     }
     assert len(groups) == 3, groups
     assert any("always-on-commenters" in g for g in groups), groups
+
+
+# ------------------- 7. DORMANCE des deux sources fusionnees (#28534)
+
+def test_fused_source_workflows_are_dormant():
+    """Les deux workflows fusionnes ne doivent PLUS se declencher sur une PR :
+    c'est la condition meme de la fusion (un workflow, un job, un checkout,
+    un slot par evenement). Un fichier source qui garde son declencheur
+    `pull_request` rejouerait deux runs et deux slots -- l'exact contraire
+    de ce que l'issue demande."""
+    for wf in (DORMANT_BODY_WF, DORMANT_METADATA_WF):
+        assert not _has_pr_trigger(_load(wf)), (
+            "%s redeclenche sur pull_request : la fusion de #28534 est "
+            "annulee (deux runs, deux slots par evenement)" % wf.name
+        )
+
+
+def test_dormant_body_workflow_never_judges_outside_a_pull_request():
+    """Le fichier dormant garde un declencheur `workflow_dispatch` (patron
+    #13384). Hors evenement de PR, les cinq organes de body n'ont aucun
+    corps a juger : sans garde, un dispatch les punirait sur un PR_NUMBER
+    vide et rougirait un check-run du nom de la famille."""
+    job = list(_load(DORMANT_BODY_WF)["jobs"].values())[0]
+    assert "github.event_name == 'pull_request'" in job["if"], (
+        "le job dormant doit se neutraliser hors evenement de PR"
+    )
 
 
 def test_commenters_writes_live_at_job_level_only():

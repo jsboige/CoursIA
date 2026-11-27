@@ -14,7 +14,8 @@ from datetime import UTC, datetime
 from coordination import gh_bulk
 
 
-def servir(args, depot, run, maintenant, graine: str, fraicheur: dict | None) -> int:
+def servir(args, depot, run, maintenant, graine: str, fraicheur: dict | None,
+           echeance: float | None = None) -> int:
     """La voie LEGERE : classement sur metadonnees, qualification sur fil complet.
 
     Sortie 3 : la lecture de selection est incomplete -- rien n'est servi,
@@ -23,7 +24,8 @@ def servir(args, depot, run, maintenant, graine: str, fraicheur: dict | None) ->
     from coordination import tapis_leger
     try:
         r, code = tapis_leger.tirage(args.lane, args.grains, maintenant,
-                                     args.jours, graine, depot, run)
+                                     args.jours, graine, depot, run,
+                                     echeance=echeance)
     except gh_bulk.LectureIncomplete as exc:
         print(f"Lecture incomplete ({exc.lecture}, page {exc.page}) : {exc.cause}",
               file=sys.stderr)

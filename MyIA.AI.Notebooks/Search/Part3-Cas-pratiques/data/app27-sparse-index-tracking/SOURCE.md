@@ -46,7 +46,7 @@ App-27 conserve le geste de modélisation mais remplace le benchmark source par 
 ## Une recherche, deux lectures
 
 Une seconde branche CoursIA a mené l'épreuve réelle à son terme avant la maturation éditoriale
-d'App-27 : [Sparse-Index-Tracking-QC](../../../../../QuantConnect/projects/Sparse-Index-Tracking-QC/README.md),
+d'App-27 : [Sparse-Index-Tracking-QC](../../../../QuantConnect/projects/Sparse-Index-Tracking-QC/README.md),
 intégré par la PR CoursIA [#14068](https://github.com/jsboige/CoursIA/pull/14068). Ce projet est la
 source autoritative pour le protocole QuantConnect, les identifiants de backtest et les résultats
 sparse/full sur 2015–2026. App-27 ne relance pas cette recherche : il en cite les chiffres et le

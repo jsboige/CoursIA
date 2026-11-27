@@ -53,7 +53,10 @@ def test_pass_date_for_moves_to_today_once_the_session_passed():
 
 
 def test_qc_rate_spreads_calls_over_the_interval():
-    assert ss.qc_rate(10) == pytest.approx(0.5)
+    # Un passage lit deux graphiques depuis #27482 : six appels, 0,6 par minute sur 10 minutes.
+    assert ss.qc_rate(10) == pytest.approx(ss.QC_CALLS_PER_PASS / 10)
+    assert ss.QC_CALLS_PER_PASS == 6
+    assert ss.qc_rate(10, calls_per_pass=5) == pytest.approx(0.5)
     assert ss.qc_rate(0) == float("inf")
 
 
