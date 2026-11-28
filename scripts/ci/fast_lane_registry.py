@@ -336,6 +336,7 @@ _REQUIRED_GROUPS = (
     "TRANCHE54",
     "TRANCHE55",
     "TRANCHE56",
+    "TRANCHE57",
 )
 
 # Marqueurs du YAML -> objets reels du module.
@@ -532,4 +533,5 @@ TRANCHE52: list[Guard] = _LOADED["TRANCHE52"]
 TRANCHE54: list[Guard] = _LOADED["TRANCHE54"]
 TRANCHE55: list[Guard] = _LOADED["TRANCHE55"]
 TRANCHE56: list[Guard] = _LOADED["TRANCHE56"]
+TRANCHE57: list[Guard] = _LOADED["TRANCHE57"]
 

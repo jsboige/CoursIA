@@ -75,6 +75,11 @@ from fast_lane_registry import TRANCHE53  # noqa: E402
 # en vol, et une ligne isolee fusionne sans conflit. Renumerotee le 22/11 :
 # TRANCHE54 est pris par #27611 sur origin/main.
 from fast_lane_registry import TRANCHE55  # noqa: E402
+# #27132 : tranche 57 (conformite differentielle des carnets Rust), isolee
+# comme les 53 et 55 -- meme raison : les tranches voisines sont modifiees par
+# d'autres PRs en vol, et une ligne isolee fusionne sans conflit. 57 et non 56,
+# pris par #27676 (cliquet de longueur de chemin) sur origin/main le 23/11.
+from fast_lane_registry import TRANCHE57  # noqa: E402
 
 # #27676 : la tranche 56 (cliquet de longueur de chemin) est importee par une
 # ligne a part, eloignee du bloc d'import et de la chaine d'agregation -- les
@@ -936,6 +941,10 @@ def main(argv: list[str] | None = None) -> int:
               # motif que la 53, ligne isolee de la chaine ci-dessous.
               # Renumerotee le 23/11 : TRANCHE55 est pris par #27544 sur main.
               + TRANCHE56
+              # #27132 : tranche 57 (conformite differentielle des carnets
+              # Rust) -- renumerotee le 27/11, TRANCHE56 etant pris par #27676
+              # sur main ; ligne isolee, meme motif que les 53 a 56.
+              + TRANCHE57
               + TRANCHE1 + TRANCHE2 + TRANCHE3 + TRANCHE4
               + TRANCHE5 + TRANCHE6 + TRANCHE7 + TRANCHE8 + TRANCHE9
               + TRANCHE10 + TRANCHE11 + TRANCHE12 + TRANCHE13 + TRANCHE14
@@ -945,7 +954,7 @@ def main(argv: list[str] | None = None) -> int:
               + TRANCHE31 + TRANCHE32 + TRANCHE33 + TRANCHE34 + TRANCHE35
               + TRANCHE36 + TRANCHE37 + TRANCHE38 + TRANCHE39 + TRANCHE40 + TRANCHE41
               + TRANCHE42 + TRANCHE43 + TRANCHE44 + TRANCHE45 + TRANCHE46 + TRANCHE47
-              + TRANCHE48 + TRANCHE49 + TRANCHE50 + TRANCHE52
+              + TRANCHE48 + TRANCHE49 + TRANCHE50
               + RISK_KERNEL_GUARDS + TOPLEVEL_SERIES_GUARDS
               + CURRICULUM_PREREQ_GUARDS
               if not args.only or g.name == args.only]

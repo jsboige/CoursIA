@@ -322,6 +322,15 @@ def run(registry_dir: Path, repo_root: Path,
 
 
 def main(argv=None) -> int:
+    # Windows hors CI : la sortie est un tuyau encode en cp1252, et une mesure
+    # peut porter un caractere absent de cette page (l'ensemble vide d'un
+    # domaine, un accent). Sans ce forcage, l'organe meurt sur son PROPRE
+    # affichage et rend un rouge forge alors que la mesure etait bonne.
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="replace")
+
     parser = argparse.ArgumentParser(
         description="Conformite differentielle des carnets Rust (Pli 3, #26510)")
     parser.add_argument("--registry", default=str(DEFAULT_REGISTRY),

@@ -3643,5 +3643,36 @@
    ],
    "commenters": []
   }
+ ],
+ "TRANCHE57": [
+  {
+   "name": "Rust conformance (grandeurs-pivots vs jumeaux)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_rust_conformance.py"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*-Rust.ipynb",
+    "scripts/notebook_tools/rust_conformance.d/**",
+    "scripts/notebook_tools/check_rust_conformance.py",
+    "scripts/tests/test_check_rust_conformance.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
  ]
 }
