@@ -309,7 +309,7 @@ Le [carnet Python](GameTheory-04h-Routing-PriceOfAnarchy-Python.ipynb) et son [j
 |--------|----------|-----------------|-------|--------|
 | 15b | [Jeux coopératifs en Lean](GameTheory-15b-Lean-CooperativeGames-Lean.ipynb) | Axiomes de Shapley, Core et Bondareva-Shapley formels (lake `game_theory_lean/CooperativeGames`) | Lean | Licence |
 | 15c | Exemples avancés — [Python](GameTheory-15c-CooperativeGames-Python.ipynb) · [C#](GameTheory-15c-CooperativeGames-CSharp.ipynb) | Jeu des gants, Core vide en majorité simple, indices de pouvoir | Python · C# | Licence |
-| 15d | [Shapley de groupe](GameTheory-15d-Shapley-Groupes-Python.ipynb) | Évaluer une équipe comme une unité : le meilleur binôme n'est pas celui des deux meilleurs individus | Python | Recherche |
+| 15d | Shapley de groupe — [Python](GameTheory-15d-Shapley-Groupes-Python.ipynb) · [C#](GameTheory-15d-Shapley-Groupes-CSharp.ipynb) | Évaluer une équipe comme une unité : le meilleur binôme n'est pas celui des deux meilleurs individus | Python · C# | Recherche |
 
 15e et 15g ont rejoint la [sous-série Coalitions](Coalitions/README.md), où ils sont les carnets 01 et 02 : le pouvoir coalitionnel borné SMT et les jeux d'assistance s'y lisent après GT-15.
 15d a rejoint la [sous-série SocialChoice](SocialChoice/README.md) comme carnet SC-06b : la décomposition de Möbius sur le treillis des coalitions, volet Lean.
