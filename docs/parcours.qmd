@@ -121,6 +121,8 @@ jupyter notebook MyIA.AI.Notebooks/
 
 ## Passerelles entre parcours
 
+La [veille reliée aux notions](../veille-curriculum.qmd) propose des rapprochements datés entre sources extérieures et contenus du curriculum, sans les confondre avec des prérequis.
+
 Le dépôt est conçu pour être progressif. Les notebooks marqués `Prerequisites: parcours N` indiquent leur niveau. Le [catalogue](../COURSE_CATALOG.generated.md) référence pour chaque notebook :
 
 - Kernel requis (python3 / .net-csharp / lean4)
