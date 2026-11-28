@@ -180,6 +180,13 @@ _PREV_PR_REF_RE = re.compile(
 )
 
 
+# The ONE failure of ``gh pr view`` that speaks about the NUMBER: "not a
+# pull request" (on stderr). Every other failure speaks of the REQUEST --
+# rate limit, 5xx, network, login, an unknown ``--json`` field (#28598).
+_NOT_A_PULL_REQUEST_RE = re.compile(
+    r"could not resolve to a pull\s*request", re.IGNORECASE)
+
+
 # Citation masking is shared with the close-keyword finder since #14780: the
 # citation/declaration split a `prev:` clause needs (#14550, multi-line #14700)
 # is the same split a ``fixes #N`` citation needs. The canonical surface lives
@@ -573,6 +580,34 @@ def _read_prev_targets_file(path: str) -> dict[str, dict]:
     return out
 
 
+def _pr_view_said_not_a_pull_request(result) -> bool:
+    """True iff a failed ``gh pr view`` answered "not a pull request" -- the
+    ONE failure that speaks about the number, and the only one that makes
+    ``gh issue view`` the right call for it (#28598). ``gh`` prints it on
+    stderr; stdout is read as a fallback."""
+    for stream in ("stderr", "stdout"):
+        text = getattr(result, stream, None)
+        if isinstance(text, str) and _NOT_A_PULL_REQUEST_RE.search(text):
+            return True
+    return False
+
+
+def _first_error_line(result) -> str:
+    """First non-empty line of a failed call's output, or ``"<no output>"``."""
+    for stream in ("stderr", "stdout"):
+        for line in (getattr(result, stream, None) or "").splitlines():
+            if line.strip():
+                return line.strip()[:200]
+    return "<no output>"
+
+
+def _warn_unresolved(n: int, why: str) -> None:
+    """Name an omitted target and why (#28598): the resolver captures its own
+    ``gh`` output, so this is the only trace a refusal leaves."""
+    print(f"::warning::prev_guard: #{n} not resolved -- "
+          f"{why.replace('%', '%25')}", file=sys.stderr)
+
+
 def resolve_prev_targets(
     target_prs: "list[int]",
     runner=None,
@@ -613,10 +648,20 @@ def resolve_prev_targets(
     ``gh issue view`` answers for pull requests too, so it can never be the
     test. Any future rewrite must keep PR-first ordering.
 
+    A non-zero exit has TWO readings, and only one opens the issue endpoint
+    (#28598): the call **answered** "could not resolve to a PullRequest" --
+    the number is not a pull request, ``gh issue view`` reads it (#14513
+    above); or the call was **refused** -- rate limit, 5xx, network, login,
+    an unknown ``--json`` field -- which says nothing about the number.
+    Before #28598 both fell through to ``gh issue view``, which answers for
+    pull requests too: on #28574 (2026-11-25) an OPEN PR was reported
+    ``prev-not-pr``. A refused target is now omitted like an unresolvable
+    one -- the gate abstains and names it -- and nothing is retried: under
+    a quota, a retry is one more refused call.
+
     ``runner`` defaults to ``subprocess.run`` and exists so a test can
-    inject the table above without a network. A target that neither call
-    resolves is **omitted** from the result -- ``validate_prev_targets``
-    then abstains on it (FN-safety).
+    inject the table above without a network. A lookup failure -- refused,
+    unreadable, timed out -- must never become an accusation.
     """
     if runner is None:  # pragma: no cover - trivial default
         import subprocess
@@ -626,21 +671,29 @@ def resolve_prev_targets(
     for n in sorted(set(target_prs)):
         pr = runner(["gh", "pr", "view", str(n), "--json", "state"],
                     capture_output=True, text=True, timeout=timeout)
-        if getattr(pr, "returncode", 1) == 0:
+        rc = getattr(pr, "returncode", 1)
+        if rc == 0:
             state = _json_field(pr.stdout, "state")
             if state:
                 out[str(n)] = {"kind": "pr",
                                "state": state.upper(),
                                "merged": state.upper() == "MERGED"}
-                continue
+            else:
+                # Answered, but without a readable state: still a pull
+                # request. Never the issue endpoint.
+                _warn_unresolved(n, "gh pr view answered without a state")
+            continue
+        if not _pr_view_said_not_a_pull_request(pr):
+            # REFUSED: the kind of the number is unknown. Never the issue
+            # endpoint.
+            _warn_unresolved(n, f"gh pr view rc={rc}: {_first_error_line(pr)}")
+            continue
         issue = runner(["gh", "issue", "view", str(n), "--json", "state"],
                        capture_output=True, text=True, timeout=timeout)
         if getattr(issue, "returncode", 1) == 0:
             istate = _json_field(issue.stdout, "state")
             if istate:
                 out[str(n)] = {"kind": "issue", "state": istate.upper()}
-                continue
-        # neither resolved -> omitted -> the gate abstains on this target
     return out
 
 

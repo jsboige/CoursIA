@@ -25,9 +25,14 @@ CODES_QUALIFICATION = ("HORSFLOTTE", "LABEL", "GEL", "RELACHEE")
 
 
 def qualification_grain(payload: dict, my_lane: str,
-                         now: datetime | None = None) -> tuple[str, str] | None:
+                         now: datetime | None = None,
+                         chemins: list[str] | None = None) -> tuple[str, str] | None:
     """La qualification du grain, cote CONSOMMATEUR : le code d'ecart decide
     sur le FIL COMPLET deja lu, ou None.
+
+    `chemins` (#28899) : ceux que le consommateur demande (`--paths`). La
+    remise de main les consulte : un `[RELEASED]` borne a d'autres chemins ne
+    refuse pas celui-ci. Sans `chemins`, elle juge l'issue entiere.
 
     Le **meme organe** que le tirage (`tapis_rapide.etats`) : la voie legere
     ne redecide pas, elle alimente la meme decision -- et le consommateur non
@@ -56,7 +61,7 @@ def qualification_grain(payload: dict, my_lane: str,
           "comments": commentaires}
     lec = gh_bulk.Lecture(issues=[it], prs=[], citations={},
                            lu_a=moment.isoformat(), secondes=0.0, appels=0)
-    etats = tapis_rapide.etats(lec, my_lane, moment, 45)
+    etats = tapis_rapide.etats(lec, my_lane, moment, 45, chemins)
     e = etats[0] if etats else None
     if e is not None and e.ecart and e.ecart in CODES_QUALIFICATION:
         return e.ecart, e.motif

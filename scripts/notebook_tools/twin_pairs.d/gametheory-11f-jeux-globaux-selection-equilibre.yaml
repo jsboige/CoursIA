@@ -1,0 +1,12 @@
+- name: "GameTheory-11f Jeux globaux selection equilibre"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-11f-Jeux-Globaux-Selection-Equilibre-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-11f-Jeux-Globaux-Selection-Equilibre-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "solver-free by design des deux cotes (numpy + math.scipy cote Python, BCL System.Math cote C#) ; aucune asymetrie de machinerie a corriger."
+  known_differences:
+    - "2026-11-23 (myia-po-2023:CoursIA-2, PR CoursIA #28215) : jumeau C# cree depuis le jumeau Python -- le port reprend le plan de la source (distribution tronquee N(mu,sigma) bornee en [C,se], fonction d'utilite, coefficients Lambda/VCond, indifférence de taux, coupure d'equilibre par bissection, meilleure reponse, produits de Nash, taux induit, trajectoire) ; le code C# n'utilise que la BCL (System.Math), aucune dependance externe, aucun NuGet, aucun reseau, aucun solveur, aucun acces au compendium prive."
+    - "Les donnees, references et tirages venant du jumeau Python restent des donnees CITEES, marquees comme telles : jamais presentees comme recalculees cote C#."
+    - "Le calcul Python utilise numpy et math (erf natif) ; le port C# n'ayant pas System.Math.Erf l'implemente en hybride : serie de Taylor pour |x|<2 (~1e-15, pas de cancellation) puis approximation A&S 7.1.26 pour |x|>=2 (1.5e-7) -- requise car la cellule de la mesure amplifie l'erreur d'erf par 1e5 (coupure(1e-5) - seuil)/1e-5, au-dela de la precision A&S seule."
+    - "Les exercices de la source deviennent des stubs compilables et executables sans erreur volontaire (retour null, // TODO etudiant), sans solution ni indice."

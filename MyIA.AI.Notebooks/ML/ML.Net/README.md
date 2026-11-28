@@ -17,6 +17,14 @@ Le parcours va du premier pipeline (ML-01) jusqu'à une application complète : 
 
 > **À qui s'adresse cette série** : développeurs C#/.NET découvrant le Machine Learning, équipes enterprise souhaitant intégrer du ML sans sortir de leur stack .NET, ou data scientists souhaitant servir des modèles en production dans des applications C#. Aucun prérequis en statistiques avancées — les concepts sont introduits progressivement dans chaque notebook.
 
+## Comment lire ce README
+
+Cette série se lit à plusieurs vitesses ; le principe est exposé une fois pour tout le dépôt dans [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture).
+
+- **Vous découvrez ML.NET** : suivez les deux tables du parcours — [fondamentaux](#fondamentaux-ml-01-à-ml-04) (ML-01 à ML-04), puis [fonctionnalités avancées](#fonctionnalités-avancées-ml-05-à-ml-09) (ML-05 à ML-09) — sans ouvrir les approfondissements.
+- **Vous creusez un palier** : ouvrez la section [Approfondissements](#approfondissements) de la marche qui vous intéresse — `04b`, `05b`, `07b`, `07c`, `09b`, `09c`.
+- **Vous cherchez un contrepoint Python** : la colonne des jumeaux signale le carnet scikit-learn ou statsmodels qui traite le même concept, et les carnets Python seuls vivent dans les approfondissements.
+
 ## Objectifs d'apprentissage
 
 À l'issue de cette série, vous serez capable de :
@@ -31,7 +39,7 @@ Le parcours va du premier pipeline (ML-01) jusqu'à une application complète : 
 
 ### Fondamentaux (ML-01 à ML-04)
 
-| # | Notebook | Contenu | Durée | Pour approfondir |
+| # | Notebook | Ce qu'on y apprend | Durée | Pour approfondir |
 |---|----------|---------|-------|------------------|
 | 01 | [ML-01-Introduction-CSharp](ML-01-Introduction-CSharp.ipynb) | Hello ML.NET World, pipeline de base · *jumeau [Python](ML-01-Introduction-Python.ipynb)* | 30-40 min | — |
 | 02 | [ML-02-Data-Features-CSharp](ML-02-Data-Features-CSharp.ipynb) | IDataView, TextLoader, encodage · *jumeau [Python](ML-02-Data-Features-Python.ipynb)* | 40-50 min | — |
@@ -40,7 +48,7 @@ Le parcours va du premier pipeline (ML-01) jusqu'à une application complète : 
 
 ### Fonctionnalités avancées (ML-05 à ML-09)
 
-| # | Notebook | Contenu | Jumeau Python (scikit-learn / statsmodels) | Durée | Pour approfondir |
+| # | Notebook | Ce qu'on y apprend | Jumeau Python (scikit-learn / statsmodels) | Durée | Pour approfondir |
 |---|----------|---------|---------------------------------------------|-------|------------------|
 | 05 | [ML-05-TimeSeries-CSharp](ML-05-TimeSeries-CSharp.ipynb) | **Time Series Forecasting** avec ForecastBySsa (SSA) | [ML-05-Python](ML-05-TimeSeries-Python.ipynb) — STL + SARIMA | 45-60 min | [05b](#approfondissement-05-series-temporelles) |
 | 06 | [ML-06-ONNX-CSharp](ML-06-ONNX-CSharp.ipynb) | **ONNX Integration** : modèles Python/PyTorch dans .NET | [ML-06-Python](ML-06-ONNX-Python.ipynb) — skl2onnx + onnxruntime (export côté Python du pont inter-langage) | 45-60 min | — |
@@ -54,7 +62,7 @@ Le parcours va du premier pipeline (ML-01) jusqu'à une application complète : 
 
 #### Autour de 04 — Évaluation
 
-| # | Notebook | Contenu | Écosystème | Durée |
+| # | Notebook | Ce qu'on y apprend | Écosystème | Durée |
 |---|----------|---------|------------|-------|
 | 04b | [ML-04b-ModelComparison-Validity](ML-04b-ModelComparison-Validity-Python.ipynb) | Validité statistique des comparaisons de modèles : variance d'un split, bootstrap, t-test corrigé (Nadeau-Bengio), Bonferroni | [Python](ML-04b-ModelComparison-Validity-Python.ipynb) / [C#](ML-04b-ModelComparison-Validity-CSharp.ipynb) | 45-60 min |
 
@@ -62,7 +70,7 @@ Le parcours va du premier pipeline (ML-01) jusqu'à une application complète : 
 
 #### Autour de 05 — Séries temporelles
 
-| # | Notebook | Contenu | Écosystème | Durée |
+| # | Notebook | Ce qu'on y apprend | Écosystème | Durée |
 |---|----------|---------|------------|-------|
 | 05b | [ML-05b-Series-Temporelles-Classiques](ML-05b-Series-Temporelles-Classiques-Python.ipynb) | **Socle statistique des séries temporelles** : ADF (stationnarité), ACF/PACF (ordres p/q), ARIMA/SARIMA, lissage exponentiel, backtest glissant | *standalone Python (statsmodels — le socle que ML-05 suppose)* | 60-75 min |
 
@@ -70,7 +78,7 @@ Le parcours va du premier pipeline (ML-01) jusqu'à une application complète : 
 
 #### Autour de 07 — Recommandation
 
-| # | Notebook | Contenu | Écosystème | Durée |
+| # | Notebook | Ce qu'on y apprend | Écosystème | Durée |
 |---|----------|---------|------------|-------|
 | 07b | [ML-07b-SemanticIDs-Recommandation](ML-07b-SemanticIDs-Recommandation-Python.ipynb) | **Identifiants sémantiques** : tokeniser un item en codes quantifiés (le dispositif des recommandateurs génératifs), mesurer ce que cela vaut au démarrage à froid contre populaires, collaboratif et contenu, et tester les écarts au bruit (McNemar, bootstrap) | *standalone Python (scikit-learn, scipy — la limite froide de la factorisation matricielle, mesurée)* | 45-60 min |
 | 07c | [ML-07c-Sona-Recommandeur-Generatif](ML-07c-Sona-Recommandeur-Generatif-Python.ipynb) | **Recommandeur génératif mono-modèle** : digérer l'architecture de production Sona (un transformer sur l'historique chronologique, décodage auto-régressif de Semantic IDs, module de ranking sur mémoire d'encodeur partagée) et la relier aux quatre fils du dépôt (ML-07/07b, Infer-15, RAG-02, stack Qwen-Omni) | *standalone Python (numpy — le paradigme et le vocabulaire, aucune valeur du papier)* | 45-60 min |
@@ -79,14 +87,14 @@ Le parcours va du premier pipeline (ML-01) jusqu'à une application complète : 
 
 #### Autour de 09 — Détection d'anomalies
 
-| # | Notebook | Contenu | Écosystème | Durée |
+| # | Notebook | Ce qu'on y apprend | Écosystème | Durée |
 |---|----------|---------|------------|-------|
 | 09b | [ML-09b Python](ML-09b-TSAD-Benchmark-Flaws-Python.ipynb) · [C#](ML-09b-TSAD-Benchmark-Flaws-CSharp.ipynb) | **Évaluer des détecteurs** : SPC, vrai MLP de prévision, AUC/seuil/densité/annotations/position sur cinq séries UCR | Python.NET + scikit-learn ; mêmes données et budgets | 90 min |
 | 09c | [ML-09c-MatrixProfile-Multidim](ML-09c-MatrixProfile-Multidim-Python.ipynb) | **Matrix Profile multidimensionnel** : détection sans apprentissage (`stumpy`), condensation `min`/`max`, mSTAMP, l'anomalie répétée que `k=1` cesse de voir | *Python + C# (STUMPY via Python.NET)* | 45-60 min |
 
 ### TP Pratique
 
-| # | Notebook | Contenu | Durée |
+| # | Notebook | Ce qu'on y apprend | Durée |
 |---|----------|---------|-------|
 | TP | [TP-Prevision-Ventes-CSharp](TP-Prevision-Ventes-CSharp.ipynb) | Régression avec ML.NET + Infer.NET bayésien | 45-60 min |
 

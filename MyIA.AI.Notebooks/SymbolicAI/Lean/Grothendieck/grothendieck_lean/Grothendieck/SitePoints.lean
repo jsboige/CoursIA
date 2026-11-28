@@ -58,10 +58,10 @@ Formellement, `GrothendieckTopology.Point J` est une structure consistant en :
 Référence : SGA 4 IV 6.3.
 -/
 
--- A point of a site (C, J) is a fiber functor Φ : C ⥤ Type satisfying
--- cofilteredness and a coverage condition. It generalizes the notion
--- of "point" in topology to arbitrary sites.
--- This is `GrothendieckTopology.Point` from Mathlib's Sites.Point.Basic.
+-- Un point d'un site (C, J) est un foncteur fibre Φ : C ⥤ Type dont la catégorie
+-- des éléments est cofiltrée et qui satisfait une condition de couverture.
+-- Il généralise la notion de « point » de la topologie aux sites arbitraires.
+-- C'est `GrothendieckTopology.Point` de Sites.Point.Basic dans Mathlib.
 #check @GrothendieckTopology.Point
 
 /-!
@@ -76,13 +76,13 @@ comme une colimite filtrée sur toutes les paires (X, x) où X : C et
 x : Φ.fiber.obj X.
 -/
 
--- The presheaf fiber functor: evaluates presheaves at a point.
--- Defined as the colimit `(Cᵒᵖ ⥤ A) ⥤ A` obtained by composing
--- the whiskering of `CategoryOfElements.π Φ.fiber` with `colim`.
+-- Le foncteur fibre des préfaisceaux : évalue les préfaisceaux en un point.
+-- Défini comme la colimite `(Cᵒᵖ ⥤ A) ⥤ A` obtenue en composant
+-- le whiskering de `CategoryOfElements.π Φ.fiber` avec `colim`.
 #check @GrothendieckTopology.Point.presheafFiber
 
--- The canonical map from P.obj (op X) to the fiber of P at Φ,
--- given a witness x : Φ.fiber.obj X. This is the colimit inclusion.
+-- L'application canonique de P.obj (op X) vers la fibre de P en Φ,
+-- donnée par un témoin x : Φ.fiber.obj X. C'est l'inclusion de colimite.
 #check @GrothendieckTopology.Point.toPresheafFiber
 
 /-!
@@ -97,12 +97,12 @@ Comme le foncteur fibre commute avec les colimites et les limites finies
 ce qui en fait un outil clé en cohomologie des faisceaux.
 -/
 
--- The sheaf fiber functor: evaluates sheaves at a point.
--- This is the restriction of presheafFiber to the full subcategory of sheaves.
--- Concretely `sheafFiber = sheafToPresheaf ⋙ presheafFiber` BY DEFINITION
--- (Mathlib `CategoryTheory.Sites.Point.Basic`): evaluating a sheaf at a point Φ
--- is evaluating its underlying presheaf at Φ. We promote the `#check` into a
--- proven canonical iso below.
+-- Le foncteur fibre des faisceaux : évalue les faisceaux en un point.
+-- C'est la restriction de presheafFiber à la sous-catégorie pleine des faisceaux.
+-- Concrètement `sheafFiber = sheafToPresheaf ⋙ presheafFiber` PAR DÉFINITION
+-- (Mathlib `CategoryTheory.Sites.Point.Basic`) : évaluer un faisceau en un point Φ
+-- revient à évaluer son préfaisceau sous-jacent en Φ. On promeut le `#check` en
+-- un isomorphisme canonique prouvé ci-dessous.
 
 /-- Le foncteur fibre des faisceaux se factorise par le foncteur fibre des
     préfaisceaux via le plongement « faisceau ↦ préfaisceau sous-jacent »
@@ -128,8 +128,8 @@ induit une application sur les tiges dans le sens opposé (tirage en
 arrière le long de f).
 -/
 
--- A morphism between points consists of a natural transformation
--- between fiber functors, in the opposite direction.
+-- Un morphisme entre points consiste en une transformation naturelle
+-- entre foncteurs fibres, dans le sens opposé.
 #check @GrothendieckTopology.Point.Hom
 
 /-!
@@ -142,10 +142,10 @@ Pour la topologie discrète (⊤), seul le préfaisceau terminal est un
 faisceau, rendant la théorie des points moins intéressante.
 -/
 
--- The trivial Grothendieck topology (coarsest): every presheaf is a sheaf.
+-- La topologie de Grothendieck triviale (la plus grossière) : tout préfaisceau est un faisceau.
 #check @GrothendieckTopology.trivial
 
--- The discrete Grothendieck topology (finest): only representable presheaves.
+-- La topologie de Grothendieck discrète (la plus fine) : seuls les préfaisceaux représentables.
 #check @GrothendieckTopology.discrete
 
 /-!
@@ -158,7 +158,7 @@ pour tout x dans la fibre de X, il existe un morphisme f : Y ⟶ X dans R
 et y dans la fibre de Y tel que Φ.fiber.map f y = x.
 -/
 
--- The coverage condition: every covering sieve hits every element of the fiber.
+-- La condition de couverture : tout crible couvrant rencontre tout élément de la fibre.
 #check @GrothendieckTopology.Point.jointly_surjective
 
 /-!

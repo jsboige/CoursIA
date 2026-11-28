@@ -2907,7 +2907,7 @@ class TestDeclaredStatuses:
 
     def test_declared_demo_carries_zero_budget(self):
         kind, threshold = count_exercises.classify_notebook(
-            Path("MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-03-Internalisation-CoT.ipynb")
+            Path("MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-03-Internalisation-CoT-Python.ipynb")
         )
         assert kind == "declared-demo"
         assert threshold == 0
@@ -2927,6 +2927,6 @@ class TestDeclaredStatuses:
         # A declared stem moved under an underscore directory is archive
         # first: structural kinds are consulted before DECLARED_STATUSES.
         kind, _ = count_exercises.classify_notebook(
-            Path("MyIA.AI.Notebooks/GenAI/_archives/TV-03-Internalisation-CoT.ipynb")
+            Path("MyIA.AI.Notebooks/GenAI/_archives/TV-03-Internalisation-CoT-Python.ipynb")
         )
         assert kind == "archive"
