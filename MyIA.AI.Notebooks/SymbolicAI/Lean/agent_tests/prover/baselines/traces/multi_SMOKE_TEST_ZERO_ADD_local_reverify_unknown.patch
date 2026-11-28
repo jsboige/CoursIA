@@ -1,0 +1,18 @@
+# final-verify UNKNOWN (level_1_build_incoherent_zero_errors, timeout_s=None) — #18432
+# The fresh wall-clock-bounded build produced NO compile verdict.
+# The candidate below was neither confirmed-clean nor proven-broken.
+# Re-verify offline (raise LEAN_LAKE_BUILD_TIMEOUT_S if needed)
+# before re-applying anything.
+# Exact contents for lossless recovery (base64, utf-8):
+# exact_original_b64=aW1wb3J0IE1hdGhsaWIuRGF0YS5OYXQuQmFzaWMKCm5hbWVzcGFjZSBTbW9rZVRlc3QKCnRoZW9yZW0gemVyb19hZGRfc21va2UgKG4gOiBOYXQpIDogMCArIG4gPSBuIDo9IGJ5IHNvcnJ5CmVuZCBTbW9rZVRlc3QK
+# exact_candidate_b64=aW1wb3J0IE1hdGhsaWIuRGF0YS5OYXQuQmFzaWMKCm5hbWVzcGFjZSBTbW9rZVRlc3QKCnRoZW9yZW0gemVyb19hZGRfc21va2UgKG4gOiBOYXQpIDogMCArIG4gPSBuIDo9IGJ5CiAgZXhhY3QgTmF0Lnplcm9fYWRkIG4KZW5kIFNtb2tlVGVzdAo=
+--- _SmokeTest.lean (original)
++++ _SmokeTest.lean (candidate, UNVERIFIED)
+@@ -2,5 +2,6 @@
+ 
+ namespace SmokeTest
+ 
+-theorem zero_add_smoke (n : Nat) : 0 + n = n := by sorry
++theorem zero_add_smoke (n : Nat) : 0 + n = n := by
++  exact Nat.zero_add n
+ end SmokeTest
