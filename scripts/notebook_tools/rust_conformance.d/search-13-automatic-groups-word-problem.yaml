@@ -6,6 +6,11 @@
 # par INDEX DE CELLULE (le portage conserve la structure de cellules du jumeau
 # Python), et la tolérance est 0.
 #
+# Le jumeau Rust porte une section markdown « Ce que Rust apporte (mesure) »
+# insérée APRÈS la cellule 14 : elle ne touche aucune cellule de code, ne
+# modifie aucune sortie, et laisse les index des cellules mesurées (3, 6, 9,
+# 11, 14) inchangés.
+#
 # Le côté C# n'est PAS COUVERT par cette entrée : un jumeau C# existe
 # désormais sur `main` (`Search-13-AutomaticGroups-WordProblem-CSharp.ipynb`,
 # ajouté par po-2028:claudish, attesté par le registre `twin_pairs.d`), mais la
@@ -13,7 +18,7 @@
 # pas comparé au port C#. Le côté C# est donc déclaré non couvert, avec son
 # motif ; l'organe signale un côté explicitement absent sans le faire échouer.
 #
-# Les cellules d'exercice (18, 19, 20) ne produisent AUCUNE sortie des deux
+# Les cellules d'exercice (19, 20, 21) ne produisent AUCUNE sortie des deux
 # côtés : elles ne sont pas déclarées en mesures, l'organe traitant une
 # cellule sans sortie comme une extraction échouée. Leur absence de sortie
 # est attestée par la comparaison intégrale des deux carnets (sorties vides
