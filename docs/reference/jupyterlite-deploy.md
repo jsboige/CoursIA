@@ -208,7 +208,7 @@ demande le critere d'acceptation.
 | `AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb` | 6 | 6 | 0 | 15,8 | 6,7 |
 | `Quotients-Fibres-Recollement-Python.ipynb` | 9 | 9 | 0 | 20,4 | 6,8 |
 | `Argumentation-01-Toulmin-Model-Python.ipynb` | 7 | 7 | 0 | 14,4 | 6,8 |
-| `06-3-AudioDiffusion-Comparison-A-vs-B.ipynb` | 1 | 1 | 0 | 14,1 | 6,6 |
+| `Audio-06-3-AudioDiffusion-Comparison-A-vs-B-Python.ipynb` | 1 | 1 | 0 | 14,1 | 6,6 |
 | `Causalite-00-Echelle-de-Pearl-Intro-Python.ipynb` | 10 | 10 | 0 | 20,4 | 6,8 |
 | `Chaines-05-Energie-Hamiltonien-Premiere-Puissance-Python.ipynb` | 8 | 8 | 0 | 17,5 | 6,9 |
 | `Coalitions-04-Munkres-Affectation-Python.ipynb` | 10 | 10 | 0 | 34,0 | 6,8 |

@@ -18,7 +18,7 @@ Le principe [« Choisir sa vitesse de lecture »](https://github.com/jsboige/Cou
 
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|---|---|---|---|
-| 01 | [Constructeur-01 — Les lois comme tâches](Constructeur-01-Lois-Comme-Taches-Python.ipynb) · [version C#](Constructeur-01-Lois-Comme-Taches-CSharp.ipynb) | Le vocabulaire sur l'exemple d'un dé : substrat, état, attribut, tâche, constructeur. Le passage de la dynamique aux principes. La conservation de l'énergie lue comme l'impossibilité d'un moteur perpétuel. L'information définie par son support (permutations et copie possibles), d'où le non-clonage : le bit classique passe le test, le qubit inconnu ne le passe pas. Enfin un témoin de non-classicité simulé, où un médiateur quantique intrique deux sondes et un médiateur classique n'en intrique aucune. | Licence : Python de base. La dernière partie suppose des notions de qubit et d'intrication. | Les exercices du carnet, puis [Jauge-01](../Jauge/Jauge-01-Theoreme-Noether-Python.ipynb) pour une conservation mesurée. |
+| 01 | [Constructeur-01 — Les lois comme tâches](Constructeur-01-Lois-Comme-Taches-Python.ipynb) · [version C#](Constructeur-01-Lois-Comme-Taches-CSharp.ipynb) · [version Rust](Constructeur-01-Lois-Comme-Taches-Rust.ipynb) | Le vocabulaire sur l'exemple d'un dé : substrat, état, attribut, tâche, constructeur. Le passage de la dynamique aux principes. La conservation de l'énergie lue comme l'impossibilité d'un moteur perpétuel. L'information définie par son support (permutations et copie possibles), d'où le non-clonage : le bit classique passe le test, le qubit inconnu ne le passe pas. Enfin un témoin de non-classicité simulé, où un médiateur quantique intrique deux sondes et un médiateur classique n'en intrique aucune. | Licence : Python de base. La dernière partie suppose des notions de qubit et d'intrication. | Les exercices du carnet, puis [Jauge-01](../Jauge/Jauge-01-Theoreme-Noether-Python.ipynb) pour une conservation mesurée. |
 
 ## Approfondissements — Licence et Master
 
@@ -49,6 +49,15 @@ Le jumeau C# suit le même plan et rend les mêmes nombres (négativité `0.500`
 dotnet tool install --global Microsoft.dotnet-interactive
 dotnet interactive jupyter install
 jupyter lab MyIA.AI.Notebooks/Physique/Constructeur/Constructeur-01-Lois-Comme-Taches-CSharp.ipynb
+```
+
+Le jumeau Rust suit le même plan et rend les mêmes nombres (négativité `0.500` / `0.000`, puis `0.318` · `0.155` · `0.038`). Il tourne sur le noyau `rust` (evcxr) et n'utilise que la bibliothèque standard : aucun crate, aucune dépendance externe — les matrices 4×4 et leurs valeurs propres y sont calculées à la main (rotations de Jacobi).
+
+```bash
+rustup component add rust-src
+cargo install --locked evcxr_jupyter --version 0.22.0
+evcxr_jupyter --install
+jupyter lab MyIA.AI.Notebooks/Physique/Constructeur/Constructeur-01-Lois-Comme-Taches-Rust.ipynb
 ```
 
 L'environnement commun aux sous-séries est décrit dans la section « Installation » de [Physique](../README.md).
