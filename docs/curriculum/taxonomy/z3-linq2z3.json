@@ -3555,7 +3555,7 @@
     },
     {
      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/12_Graph_Coloring_Petersen.ipynb",
-     "cell_id": "324d754c"
+     "cell_id": "3483cd8b"
     }
    ],
    "prerequisites": [
@@ -4638,6 +4638,10 @@
     {
      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/18_Einsteins_Riddle.ipynb",
      "cell_id": "1e73780f"
+    },
+    {
+     "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/18_Einsteins_Riddle.ipynb",
+     "cell_id": "8e1ce164"
     }
    ],
    "prerequisites": [
