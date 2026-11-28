@@ -9,7 +9,9 @@
     "exercise"
   ],
   "notebooks": [
-    "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb"
+    "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+    "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+    "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb"
   ],
   "notebook_tree": [
     {
@@ -33,6 +35,29 @@
       "depth": 2,
       "label_fr": "Populations et épidémies",
       "repository_path": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb"
+    },
+    {
+      "level": "subseries",
+      "path": "BioMedecine/Structures",
+      "decimal_path": "1.2",
+      "depth": 1,
+      "label_fr": "Structures moléculaires"
+    },
+    {
+      "level": "notebook",
+      "path": "BioMedecine/Structures/01",
+      "decimal_path": "1.2.1",
+      "depth": 2,
+      "label_fr": "Liaisons hydrogène et géométrie du squelette protéique",
+      "repository_path": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "BioMedecine/Structures/02",
+      "decimal_path": "1.2.2",
+      "depth": 2,
+      "label_fr": "Repliement sur réseau : espace des conformations, énergie et bornes",
+      "repository_path": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb"
     }
   ],
   "concepts": [
@@ -440,6 +465,833 @@
       "prerequisites": [
         "3f9a1d76-0b48-4e25-9d6c-8a2f5b7e1c04",
         "8e5c2a19-6f73-4b08-a1d9-4c7e0b3f6d52"
+      ]
+    },
+    {
+      "id": "58cdbaa0-a2de-5dda-9c64-6fa571d09560",
+      "path": "biomedecine/modele-geometrique-du-squelette",
+      "decimal_path": "7",
+      "depth": 0,
+      "label_fr": "Squelette comme modèle géométrique",
+      "label_en": "Backbone as a geometric model",
+      "definition_fr": "Le squelette d'une protéine comme objet géométrique : une suite répétée Cα–C–N–Cα, un groupe peptidique de six atomes coplanaires, et deux angles dièdres par résidu, φ_i et ψ_i, qui suffisent à décrire la conformation — le premier φ et le dernier ψ n'existent pas, faute de voisin. La chaîne est construite atome par atome à partir de longueurs de liaison et d'angles de valence déclarés, avec une torsion ω de 180° par défaut : un résultat se lit relativement à ce jeu de paramètres.",
+      "definition_en": "A protein's backbone as a geometric object: a repeated Cα–C–N–Cα sequence, a peptide group of six coplanar atoms, and two dihedral angles per residue, φ_i and ψ_i, which suffice to describe the conformation — the first φ and the last ψ do not exist, for want of a neighbour. The chain is built atom by atom from declared bond lengths and valence angles, with ω = 180° by default: a result reads relative to that parameter set.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c04"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c02"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c06"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "3b68f939-9aeb-51e2-a3d3-db020d9fc383",
+      "path": "biomedecine/modele-geometrique-du-squelette/diedre-de-convention",
+      "decimal_path": "7.1",
+      "depth": 1,
+      "label_fr": "Dièdre et convention de signe",
+      "label_en": "Dihedral and sign convention",
+      "definition_fr": "Un dièdre vaut atan2((n1×n2)·b2, n1·n2), ce qui donne une valeur positive sur une hélice droite. Le carnet ne suppose pas cette convention : il la vérifie sur deux hélices explicites, écrites à la main, dont il connaît tout — +13,8970° pour l'hélice de droite, −13,8970° pour son miroir — avant toute mesure sur une chaîne construite.",
+      "definition_en": "A dihedral equals atan2((n1×n2)·b2, n1·n2), which gives a positive value on a right-handed helix. The notebook does not assume this convention: it checks it on two explicit, hand-written helices about which everything is known — +13.8970° for the right-handed helix, −13.8970° for its mirror — before any measurement on a constructed chain.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c02"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c09"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c11"
+        }
+      ],
+      "prerequisites": [
+        "58cdbaa0-a2de-5dda-9c64-6fa571d09560"
+      ]
+    },
+    {
+      "id": "f3a2a1a1-6c81-53f0-aa7a-5b473db82acb",
+      "path": "biomedecine/modele-geometrique-du-squelette/aller-retour-des-angles",
+      "decimal_path": "7.2",
+      "depth": 1,
+      "label_fr": "Aller-retour des angles",
+      "label_en": "Round trip of the angles",
+      "definition_fr": "Un constructeur de chaîne se teste en lui rendant ce qu'il vient de produire : on tire des couples (φ,ψ) au hasard, on construit la chaîne, puis on relit les dièdres sur les coordonnées. Un désaccord révélerait une erreur de placement ; un accord n'est pas une preuve d'indépendance, puisque les deux voies partagent le code du constructeur — ce contrôle fixe le bruit de fond de ce qui suit, il ne valide pas le modèle.",
+      "definition_en": "A chain constructor is tested by handing back what it has just produced: (φ,ψ) pairs are drawn at random, the chain is built, then the dihedrals are read back from the coordinates. A disagreement would reveal a placement error; an agreement is no proof of independence, since both routes share the constructor's code — this control sets the background noise of what follows, it does not validate the model.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c12"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c13"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c14"
+        }
+      ],
+      "prerequisites": [
+        "58cdbaa0-a2de-5dda-9c64-6fa571d09560"
+      ]
+    },
+    {
+      "id": "32aaae59-83d8-589b-800c-c78e30c46d6a",
+      "path": "biomedecine/modele-geometrique-du-squelette/regularite-translationnelle",
+      "decimal_path": "7.3",
+      "depth": 1,
+      "label_fr": "Régularité translationnelle",
+      "label_en": "Translational regularity",
+      "definition_fr": "Une chaîne dont tous les couples (φ,ψ) sont égaux doit être invariante par translation d'un résidu : la distance entre carbones α successifs, l'angle virtuel θ_v et la torsion virtuelle τ_v ne dépendent pas du rang. C'est un contrôle indépendant au sens fort — il ne compare pas deux implémentations mais deux propriétés, régularité et construction — et il montre que la graine artificielle de la première liaison ne laisse aucune trace.",
+      "definition_en": "A chain all of whose (φ,ψ) pairs are equal must be invariant under a one-residue translation: the distance between successive α carbons, the virtual bond angle θ_v and the virtual torsion τ_v do not depend on rank. It is an independent check in the strong sense — it compares not two implementations but two properties, regularity and construction — and it shows that the artificial seed of the first bond leaves no trace.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c15"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c16"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c17"
+        }
+      ],
+      "prerequisites": [
+        "58cdbaa0-a2de-5dda-9c64-6fa571d09560",
+        "4f1c9a02-7d3e-4b55-9e21-1a8c0d5b7e13"
+      ]
+    },
+    {
+      "id": "5bebf26a-eec5-5728-81ae-f6ce9bac513d",
+      "path": "biomedecine/vis-helicoidale",
+      "decimal_path": "8",
+      "depth": 0,
+      "label_fr": "Vis d'une hélice",
+      "label_en": "Screw of a helix",
+      "definition_fr": "Une hélice régulière est le lieu d'une vis : une rotation d'angle κ autour d'un axe, composée d'une translation de pas d le long de cet axe. La rotation rigide qui amène un triplet de liaisons sur le triplet suivant est alors la même à chaque rang — la rotation de la vis — et se mesure sur les carbones α, sans ajustement d'axe.",
+      "definition_en": "A regular helix is the locus of a screw: a rotation of angle κ about an axis, composed with a translation of pitch d along that axis. The rigid rotation carrying one bond triplet onto the next is then the same at every rank — the screw rotation — and is measured on the α carbons, without axis fitting.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c29"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c30"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c31"
+        }
+      ],
+      "prerequisites": [
+        "58cdbaa0-a2de-5dda-9c64-6fa571d09560"
+      ]
+    },
+    {
+      "id": "04c5d026-40d3-5aa6-85a4-de31c8eb849f",
+      "path": "biomedecine/vis-helicoidale/parametres-helicoidaux",
+      "decimal_path": "8.1",
+      "depth": 1,
+      "label_fr": "Paramètres hélicoïdaux",
+      "label_en": "Helical parameters",
+      "definition_fr": "Trois grandeurs du squelette — longueur de liaison a, angle virtuel θ_v, torsion virtuelle τ_v — déterminent la vis par une formule analytique : cos(κ/2) = sin(θ_v/2) cos(τ_v/2), puis le pas d et le rayon r. Cette formule ne rend que |κ| : le sens de rotation vient du signe de τ_v, que la mesure lit sur les coordonnées.",
+      "definition_en": "Three backbone quantities — bond length a, virtual bond angle θ_v, virtual torsion τ_v — determine the screw through an analytic formula: cos(κ/2) = sin(θ_v/2) cos(τ_v/2), then the pitch d and the radius r. That formula returns only |κ|: the sense of rotation comes from the sign of τ_v, which the measurement reads from the coordinates.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c09"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c10"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c11"
+        }
+      ],
+      "prerequisites": [
+        "5bebf26a-eec5-5728-81ae-f6ce9bac513d",
+        "3b68f939-9aeb-51e2-a3d3-db020d9fc383"
+      ]
+    },
+    {
+      "id": "fdcea84f-824d-5d1c-8c13-6eb59d871e45",
+      "path": "biomedecine/vis-helicoidale/repere-peptidique-mobile",
+      "decimal_path": "8.2",
+      "depth": 1,
+      "label_fr": "Repère peptidique mobile",
+      "label_en": "Moving peptide frame",
+      "definition_fr": "Le repère mobile attaché à chaque groupe peptidique, dont le troisième axe est le produit vectoriel des deux premiers et dont le plan contient la liaison C_i–N(i+1). Une liaison hydrogène y est indexée par la rotation entre le repère du donneur et celui de l'accepteur ; le long d'une hélice régulière, cette rotation est celle de la vis, autour de l'axe de l'hélice.",
+      "definition_en": "The moving frame attached to each peptide group, whose third axis is the cross product of the first two and whose plane contains the C_i–N(i+1) bond. A hydrogen bond is indexed there by the rotation between the donor's frame and the acceptor's; along a regular helix, that rotation is the screw rotation, about the helix axis.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c08"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c29"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c31"
+        }
+      ],
+      "prerequisites": [
+        "5bebf26a-eec5-5728-81ae-f6ce9bac513d",
+        "04c5d026-40d3-5aa6-85a4-de31c8eb849f"
+      ]
+    },
+    {
+      "id": "b43f8d26-1c4d-5e60-bb84-bbfb954650d3",
+      "path": "biomedecine/critere-de-liaison-hydrogene",
+      "decimal_path": "9",
+      "depth": 0,
+      "label_fr": "Critère de liaison hydrogène",
+      "label_en": "Hydrogen-bond criterion",
+      "definition_fr": "Le critère retenu pour la liaison C_j=O_j ⋯ H_i–N_i du squelette, où N_i est donneur et O_j accepteur : les quatre stipulations de DSSP, H⋯O < 2,7 Å, N⋯O < 3,5 Å, angle N–H⋯O > 90° et angle C–O⋯H > 90°. Il s'applique couple par couple, sans exclusivité.",
+      "definition_en": "The criterion retained for the backbone bond C_j=O_j ⋯ H_i–N_i, where N_i is the donor and O_j the acceptor: DSSP's four stipulations, H⋯O < 2.7 Å, N⋯O < 3.5 Å, N–H⋯O angle > 90° and C–O⋯H angle > 90°. It applies pair by pair, without exclusivity.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c18"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c19"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c20"
+        }
+      ],
+      "prerequisites": [
+        "58cdbaa0-a2de-5dda-9c64-6fa571d09560"
+      ]
+    },
+    {
+      "id": "e9b7ffa4-c247-52ac-9018-0ad3cad77712",
+      "path": "biomedecine/critere-de-liaison-hydrogene/polarite-donneur-accepteur",
+      "decimal_path": "9.1",
+      "depth": 1,
+      "label_fr": "Polarité donneur–accepteur",
+      "label_en": "Donor–acceptor polarity",
+      "definition_fr": "Le critère n'est pas symétrique : au point de référence, la liaison i+4 → i passe avec H⋯O = 1,978 Å et un angle de 168,8°, alors que l'affectation inverse échoue avec N⋯O = 9,576 Å et un angle de 21,8°. Il voit la polarité de la chaîne, parce que la position de l'hydrogène dépend du résidu précédent — la notation doit donc toujours nommer le donneur.",
+      "definition_en": "The criterion is not symmetric: at the reference point, the i+4 → i bond passes with H⋯O = 1.978 Å and an angle of 168.8°, whereas the reverse assignment fails with N⋯O = 9.576 Å and an angle of 21.8°. It sees the chain's polarity, because the hydrogen's position depends on the preceding residue — the notation must therefore always name the donor.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c18"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c20"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c21"
+        }
+      ],
+      "prerequisites": [
+        "b43f8d26-1c4d-5e60-bb84-bbfb954650d3"
+      ]
+    },
+    {
+      "id": "aa8d4eff-3b3f-5ed3-893d-2832d06ffa81",
+      "path": "biomedecine/critere-de-liaison-hydrogene/bifurcation-de-liaison",
+      "decimal_path": "9.2",
+      "depth": 1,
+      "label_fr": "Bifurcation d'une liaison",
+      "label_en": "Bond bifurcation",
+      "definition_fr": "Une même liaison peut être bifurquée : un hydrogène partagé entre deux accepteurs, ou un accepteur recevant deux donneurs. Au point de référence, deux donneurs satisfont le critère pour le même accepteur — le résidu i+3 à la limite, avec H⋯O = 2,665 Å pour un seuil de 2,7, et le résidu i+4 franchement — et le modèle produit cette bifurcation sans qu'on l'ait cherchée.",
+      "definition_en": "A bond may be bifurcated: a hydrogen shared between two acceptors, or an acceptor receiving two donors. At the reference point, two donors satisfy the criterion for the same acceptor — residue i+3 at the limit, with H⋯O = 2.665 Å against a 2.7 threshold, and residue i+4 clearly — and the model produces that bifurcation without its having been sought.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c18"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c20"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c21"
+        }
+      ],
+      "prerequisites": [
+        "b43f8d26-1c4d-5e60-bb84-bbfb954650d3"
+      ]
+    },
+    {
+      "id": "78195e05-22f9-59e7-9316-d063e349dcb9",
+      "path": "biomedecine/critere-de-liaison-hydrogene/bornes-superieures-seules",
+      "decimal_path": "9.3",
+      "depth": 1,
+      "label_fr": "Bornes supérieures seules",
+      "label_en": "Upper bounds only",
+      "definition_fr": "Le critère ne fixe que des bornes supérieures de distance et des bornes inférieures d'angle : rien n'y interdit à l'hydrogène de traverser l'oxygène. Le contre-témoin le mesure — une liaison peptidique tordue à ω = 160°, dont le groupe n'est plus plan, passe le critère avec H⋯O = 0,4239 Å : un critère à quatre conditions doit être accompagné d'un contrôle de planéité et de distance minimale.",
+      "definition_en": "The criterion sets only upper bounds on distances and lower bounds on angles: nothing in it forbids the hydrogen from passing through the oxygen. The counter-witness measures it — a peptide bond twisted to ω = 160°, whose group is no longer planar, passes the criterion with H⋯O = 0.4239 Å: a four-condition criterion must be accompanied by a planarity check and a minimum-distance check.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c18"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c32"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c34"
+        }
+      ],
+      "prerequisites": [
+        "b43f8d26-1c4d-5e60-bb84-bbfb954650d3",
+        "8b2d6c14-3a7f-4e69-b0d2-5c9e7f1a4b28"
+      ]
+    },
+    {
+      "id": "f39c4299-f7da-537e-a62b-bbbfa5531e01",
+      "path": "biomedecine/carte-des-couples-phi-psi",
+      "decimal_path": "10",
+      "depth": 0,
+      "label_fr": "Carte des couples (φ,ψ)",
+      "label_en": "(φ,ψ) map",
+      "definition_fr": "La carte des couples (φ,ψ) balayée au pas de 5°, avec une chaîne de douze résidus et le couple donneur 6, accepteur 2 : elle demande quel ensemble de couples referme le squelette en hélice par une liaison i+4 → i. Deux cartes sont calculées — le critère complet, puis les deux conditions de distance seules — et leur différence est le résultat : un bassin, pas un point.",
+      "definition_en": "The (φ,ψ) map scanned in 5° steps, with a twelve-residue chain and the pair donor 6, acceptor 2: it asks which set of pairs closes the backbone into a helix through an i+4 → i bond. Two maps are computed — the full criterion, then the two distance conditions alone — and their difference is the result: a basin, not a point.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c22"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c23"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c24"
+        }
+      ],
+      "prerequisites": [
+        "58cdbaa0-a2de-5dda-9c64-6fa571d09560",
+        "b43f8d26-1c4d-5e60-bb84-bbfb954650d3"
+      ]
+    },
+    {
+      "id": "b50df367-d476-55e5-915f-f57e94d641ed",
+      "path": "biomedecine/carte-des-couples-phi-psi/regions-connexes",
+      "decimal_path": "10.1",
+      "depth": 1,
+      "label_fr": "Régions connexes d'une carte",
+      "label_en": "Connected regions of a map",
+      "definition_fr": "Une carte ne se lit pas case par case mais par régions connexes, voisines par un côté : ce sont elles qui s'interprètent comme des familles de conformations, pas les cases isolées. Le critère complet retient 154 cases sur 5184, en deux régions de 77 cases images miroir l'une de l'autre ; les distances seules en retiennent 178, et les conditions d'angle n'en retirent que 24.",
+      "definition_en": "A map is not read cell by cell but by connected regions, adjacent through a side: it is these that read as families of conformations, not the isolated cells. The full criterion retains 154 cells out of 5184, in two regions of 77 cells that are mirror images of each other; distances alone retain 178, and the angle conditions remove only 24.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c22"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c23"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c24"
+        }
+      ],
+      "prerequisites": [
+        "f39c4299-f7da-537e-a62b-bbbfa5531e01"
+      ]
+    },
+    {
+      "id": "0332056b-e25d-5772-b15d-020c532ddec6",
+      "path": "biomedecine/carte-des-couples-phi-psi/famille-d-helices",
+      "decimal_path": "10.2",
+      "depth": 1,
+      "label_fr": "Famille d'hélices",
+      "label_en": "Family of helices",
+      "definition_fr": "Les 77 cases du bassin ne sont pas 77 copies d'une même hélice : de 3,5099 à 4,1289 résidus par tour, un pas axial de 1,0315 à 1,6532 Å, un rayon de 2,2102 à 2,6706 Å, toutes de même main. Le point de référence (−57°,−47°) s'y classe au rang 8 sur 77 en résidus par tour : rien dans le critère ne privilégie l'hélice α, qui est ici une hélice plutôt serrée et non le centre du bassin.",
+      "definition_en": "The 77 cells of the basin are not 77 copies of one helix: from 3.5099 to 4.1289 residues per turn, an axial pitch of 1.0315 to 1.6532 Å, a radius of 2.2102 to 2.6706 Å, all of the same hand. The reference point (−57°,−47°) ranks 8th of 77 in residues per turn: nothing in the criterion favours the α-helix, which is here a rather tight helix, not the centre of the basin.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c25"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c26"
+        }
+      ],
+      "prerequisites": [
+        "f39c4299-f7da-537e-a62b-bbbfa5531e01",
+        "04c5d026-40d3-5aa6-85a4-de31c8eb849f"
+      ]
+    },
+    {
+      "id": "c3a37313-f6d0-5faa-8023-c8f58cba1c8c",
+      "path": "biomedecine/achiralite-du-modele",
+      "decimal_path": "11",
+      "depth": 0,
+      "label_fr": "Achiralité du modèle",
+      "label_en": "Achirality of the model",
+      "definition_fr": "Le modèle est achiral : un critère fait de distances et d'angles non orientés accepte une hélice et son image miroir, avec un N⋯O identique. L'angle de rotation ne distingue pas les deux mains — seul le signe de τ_v, donc de κ, les distingue — et le modèle n'explique pas pourquoi l'hélice α est droite : une limite mesurée par contre-témoin, et non supposée.",
+      "definition_en": "The model is achiral: a criterion made of distances and unoriented angles accepts a helix and its mirror image, with an identical N⋯O. The rotation angle does not tell the two hands apart — only the sign of τ_v, hence of κ, does — and the model does not explain why the α-helix is right-handed: a limit measured by a counter-witness, not assumed.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c32"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c33"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb",
+          "cell_id": "c34"
+        }
+      ],
+      "prerequisites": [
+        "b43f8d26-1c4d-5e60-bb84-bbfb954650d3",
+        "b50df367-d476-55e5-915f-f57e94d641ed",
+        "8b2d6c14-3a7f-4e69-b0d2-5c9e7f1a4b28"
+      ]
+    },
+    {
+      "id": "1906ad6d-0ec3-5f43-9103-0ca61757bc4a",
+      "path": "biomedecine/modele-hp-sur-reseau",
+      "decimal_path": "12",
+      "depth": 0,
+      "label_fr": "Modèle HP sur réseau",
+      "label_en": "HP lattice model",
+      "definition_fr": "Le modèle déclaré : une chaîne de N résidus est une marche qui s'évite sur le réseau carré Z², chaque résidu hydrophobe H ou polaire P selon une séquence fixée, et un contact est une paire de résidus non consécutifs sur des sites voisins. L'énergie est l'opposé du nombre de contacts H–H ; il n'y a aucun paramètre ajustable. C'est la convention la plus simple qui réalise ce que Gromov nomme le noyau hydrophobe.",
+      "definition_en": "The declared model: a chain of N residues is a self-avoiding walk on the square lattice Z², each residue hydrophobic H or polar P according to a fixed sequence, and a contact is a pair of non-consecutive residues on neighbouring sites. The energy is minus the number of H–H contacts; there is no adjustable parameter. It is the simplest convention realising what Gromov calls the hydrophobic core.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "9f983e18"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "19c62b60"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "be88bfb5"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "6d9c606c-ea79-5a8a-a25a-9292bc9e3457",
+      "path": "biomedecine/modele-hp-sur-reseau/espace-des-conformations",
+      "decimal_path": "12.1",
+      "depth": 1,
+      "label_fr": "Espace des conformations",
+      "label_en": "Conformation space",
+      "definition_fr": "L'espace X des conformations : les marches rangées en translatant leur premier site à l'origine et en les tournant pour que leur premier pas aille vers l'est, de sorte que translation et rotation ne créent plus de doublons. Il est fini et majoré par 3^(N−2) — 9 conformations à N = 4, 4067 à N = 10, 30 073 à N = 12 — et un second algorithme, écrit sans rien reprendre du premier, en rend exactement le quadruple.",
+      "definition_en": "The space X of conformations: walks stored by translating their first site to the origin and rotating them so that their first step goes east, so that translation and rotation create no duplicates. It is finite and bounded by 3^(N−2) — 9 conformations at N = 4, 4067 at N = 10, 30 073 at N = 12 — and a second algorithm, written sharing nothing with the first, returns exactly four times as many.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "19c62b60"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "aba8c31d"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "d43d6cd3"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "5b108c5e"
+        }
+      ],
+      "prerequisites": [
+        "1906ad6d-0ec3-5f43-9103-0ca61757bc4a",
+        "4f1c9a02-7d3e-4b55-9e21-1a8c0d5b7e13"
+      ]
+    },
+    {
+      "id": "fc5c27d2-cc8b-5ab4-9c73-934f41c3f28d",
+      "path": "biomedecine/modele-hp-sur-reseau/pli-quotient-par-isometries",
+      "decimal_path": "12.2",
+      "depth": 1,
+      "label_fr": "Pli comme classe d'isométries",
+      "label_en": "Fold as an isometry class",
+      "definition_fr": "Un pli est ce qu'une conformation devient quand on regarde aussi sa réflexion dans l'axe de son premier pas : une classe pour les huit isométries du réseau, le sens de la chaîne étant conservé, et dont tous les membres ont la même énergie. Comme la chaîne étendue est sa propre image miroir, |X| = 2 × (nombre de plis) − 1 — 9 = 2×5−1 à N = 4, 30 073 = 2×15 037−1 à N = 12 — et un pli unique n'est jamais une conformation unique : chercher le pli, c'est chercher une paire.",
+      "definition_en": "A fold is what a conformation becomes when its reflection in the axis of its first step is also looked at: a class for the lattice's eight isometries, the chain direction being conserved, all of whose members have the same energy. Since the extended chain is its own mirror image, |X| = 2 × (number of folds) − 1 — 9 = 2×5−1 at N = 4, 30 073 = 2×15 037−1 at N = 12 — and a unique fold is never a unique conformation: to look for the fold is to look for a pair.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "5b108c5e"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "cd2434f1"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "4ed79e13"
+        }
+      ],
+      "prerequisites": [
+        "6d9c606c-ea79-5a8a-a25a-9292bc9e3457"
+      ]
+    },
+    {
+      "id": "5b9403a5-b2e5-5a4c-8cca-5d5ce2cec516",
+      "path": "biomedecine/borne-isoperimetrique",
+      "decimal_path": "13",
+      "depth": 0,
+      "label_fr": "Borne isopérimétrique",
+      "label_en": "Isoperimetric bound",
+      "definition_fr": "Une borne sur le nombre de contacts c d'une conformation, obtenue en centrant un carré unité sur chaque site : le contour de leur réunion a pour longueur p = 4N − 2C et vaut au moins 2(W + H) ≥ 4√(WH) ≥ 4√N, d'où c ≤ N + 1 − (W + H) ≤ N + 1 − 2√N ; pour k résidus hydrophobes, c ≤ 2k − h_a − 2√k. Le maximum exact d'une chaîne tout hydrophobe atteint le plancher de la borne de N = 4 à N = 16, par un carré aux tailles 4, 9 et 16.",
+      "definition_en": "A bound on a conformation's contact count c, obtained by centring a unit square on each site: the contour of their union has length p = 4N − 2C and is at least 2(W + H) ≥ 4√(WH) ≥ 4√N, hence c ≤ N + 1 − (W + H) ≤ N + 1 − 2√N; for k hydrophobic residues, c ≤ 2k − h_a − 2√k. The exact maximum of an all-hydrophobic chain reaches the bound's floor from N = 4 to N = 16, through a square at sizes 4, 9 and 16.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "098bee64"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "c9b88f1e"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "58c096f0"
+        }
+      ],
+      "prerequisites": [
+        "1906ad6d-0ec3-5f43-9103-0ca61757bc4a"
+      ]
+    },
+    {
+      "id": "35fbd324-27b0-58b7-8ae9-60acc59a5313",
+      "path": "biomedecine/borne-isoperimetrique/boite-de-la-conformation",
+      "decimal_path": "13.1",
+      "depth": 1,
+      "label_fr": "Boîte d'une conformation",
+      "label_en": "Box of a conformation",
+      "definition_fr": "La boîte d'une conformation est le plus petit rectangle, à côtés portés par le réseau, qui la contient ; la borne dépend de la conformation seulement par la somme des côtés de sa boîte, N + 1 − (W + H). À N = 10, 196 conformations atteignent 4 contacts, 22 dans une boîte 2×5 et 174 dans une boîte 3×4 : ces deux boîtes ont la même somme de côtés, 7, donc la même borne — la contrainte porte sur cette somme, pas sur la forme.",
+      "definition_en": "A conformation's box is the smallest rectangle, with sides along the lattice, containing it; the bound depends on the conformation only through the sum of its box's sides, N + 1 − (W + H). At N = 10, 196 conformations reach 4 contacts, 22 in a 2×5 box and 174 in a 3×4 box: these two boxes have the same side sum, 7, hence the same bound — the constraint bears on that sum, not on the shape.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "58c096f0"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "51cb07b3"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "ee64c08b"
+        }
+      ],
+      "prerequisites": [
+        "5b9403a5-b2e5-5a4c-8cca-5d5ce2cec516"
+      ]
+    },
+    {
+      "id": "e9b56470-925f-5113-8cac-41cbe4b98aeb",
+      "path": "biomedecine/borne-de-parite",
+      "decimal_path": "14",
+      "depth": 0,
+      "label_fr": "Borne de parité",
+      "label_en": "Parity bound",
+      "definition_fr": "Le réseau carré est un damier : deux sites voisins sont de couleurs opposées, et la couleur du site d'un résidu est la parité de son rang. Un contact unit donc un résidu H de rang pair et un résidu H de rang impair, d'où c ≤ k_e·k_o − h_a. Éprouvée sur les 1024 séquences de N = 10, aucune des deux bornes n'est violée : la parité est la plus contraignante jusqu'à k = 3, puis la géométrie prend le relais ; la séquence alternée HPHPHPHPHP a une borne de parité nulle et ne forme aucun contact.",
+      "definition_en": "The square lattice is a checkerboard: two neighbouring sites have opposite colours, and the colour of a residue's site is the parity of its rank. A contact therefore joins an H residue of even rank and an H residue of odd rank, hence c ≤ k_e·k_o − h_a. Tested on the 1024 sequences at N = 10, neither bound is violated: parity is the tighter one up to k = 3, then geometry takes over; the alternating sequence HPHPHPHPHP has a zero parity bound and forms no contact.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "098bee64"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "d3aae074"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "12dfadcf"
+        }
+      ],
+      "prerequisites": [
+        "1906ad6d-0ec3-5f43-9103-0ca61757bc4a"
+      ]
+    },
+    {
+      "id": "ea2cf519-02fe-531e-83e0-a03be1c8b0c3",
+      "path": "biomedecine/paysage-energetique",
+      "decimal_path": "15",
+      "depth": 0,
+      "label_fr": "Paysage d'énergie",
+      "label_en": "Energy landscape",
+      "definition_fr": "Le paysage d'énergie d'une séquence, décrit par les trois objets que Gromov juge nécessaires : les minima locaux, dont le nombre peut croître exponentiellement avec N ; les composantes des sous-niveaux, qui peuvent être éparpillées dans X ; et le temps d'arrivée depuis un état pris au hasard, qui peut être trop long. Le carnet les mesure sur une séquence déclarée, HHPHPPHPPH à N = 10.",
+      "definition_en": "A sequence's energy landscape, described by the three objects Gromov holds necessary: local minima, whose number may grow exponentially with N; the components of the sublevel sets, which may be scattered over X; and the arrival time from a random state, which may be too long. The notebook measures them on a declared sequence, HHPHPPHPPH at N = 10.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "49ceb2fb"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "f70a8cd3"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "21f4a1cd"
+        }
+      ],
+      "prerequisites": [
+        "1906ad6d-0ec3-5f43-9103-0ca61757bc4a"
+      ]
+    },
+    {
+      "id": "4c055606-e33d-54d4-991f-84f5f42bfea9",
+      "path": "biomedecine/paysage-energetique/mouvement-elementaire",
+      "decimal_path": "15.1",
+      "depth": 1,
+      "label_fr": "Mouvement élémentaire",
+      "label_en": "Elementary move",
+      "definition_fr": "Deux mouvements qui changent un seul site : le déplacement d'extrémité, qui porte une extrémité sur un site libre voisin de son appui, et le retournement de coude, qui fait passer le site du milieu d'un coude de l'autre côté du segment formé par ses deux voisins. Le résultat est remis dans X — translation, puis rotation du premier pas vers l'est — avant d'être cherché dans la liste des conformations ; le graphe des mouvements est connexe, et aucun état n'est sans mouvement.",
+      "definition_en": "Two moves changing a single site: the end move, which carries an end to a free site neighbouring its support, and the corner flip, which passes the middle site of an elbow to the other side of the segment formed by its two neighbours. The result is put back into X — translation, then rotation of the first step towards the east — before being looked up in the list of conformations; the move graph is connected, and no state is without a move.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "49ceb2fb"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "e1813be7"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "f70a8cd3"
+        }
+      ],
+      "prerequisites": [
+        "ea2cf519-02fe-531e-83e0-a03be1c8b0c3"
+      ]
+    },
+    {
+      "id": "a477c52f-2c6d-575d-b201-5801eeb6c12e",
+      "path": "biomedecine/paysage-energetique/minima-locaux-stricts",
+      "decimal_path": "15.2",
+      "depth": 1,
+      "label_fr": "Minima locaux stricts",
+      "label_en": "Strict local minima",
+      "definition_fr": "Un minimum local strict est un état dont tous les voisins sont d'énergie strictement plus grande. La séquence déclarée en compte 92 à N = 10 — 2 à l'écart 0 du minimum, 22 à l'écart 1, 66 à l'écart 2, 2 à l'écart 3 — donc 90 sur 92 ne sont pas le pli natif : un critère qui s'arrête dès qu'un minimum est atteint ne distingue pas le pli des autres.",
+      "definition_en": "A strict local minimum is a state all of whose neighbours have strictly greater energy. The declared sequence has 92 of them at N = 10 — 2 at gap 0 from the minimum, 22 at gap 1, 66 at gap 2, 2 at gap 3 — so 90 out of 92 are not the native fold: a criterion that stops as soon as a minimum is reached does not tell the fold from the others.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "f70a8cd3"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "4be63049"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "21f4a1cd"
+        }
+      ],
+      "prerequisites": [
+        "ea2cf519-02fe-531e-83e0-a03be1c8b0c3",
+        "4c055606-e33d-54d4-991f-84f5f42bfea9"
+      ]
+    },
+    {
+      "id": "54e677a1-c070-5200-876d-d95eb24f0e35",
+      "path": "biomedecine/paysage-energetique/composantes-de-sous-niveaux",
+      "decimal_path": "15.3",
+      "depth": 1,
+      "label_fr": "Composantes des sous-niveaux",
+      "label_en": "Components of sublevel sets",
+      "definition_fr": "Le nombre de composantes des ensembles de sous-niveaux n'est pas monotone : pour la séquence déclarée, il croît de 2 à 92 quand le seuil passe de −4 à −2, puis tombe à 3 au seuil −1, puis à 1. Les états de basse énergie sont des îlots nombreux, qui ne se rejoignent qu'en montant vers l'énergie nulle ; un recomptage par union-find, sans parcours, rend les mêmes composantes à chaque seuil.",
+      "definition_en": "The number of components of the sublevel sets is not monotone: for the declared sequence it grows from 2 to 92 as the threshold goes from −4 to −2, then falls to 3 at threshold −1, then to 1. Low-energy states are numerous islands, joining only as the energy rises towards zero; a recount by union-find, without traversal, returns the same components at every threshold.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "4be63049"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "21f4a1cd"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "834f480b"
+        }
+      ],
+      "prerequisites": [
+        "ea2cf519-02fe-531e-83e0-a03be1c8b0c3",
+        "4c055606-e33d-54d4-991f-84f5f42bfea9",
+        "4f1c9a02-7d3e-4b55-9e21-1a8c0d5b7e13"
+      ]
+    },
+    {
+      "id": "11945854-1e5a-59ff-8c77-774b45b6411c",
+      "path": "biomedecine/marche-biaisee",
+      "decimal_path": "16",
+      "depth": 0,
+      "label_fr": "Marche biaisée",
+      "label_en": "Biased walk",
+      "definition_fr": "À la question du minimum, Gromov substitue un flot aléatoire : le repliement est une marche biaisée selon l'énergie. Le carnet la garde en temps discret sur le graphe des mouvements, avec la loi de transition P(x → y) = exp(E(x) − E(y)) / Σ_z exp(E(x) − E(z)), la somme portant sur les voisins z de x : la marche va plus volontiers vers le bas de l'énergie, et tout voisin garde une chance d'être choisi. Le pli n'y est plus un point mais un voisinage U_fold, où la marche doit rester la plupart du temps, avec une probabilité 1 − ε.",
+      "definition_en": "To the question of the minimum Gromov substitutes a random flow: folding is a walk biased by the energy. The notebook keeps it in discrete time on the move graph, with the transition law P(x → y) = exp(E(x) − E(y)) / Σ_z exp(E(x) − E(z)), the sum running over the neighbours z of x: the walk goes more willingly towards lower energy, and every neighbour keeps a chance of being chosen. The fold is there no longer a point but a neighbourhood U_fold, in which the walk must stay most of the time, with probability 1 − ε.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "dc37bd1e"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "81b16af0"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "86f69f00"
+        }
+      ],
+      "prerequisites": [
+        "ea2cf519-02fe-531e-83e0-a03be1c8b0c3",
+        "4c055606-e33d-54d4-991f-84f5f42bfea9"
+      ]
+    },
+    {
+      "id": "39b7a113-32e7-5ed1-bea7-608c30e479d3",
+      "path": "biomedecine/marche-biaisee/loi-stationnaire-non-gibbs",
+      "decimal_path": "16.1",
+      "depth": 1,
+      "label_fr": "Loi stationnaire non gibbsienne",
+      "label_en": "Non-Gibbs stationary law",
+      "definition_fr": "La loi stationnaire de la marche n'est pas la loi de Gibbs : π(x) ∝ exp(−E(x)) Σ_z exp(−E(z)), le facteur somme étant la trace de la normalisation à chaque pas parmi les voisins — un état entouré de bons états en profite. L'écart vaut 0,2256 en variation totale ; à énergie identiquement nulle, la loi stationnaire est la loi proportionnelle au degré, et non la loi uniforme : la cause de l'écart est identifiée par contre-témoin.",
+      "definition_en": "The walk's stationary law is not the Gibbs law: π(x) ∝ exp(−E(x)) Σ_z exp(−E(z)), the sum factor being the trace of the normalisation at each step among the neighbours — a state surrounded by good states benefits from it. The gap is 0.2256 in total variation; at identically zero energy, the stationary law is the degree-proportional law, not the uniform one: the cause of the gap is identified by a counter-witness.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "dc37bd1e"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "86f69f00"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "aa86d3b0"
+        }
+      ],
+      "prerequisites": [
+        "11945854-1e5a-59ff-8c77-774b45b6411c",
+        "8b2d6c14-3a7f-4e69-b0d2-5c9e7f1a4b28"
+      ]
+    },
+    {
+      "id": "731aab5b-2e1e-5ff8-b56d-bd5d306a9eaa",
+      "path": "biomedecine/marche-biaisee/temps-de-retour-et-premier-passage",
+      "decimal_path": "16.2",
+      "depth": 1,
+      "label_fr": "Temps de retour et premier passage",
+      "label_en": "Return time and first passage",
+      "definition_fr": "Deux temps qui ne mesurent pas la même chose : par la formule de Kac, le temps moyen de retour au pli natif vaut 32,0 pas, compté depuis le pli lui-même ; le temps du premier passage, compté depuis un état quelconque hors du pli, a une médiane de 246 pas sur 200 marches (quartiles 102 et 442, maximum 2338). À 32 pas, plus des trois quarts des marches n'ont pas encore trouvé le pli.",
+      "definition_en": "Two times that do not measure the same thing: by Kac's formula, the mean return time to the native fold is 32.0 steps, counted from the fold itself; the first-passage time, counted from an arbitrary state outside the fold, has a median of 246 steps over 200 walks (quartiles 102 and 442, maximum 2338). At 32 steps, more than three quarters of the walks have not yet found the fold.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "86f69f00"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "99c594ee"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "cda5c07b"
+        }
+      ],
+      "prerequisites": [
+        "11945854-1e5a-59ff-8c77-774b45b6411c",
+        "39b7a113-32e7-5ed1-bea7-608c30e479d3"
+      ]
+    },
+    {
+      "id": "f8c42914-8e83-5271-936a-32addd86cd37",
+      "path": "biomedecine/marche-biaisee/etat-replie-par-epsilon",
+      "decimal_path": "16.3",
+      "depth": 1,
+      "label_fr": "État replié et epsilon",
+      "label_en": "Folded state and epsilon",
+      "definition_fr": "L'état replié se juge sur une mesure : ε est la part de la loi stationnaire hors de la paire des conformations natives, et le carnet trouve 0,9688 à N = 10, à température 1 — le pli natif porte 3,12 % de la loi, environ soixante fois sa part d'états, et ε n'est donc pas petit dans ce modèle. La marche simulée s'approche lentement de cette loi : sa distance en variation totale à π tombe de 0,7936 à mille pas à 0,0356 à un million, pour la première graine.",
+      "definition_en": "The folded state is judged on a measurement: ε is the share of the stationary law outside the pair of native conformations, and the notebook finds 0.9688 at N = 10, at temperature 1 — the native fold carries 3.12 % of the law, about sixty times its share of states, so ε is not small in this model. The simulated walk approaches this law slowly: its total-variation distance to π falls from 0.7936 at a thousand steps to 0.0356 at a million, for the first seed.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "dc37bd1e"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "86f69f00"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "fd587da0"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "cda5c07b"
+        }
+      ],
+      "prerequisites": [
+        "11945854-1e5a-59ff-8c77-774b45b6411c",
+        "39b7a113-32e7-5ed1-bea7-608c30e479d3"
+      ]
+    },
+    {
+      "id": "33bdd542-ce81-50e7-83ec-01b23ce62d32",
+      "path": "biomedecine/pli-unique",
+      "decimal_path": "17",
+      "depth": 0,
+      "label_fr": "Pli unique",
+      "label_en": "Unique fold",
+      "definition_fr": "Une séquence a un pli unique quand les conformations de son minimum forment un seul pli — une règle mécanique, à laquelle le carnet n'ajuste rien, et contrôlée par la lecture renversée de chaque séquence. Sur toutes les séquences de N = 8, 10 et 12, les séquences à pli unique sont 7 sur 256 (2,7 %), 6 sur 1024 (0,6 %) et 87 sur 4096 (2,1 %) : la part n'est pas décroissante, et trois tailles ne tranchent rien sur une décroissance exponentielle. Il n'y a aucun pli unique à moins de quatre résidus H.",
+      "definition_en": "A sequence has a unique fold when the conformations of its minimum form a single fold — a mechanical rule, to which the notebook adjusts nothing, and controlled by the reversed reading of each sequence. Over all sequences at N = 8, 10 and 12, sequences with a unique fold are 7 out of 256 (2.7 %), 6 out of 1024 (0.6 %) and 87 out of 4096 (2.1 %): the share is not decreasing, and three sizes settle nothing about an exponential decay. There is no unique fold with fewer than four H residues.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "97d4ecb3"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "aae36f6b"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb",
+          "cell_id": "cdfa4088"
+        }
+      ],
+      "prerequisites": [
+        "fc5c27d2-cc8b-5ab4-9c73-934f41c3f28d",
+        "ea2cf519-02fe-531e-83e0-a03be1c8b0c3"
       ]
     }
   ]
