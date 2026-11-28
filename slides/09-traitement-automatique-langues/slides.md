@@ -79,7 +79,7 @@ layout: default
 | Sémantique, graphes de connaissances | [SW-11-Python-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) · [SW-13-Reasoners-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb) |
 | Fouille d'arguments, sophismes | [AA-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02-Fallacies-Detection-Python.ipynb) · [AA-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06-JTMS-Python.ipynb) |
 | Reconnaissance de la parole | [01-2-OpenAI-Whisper-STT](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb) · [01-4-Whisper-Local](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb) |
-| Attention (MHA, MQA, GQA, SWA) | [TV-00b-Attention-Variants](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb) |
+| Attention (MHA, MQA, GQA, SWA) | [TV-00b-Attention-Variants](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch-Python.ipynb) |
 | Agents conversationnels | [03-Chat-Streaming-QA-OWUI](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/03-chat-streaming/03-Chat-Streaming-QA-OWUI.ipynb) · [configurer-chatbots](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-1-Chatbots/configurer-chatbots-par-l-api.ipynb) |
 
 > Aucun arc n'est perdu : chaque ligne pointe un **owner réel** ou un **GAP**
@@ -540,7 +540,7 @@ image: ./images/slide_28_img_4b6f2b7a.png
 **Transformers** (2017) : self-attention multi-têtes, parallélisable, fondation des
 LLM modernes.
 
-*Notebooks : [TV-00b-Attention-Variants](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb) (l'attention multi-têtes **from scratch**, et ses variantes de production : MHA, MQA, GQA, SWA — le cache KV comme vrai coût à l'inférence) · [10b_Inference_Mechanics](../../MyIA.AI.Notebooks/GenAI/Texte/10b_Inference_Mechanics.ipynb) (TTFT et ITL mesurés sur LLM réel)*
+*Notebooks : [TV-00b-Attention-Variants](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch-Python.ipynb) (l'attention multi-têtes **from scratch**, et ses variantes de production : MHA, MQA, GQA, SWA — le cache KV comme vrai coût à l'inférence) · [10b_Inference_Mechanics](../../MyIA.AI.Notebooks/GenAI/Texte/10b_Inference_Mechanics.ipynb) (TTFT et ITL mesurés sur LLM réel)*
 
 > Cette migration historique s'arrête à 2018. Pour les architectures
 > post-2018 (BERT, GPT, T5, etc.), voir `GenAI/Texte/10*` et `GenAI/Texte/13*`
@@ -624,7 +624,7 @@ layout: section
 | Sémantique, graphes | [SW-11-Python-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) · [SW-13-Reasoners-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb) |
 | Fouille d'arguments, sophismes | [AA-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02-Fallacies-Detection-Python.ipynb) · [AA-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06-JTMS-Python.ipynb) |
 | Reconnaissance de la parole | [01-2-OpenAI-Whisper-STT](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb) · [01-4-Whisper-Local](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb) · [04-2-Transcription-Pipeline](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-2-Transcription-Pipeline.ipynb) |
-| RNN, LSTM, seq2seq, attention | [TV-00b-Attention-Variants](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb) · [10b_Inference_Mechanics](../../MyIA.AI.Notebooks/GenAI/Texte/10b_Inference_Mechanics.ipynb) |
+| RNN, LSTM, seq2seq, attention | [TV-00b-Attention-Variants](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch-Python.ipynb) · [10b_Inference_Mechanics](../../MyIA.AI.Notebooks/GenAI/Texte/10b_Inference_Mechanics.ipynb) |
 | Transformers, LLMs | [11_Quantization](../../MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb) · [13_Agentic_Orchestration](../../MyIA.AI.Notebooks/GenAI/Texte/13_Agentic_Orchestration.ipynb) |
 | Bots conversationnels | [03-Chat-Streaming-QA-OWUI](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/03-chat-streaming/03-Chat-Streaming-QA-OWUI.ipynb) · [configurer-chatbots-par-l-api](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-1-Chatbots/configurer-chatbots-par-l-api.ipynb) |
 

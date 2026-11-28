@@ -1,6 +1,6 @@
 - name: "TV-00b Attention Variants"
   family: GenAI/Texte/TransformerVariants
-  python: MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb
+  python: MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch-Python.ipynb
   csharp: MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
