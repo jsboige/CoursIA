@@ -2,6 +2,7 @@
   family: InformationCalcul/Complexity
   python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb
   csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-CSharp.ipynb
-  parity_level: native-both
+  parity_level: semantic
   known_differences:
+    - "2026-11-25 (myia-po-2028:claudish) : parity_level corrige de native-both a semantic -- le niveau natif des deux cotes exige de nommer un moteur externe par cote (_schema.yaml) ; ici cote Python : importe l'organe ict.goedel_machine du package de la serie, plus matplotlib ; cote C# : l'organe est reimplemente dans le carnet (enonce par le carnet lui-meme), hors API de l'hote aucun package importe. Machinerie asymetrique, a voir lors d'un pont. Aucun verdict de pont n'est porte : il se juge sur le travail, pas sur l'inventaire des imports."
     - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de Complexity-08c-MachinesDeGoedel-Python.ipynb. Execution reelle sur kernel .net-csharp : 13 cellules, 0 erreur. Verification independente : approve. Premiere attestation ecrite par l'integration de livraison (check_twin_parity --update), en DERNIERE operation (cf #8957)."

@@ -57,7 +57,10 @@ préfaisceaux de groupes abéliens, `φ.app (op U)` est injectif dès que `φ` e
 monomorphisme. Les deux moitiés : `NatTrans.mono_iff_mono_app` lit le mono d'une
 transformation naturelle composante par composante (les produits fibrés existent
 dans `AddCommGrpCat`), et dans `AddCommGrpCat` monomorphisme et injection
-coïncident. -/
+coïncident.
+Correspondance Stacks — **ABSENT** : fait Mathlib (`NatTrans.mono_iff_mono_app`) ;
+aucun énoncé nommé côté Stacks.
+-/
 theorem injective_app_of_mono {F G : X.Presheaf AddCommGrpCat.{u}} (φ : F ⟶ G)
     [Mono φ] (U : Opens X) : Function.Injective (φ.app (op U)) :=
   (AddCommGrpCat.mono_iff_injective _).mp inferInstance
@@ -68,7 +71,11 @@ une fonction, l'injectivité est donc ponctuelle : en chaque point, l'applicatio
 induite sur les tiges est injective — deux germes égaux proviennent de sections
 égales (`Presheaf.stalkFunctor_map_injective_of_app_injective`, valable pour tout
 préfaisceau de groupes abéliens) — et l'égalité des images point par point force
-l'égalité des sections. -/
+l'égalité des sections.
+Correspondance Stacks — **ABSENT** : fait Mathlib
+(`Presheaf.stalkFunctor_map_injective_of_app_injective`) ; aucun énoncé nommé côté
+Stacks.
+-/
 theorem godementHomApp_injective {F G : X.Presheaf AddCommGrpCat.{u}} (φ : F ⟶ G)
     (hφ : ∀ U : Opens X, Function.Injective (φ.app (op U))) (U : Opens X) :
     Function.Injective (godementHomApp φ U) := by
@@ -81,7 +88,12 @@ theorem godementHomApp_injective {F G : X.Presheaf AddCommGrpCat.{u}} (φ : F �
 L'injectivité section par section établie ci-dessus est exactement le mono dans
 `AddCommGrpCat` (`AddCommGrpCat.mono_iff_injective`), et le mono d'une
 transformation naturelle se lit composante par composante
-(`NatTrans.mono_iff_mono_app`). -/
+(`NatTrans.mono_iff_mono_app`).
+Correspondance Stacks — **ABSENT** : aucun énoncé nommé côté Stacks ne dit que `C⁰`
+préserve les monomorphismes ; le fait voisin est que `f_*` est exact à droite (il
+préserve les coégalisations), ce que les fichiers Stacks relus n'énoncent pas
+nommément.
+-/
 theorem godementMapHom_mono {F G : X.Presheaf AddCommGrpCat.{u}} (φ : F ⟶ G) [Mono φ] :
     Mono (godementMapHom φ) := by
   rw [NatTrans.mono_iff_mono_app]
@@ -92,7 +104,9 @@ theorem godementMapHom_mono {F G : X.Presheaf AddCommGrpCat.{u}} (φ : F ⟶ G) 
 /-- **`C⁰` est un foncteur qui préserve les monomorphismes** — la forme utilisable
 pour la suite : `Functor.map_mono` s'applique désormais à `C⁰`. C'est le prérequis
 qui manquait à la Partie 85 pour itérer la construction sur les noyaux et former le
-complexe de Godement. [God58] Chap. II §4.1. -/
+complexe de Godement. [God58] Chap. II §4.1.
+Correspondance Stacks — **ABSENT** : aucun énoncé nommé côté Stacks.
+-/
 instance godementFunctor_preservesMonomorphisms :
     (godementFunctor (X := X)).PreservesMonomorphisms where
   preserves f _ := godementMapHom_mono f
