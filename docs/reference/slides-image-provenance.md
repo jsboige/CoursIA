@@ -54,26 +54,25 @@ baseline. Mesure du 27 novembre 2026 (`git ls-tree -r` de la baseline contre l'a
 `slide_20_img_*` (deck 07), 14 retirés sans descendant (02 : 1, 08 : 3, S3 : 10).
 
 Dans l'arbre courant, `01-introduction` en manque 2, `02-resolution-problemes` en manque 1,
-`08-ia-generative` en manque 3, `S3-acculturation` en manque 12 : rangs annoncés par
-l'inventaire qu'aucun fichier `img_NNN` ne porte. `rang_manquant` mesure un retrait dans l'arbre
-(ou un rang jamais extrait), pas une erreur de l'organe.
+`03-logique` en manque 6, `04-probabilites` en manque 46, `08-ia-generative` en manque 3,
+`S3-acculturation` en manque 12 : rangs annoncés par l'inventaire qu'aucun fichier `img_NNN` ne
+porte. `rang_manquant` mesure un retrait dans l'arbre (ou un rang jamais extrait), pas une
+erreur de l'organe.
 
 Témoin à réponse connue, rejoué par `pytest tests/test_image_provenance.py -k temoin` : un mot
-de contenu de l'`alt` se retrouve dans le texte de la diapositive PPTX reconstituée **118 fois
-sur 189 essais**, contre **29** pour une diapositive tirée au hasard (graine 7, 6 decks
+de contenu de l'`alt` se retrouve dans le texte de la diapositive PPTX reconstituée **54 fois
+sur 95 essais**, contre **21** pour une diapositive tirée au hasard (graine 7, 4 decks
 certifiés). Sans cet écart, deux erreurs de cumul pourraient se compenser sans qu'on le voie.
 L'écart agrégé ne dit pas qu'il tient deck par deck :
 
 | Deck certifié | Essais | Touches | Hasard tiré | Hasard attendu | P(≥ ces touches) au hasard | Témoin |
 |---|---|---|---|---|---|---|
-| `03-logique` | 43 | 33 | 9 | 6.9 | 2.3e-21 | soutient |
-| `04-probabilites` | 51 | 31 | 9 | 7.5 | 2.7e-16 | soutient |
-| `05-theorie-des-jeux` | 48 | 22 | 2 | 3.9 | 9.8e-15 | soutient |
-| `06-apprentissage` | 11 | 8 | 2 | 2.0 | 4.2e-05 | soutient |
-| `S1-argumentation` | 8 | 1 | 0 | 0.3 | 0.247 | non concluant |
-| `S2-ia-exploratoire-symbolique` | 28 | 23 | 7 | 7.9 | 3.3e-14 | soutient |
+| `05-theorie-des-jeux` | 48 | 22 | 9 | 3.9 | 9.8e-15 | soutient |
+| `06-apprentissage` | 11 | 8 | 1 | 2.0 | 4.2e-05 | soutient |
+| `S1-argumentation` | 8 | 1 | 1 | 0.3 | 0.247 | non concluant |
+| `S2-ia-exploratoire-symbolique` | 28 | 23 | 10 | 7.9 | 3.3e-14 | soutient |
 
-« Hasard tiré » est la part de chaque deck dans les 29 du tirage au sort ; « hasard attendu »
+« Hasard tiré » est la part de chaque deck dans les 21 du tirage au sort ; « hasard attendu »
 est l'espérance exacte du même tirage ; la colonne suivante est la probabilité d'obtenir au
 moins autant de touches par hasard. Le témoin **soutient** un deck tant que cette probabilité
 reste au plus de 1 %.
@@ -104,10 +103,10 @@ grande majorité, et c'est la mesure, pas un oubli.
 |---|---|---|---|---|---|---|---|---|
 | 01-introduction | 38 | 38 | 0 | 0 | PPTX-media 34, PPTX-rendu 4 | partiel (38/40) | 4 | 43 |
 | 02-resolution-problemes | 58 | 58 | 0 | 0 | PPTX-media 54, nomme 4 | partiel (55/56) | 1 | 94 |
-| 03-logique | 45 | 44 | 0 | 1 | PPTX-media 44, nomme 1 | certifié | 1 | 67 |
-| 04-probabilites | 110 | 110 | 0 | 0 | PPTX-media 110 | certifié | 0 | 98 |
+| 03-logique | 40 | 39 | 0 | 1 | PPTX-media 39, nomme 1 | partiel (39/45) | 0 | 66 |
+| 04-probabilites | 64 | 64 | 0 | 0 | PPTX-media 64 | partiel (64/110) | 0 | 98 |
 | 05-theorie-des-jeux | 48 | 48 | 0 | 0 | PPTX-media 48 | certifié | 6 | 35 |
-| 06-apprentissage | 140 | 138 | 2 | 0 | PPTX-media 140 | certifié | 0 | 128 |
+| 06-apprentissage | 118 | 116 | 2 | 0 | PPTX-media 118 | certifié | 22 | 150 |
 | 07-elargissements | 8 | 2 | 6 | 0 | PPTX-media 2, nomme 6 | — | — | 37 |
 | 08-ia-generative | 33 | 33 | 0 | 0 | PPTX-media 33 | partiel (33/36) | 0 | 20 |
 | 09-traitement-automatique-langues | 0 | 0 | 0 | 0 | — | — | — | 6 |
@@ -116,13 +115,13 @@ grande majorité, et c'est la mesure, pas un oubli.
 | S3-acculturation | 124 | 119 | 4 | 1 | PPTX-media 122, genere 1, nomme 1 | partiel (123/135) | 1 | 64 |
 | S4-trading-algorithmique | 0 | 0 | 0 | 0 | — | — | — | 243 |
 
-**678 images référencées** : 663 d'origine non établie, 12 d'origine déclarée sans licence
+**605 images référencées** : 590 d'origine non établie, 12 d'origine déclarée sans licence
 établie, hors EPIC. Les fichiers d'image qu'aucun `slides.md` ne montre sont hors du census,
 comptés par deck dans la dernière colonne du tableau.
 
-**13 médias du PPTX sont sur le disque sans être montrés** par le `slides.md` de leur deck
-(`05-theorie-des-jeux` en porte 6) : un lecteur du PPTX les voit, pas un lecteur du deck. Ils
-ont leur propre colonne et restent compris dans « sur disque, non référencées » ; l'univers des
+**34 médias du PPTX sont sur le disque sans être montrés** par le `slides.md` de leur deck
+(`06-apprentissage` en porte 22) : un lecteur du PPTX les voit, pas un lecteur du deck. Ils ont
+leur propre colonne et restent compris dans « sur disque, non référencées » ; l'univers des
 lignes est l'image montrée.
 
 ## La liste — images dont l'origine n'est pas établie
@@ -138,21 +137,21 @@ origine **et** une licence claire.
 
 `img_001.png`, `img_002.png`, `img_003.png`, `img_004.png`, `img_005.png`, `img_006.png`, `img_007.png`, `img_008.png`, `img_009.png`, `img_010.png`, `img_011.png`, `img_012.png`, `img_013.png`, `img_014.png`, `img_015.png`, `img_016.png`, `img_017.png`, `img_019.png`, `img_020.png`, `img_021.png`, `img_022.png`, `img_023.png`, `img_024.png`, `img_025.png`, `img_026.png`, `img_027.png`, `img_028.png`, `img_029.png`, `img_030.png`, `img_031.png`, `img_032.png`, `img_033.gif`, `img_034.png`, `img_035.png`, `img_036.png`, `img_037.png`, `img_038.png`, `img_039.png`, `img_040.png`, `img_042.png`, `img_043.png`, `img_043_local_search.png`, `img_044.png`, `img_045.png`, `img_046.png`, `img_047.png`, `img_048.png`, `img_049.png`, `img_050.png`, `img_051.png`, `img_052.png`, `img_053.png`, `img_054.png`, `img_055.png`, `img_056.png`, `img_ga_8queens_solution.png`, `img_pptx_52_aspirateur.png`, `img_pptx_53_belief.png`
 
-### 03-logique — 44 image(s)
+### 03-logique — 39 image(s)
 
-`img_001.png`, `img_002.png`, `img_003.png`, `img_004.png`, `img_005.png`, `img_006.png`, `img_007.png`, `img_008.png`, `img_009.png`, `img_010.png`, `img_011.png`, `img_012.png`, `img_013.png`, `img_014.png`, `img_016.png`, `img_017.png`, `img_018.png`, `img_019.png`, `img_020.png`, `img_021.jpg`, `img_022.png`, `img_023.png`, `img_024.png`, `img_025.png`, `img_026.png`, `img_027.png`, `img_028.png`, `img_029.png`, `img_030.png`, `img_031.png`, `img_032.png`, `img_033.png`, `img_034.png`, `img_035.png`, `img_036.png`, `img_037.png`, `img_038.png`, `img_039.png`, `img_040.png`, `img_041.png`, `img_042.jpg`, `img_043.png`, `img_044.png`, `img_045.png`
+`img_002.png`, `img_003.png`, `img_004.png`, `img_007.png`, `img_008.png`, `img_010.png`, `img_011.png`, `img_012.png`, `img_013.png`, `img_014.png`, `img_015.png`, `img_016.png`, `img_017.png`, `img_018.png`, `img_019.png`, `img_020.png`, `img_021.jpg`, `img_022.png`, `img_023.png`, `img_024.png`, `img_026.png`, `img_027.png`, `img_028.png`, `img_029.png`, `img_031.png`, `img_032.png`, `img_033.png`, `img_034.png`, `img_035.png`, `img_036.png`, `img_037.png`, `img_038.png`, `img_039.png`, `img_040.png`, `img_041.png`, `img_042.jpg`, `img_043.png`, `img_044.png`, `img_045.png`
 
-### 04-probabilites — 110 image(s)
+### 04-probabilites — 64 image(s)
 
-`img_001.png`, `img_002.png`, `img_003.png`, `img_004.png`, `img_005.png`, `img_006.png`, `img_007.png`, `img_008.png`, `img_009.png`, `img_010.png`, `img_011.png`, `img_012.png`, `img_013.png`, `img_014.png`, `img_015.png`, `img_016.png`, `img_017.png`, `img_018.png`, `img_019.png`, `img_020.png`, `img_021.png`, `img_022.png`, `img_023.png`, `img_024.png`, `img_025.png`, `img_026.png`, `img_027.jpg`, `img_028.png`, `img_029.png`, `img_030.png`, `img_031.png`, `img_032.png`, `img_033.png`, `img_034.png`, `img_035.png`, `img_036.png`, `img_037.png`, `img_038.png`, `img_039.png`, `img_040.png`, `img_041.png`, `img_042.png`, `img_043.png`, `img_044.png`, `img_045.png`, `img_046.png`, `img_047.png`, `img_048.png`, `img_049.png`, `img_050.png`, `img_051.png`, `img_052.png`, `img_053.png`, `img_054.png`, `img_055.png`, `img_056.png`, `img_057.png`, `img_058.png`, `img_059.png`, `img_060.png`, `img_061.png`, `img_062.png`, `img_063.png`, `img_064.png`, `img_065.png`, `img_066.png`, `img_067.png`, `img_068.png`, `img_069.png`, `img_070.png`, `img_071.png`, `img_072.png`, `img_073.png`, `img_074.png`, `img_075.png`, `img_076.png`, `img_077.png`, `img_078.png`, `img_079.png`, `img_080.png`, `img_081.png`, `img_082.png`, `img_083.png`, `img_084.png`, `img_085.png`, `img_086.png`, `img_087.png`, `img_088.png`, `img_089.png`, `img_090.png`, `img_091.png`, `img_092.png`, `img_093.png`, `img_094.png`, `img_095.png`, `img_096.png`, `img_097.png`, `img_098.png`, `img_099.png`, `img_100.png`, `img_101.png`, `img_102.png`, `img_103.png`, `img_104.png`, `img_105.png`, `img_106.png`, `img_107.png`, `img_108.png`, `img_109.png`, `img_110.png`
+`img_001.png`, `img_002.png`, `img_003.png`, `img_004.png`, `img_005.png`, `img_006.png`, `img_007.png`, `img_008.png`, `img_009.png`, `img_010.png`, `img_011.png`, `img_012.png`, `img_013.png`, `img_014.png`, `img_015.png`, `img_016.png`, `img_017.png`, `img_018.png`, `img_019.png`, `img_020.png`, `img_023.png`, `img_024.png`, `img_027.jpg`, `img_029.png`, `img_032.png`, `img_033.png`, `img_034.png`, `img_035.png`, `img_036.png`, `img_037.png`, `img_038.png`, `img_039.png`, `img_040.png`, `img_045.png`, `img_046.png`, `img_047.png`, `img_048.png`, `img_049.png`, `img_050.png`, `img_054.png`, `img_055.png`, `img_056.png`, `img_057.png`, `img_058.png`, `img_059.png`, `img_060.png`, `img_061.png`, `img_062.png`, `img_063.png`, `img_064.png`, `img_072.png`, `img_073.png`, `img_075.png`, `img_076.png`, `img_085.png`, `img_086.png`, `img_090.png`, `img_093.png`, `img_094.png`, `img_095.png`, `img_097.png`, `img_098.png`, `img_108.png`, `img_109.png`
 
 ### 05-theorie-des-jeux — 48 image(s)
 
 `img_001.png`, `img_004.png`, `img_006.png`, `img_007.png`, `img_008.png`, `img_009.png`, `img_010.png`, `img_011.png`, `img_012.png`, `img_013.png`, `img_014.png`, `img_015.png`, `img_016.png`, `img_017.png`, `img_018.png`, `img_019.png`, `img_020.png`, `img_021.png`, `img_025.png`, `img_026.png`, `img_027.png`, `img_028.png`, `img_029.png`, `img_030.png`, `img_031.png`, `img_032.png`, `img_033.png`, `img_034.png`, `img_035.png`, `img_036.png`, `img_037.png`, `img_038.png`, `img_039.png`, `img_040.png`, `img_041.png`, `img_042.png`, `img_043.png`, `img_044.png`, `img_045.png`, `img_046.png`, `img_047.png`, `img_048.png`, `img_049.png`, `img_050.png`, `img_051.png`, `img_052.png`, `img_053.png`, `img_054.png`
 
-### 06-apprentissage — 138 image(s)
+### 06-apprentissage — 116 image(s)
 
-`img_001.png`, `img_002.png`, `img_003.png`, `img_004.png`, `img_005.png`, `img_006.png`, `img_008.png`, `img_009.png`, `img_010.png`, `img_011.png`, `img_012.png`, `img_013.png`, `img_014.png`, `img_015.png`, `img_016.png`, `img_017.png`, `img_018.png`, `img_019.png`, `img_020.png`, `img_021.png`, `img_022.png`, `img_023.png`, `img_024.png`, `img_025.png`, `img_026.png`, `img_027.png`, `img_028.png`, `img_029.png`, `img_030.png`, `img_032.png`, `img_033.png`, `img_034.png`, `img_035.jpg`, `img_036.png`, `img_037.png`, `img_038.png`, `img_039.png`, `img_040.png`, `img_041.png`, `img_042.png`, `img_043.png`, `img_044.png`, `img_045.png`, `img_046.png`, `img_047.png`, `img_048.png`, `img_049.png`, `img_050.png`, `img_051.png`, `img_052.png`, `img_053.png`, `img_054.png`, `img_055.png`, `img_056.png`, `img_057.png`, `img_058.png`, `img_059.png`, `img_060.png`, `img_061.png`, `img_062.png`, `img_063.jpg`, `img_064.jpg`, `img_065.png`, `img_066.png`, `img_067.png`, `img_068.png`, `img_069.png`, `img_070.png`, `img_071.png`, `img_072.png`, `img_073.png`, `img_074.png`, `img_075.png`, `img_076.png`, `img_077.png`, `img_078.png`, `img_079.png`, `img_080.png`, `img_081.png`, `img_082.png`, `img_083.png`, `img_084.png`, `img_085.png`, `img_086.png`, `img_087.png`, `img_088.png`, `img_089.png`, `img_090.png`, `img_091.png`, `img_092.png`, `img_093.png`, `img_094.png`, `img_095.png`, `img_096.png`, `img_097.png`, `img_098.png`, `img_099.png`, `img_100.png`, `img_101.png`, `img_102.png`, `img_103.png`, `img_104.png`, `img_105.png`, `img_106.png`, `img_107.png`, `img_108.png`, `img_109.png`, `img_110.png`, `img_111.png`, `img_112.png`, `img_113.png`, `img_114.png`, `img_115.png`, `img_116.png`, `img_117.png`, `img_118.png`, `img_119.png`, `img_120.png`, `img_121.png`, `img_122.png`, `img_123.png`, `img_124.png`, `img_125.png`, `img_126.png`, `img_127.png`, `img_128.png`, `img_129.png`, `img_130.png`, `img_131.png`, `img_132.png`, `img_133.png`, `img_134.png`, `img_135.png`, `img_136.png`, `img_137.gif`, `img_138.png`, `img_139.png`, `img_140.png`
+`img_004.png`, `img_005.png`, `img_006.png`, `img_008.png`, `img_009.png`, `img_010.png`, `img_011.png`, `img_012.png`, `img_013.png`, `img_014.png`, `img_015.png`, `img_016.png`, `img_017.png`, `img_018.png`, `img_019.png`, `img_020.png`, `img_021.png`, `img_022.png`, `img_023.png`, `img_024.png`, `img_025.png`, `img_026.png`, `img_027.png`, `img_028.png`, `img_029.png`, `img_030.png`, `img_032.png`, `img_033.png`, `img_034.png`, `img_035.jpg`, `img_036.png`, `img_037.png`, `img_038.png`, `img_039.png`, `img_040.png`, `img_041.png`, `img_042.png`, `img_043.png`, `img_044.png`, `img_045.png`, `img_046.png`, `img_047.png`, `img_054.png`, `img_055.png`, `img_056.png`, `img_057.png`, `img_058.png`, `img_059.png`, `img_060.png`, `img_061.png`, `img_070.png`, `img_071.png`, `img_072.png`, `img_073.png`, `img_074.png`, `img_075.png`, `img_076.png`, `img_077.png`, `img_078.png`, `img_079.png`, `img_080.png`, `img_081.png`, `img_082.png`, `img_083.png`, `img_084.png`, `img_085.png`, `img_086.png`, `img_087.png`, `img_088.png`, `img_089.png`, `img_090.png`, `img_091.png`, `img_092.png`, `img_093.png`, `img_094.png`, `img_095.png`, `img_096.png`, `img_097.png`, `img_098.png`, `img_099.png`, `img_100.png`, `img_101.png`, `img_102.png`, `img_103.png`, `img_104.png`, `img_105.png`, `img_106.png`, `img_107.png`, `img_108.png`, `img_114.png`, `img_115.png`, `img_116.png`, `img_117.png`, `img_118.png`, `img_119.png`, `img_120.png`, `img_121.png`, `img_122.png`, `img_123.png`, `img_124.png`, `img_125.png`, `img_126.png`, `img_127.png`, `img_128.png`, `img_129.png`, `img_130.png`, `img_131.png`, `img_132.png`, `img_133.png`, `img_134.png`, `img_135.png`, `img_136.png`, `img_137.gif`, `img_138.png`, `img_139.png`, `img_140.png`
 
 ### 07-elargissements — 2 image(s)
 

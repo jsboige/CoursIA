@@ -95,161 +95,110 @@ deck	image	porteur	diapositive_slidev	diapositive_pptx	origine	licence_etablie	r
 02-resolution-problemes	images/img_ga_8queens_solution.png	nomme	46		-	non	nc	origine-non-etablie	nom pose a la main (voie d'entree non etablie)
 02-resolution-problemes	images/img_pptx_52_aspirateur.png	nomme	50		-	non	nc	origine-non-etablie	nom pose a la main (voie d'entree non etablie)
 02-resolution-problemes	images/img_pptx_53_belief.png	nomme	51		-	non	nc	origine-non-etablie	nom pose a la main (voie d'entree non etablie)
-03-logique	images/argumentum_qrcode.png	nomme	132		QR code encodant https://www.argumentum.games/fallacies_fr.html	oui	nc	hors-EPIC	nom pose a la main (voie d'entree non etablie) ; declaration : decode au cv2.QRCodeDetector ; ajoute en 4d4937c8e0a (#1244)
-03-logique	images/img_001.png	PPTX-media	5	4	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_002.png	PPTX-media	5	4	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_003.png	PPTX-media	7	5	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_004.png	PPTX-media	8	5	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_005.png	PPTX-media	14	5	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_006.png	PPTX-media	16	6	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_007.png	PPTX-media	9	6	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_008.png	PPTX-media	14	10	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_009.png	PPTX-media	15	10	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_010.png	PPTX-media	22	11	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_011.png	PPTX-media	17	13	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_012.png	PPTX-media	33	14	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_013.png	PPTX-media	20	14	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_014.png	PPTX-media	20	14	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_016.png	PPTX-media	23	16	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_017.png	PPTX-media	25	17	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_018.png	PPTX-media	27	18	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_019.png	PPTX-media	32	24	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_020.png	PPTX-media	39,89	28	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_021.jpg	PPTX-media	39	28	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_022.png	PPTX-media	51,55	35	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_023.png	PPTX-media	63	39	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_024.png	PPTX-media	68,83	41	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_025.png	PPTX-media	75	46	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_026.png	PPTX-media	76	46	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_027.png	PPTX-media	78	48	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_028.png	PPTX-media	80	48	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_029.png	PPTX-media	87	48	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_030.png	PPTX-media	81	49	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_031.png	PPTX-media	80	49	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_032.png	PPTX-media	77	49	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_033.png	PPTX-media	84	51	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_034.png	PPTX-media	85	52	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_035.png	PPTX-media	86	53	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_036.png	PPTX-media	86	53	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_037.png	PPTX-media	87	54	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_038.png	PPTX-media	89	57	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_039.png	PPTX-media	90	58	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_040.png	PPTX-media	90	58	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_041.png	PPTX-media	90	58	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_042.jpg	PPTX-media	90	58	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_043.png	PPTX-media	90	58	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_044.png	PPTX-media	91	59	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-03-logique	images/img_045.png	PPTX-media	94	61	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_001.png	PPTX-media	9	9	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_002.png	PPTX-media	11	11	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_003.png	PPTX-media	11	11	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_004.png	PPTX-media	14	13	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_005.png	PPTX-media	14	13	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_006.png	PPTX-media	15	14	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_007.png	PPTX-media	16	15	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_008.png	PPTX-media	19	18	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_009.png	PPTX-media	24	23	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_010.png	PPTX-media	26	25	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_011.png	PPTX-media	27	26	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_012.png	PPTX-media	28	27	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_013.png	PPTX-media	30	29	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_014.png	PPTX-media	31	30	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_015.png	PPTX-media	32	31	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_016.png	PPTX-media	33	32	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_017.png	PPTX-media	34	33	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_018.png	PPTX-media	35	34	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_019.png	PPTX-media	36	35	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_020.png	PPTX-media	36	35	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_021.png	PPTX-media	36	35	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_022.png	PPTX-media	38	36	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_023.png	PPTX-media	38	36	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_024.png	PPTX-media	38	36	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_025.png	PPTX-media	39	36	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_026.png	PPTX-media	39	36	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_027.jpg	PPTX-media	40	36	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_028.png	PPTX-media	41	37	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_029.png	PPTX-media	41	37	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_030.png	PPTX-media	42	38	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_031.png	PPTX-media	42	38	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_032.png	PPTX-media	43	39	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_033.png	PPTX-media	49	44	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_034.png	PPTX-media	50	45	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_035.png	PPTX-media	51	46	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_036.png	PPTX-media	52	47	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_037.png	PPTX-media	53	48	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_038.png	PPTX-media	54	49	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_039.png	PPTX-media	55	50	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_040.png	PPTX-media	56	51	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_041.png	PPTX-media	57	52	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_042.png	PPTX-media	57	52	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_043.png	PPTX-media	57	52	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_044.png	PPTX-media	59	54	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_045.png	PPTX-media	59	54	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_046.png	PPTX-media	59	54	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_047.png	PPTX-media	60	55	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_048.png	PPTX-media	61	56	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_049.png	PPTX-media	62	57	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_050.png	PPTX-media	63	58	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_051.png	PPTX-media	65	60	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_052.png	PPTX-media	66	61	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_053.png	PPTX-media	67	62	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_054.png	PPTX-media	68	63	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_055.png	PPTX-media	69	64	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_056.png	PPTX-media	70	65	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_057.png	PPTX-media	74	69	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_058.png	PPTX-media	75	70	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_059.png	PPTX-media	76	71	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_060.png	PPTX-media	77	72	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_061.png	PPTX-media	78	73	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_062.png	PPTX-media	79	74	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_063.png	PPTX-media	80	75	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_064.png	PPTX-media	81	76	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_065.png	PPTX-media	81	76	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_066.png	PPTX-media	81	76	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_067.png	PPTX-media	82	76	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_068.png	PPTX-media	82	76	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_069.png	PPTX-media	82	76	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_070.png	PPTX-media	83	76	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_071.png	PPTX-media	83	76	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_072.png	PPTX-media	83	76	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_073.png	PPTX-media	84	77	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_074.png	PPTX-media	84	77	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_075.png	PPTX-media	85	77	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_076.png	PPTX-media	90	82	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_077.png	PPTX-media	91	83	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_078.png	PPTX-media	91	83	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_079.png	PPTX-media	92	84	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_080.png	PPTX-media	92	84	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_081.png	PPTX-media	92	84	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_082.png	PPTX-media	93	84	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_083.png	PPTX-media	93	84	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_084.png	PPTX-media	93	84	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_085.png	PPTX-media	94	85	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_086.png	PPTX-media	94	85	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_087.png	PPTX-media	94	85	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_088.png	PPTX-media	95	85	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_089.png	PPTX-media	95	85	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_090.png	PPTX-media	96	86	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_091.png	PPTX-media	96	86	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_092.png	PPTX-media	97	86	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_093.png	PPTX-media	97	86	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_094.png	PPTX-media	101	90	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_095.png	PPTX-media	101	90	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_096.png	PPTX-media	102	90	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_097.png	PPTX-media	102	90	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_098.png	PPTX-media	103	91	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_099.png	PPTX-media	103	91	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_100.png	PPTX-media	104	91	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_101.png	PPTX-media	104	91	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_102.png	PPTX-media	104	91	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_103.png	PPTX-media	105	92	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_104.png	PPTX-media	105	92	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_105.png	PPTX-media	106	92	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_106.png	PPTX-media	107	93	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_107.png	PPTX-media	108	93	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_108.png	PPTX-media	109	94	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_109.png	PPTX-media	109	94	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-04-probabilites	images/img_110.png	PPTX-media	110	94	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+03-logique	images/argumentum_qrcode.png	nomme	143		QR code encodant https://www.argumentum.games/fallacies_fr.html	oui	nc	hors-EPIC	nom pose a la main (voie d'entree non etablie) ; declaration : decode au cv2.QRCodeDetector ; ajoute en 4d4937c8e0a (#1244)
+03-logique	images/img_002.png	PPTX-media	6		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_003.png	PPTX-media	8		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_004.png	PPTX-media	9		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_007.png	PPTX-media	10		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_008.png	PPTX-media	15		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_010.png	PPTX-media	23		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_011.png	PPTX-media	18		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_012.png	PPTX-media	37		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_013.png	PPTX-media	21		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_014.png	PPTX-media	21		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_015.png	PPTX-media	20		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_016.png	PPTX-media	24		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_017.png	PPTX-media	26		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_018.png	PPTX-media	30		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_019.png	PPTX-media	36		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_020.png	PPTX-media	43		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_021.jpg	PPTX-media	43		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_022.png	PPTX-media	55,59		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_023.png	PPTX-media	67		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_024.png	PPTX-media	74,89		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_026.png	PPTX-media	82		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_027.png	PPTX-media	84		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_028.png	PPTX-media	86		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_029.png	PPTX-media	93		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_031.png	PPTX-media	86		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_032.png	PPTX-media	83		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_033.png	PPTX-media	90		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_034.png	PPTX-media	91		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_035.png	PPTX-media	92		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_036.png	PPTX-media	92		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_037.png	PPTX-media	93		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_038.png	PPTX-media	97		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_039.png	PPTX-media	98		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_040.png	PPTX-media	98		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_041.png	PPTX-media	98		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_042.jpg	PPTX-media	98		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_043.png	PPTX-media	98		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_044.png	PPTX-media	99		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+03-logique	images/img_045.png	PPTX-media	104		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 1 (39 presents pour 45 a l'inventaire)
+04-probabilites	images/img_001.png	PPTX-media	10	9	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule
+04-probabilites	images/img_002.png	PPTX-media	12	11	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule
+04-probabilites	images/img_003.png	PPTX-media	12	11	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule
+04-probabilites	images/img_004.png	PPTX-media	15	13	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule
+04-probabilites	images/img_005.png	PPTX-media	15	13	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule
+04-probabilites	images/img_006.png	PPTX-media	16	14	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule
+04-probabilites	images/img_007.png	PPTX-media	17	15	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule
+04-probabilites	images/img_008.png	PPTX-media	20	18	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule
+04-probabilites	images/img_009.png	PPTX-media	25	23	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule
+04-probabilites	images/img_010.png	PPTX-media	27	25	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule
+04-probabilites	images/img_011.png	PPTX-media	28	26	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule
+04-probabilites	images/img_012.png	PPTX-media	29	27	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule
+04-probabilites	images/img_013.png	PPTX-media	31	29	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule
+04-probabilites	images/img_014.png	PPTX-media	32	30	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule
+04-probabilites	images/img_015.png	PPTX-media	33	31	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule
+04-probabilites	images/img_016.png	PPTX-media	34	32	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule
+04-probabilites	images/img_017.png	PPTX-media	35	33	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule
+04-probabilites	images/img_018.png	PPTX-media	36	34	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule
+04-probabilites	images/img_019.png	PPTX-media	37	35	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule
+04-probabilites	images/img_020.png	PPTX-media	38	35	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule
+04-probabilites	images/img_023.png	PPTX-media	39		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_024.png	PPTX-media	40		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_027.jpg	PPTX-media	41		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_029.png	PPTX-media	43		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_032.png	PPTX-media	45		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_033.png	PPTX-media	53		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_034.png	PPTX-media	54		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_035.png	PPTX-media	55		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_036.png	PPTX-media	56		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_037.png	PPTX-media	57		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_038.png	PPTX-media	58		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_039.png	PPTX-media	59		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_040.png	PPTX-media	60		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_045.png	PPTX-media	63		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_046.png	PPTX-media	63		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_047.png	PPTX-media	64		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_048.png	PPTX-media	65		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_049.png	PPTX-media	66		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_050.png	PPTX-media	67		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_054.png	PPTX-media	70		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_055.png	PPTX-media	71		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_056.png	PPTX-media	72		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_057.png	PPTX-media	76		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_058.png	PPTX-media	77		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_059.png	PPTX-media	78		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_060.png	PPTX-media	79		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_061.png	PPTX-media	80		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_062.png	PPTX-media	81		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_063.png	PPTX-media	82		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_064.png	PPTX-media	83		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_072.png	PPTX-media	85		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_073.png	PPTX-media	86		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_075.png	PPTX-media	87		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_076.png	PPTX-media	94		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_085.png	PPTX-media	98		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_086.png	PPTX-media	98		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_090.png	PPTX-media	100		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_093.png	PPTX-media	102		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_094.png	PPTX-media	107		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_095.png	PPTX-media	107		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_097.png	PPTX-media	108		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_098.png	PPTX-media	109		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_108.png	PPTX-media	115		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
+04-probabilites	images/img_109.png	PPTX-media	115		-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; reconstitution arretee au rang 21 (64 presents pour 110 a l'inventaire)
 05-theorie-des-jeux	images/img_001.png	PPTX-media	5	3	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
 05-theorie-des-jeux	images/img_004.png	PPTX-media	11	4	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
 05-theorie-des-jeux	images/img_006.png	PPTX-media	12	5	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
@@ -298,9 +247,6 @@ deck	image	porteur	diapositive_slidev	diapositive_pptx	origine	licence_etablie	r
 05-theorie-des-jeux	images/img_052.png	PPTX-media	66	24	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
 05-theorie-des-jeux	images/img_053.png	PPTX-media	67	25	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
 05-theorie-des-jeux	images/img_054.png	PPTX-media	67	25	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_001.png	PPTX-media	8	8	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_002.png	PPTX-media	8	8	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_003.png	PPTX-media	8	8	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
 06-apprentissage	images/img_004.png	PPTX-media	10	10	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
 06-apprentissage	images/img_005.png	PPTX-media	11	11	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
 06-apprentissage	images/img_006.png	PPTX-media	12	12	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
@@ -345,99 +291,80 @@ deck	image	porteur	diapositive_slidev	diapositive_pptx	origine	licence_etablie	r
 06-apprentissage	images/img_045.png	PPTX-media	45	44	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
 06-apprentissage	images/img_046.png	PPTX-media	45	44	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
 06-apprentissage	images/img_047.png	PPTX-media	45	44	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_048.png	PPTX-media	46	45	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_049.png	PPTX-media	46	45	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_050.png	PPTX-media	46	45	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_051.png	PPTX-media	46	45	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_052.png	PPTX-media	46	45	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_053.png	PPTX-media	46	45	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_054.png	PPTX-media	47	46	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_055.png	PPTX-media	48	47	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_056.png	PPTX-media	48	47	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_057.png	PPTX-media	48	47	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_058.png	PPTX-media	48	47	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_059.png	PPTX-media	49	47	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_060.png	PPTX-media	49	47	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_061.png	PPTX-media	49	47	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_062.png	PPTX-media	50	48	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_063.jpg	PPTX-media	50	48	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_064.jpg	PPTX-media	50	48	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_065.png	PPTX-media	50	48	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_066.png	PPTX-media	50	48	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_067.png	PPTX-media	50	48	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_068.png	PPTX-media	50	48	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_069.png	PPTX-media	50	48	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_070.png	PPTX-media	51	49	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_071.png	PPTX-media	51	49	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_072.png	PPTX-media	52	50	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_073.png	PPTX-media	52	50	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_074.png	PPTX-media	52	50	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_075.png	PPTX-media	53	51	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_076.png	PPTX-media	53	51	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_077.png	PPTX-media	53	51	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_078.png	PPTX-media	53	51	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_079.png	PPTX-media	53	51	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_080.png	PPTX-media	53	51	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_081.png	PPTX-media	53	51	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_082.png	PPTX-media	53	51	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_083.png	PPTX-media	53	51	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_084.png	PPTX-media	59	57	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_085.png	PPTX-media	59	57	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_086.png	PPTX-media	66	75	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_087.png	PPTX-media	70	79	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_088.png	PPTX-media	71	80	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_089.png	PPTX-media	71	80	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_090.png	PPTX-media	73	82	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_091.png	PPTX-media	73	82	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_092.png	PPTX-media	73	82	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_093.png	PPTX-media	74	83	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_094.png	PPTX-media	74	83	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_095.png	PPTX-media	74	83	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_096.png	PPTX-media	74	83	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_097.png	PPTX-media	75	84	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_098.png	PPTX-media	76	85	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_099.png	PPTX-media	76	85	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_100.png	PPTX-media	101	110	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_101.png	PPTX-media	101	110	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_102.png	PPTX-media	102	111	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_103.png	PPTX-media	102	111	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_104.png	PPTX-media	102	111	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_105.png	PPTX-media	103	112	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_106.png	PPTX-media	103	112	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_107.png	PPTX-media	104	113	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_108.png	PPTX-media	104	113	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_109.png	PPTX-media	105	114	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_110.png	PPTX-media	105	114	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_111.png	PPTX-media	105	114	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_112.png	PPTX-media	105	114	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_113.png	PPTX-media	105	114	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_114.png	PPTX-media	106	115	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_115.png	PPTX-media	106	115	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_116.png	PPTX-media	106	115	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_117.png	PPTX-media	106	115	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_118.png	PPTX-media	107	116	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_119.png	PPTX-media	107	116	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_120.png	PPTX-media	107	116	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_121.png	PPTX-media	107	116	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_122.png	PPTX-media	107	116	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_123.png	PPTX-media	107	116	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_124.png	PPTX-media	108	117	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_125.png	PPTX-media	108	117	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_126.png	PPTX-media	108	117	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_127.png	PPTX-media	108	117	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_128.png	PPTX-media	110	118	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_129.png	PPTX-media	110	118	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_130.png	PPTX-media	110	118	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_131.png	PPTX-media	110	118	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_132.png	PPTX-media	110	118	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_133.png	PPTX-media	110	118	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_134.png	PPTX-media	110	118	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_135.png	PPTX-media	110	118	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_136.png	PPTX-media	111	119	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_137.gif	PPTX-media	112	120	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_138.png	PPTX-media	112	120	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_139.png	PPTX-media	112	120	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
-06-apprentissage	images/img_140.png	PPTX-media	112	120	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_054.png	PPTX-media	48	46	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_055.png	PPTX-media	49	47	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_056.png	PPTX-media	49	47	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_057.png	PPTX-media	49	47	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_058.png	PPTX-media	49	47	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_059.png	PPTX-media	50	47	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_060.png	PPTX-media	50	47	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_061.png	PPTX-media	50	47	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_070.png	PPTX-media	53	49	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_071.png	PPTX-media	53	49	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_072.png	PPTX-media	54	50	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_073.png	PPTX-media	54	50	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_074.png	PPTX-media	54	50	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_075.png	PPTX-media	55	51	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_076.png	PPTX-media	55	51	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_077.png	PPTX-media	55	51	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_078.png	PPTX-media	55	51	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_079.png	PPTX-media	55	51	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_080.png	PPTX-media	55	51	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_081.png	PPTX-media	55	51	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_082.png	PPTX-media	55	51	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_083.png	PPTX-media	55	51	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_084.png	PPTX-media	61	57	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_085.png	PPTX-media	61	57	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_086.png	PPTX-media	68	75	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_087.png	PPTX-media	72	79	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_088.png	PPTX-media	73	80	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_089.png	PPTX-media	73	80	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_090.png	PPTX-media	75	82	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_091.png	PPTX-media	75	82	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_092.png	PPTX-media	75	82	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_093.png	PPTX-media	76	83	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_094.png	PPTX-media	76	83	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_095.png	PPTX-media	76	83	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_096.png	PPTX-media	76	83	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_097.png	PPTX-media	77	84	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_098.png	PPTX-media	78	85	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_099.png	PPTX-media	78	85	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_100.png	PPTX-media	103	110	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_101.png	PPTX-media	103	110	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_102.png	PPTX-media	104	111	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_103.png	PPTX-media	104	111	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_104.png	PPTX-media	104	111	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_105.png	PPTX-media	105	112	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_106.png	PPTX-media	105	112	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_107.png	PPTX-media	106	113	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_108.png	PPTX-media	106	113	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_114.png	PPTX-media	108	115	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_115.png	PPTX-media	108	115	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_116.png	PPTX-media	108	115	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_117.png	PPTX-media	108	115	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_118.png	PPTX-media	109	116	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_119.png	PPTX-media	109	116	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_120.png	PPTX-media	109	116	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_121.png	PPTX-media	109	116	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_122.png	PPTX-media	109	116	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_123.png	PPTX-media	109	116	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_124.png	PPTX-media	110	117	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_125.png	PPTX-media	110	117	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_126.png	PPTX-media	110	117	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_127.png	PPTX-media	110	117	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_128.png	PPTX-media	112	118	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_129.png	PPTX-media	112	118	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_130.png	PPTX-media	112	118	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_131.png	PPTX-media	112	118	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_132.png	PPTX-media	112	118	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_133.png	PPTX-media	112	118	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_134.png	PPTX-media	112	118	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_135.png	PPTX-media	112	118	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_136.png	PPTX-media	113	119	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_137.gif	PPTX-media	114	120	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_138.png	PPTX-media	114	120	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_139.png	PPTX-media	114	120	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
+06-apprentissage	images/img_140.png	PPTX-media	114	120	-	non	nc	origine-non-etablie	renomme par pptx_to_marp.py (baseline 29531827cf9) ; inventaire cumule, certifie
 07-elargissements	images/decision_tree_xai.png	nomme	18		Wikimedia Commons	non	non	origine-declaree-licence-non-etablie	nom pose a la main (voie d'entree non etablie) ; declaration : 554062be033 : « free-licensed images (CC BY-SA, CC0) from Wikimedia Commons » ; licence par fichier et attribution absentes du deck
 07-elargissements	images/federated_learning.png	nomme	16		Wikimedia Commons	non	non	origine-declaree-licence-non-etablie	nom pose a la main (voie d'entree non etablie) ; declaration : 554062be033 : « free-licensed images (CC BY-SA, CC0) from Wikimedia Commons » ; licence par fichier et attribution absentes du deck
 07-elargissements	images/gan_architecture.png	nomme	29		Wikimedia Commons	non	non	origine-declaree-licence-non-etablie	nom pose a la main (voie d'entree non etablie) ; declaration : 554062be033 : « free-licensed images (CC BY-SA, CC0) from Wikimedia Commons » ; licence par fichier et attribution absentes du deck
