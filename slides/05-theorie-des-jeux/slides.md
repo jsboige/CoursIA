@@ -720,7 +720,7 @@ Deux vendeurs de glaces choisissent où s’installer. À prix égal, chaque cli
 <div v-click="2" class="gt-projection-step"><div><h2>2 · Pourquoi au milieu ?</h2><p>Les positions distinctes du schéma ne sont pas stables. Avec des clients uniformément répartis, deux stands au centre servent chacun la moitié de la plage. S’écarter seul laisse plus de la moitié des clients à son rival.</p></div><img src="./images/img_031.png" alt="Axe gradué de 0 à 100 : les deux vendeurs occupent ici des positions distinctes"></div>
 <div v-click="3" class="gt-projection-step"><div><h2>3 · Du client à l’électeur</h2><p>Avec un nombre impair de votants aux préférences strictes à sommet unique, le sommet médian bat toute autre proposition : les votants de son côté, médiane comprise, forment une majorité.</p></div><img src="./images/img_030.png" alt="Deux positions voisines sur un axe politique, de libéral à conservateur"></div>
 
-*Notebook : [SocialChoice/ChoixSocial-03-Voting-Methods-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) (electeur median) ; preuve Lean `median_voter_theorem` dans game_theory_lean/SocialChoice/Voting.lean. Loi de Hotelling : pas de notebook dedie.*
+*Notebook : [SocialChoice/ChoixSocial-03-Voting-Methods-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) (electeur median) ; preuve Lean `median_voter_theorem` dans SocialChoice/social_choice_core_lean/SocialChoice/Voting.lean. Loi de Hotelling : pas de notebook dedie.*
 
 ---
 layout: default
@@ -1224,7 +1224,7 @@ layout: dense
 
 <div v-click="2" class="gt-projection-step"><div><h2>Schulze : comparer les chemins</h2><p>La force d’un chemin est celle de son duel le plus faible. En prenant les marges positives, A → B → C a pour force 3, contre 1 pour C → A. Le duel direct ne suffit donc pas à classer C devant A.</p></div></div>
 
-*Notebooks : [SocialChoice/ChoixSocial-03-Voting-Methods-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) (Condorcet, Minimax, Schulze) ; `median_voter_theorem` prouve en Lean (game_theory_lean/SocialChoice/Voting.lean) ; tour Peters : Schulze, Split Cycle, Borda, IRV.*
+*Notebooks : [SocialChoice/ChoixSocial-03-Voting-Methods-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) (Condorcet, Minimax, Schulze) ; `median_voter_theorem` prouve en Lean (SocialChoice/social_choice_core_lean/SocialChoice/Voting.lean) ; tour Peters : Schulze, Split Cycle, Borda, IRV.*
 
 ---
 layout: dense

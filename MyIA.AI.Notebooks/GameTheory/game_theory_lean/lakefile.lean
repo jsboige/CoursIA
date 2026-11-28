@@ -32,7 +32,7 @@ require mathlib from git
 -- `social_choice_lean/` (lakefile + toolchain + manifest) a été retirée en
 -- follow-up (#4365) : ce dossier n'est plus un lake, seuls ses 3 markdown
 -- (README/STATUS/LEAN_PREREQUISITES) subsistent comme tombstone ; la NOTICE
--- vit dans `game_theory_lean/SocialChoice/NOTICE.md` (#24183, T1).
+-- vit dans `SocialChoice/social_choice_core_lean/SocialChoice/NOTICE.md` (#24183, T1).
 -- Prochaine absorption prevue : `social_choice_lean_peters` (v4.27 -> v4.31,
 -- INTRINSIC documente si port depasse budget cf sota-not-workaround).
 --
@@ -77,9 +77,10 @@ lean_lib StableMarriage where
 lean_lib CooperativeGames where
   globs := #[`CooperativeGames.*]
 
-@[default_target]
-lean_lib SocialChoice where
-  globs := #[`SocialChoice.*]
+-- T3 #24183 (po-2024, 2026-11-08) : `lean_lib SocialChoice` DESCENDUE vers
+-- GameTheory/SocialChoice/social_choice_core_lean (doctrine R1 : le site
+-- suit les carnets consommateurs ; sortie du hub validee par le user le
+-- 2026-11-02 avec la doctrine des lakes). Le hub ne declare plus cette lib.
 
 @[default_target]
 lean_lib RepeatedGames where

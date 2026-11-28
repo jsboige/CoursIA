@@ -3333,13 +3333,15 @@ def test_path_constants_resolve_to_active_workspace():
         "CONWAY_NIM_FILE": CONWAY_NIM_FILE,
     }
     # config.py was reconciled with the #4365 anti-proliferation absorption:
-    # SOCIAL_CHOICE_DIR / STABLE_MARRIAGE_DIR candidate lists now resolve to
-    # game_theory_lean FIRST (config.py:140, 167), so VOTING_FILE and
-    # GALESHAPLEY_FILE resolve to the canonical game_theory_lean/{SocialChoice,
-    # StableMarriage}/ paths that exist on disk. The previous STALE_POST_ABSORPTION
-    # exemption (tracking "config.py still derives from the gutted legacy dirs")
-    # is therefore obsolete and removed — existence is asserted for these two
-    # constants like every other, which is the correct post-reconciliation state.
+    # STABLE_MARRIAGE_DIR resolves to game_theory_lean FIRST, and since the T3
+    # descent of #24183 SOCIAL_CHOICE_DIR resolves to the autonomous lake
+    # GameTheory/SocialChoice/social_choice_core_lean FIRST (game_theory_lean
+    # stays as runner-up for checkouts predating the descent), so VOTING_FILE
+    # and GALESHAPLEY_FILE resolve to paths that exist on disk. The previous
+    # STALE_POST_ABSORPTION exemption (tracking "config.py still derives from
+    # the gutted legacy dirs") is therefore obsolete and removed — existence is
+    # asserted for these two constants like every other, which is the correct
+    # post-reconciliation state.
     STALE_POST_ABSORPTION: set[str] = set()
     for name, p in paths.items():
         assert p is not None, f"{name} is None — candidate list resolved to nothing"

@@ -29,13 +29,13 @@
     {
       "notebook": "MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb",
       "cell_id": "3172db35",
-      "source": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/SortedListCounting.lean",
+      "source": "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/SocialChoice/SortedListCounting.lean",
       "note": "Lecture directe du module SortedListCounting.lean"
     },
     {
       "notebook": "MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb",
       "cell_id": "3172db35",
-      "source": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/_SmokeTest.lean",
+      "source": "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/SocialChoice/_SmokeTest.lean",
       "note": "Lecture directe du module _SmokeTest.lean"
     },
     {

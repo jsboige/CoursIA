@@ -110,8 +110,14 @@ def test_chaque_lac_de_la_page_porte_une_epingle():
     ce test tant que son epingle n'a pas ete ajoutee explicitement.
     """
     page = _lignes_de_la_page()
-    assert len(page) == 44, f"la page porte {len(page)} lacs, attendu 44"
-
+    # 45 apres la troisieme fusion de main (2026-11-23) : les 44 de main
+    # (linear_lean par #26894, busybeaver_lean, Compression deplacee sous
+    # InformationCalcul par #27397, six lacs renommes par #26381), plus le
+    # lac autonome `social_choice_core_lean` que la descente #24183 (#25262)
+    # ajoute (epingle 2026-11-08). Le nombre sort de la page regeneree par
+    # `lean_material_map.py --write`, pas d'une addition a la main.
+    assert len(page) == 45, f"la page porte {len(page)} lacs, attendu 45"
+    
     epingles = mod._pinned_births()
     manquantes = sorted(set(page) - set(epingles))
     orphelines = sorted(set(epingles) - set(page))

@@ -291,7 +291,7 @@ def _enumerate_module_declarations(project: Path, module_name: str) -> List[str]
     * **``end`` pops only on a name match** (#8722). ``namespace`` is the only
       construct pushed, but ``end`` closes others (``section``); an unmatched
       ``end`` used to pop anyway and under-qualify the whole rest of the file.
-      Live instance: ``game_theory_lean/SocialChoice/Voting.lean`` opens
+      Live instance: ``SocialChoice/social_choice_core_lean/SocialChoice/Voting.lean`` opens
       ``namespace SocialChoice`` (l.36) then ``section SinglePeaked`` (l.177);
       ``end SinglePeaked`` (l.513) emptied the stack, so ``section BanksSet``
       (l.661+) and everything after it was emitted unqualified.

@@ -44,6 +44,7 @@
     "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean": "2026-06-24",
     "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean": "2026-06-24",
     "MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean": "2026-06-24",
-    "docs/lean/darksnail/build-evidence-2026-10-31": "2026-10-31"
+    "docs/lean/darksnail/build-evidence-2026-10-31": "2026-10-31",
+    "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean": "2026-11-08"
   }
 }
