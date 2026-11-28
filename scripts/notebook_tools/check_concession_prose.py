@@ -181,7 +181,7 @@ def added_concession_lines(parent_nb, head_nb):
 
 def git(*args, cwd=None):
     """Rend la sortie stdout d'une commande git, ou None si elle echoue."""
-    proc = subprocess.run(["git", *args], capture_output=True,
+    proc = subprocess.run(["git", "-c", "core.quotePath=false", *args], capture_output=True,
                           text=True, encoding="utf-8", errors="replace",
                           cwd=cwd)
     if proc.returncode != 0:

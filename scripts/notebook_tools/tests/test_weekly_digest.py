@@ -131,11 +131,11 @@ class TestClassifyNotebookNames:
 
     def test_notebook_names_extracted(self):
         result = classify_notebook_changes({
-            "MyIA.AI.Notebooks/Search/CSP-7-Soft.ipynb",
+            "MyIA.AI.Notebooks/Search/CSP-07-Soft-Python.ipynb",
             "MyIA.AI.Notebooks/Search/CSP-1-Intro.ipynb",
         })
         names = result["series"]["Search"]["notebook_names"]
-        assert "CSP-7-Soft" in names
+        assert "CSP-07-Soft-Python" in names
         assert "CSP-1-Intro" in names
 
     def test_notebook_names_sorted_by_appearance(self):

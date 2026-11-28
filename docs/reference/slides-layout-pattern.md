@@ -1,6 +1,6 @@
 # Slidev — motif de mise en page des decks de cours
 
-> REFERENCE — vivante — dernière révision 2026-11-11
+> REFERENCE — vivante — dernière révision 2026-11-28
 
 Cible : les decks `slides/**` portes par la campagne **#10950**. Ecrit apres qu'un diagnostic « les grilles sont impossibles dans Slidev » ait bloque trois iterations de reparation sur un deck. Le constat qui l'a produit etait vrai ; la conclusion ne l'etait pas.
 
@@ -96,6 +96,42 @@ Un controle `bottom > canvasHeight` est necessaire et **tres insuffisant** : il 
 
 **Directive user (2026-08-20) : sur une composition, le plancher mecanisable n'est jamais le critere d'acceptation.** Un `slidev build` EXIT=0 prouve que le deck *construit*, rien de son rendu. L'acceptation reste un jugement visuel, porte par une lane qui **voit** (cf [`cluster-agents.md` §Capacite vision](cluster-agents.md)). Une estimation arithmetique de hauteur de contenu ne remplace pas non plus le regard : mesuree une fois a **224 px** d'ecart avec le rendu reel.
 
+## Rendre la mesure reproductible — `--pin-fonts`
+
+Les compteurs du scanner dérivent des largeurs de glyphes et des hauteurs de ligne, donc des polices **système** de la machine qui rend le deck. Sans pin, deux machines ne mesurent pas dans les mêmes conditions — mesuré sur [`S8-semantic-web`](../../slides/S8-semantic-web/slides.md) (30 slides, même Chromium 156.0.8078.4) :
+
+| Sans pin | Windows 11 | conteneur ubuntu 24.04 |
+|---|---|---|
+| pile du thème `"Segoe UI", Calibri, Arial, sans-serif` | Segoe UI, Calibri et Arial résolues | Arial seule (`fc-match` : alias de Liberation Sans) |
+| `line-height: normal` sur cette pile, à 16 px | 21 px | 18 px |
+| échantillon monospace | Consolas, 373,87 px | Liberation Mono, 408,07 px |
+| compteurs hors-canvas / chevauchement / éteints / recouvrement / occupation | 0 / 0 / 8 / 0 / 0 | 0 / 0 / 0 / 0 / 0 |
+| `font_signature` | `d26d62ef2e341fc7` | `9f62c747e2c82100` |
+
+Les quatre compteurs de constat tombent à zéro des deux côtés : c'est une propriété de ce deck (il ne déborde pas), pas une preuve de comparabilité. Le cinquième les départage. `n_chevauchements_eteints` compte les paires éteintes par la confirmation élément — les plages de texte de deux éléments se chevauchent d'un ou deux pixels alors que leurs boîtes sont disjointes, rien à l'écran : 8 sur Windows, 0 dans le conteneur. Sur cette machine, le rapport ne distingue plus « aucun effleurement » de « la porte de confirmation a disparu ». **Un compte n'est opposable qu'entre conditions égales.**
+
+`scan_slidev_composition.py --pin-fonts` égalise les conditions ([`slidev_font_pin.py`](../../scripts/notebook_tools/slidev_font_pin.py)) :
+
+- **Masquage** — 41 noms de familles (15 sans, 18 monospace, 8 serif) sont servis par des polices **livrées** (`scripts/notebook_tools/fonts/`, OFL 1.1 et licence DejaVu) sous des faces `@font-face` portant le même nom : une face déclarée sous le nom d'une famille installée gagne sur la police locale. Toute famille sans se rend avec Selawik (repli DejaVu Sans), toute monospace avec DejaVu Sans Mono, toute serif avec Gelasio (repli DejaVu Serif) — un texte déclaré en Arial ou en Verdana mesure comme Segoe UI. 144 faces ; la face principale porte le cmap exact de sa police en `unicode-range`.
+- **Métriques** — `ascent-override` / `descent-override` / `line-gap-override` (et `size-adjust` pour le monospace) reproduisent la boîte de ligne de la référence Windows : Segoe UI 24/19, Cascadia Code 21/17, Georgia 21/17 à 18 px.
+- **Génériques** — `sans-serif`, `monospace`, `system-ui`… ne sont masquables ni par `@font-face` ni par CDP `Page.setFontFamilies` (les deux essayés, inertes). Ils sont réparés par style inline, élément par élément, quand ils décident la police d'une pile. Slidev garde le deck entier dans `#slide-content` (`#slideshow` → un `.slidev-page` par slide, une seule affichée) : le premier passage répare tout le deck, les suivants ne rattrapent que ce que le deck a recréé.
+- **Sans hinting** — le navigateur est lancé avec `--font-render-hinting=none`. Sous Linux, Chromium arrondit les avancées au pixel : une même police livrée s'écarte de Windows de −2,14 % à +8,74 % selon la taille (18 chaînes mesurées, 13 au-delà de 1 %). Avec l'argument, l'écart résiduel est de 0,06 % au plus (0,14 px), les hauteurs de ligne sont égales dans les quatre conditions, et sur Windows l'argument est sans effet (18 largeurs identiques). Les arguments entrent dans l'empreinte du pin.
+
+### Ce que le rapport garantit
+
+- **Vérifié avant de mesurer** — octets des polices contre un verrou sha256, feuille adoptée, 144 faces chargées. Pin inapplicable → **exit 3**, sans ouvrir de navigateur : pas de mesure « à peu près ».
+- **Le document du deck n'est jamais intercepté** — la feuille entre par `adoptedStyleSheets`, posée par un script d'initialisation : elle existe avant le premier script du deck (Mermaid mesure son texte à l'insertion). Un document renvoyé par une route Playwright perd son espace d'adressage et Chromium refuse ses scripts de module (« blocked by CORS policy… more-private address space `local` ») dès que l'origine n'est pas un contexte sûr — mesuré : rc 2 sur un deck servi sur `172.24.240.1`, le même deck passant sur `localhost`. Seules les URL des polices passent par une route.
+- **Ce qui a échappé est nommé** — après la mesure, CDP relit la police de chaque glyphe rendu : un glyphe servi par une police système est listé dans `font_pin.escaped` (slide, famille, nombre) et `font_pin.verified` vaut `false`. Cela ne change pas le code retour du deck.
+- **Trois empreintes se comparent entre rapports** — `font_pin.signature` (feuille, octets des polices, arguments de lancement), `font_signature` (environnement d'un élément de texte et d'un bloc de code), `rendering_conditions.signature` (polices rendues par slide, navigateur, canvas). Sous pin leur égalité est opposable ; sans pin, elle ne prouve rien.
+
+Mesuré sous pin sur ce deck, siège Windows contre conteneur ubuntu : compteurs égaux (0 / 0 / 8 / 0 / 0), trois empreintes égales (`font_pin.signature` `6d567a59d85c45f3…`, `font_signature` `2ab11e9914976424`, `rendering_conditions.signature` `2dac48aac909a1f4…`), 14 348 glyphes épinglés, aucun échappé. Huit feuilles du rapport diffèrent encore, toutes hors compteur : le générique `monospace` nu (373,87 contre 409,39 px — il reste système par construction), les largeurs de l'échantillon monospace (398,34 contre 398,20 px), et l'étendue horizontale d'un chevauchement éteint de la slide 12 (362 contre 361 px). `font_pin.repaired_by_slide` attribue chaque générique réparé à sa page ; `font_pin.escaped` liste les glyphes hors couverture des polices livrées. Deux passages du même code sur le même siège rendent le rapport à l'identique, octet pour octet (mesuré : deux passages consécutifs sur le siège Windows).
+
+### Ce que le pin ne restitue pas
+
+Il égalise les machines, il ne rend pas Windows : pas de crénage (Segoe UI crène 8 292 paires, Selawik aucune — un texte créné est plus large sous le pin) ; pas de face italique (le navigateur incline) ; les génériques hors de `#slide-content` (le conteneur de mesure de Mermaid est rattaché au corps) ne sont pas réparés. Une famille qu'aucune face ne masque reste système des deux côtés : c'est une liste (`SANS_NAMES` / `MONO_NAMES` / `SERIF_NAMES`) à étendre, pas une empreinte à rétrécir. Toute police ajoutée exige de refaire le verrou sha256 et `python scripts/notebook_tools/slidev_font_pin.py --rebuild-ranges` (fonttools).
+
+L'[advisory CI](../../.github/workflows/slides-composition-advisory.yml) passe `--pin-fonts` sur ses deux invocations : un compte pris localement sans le drapeau ne se lui compare pas.
+
 ## Images en pied de colonne d'une grille convertie — contrat de compression
 
 La migration `two-cols` -> `grid grid-cols-2` (campagne **#10950**, tranches 1-10) met certaines images illustratives **en flux dans la cellule**, sous le texte de colonne (ex. `img_070`, `img_125/126`). Le layout `default` etant **block**, `flex`/`max-height` y est inerte : la rangee de grille grandit avec son contenu et l'image de pied **sort du canvas** (mesure `scan_slidev_composition.py`, 2026-08-26 : 6 slides HORS_CANVAS, +4 a +124 px sur [S3-acculturation](../../slides/S3-acculturation/slides.md)).
@@ -109,6 +145,7 @@ La migration `two-cols` -> `grid grid-cols-2` (campagne **#10950**, tranches 1-1
 ## Voir aussi
 
 - **#10950** — campagne de refonte des decks
+- **#24171** — mesure de débordement reproductible d'une machine à l'autre : `--pin-fonts` (section « Rendre la mesure reproductible », ci-dessus)
 - [`cluster-agents.md`](cluster-agents.md) — routage du QA visuel vers une lane qui voit
 - [`slide-analyzer-sk-agent.md`](slide-analyzer-sk-agent.md) — analyse de deck par vision
 

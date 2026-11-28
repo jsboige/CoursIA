@@ -1,0 +1,16 @@
+date: '2026-11-27'
+by: myia-po-2024:CoursIA
+python_sha: 32452455a3e46c2ca660ac392f093ae2a3ec5c75
+csharp_sha: a4adf9111b2465aadf8c51b94867342045c47952
+content_python_sha: 028ecc63d8eaf237bc5fb4a43bc2407f3c8d701f197d84495f79626c78323b3a
+content_csharp_sha: 1f34083e7fce6c72f7d7604509767977a88754a0417cb99fd209aa3687c5d548
+reason: >-
+  Re-attestation de parite -- libelle de dominance Pareto aligne sur son predicat (#28814, lane
+  myia-po-2024:CoursIA), a l'identique dans les deux jumeaux : puce d'introduction, commentaires
+  de la cellule 4 (enumeration des affectations faisables, filtre qui elimine les solutions
+  dominees) et interpretation (7 affectations enumerees, 6 Pareto-optimales, temoin de dominance).
+  Sources seules : les chaines imprimees, les outputs, les execution_count et les metadata sont
+  byte-identiques a origin/main -- les cellules 4 des deux carnets ont ete re-executees (Z3
+  4.12.2.0) et reproduisent les sorties de main, texte et execution_count. Controle octet pour
+  octet : chaque carnet = blob de main + les seules substitutions visees. Aucun strip outille
+  posterieur : le blob atteste ici est celui du HEAD de la PR. parity_level native-both intact.

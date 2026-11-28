@@ -39,13 +39,25 @@ Mesure rendue (Playwright headless) sur un deck Slidev servi en dev mode
   5. ENVIRONNEMENT DE POLICES (diagnostic, #24171) — le rendu Slidev ne
      dépend que des polices SYSTÈME (aucune @font-face dans slides/) : la
      hauteur des blocs de texte, donc le compteur HORS_CANVAS, dépend de la
-     machine qui rend. La sonde historique `font_signature` ne porte que
-     sur la première slide et ne prouve pas la comparabilité. Le relevé
-     `rendering_conditions` utilise CDP pour identifier les polices des
-     glyphes effectivement rendus par slide, avec version navigateur et
-     canvas. Son empreinte est indicative : les noms ne garantissent pas
-     l’identité des fichiers de polices. Diagnostic sans effet sur les
+     machine qui rend. La sonde historique `font_signature` ne porte que sur un
+     élément de texte et un bloc de code du deck et ne prouve pas la
+     comparabilité. Le relevé `rendering_conditions` utilise CDP pour identifier
+     les polices des glyphes effectivement rendus par slide, avec version
+     navigateur et canvas. Son empreinte est indicative : les noms ne garantissent
+     pas l’identité des fichiers de polices. Diagnostic sans effet sur les
      compteurs ni sur le code retour.
+
+  6. PIN DE POLICES (`--pin-fonts`, #24171) — les compteurs dérivent des
+     largeurs de glyphes et des hauteurs de ligne, donc des polices SYSTÈME
+     de la machine qui mesure. Sous le drapeau, chaque famille système est
+     remplacée par une police LIVRÉE (`slidev_font_pin.py`, `fonts/`) de
+     métriques réglées sur la référence Windows : deux machines mesurent le
+     même rendu. Le pin est vérifié AVANT tout navigateur ; inapplicable
+     (polices absentes ou altérées), le scan rend 3 sans rien mesurer. Les
+     glyphes qu'une police système a quand même servis sont nommés dans
+     `font_pin.escaped`. La sonde d'environnement passe APRÈS le balayage
+     des slides, quand le surligneur a monté ses blocs et que les génériques
+     de tout le deck sont réparés.
 
 Le rendu est ADVISORY — il ne remplace pas le QA visuel humain pour la
 composition esthétique. Cette borne est imprimée à chaque invocation.
@@ -96,8 +108,21 @@ FONT_DEPENDENCY = (
     "Les compteurs de ce rapport dependent des polices SYSTEME de la machine "
     "qui a rendu le deck (aucune @font-face dans slides/) : la hauteur des "
     "blocs de texte, donc HORS_CANVAS, varie d'une machine a l'autre. "
-    "La signature historique ne couvre que la premiere slide. Consulter "
+    "La signature historique ne couvre qu'un element de texte et un bloc de "
+    "code du deck. Consulter "
     "rendering_conditions ; une empreinte egale ne prouve pas la comparabilite."
+)
+
+FONT_PIN_DEPENDENCY = (
+    "Mesure EPINGLEE (--pin-fonts, #24171) : les polices systeme sont remplacees "
+    "par les polices livrees dans scripts/notebook_tools/fonts/, reglees sur la "
+    "reference Windows (Segoe UI / Cascadia Code / Georgia), et le navigateur est "
+    "lance avec font_pin.launch_args (sans hinting : sous Linux, il arrondirait "
+    "les avancees de glyphes au pixel). Sous pin, une machine Windows et une "
+    "machine Linux rendent un meme deck avec les memes boites de ligne et des "
+    "largeurs de glyphes a 0,06 % pres (mesure). Ce que le pin ne restitue pas "
+    "(crenage, glyphes hors couverture) est liste dans font_pin.escaped et "
+    "font_pin.borne."
 )
 
 
@@ -369,11 +394,21 @@ _FONT_ENV_JS = """() => {
 
 
 def probe_font_environment(page) -> dict:
-    """Estime l'environnement de polices de la première slide.
+    """Estime l'environnement de polices d'un élément de texte et d'un bloc code.
 
     ADVISORY : n'entre dans aucun compteur, ne modifie pas le code retour.
     Retourne un dict `{"error": ...}` si la sonde n'a pas pu aboutir — l'ignorance
     est alors nommée, jamais silencieuse.
+
+    #24171 — la sonde lit le PREMIER élément de texte et le PREMIER `pre, code`
+    de `#slide-content` dans l'ordre du document. Slidev y garde le deck ENTIER
+    (`#slideshow` → un `.slidev-page` par slide, une seule affichée, les autres
+    `display:none`) : l'élément lu appartient donc à la première slide qui en
+    porte un, PAS à la slide courante — et le `pre` peut être sur une page
+    cachée, ce qui ne gêne pas la mesure (pile déclarée et métriques, pas des
+    boîtes rendues). La sonde passe APRÈS le balayage : le surligneur monte ses
+    blocs ~2,6 s après le chargement (mesuré), et sous pin la réparation des
+    génériques se fait pendant le balayage.
     """
     env = page.evaluate(_FONT_ENV_JS)
     if not isinstance(env, dict):
@@ -390,6 +425,15 @@ def _channel_signature_part(env: dict) -> dict:
     entrer dans l'empreinte à part (reparation #24495, réserve du
     vérificateur — un bloc pre changeant de police monospace ne modifiait
     pas la signature).
+
+    #24171 — la liste des familles résolues dépend du SYSTÈME : mesuré sans
+    pin, même pile déclarée, Windows résout `Segoe UI`, `Calibri` et
+    `Consolas` là où Linux n'en résout aucune. C'est voulu : cet écart est
+    un signal de non-comparabilité, et `--pin-fonts` le supprime pour toute
+    famille qu'il masque (servie par une police livrée, donc résolue
+    partout). Une famille qu'aucune face du pin ne masque reste système des
+    deux côtés : c'est une liste `shadow` à étendre, pas une empreinte à
+    rétrécir.
     """
     resolved = sorted(
         f.get("name", "")
@@ -409,7 +453,7 @@ def _channel_signature_part(env: dict) -> dict:
 def font_signature(font_env: dict) -> str:
     """Empreinte courte de l'environnement de polices d'un rendu.
 
-    Cette estimation se limite à la première slide ; son égalité ne prouve
+    Cette estimation se limite à la slide où la sonde est prise ; son égalité ne prouve
     pas la comparabilité des rapports. La signature résume partiellement
     des blocs, pour le canal TEXTE et le canal MONOSPACE (code/pre) : les
     familles effectivement résolues et la hauteur de ligne intrinsèque
@@ -482,19 +526,26 @@ def rendered_fonts(cdp) -> dict:
         return {"error": str(exc)}
 
 
-def rendering_conditions(browser_version: str, canvas: list, fonts_by_slide: list) -> dict:
+def rendering_conditions(browser_version: str, canvas: list, fonts_by_slide: list,
+                         font_pin: str | None = None) -> dict:
     """Empreinte indicative ; l'egalite ne garantit pas les fichiers de police."""
     payload = {"browser": browser_version, "canvas": canvas, "slides": fonts_by_slide}
+    if font_pin:
+        payload["font_pin"] = font_pin
     if not fonts_by_slide or any("error" in slide for slide in fonts_by_slide):
         signature = "indisponible"
     else:
         signature = hashlib.sha256(json.dumps(
             payload, ensure_ascii=False, sort_keys=True
         ).encode("utf-8")).hexdigest()
-    return {**payload, "signature": signature,
-            "borne": "Des signatures differentes interdisent la comparaison directe ; "
-                     "leur egalite ne prouve pas l'identite des fichiers de polices "
-                     "ni des autres conditions de rendu."}
+    borne = ("Des signatures differentes interdisent la comparaison directe ; "
+             "leur egalite ne prouve pas l'identite des fichiers de polices "
+             "ni des autres conditions de rendu.")
+    if font_pin:
+        borne = ("Sous --pin-fonts, les fichiers de polices SONT livres et verrouilles "
+                 "par font_pin.signature : l'egalite de signature devient opposable, "
+                 "borne connue (crenage, glyphes echappes) exclue. " + borne)
+    return {**payload, "signature": signature, "borne": borne}
 
 
 def wait_slide_stable(page, target: int, timeout_ms: int = 6000, poll_ms: int = 250) -> dict:
@@ -528,11 +579,18 @@ def wait_slide_stable(page, target: int, timeout_ms: int = 6000, poll_ms: int = 
     return {"cur": None, "present": False, "digest": None, "timeout": True}
 
 
-def measure_slide(page, slide_idx: int, canvas_w: int, canvas_h: int) -> dict:
+def measure_slide(page, slide_idx: int, canvas_w: int, canvas_h: int, font_pin=None) -> dict:
     """Mesure les 3 signaux sur la slide courante stabilisée. Retourne un dict verdict."""
     state = wait_slide_stable(page, slide_idx)
     if state.get("timeout") or not state.get("present"):
         return {"slide": slide_idx, "error": f"slide {slide_idx} non stabilisée (cur={state.get('cur')})"}
+    # #24171 — les piles à générique en tête (sans-serif, monospace…) ne peuvent
+    # pas être masquées par @font-face : on les répare en style inline AVANT la
+    # mesure. Le remplacement est synchrone (les faces du pin sont déjà chargées).
+    # `#slide-content` porte le deck entier : le premier passage répare tout,
+    # celui-ci ne rattrape que ce que le deck a recréé depuis.
+    if font_pin is not None:
+        font_pin.apply(page)
 
     text_head = page.evaluate(
         """() => (document.querySelector('#slide-content')?.innerText || '')
@@ -1006,10 +1064,11 @@ def github_annotations(report: dict, slides_md: Path) -> list[str]:
                 f"::warning file={rel},line={line}::[OCCUPATION] slide {r['slide']} ({head}) — "
                 f"gap_left={occ['gap_left_pct']}% gap_right={occ['gap_right_pct']}% bottom={occ.get('content_bottom')}/{report['canvas'][1]}"
             )
-    # #24171 — estimation historique sur la premiere slide seulement. La
+    # #24171 — estimation sur une seule slide (la dernière visitée). La
     # notice est non bloquante et nomme ce qui a été mesuré, y compris
     # l'absence de mesure (une ignorance nommée vaut mieux qu'un silence).
     fe = report.get("font_environment") or {}
+    pin = report.get("font_pin") or {}
     sig = report.get("font_signature") or font_signature(fe)
     if not fe:
         out.append(
@@ -1029,15 +1088,67 @@ def github_annotations(report: dict, slides_md: Path) -> list[str]:
             for f in fe.get("families", [])
             if f.get("resolved") and not f.get("generic")
         ]
+        # Sous pin, la phrase de non-comparabilité serait fausse : c'est
+        # précisément ce que le pin achète (largeurs à 0,06 % près entre
+        # Windows et Linux, mesuré sur vingt chaînes et trois familles).
+        verdict = (
+            "mesure épinglée : ces compteurs se comparent à un rendu pris sous le même pin"
+            if pin.get("enabled") and pin.get("applied") else
+            "les compteurs de ce deck ne sont pas comparables à un rendu fait sur une autre machine"
+        )
         out.append(
             f"::notice file={rel}::[ENVIRONNEMENT-POLICES] signature={sig} — "
-            f"familles détectées sur la première slide : {', '.join(resolved) or 'aucune (repli sur une police générique)'} ; "
+            f"familles détectées sur la slide sondée : {', '.join(resolved) or 'aucune (repli sur une police générique)'} ; "
             f"hauteur de ligne intrinsèque {fe.get('line_height_normal_stack_px')}px "
             f"(delta vs police générique {fe.get('line_height_delta_px')}px) — "
-            "les compteurs de ce deck ne sont pas comparables à un rendu fait sur une autre machine"
+            + verdict
+        )
+    if pin.get("enabled"):
+        where = f"::notice file={rel}::" if pin.get("verified") else f"::warning file={rel}::"
+        served = sorted({e["family"] for e in pin.get("escaped", [])})
+        out.append(
+            where + f"[PIN-POLICES] signature {pin.get('signature', '')[:12]} — "
+            + ("aucun glyphe servi par une police système"
+               if pin.get("verified") else
+               f"{len(served)} police(s) système ont servi des glyphes : {', '.join(served)} "
+               "(voir font_pin.escaped)")
         )
     out.append(f"::notice file={rel}::Plancher mécanique advisory ({BORNE})")
     return out
+
+
+def build_font_pin() -> tuple:
+    """Le pin de polices (`--pin-fonts`, #24171), vérifié SANS navigateur.
+
+    Rend `(pin, None)`, ou `(None, motif)` quand le pin est inapplicable
+    (polices livrées absentes ou altérées) : `main()` rend alors 3 sans rien
+    mesurer — et sans avoir lancé de navigateur, donc sans en dépendre. Le
+    module du pin est résolu comme celui du scanner lui-même (module du paquet
+    ou script) : un seul objet-module du pin par processus, celui qu'un test
+    peut modifier.
+    """
+    if __package__:
+        from .slidev_font_pin import FontPin, FontPinError
+    else:
+        from slidev_font_pin import FontPin, FontPinError
+    try:
+        return FontPin(), None
+    except FontPinError as exc:
+        return None, str(exc)
+
+
+def launch_browser(pw, font_pin):
+    """Lance Chromium ; sous pin, avec les arguments du pin (#24171).
+
+    Même liste que celle entrée dans `font_pin.signature` : sous Linux, Chromium
+    hinte sinon les avancées de glyphes et les largeurs s'écartent de Windows de
+    −2,1 % à +8,7 % pour une même police livrée. Sans pin, lancement inchangé.
+    Fonction séparée : la mesure navigateur couvre le lancement réel, l'ARGUMENT
+    est épingle ici, sur toute machine (nœud Windows compris, où il est un
+    no-op et ne se voit donc pas manquer).
+    """
+    return pw.chromium.launch(headless=True,
+                              args=font_pin.launch_args if font_pin is not None else None)
 
 
 def main():
@@ -1055,6 +1166,12 @@ def main():
     p.add_argument("--wait-ms", type=int, default=400, help="Attente supplémentaire après stabilisation (défaut 400ms)")
     p.add_argument("--github-annotations", action="store_true",
                    help="Émet les constats en ::warning file=,line= (stdout, en plus du JSON sur --out)")
+    p.add_argument("--pin-fonts", action="store_true",
+                   help="Épingle les polices de rendu (#24171) : les familles système sont "
+                        "remplacées par les polices livrées dans scripts/notebook_tools/fonts/, "
+                        "de métriques réglées sur la référence Windows — la mesure devient "
+                        "reproductible d'une machine à l'autre. Code retour 3 si le pin ne peut "
+                        "pas être appliqué (polices absentes ou altérées, feuille non adoptée).")
     args = p.parse_args()
 
     source_text = None
@@ -1069,15 +1186,31 @@ def main():
     results = []
     stale_streaks = []
     prev_head = None
+    # #24171 — le pin est VÉRIFIÉ avant tout navigateur : inapplicable, il se
+    # dit en exit 3 sans rien mesurer, et sans dépendre d'un Chromium.
+    font_pin = None
+    if args.pin_fonts:
+        font_pin, pin_error = build_font_pin()
+        if pin_error is not None:
+            print(json.dumps({"error": f"pin de polices inapplicable : {pin_error}",
+                              "font_pin": {"enabled": False, "applied": False}}))
+            return 3
     # Import lazy : les fonctions pures (split, triage) restent importables
     # sans playwright — les tests unitaires n'en ont pas besoin (la mesure
     # navigateur est couverte par le contrôle positif, cf tests/).
     from playwright.sync_api import sync_playwright
 
     with sync_playwright() as pw:
-        browser = pw.chromium.launch(headless=True)
+        # #24171 — sous pin, le lancement porte les arguments du pin (même
+        # liste que celle entrée dans `font_pin.signature`), voir `launch_browser`.
+        browser = launch_browser(pw, font_pin)
         ctx = browser.new_context(viewport={"width": canvas_w, "height": canvas_h})
         page = ctx.new_page()
+        if font_pin is not None:
+            # Le pin se branche AVANT goto : sa feuille est adoptée par le
+            # document à sa création, donc avant tout script du deck (Mermaid
+            # mesure à l'insertion). Le document lui-même n'est pas intercepté.
+            font_pin.attach(page)
         page.goto(args.url, wait_until="networkidle")
         page.wait_for_timeout(2500)  # laisser Slidev initialiser
 
@@ -1090,10 +1223,19 @@ def main():
             browser.close()
             return 2
 
-        # Sonde d'environnement de polices (#24171) — une fois, sur la slide 1
-        # telle qu'elle est rendue au chargement. Advisory : elle n'entre dans
-        # aucun compteur et ne modifie pas le code retour.
-        font_env = probe_font_environment(page)
+        pin_loaded = None
+        if font_pin is not None:
+            pin_loaded = font_pin.ensure_loaded(page)
+            if not pin_loaded.get("injected") or pin_loaded.get("unloaded"):
+                print(json.dumps({
+                    "error": "pin de polices non appliqué",
+                    "detail": {"feuille adoptée": pin_loaded.get("injected"),
+                               "faces non chargées": pin_loaded.get("unloaded"),
+                               "erreur d'installation": pin_loaded.get("error")},
+                }))
+                browser.close()
+                return 3
+
         try:
             cdp = ctx.new_cdp_session(page)
             cdp.send("DOM.enable")
@@ -1115,7 +1257,7 @@ def main():
                 break
             page.evaluate(f"() => window.__slidev__.nav.go({i})")
             page.wait_for_timeout(args.wait_ms)
-            r = measure_slide(page, i, canvas_w, canvas_h)
+            r = measure_slide(page, i, canvas_w, canvas_h, font_pin=font_pin)
             if r.get("error"):
                 stale_streaks.append(f"slide {i}: {r['error']}")
                 break
@@ -1127,6 +1269,27 @@ def main():
             results.append(r)
             i += 1
 
+        # Sonde d'environnement de polices (#24171) — APRÈS le passage complet,
+        # pas au chargement. Advisory : elle n'entre dans aucun compteur et ne
+        # modifie pas le code retour.
+        #
+        # Elle lit le premier élément de texte et le premier `pre, code` de
+        # #slide-content, dans l'ordre du document — et #slide-content contient
+        # le deck ENTIER (`#slideshow`, un `.slidev-page` par slide, une seule
+        # affichée). Mesuré (deck S8, 30 slides, Chromium 156) : aucun `pre` au
+        # retour de goto ; quinze montent d'un bloc 2,57 s à 2,60 s plus tard
+        # (neuf relevés sur neuf), dans les 70 ms qui suivent la dernière
+        # requête d'une rafale de 128 requêtes (six relevés sur six portant les
+        # deux signaux). L'attente fixe de 2500 ms laissait donc la sonde à
+        # ~100 ms de sa cible ; et cet instant est celui de l'hôte et du
+        # serveur de dev : une attente fixe au chargement ne peut pas l'atteindre
+        # à coup sûr. Sous pin, la sonde lisait de plus les piles AVANT leur
+        # réparation (faites pendant la boucle, sur tout le deck) : le canal
+        # monospace mesurait une police SYSTÈME. Ici le surligneur est prêt et
+        # les génériques sont réparés.
+        if font_pin is not None:
+            font_pin.apply(page)
+        font_env = probe_font_environment(page)
         browser.close()
 
     n_total = len(results)
@@ -1186,7 +1349,12 @@ def main():
         ),
         "stale_warnings": stale_streaks,
         "borne": BORNE,
-        "font_dependency": FONT_DEPENDENCY,
+        "font_dependency": FONT_PIN_DEPENDENCY if font_pin else FONT_DEPENDENCY,
+        "font_pin": (
+            font_pin.report(pin_loaded, rendered_font_slides) if font_pin
+            else {"enabled": False,
+                  "hint": "passer --pin-fonts pour une mesure reproductible d'une machine à l'autre (#24171)"}
+        ),
         "font_environment": font_env,
         "font_signature": font_signature(font_env),
         "results": results,
@@ -1194,7 +1362,8 @@ def main():
     }
 
     report["rendering_conditions"] = rendering_conditions(
-        browser_version, [canvas_w, canvas_h], rendered_font_slides)
+        browser_version, [canvas_w, canvas_h], rendered_font_slides,
+        font_pin.signature if font_pin else None)
     out_str = json.dumps(report, ensure_ascii=False, indent=2)
     if args.out:
         args.out.write_text(out_str, encoding="utf-8", newline="")

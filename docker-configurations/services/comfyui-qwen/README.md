@@ -1,24 +1,29 @@
 # ComfyUI + Qwen Image-Edit Docker Configuration
 
-Configuration Docker pour ComfyUI avec le modèle Qwen-Image-Edit-2509-FP8 sur GPU RTX 3090.
+Configuration Docker pour ComfyUI avec le modèle Qwen-Image-Edit-2509-FP8 sur GPU RTX 3080 Ti (GPU 0 du banc, index `nvidia-smi`).
 
 ## Architecture
 
-```
-GPU 0 (RTX 3080 Ti 16GB): Forge SD XL Turbo (Port 7860)
-GPU 1 (RTX 3090 24GB):    ComfyUI + Qwen Image-Edit (Port 8188)
-```
-
-### Mapping GPU Critique
-
-**IMPORTANT**: Le mapping GPU est inversé entre PyTorch et nvidia-smi:
-
-```
-nvidia-smi GPU 0 = PyTorch GPU 1 (RTX 3080 Ti - 16GB)
-nvidia-smi GPU 1 = PyTorch GPU 0 (RTX 3090 - 24GB) ← Utilisé par ComfyUI
+```text
+GPU 0 (RTX 3080 Ti 16GB): ComfyUI + Qwen Image-Edit (port 8188), tts-api, serveur d'embeddings
+GPU 1 (RTX 3090 24GB):    comfyui-video, whisper-webui, whisper-api, demucs-api, tts-*, Forge
 ```
 
-**Configuration validée**: `CUDA_VISIBLE_DEVICES=0` pour utiliser la RTX 3090
+### Mapping GPU
+
+Le banc suit une seule convention (#28423) : `CUDA_DEVICE_ORDER=PCI_BUS_ID`, donc
+l'index CUDA est celui de `nvidia-smi` — GPU0 = RTX 3080 Ti (16 Go),
+GPU1 = RTX 3090 (24 Go).
+
+```text
+GPU 0 (nvidia-smi) = PyTorch GPU 0 = RTX 3080 Ti 16GB  <- utilisé par ComfyUI
+GPU 1 (nvidia-smi) = PyTorch GPU 1 = RTX 3090 24GB
+```
+
+Sans `CUDA_DEVICE_ORDER=PCI_BUS_ID`, l'index CUDA est l'inverse de `nvidia-smi`
+sur ce banc : un masque `0` désignerait la 3090. Le compose fixe cet ordre et
+dérive `device_ids`, `CUDA_VISIBLE_DEVICES` et `NVIDIA_VISIBLE_DEVICES` de
+`GPU_PCI_INDEX` (défaut `0`).
 
 ## Prérequis
 
@@ -91,9 +96,9 @@ cp .env.example .env
 
 ```bash
 # GPU Configuration
-GPU_DEVICE_ID=0                # PyTorch GPU 0 = RTX 3090
-CUDA_VISIBLE_DEVICES=0
-NVIDIA_VISIBLE_DEVICES=0
+# Index nvidia-smi sous CUDA_DEVICE_ORDER=PCI_BUS_ID : 0 = RTX 3080 Ti (cible), 1 = RTX 3090.
+# Le compose en derive device_ids, CUDA_VISIBLE_DEVICES et NVIDIA_VISIBLE_DEVICES.
+GPU_PCI_INDEX=0
 
 # Port ComfyUI
 COMFYUI_PORT=8188
@@ -133,16 +138,16 @@ Activating virtual environment...
 Verifying PyTorch and CUDA...
 PyTorch: 2.6.0+cu124
 CUDA: True
-GPU: NVIDIA GeForce RTX 3090
+GPU: NVIDIA GeForce RTX 3080 Ti Laptop GPU
 Verifying Qwen model...
 Qwen model found: models/checkpoints/Qwen-Image-Edit-2509-FP8
 Verifying custom node...
 Qwen custom node found: custom_nodes/ComfyUI-QwenImageWanBridge
 === Starting ComfyUI on port 8188 ===
-GPU: RTX 3090 (CUDA_VISIBLE_DEVICES=0)
+GPU: RTX 3080 Ti (GPU_PCI_INDEX=0, CUDA_DEVICE_ORDER=PCI_BUS_ID)
 URL: http://localhost:8188
 ======================================
-Total VRAM 24576 MB, total RAM 31943 MB
+Total VRAM 16384 MB, total RAM 31943 MB
 To see the GUI go to: http://0.0.0.0:8188
 ```
 
@@ -218,6 +223,8 @@ docker-compose logs
 1. **Vérifier le mapping GPU**:
 ```bash
 docker exec comfyui-qwen nvidia-smi
+# Attendu sous la convention #28423 : CUDA_DEVICE_ORDER=PCI_BUS_ID, CUDA_VISIBLE_DEVICES=0
+docker exec comfyui-qwen printenv | grep -E 'CUDA_DEVICE_ORDER|CUDA_VISIBLE_DEVICES'
 ```
 
 2. **Vérifier PyTorch**:

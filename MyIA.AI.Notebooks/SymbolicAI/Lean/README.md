@@ -104,9 +104,10 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 10b | [Lean-10b-LeanDojo-v2-Pantograph-Lean-Python](Lean-10b-LeanDojo-v2-Pantograph-Lean-Python.ipynb) | LeanDojo-**v2** : base dynamique (`DynamicDatabase`, curriculum random/novel_premises), serveur RPC **Pantograph** (but → tactique → état, pas à pas et preuve entière `check_compile`), pipeline « tracage → politique → vérification Lean » qui réalise l'exercice 3 de Lean-10 - See #18430 | 40 min |
 | 11 | [Lean-11-TorchLean](Lean-11-TorchLean.ipynb) | TorchLean: réseaux de neurones vérifiés, IBP, CROWN | 1h30-2h |
 | 11b | [Lean-11b-TorchLean-Python](Lean-11b-TorchLean-Python.ipynb) | Implémentation Python des algorithmes de vérification (IBP, CROWN) | 1h30-2h |
+| 11c | [Lean-11c-Escalier-Algebre-Lineaire](Lean-11c-Escalier-Algebre-Lineaire.ipynb) | Capstone escalier vers la sous-série [LINEAR](LINEAR/README.md) : le socle d'algèbre linéaire d'Axler interrogé en kernel natif (dépendance 2.19, Grassmann 2.43, théorème du rang 3.21), empreinte `#print axioms` honnête — théorèmes du texte vs 4 sorry-cibles de la baseline CI du lac `linear_lean` - Fille 3.2 de l'Epic [#24838](https://github.com/jsboige/CoursIA/issues/24838) | 25 min |
 | 12 | [Lean-12-Sensitivity-Theorem](Lean-12-Sensitivity-Theorem.ipynb) | théorème de sensibilité (Huang 2019), hypercube, signing matrix, port Lean 4 | 60 min |
 | 12b | [Lean-12b-Lean-Sensitivity-Theorem](Lean-12b-Lean-Sensitivity-Theorem.ipynb) | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de Huang dans le lake `sensitivity_lean`, `#check` + `#print axioms` rendus in-kernel (UNLOCK c.127, jonction Mathlib #2611) | 45 min |
-| 12c | [Lean-12c-Tensor-Product-Representations-Lean](Lean-12c-Tensor-Product-Representations-Lean.ipynb) | Companion **natif** (kernel Lean) : l'algèbre TPR du lake `sensitivity_lean` exécutée in-kernel — quatre théorèmes de `Sensitivity.TPR` (unbinding exact `tprUnbind_bind`, chirurgie de constituant `tprSurgery`, lecture par le décodeur `tprSurgery_readout`, stabilité sous approximation `tprUnbind_approx`), `#print axioms` sans `sorryAx`, frontière épistémique prouvé/hypothèse, jumeau empirique [SL-13 — DISCOVER/TPR](../SymbolicLearning/SL-13-Discover-TPR.ipynb) et 3 exercices (certificats entiers) | 35 min |
+| 12c | [Lean-12c-Tensor-Product-Representations-Lean](Lean-12c-Tensor-Product-Representations-Lean.ipynb) | Companion **natif** (kernel Lean) : l'algèbre TPR du lake `sensitivity_lean` exécutée in-kernel — quatre théorèmes de `Sensitivity.TPR` (unbinding exact `tprUnbind_bind`, chirurgie de constituant `tprSurgery`, lecture par le décodeur `tprSurgery_readout`, stabilité sous approximation `tprUnbind_approx`), `#print axioms` sans `sorryAx`, frontière épistémique prouvé/hypothèse, jumeau empirique [SL-13 — DISCOVER/TPR](../SymbolicLearning/SL-13-Discover-TPR-Python.ipynb) et 3 exercices (certificats entiers) | 35 min |
 
 ### Partie 3 : théorèmes phares (ports complets)
 
@@ -157,10 +158,10 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 19 | [Lean-19-Detection-MIMO-Index-Python](Lean-19-Detection-MIMO-Index-Python.ipynb) | Banc d'essai Hoeffding pour la détection MIMO : vérification empirique de la loi de Bernoulli composée (p_hat ≈ p) sur 20 instances BSC, rapport écart/borne Hoeffding 0.016 à 0.698 (20/20 = 100 % des instances sous la borne) — étalon de référence pour la sous-série MIMO (PR #20371) qui consumera Lean-19 comme baseline — kernel `python3`, 3 exercices | 20 min |
+| 19 | [Lean-19-Detection-MIMO-Index-Python](Lean-19-Detection-MIMO-Index-Python.ipynb) · [jumeau C#](Lean-19-Detection-MIMO-Index-CSharp.ipynb) | Banc d'essai Hoeffding pour la détection MIMO : vérification empirique de la loi de Bernoulli composée (p_hat ≈ p) sur 20 instances BSC, rapport écart/borne Hoeffding 0.016 à 0.698 (20/20 = 100 % des instances sous la borne) — étalon de référence pour la sous-série MIMO (PR #20371) qui consumera Lean-19 comme baseline — kernel `python3`, 3 exercices | 20 min |
 | 19b | [Lean-19b-Borne-Chernoff-Python](Lean-19b-Borne-Chernoff-Python.ipynb) | Borne de Chernoff pour le BSC : dérivation depuis la fonction génératrice des moments exacte de la Bernoulli, puis comparaison des trois bornes (Hoeffding / Chernoff / Bernstein) sur les mêmes 20 instances — Chernoff domine Hoeffding sur 19/20 instances (égalité numérique à p = 0.50), le gain croissant quand `p` s'éloigne de 1/2 — kernel `python3` | 25 min |
 | 19c | [Lean-19c-Borne-Bernstein-Python](Lean-19c-Borne-Bernstein-Python.ipynb) · [version C#](Lean-19c-Borne-Bernstein-CSharp.ipynb) · [jumeau Rust](Lean-19c-Borne-Bernstein-Rust.ipynb) | Borne de Bernstein pour le BSC : borne en `mu`/`sigma^2` sans fonction génératrice, tableau des ratios par instance et lecture par régime de `p` — les trois bornes y sont calculées et confrontées à la fréquence observée — kernel `python3` | 25 min |
-| 19d | [Lean-19d-Inference-Bayesian-Beta-Binomial-Python](Lean-19d-Inference-Bayesian-Beta-Binomial-Python.ipynb) | Inférence bayésienne Beta-Binomial : posterior conjugué, intervalle de crédibilité HDI, confrontation aux bornes fréquentistes sur les mêmes 20 instances — le HDI reste plus étroit que Hoeffding à tout `N`, l'écart ne se refermant pas avec la taille d'échantillon — kernel `python3` | 25 min |
+| 19d | [Lean-19d-Inference-Bayesian-Beta-Binomial-Python](Lean-19d-Inference-Bayesian-Beta-Binomial-Python.ipynb) · [jumeau C#](Lean-19d-Inference-Bayesian-Beta-Binomial-CSharp.ipynb) | Inférence bayésienne Beta-Binomial : posterior conjugué, intervalle de crédibilité HDI, confrontation aux bornes fréquentistes sur les mêmes 20 instances — le HDI reste plus étroit que Hoeffding à tout `N`, l'écart ne se refermant pas avec la taille d'échantillon — kernel `python3` | 25 min |
 
 ### Partie 6 : Recherche pondérée et optimalité (A*)
 
@@ -172,7 +173,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 20 | [Lean-20-Capstone-Digestions-Tao-Python](Lean-20-Capstone-Digestions-Tao-Python.ipynb) | **Capstone (escalier)** vers la sous-série [ANALYSE](Analyse/README.md), qui digère le travail formel de T. Tao : les gestes de la digestion (lire, raconter, extraire, admettre), la table de routage des quatre carnets et de leurs lacs (`teorth/sendov`, `teorth/analysis`, `teorth/pfr`), la marche montée à la main (règle de chaîne et distance de Ruzsa sur F₂³, le signal « compression ⇒ structure » de PFR), et la surface de la sous-série mesurée plutôt que déclarée — kernel `python3`, 3 exercices | 25 min |
+| 20 | [Lean-20-Capstone-Digestions-Tao-Python](Lean-20-Capstone-Digestions-Tao-Python.ipynb) · [jumeau C#](Lean-20-Capstone-Digestions-Tao-CSharp.ipynb) | **Capstone (escalier)** vers la sous-série [ANALYSE](Analyse/README.md), qui digère le travail formel de T. Tao : les gestes de la digestion (lire, raconter, extraire, admettre), la table de routage des quatre carnets et de leurs lacs (`teorth/sendov`, `teorth/analysis`, `teorth/pfr`), la marche montée à la main (règle de chaîne et distance de Ruzsa sur F₂³, le signal « compression ⇒ structure » de PFR), et la surface de la sous-série mesurée plutôt que déclarée — kernel `python3`, 3 exercices | 25 min |
 | ANALYSE-01 | [ANALYSE-01-Sendov-Lean-Python](Analyse/ANALYSE-01-Sendov-Lean-Python.ipynb) | Ouverture de la sous-série [ANALYSE](Analyse/README.md) (dossier `Analyse/`, gradation #17545) — la conjecture de Sendov (preuve L. Mazur 2026, digestion et formalisation T. Tao) : pour un polynôme dont tous les zéros sont dans le disque unité, chaque zéro a un point critique à distance ≤ 1 — énoncé, illustrations numériques des cas, contexte de la preuve | 45 min |
 | ANALYSE-02 | [ANALYSE-02-Tao-Lean-Python](Analyse/ANALYSE-02-Tao-Lean-Python.ipynb) | Le manuel *Analysis I* de T. Tao en lac Lean 4 (`teorth/analysis`) : architecture du lac, philosophie d'auto-contenance vs Mathlib, cinq lemmes emblématiques parmi 44k LOC, méta-récit single-agent vs cluster distribué | 40 min |
 | ANALYSE-03 | [ANALYSE-03-PFR-Lean](Analyse/ANALYSE-03-PFR-Lean.ipynb) | La conjecture PFR (polynomial Freiman–Ruzsa, ZMod 2) : méthode entropique de la preuve `teorth/pfr` — énoncé combinatoire, illustrations cosets dans F₂³, `#check` réels et axiomes du lac compilé | 45 min |
@@ -211,6 +212,13 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 43 | [Lean-43-Borne-Couverture-C24-14-4-Lean](Lean-43-Borne-Couverture-C24-14-4-Lean.ipynb) | **Greffe B** (jalon 3 de #27477) : la borne de couverture certifiée — le paquet `covering` de [jamesyc/covering](https://github.com/jamesyc/covering) est consommé **tel quel** au commit `e28962cf…` par le lake [`covering_lean/`](covering_lean/README.md) (clause Lake `from git`, toolchain amont v4.35.0-rc3, aucun fork ni copie), build sous l'organe borné `lean_exec.py` (2 180 tâches), audit `#print axioms` des deux théorèmes (`covering_24_14_4`, `covering_25_15_5`) sans `sorryAx` ni `native_decide` et **concordant** avec la liste que l'amont publie dans `comparator.json`, tableau des bornes amont relu (`C(24,14,4)` : 19 → 20, meilleure couverture connue 23 ; `C(25,15,5)` : 32 → 34, 42) et propagation de Schönheim recalculée (25→34, 26→56, 27→89, 28→139) confrontée aux valeurs annoncées par l'amont — kernel `python3`, exécuté sans erreur, 3 exercices | 45 min |
 
 La sous-série **[Riemann 200](Riemann200/README.md)** (bicentenaire de Bernhard Riemann, EPIC [#20403](https://github.com/jsboige/CoursIA/issues/20403)) s'ouvre par cette marche, sans escalier dédié pour l'instant : chaque texte fondateur y devient une **distillation calculée** — l'énoncé mesuré dans une sortie, démontrable en Lean quand Mathlib le permet, exerçable. Le versant preuves vit dans le lake compagnon [`riemann200_lean/`](Riemann200/riemann200_lean/) — le pôle en s = 1 et la divergence des inverses des premiers dans [`Memoire1859.lean`](Riemann200/riemann200_lean/Riemann200/Memoire1859.lean), la forme ε du liminf dans [`LiminfForme.lean`](Riemann200/riemann200_lean/Riemann200/LiminfForme.lean) — même maison que [`serre100_lean/`](Serre100/serre100_lean/). Le carnet capstone citant la sous-série depuis la racine reste à poser.
+
+### Partie 8 : Algèbre linéaire d'Axler (sous-série LINEAR)
+
+| # | Notebook | Contenu | Durée |
+|---|----------|---------|-------|
+| LINEAR-01 | [LINEAR/LINEAR-01-Espaces-Vectoriels-Lean](LINEAR/LINEAR-01-Espaces-Vectoriels-Lean.ipynb) | La marche 1 du lac [`linear_lean`](LINEAR/linear_lean/README.md) exécutée nativement (kernel `lean4-wsl-linear`) : espaces vectoriels, sommes, sommes directes (Axler 1.31-1.45), dimension finie, bases, critères de bonne taille et Grassmann (2.19-2.43) — théorèmes du texte prouvés et délégués (empreinte `#print axioms` exécutée), exercices 1B.1-1B.2 résolus et quatre sorry-cibles documentées (baseline CI du lac, mandat 2026-11-03) - Fille 3.2 de l'Epic Origami [#24838](https://github.com/jsboige/CoursIA/issues/24838), sous-série gradation #17545 | 40 min |
+| LINEAR-02 | [LINEAR/LINEAR-02-Applications-Lineaires-Lean](LINEAR/LINEAR-02-Applications-Lineaires-Lean.ipynb) | La marche 2 en carnets natifs : espace des applications linéaires (Axler 3.5-3.10), composition, noyau/image (3.11-3.19), théorème du rang (3.21) et ses deux corollaires de dimension (3.22/3.24), inversibilité et isomorphismes (3.63-3.70) — 0 sorry dans la marche, `#check`/`#print axioms` exécutés in-kernel - Fille 3.2 de l'Epic [#24838](https://github.com/jsboige/CoursIA/issues/24838) | 35 min |
 
 > Numérotation : le notebook Confiance-Preuves-Native — initialement prévu en 35 — est livré en 24b (accrétion du palier 24 Calibration, décision #17545) par la PR #17530 (issue #17520) ; l'annexe A de Tegmark arrive donc en 36.
 
@@ -275,6 +283,7 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 10b | [Lean-10b-LeanDojo-v2-Pantograph-Lean-Python](Lean-10b-LeanDojo-v2-Pantograph-Lean-Python.ipynb) | 14 | 0 | **NOUVEAU** (kernel `leandojo-v2`) |
 | 11 | [Lean-11-TorchLean](Lean-11-TorchLean.ipynb) | 13 | 3 | **COMPLET** |
 | 11b | [Lean-11b-TorchLean-Python](Lean-11b-TorchLean-Python.ipynb) | 19 | 3 | **COMPLET** |
+| 11c | [Lean-11c-Escalier-Algebre-Lineaire](Lean-11c-Escalier-Algebre-Lineaire.ipynb) | 8 | 3 | **NOUVEAU** (kernel `lean4-wsl-linear`, lac `linear_lean`, Fille 3.2 #24838) |
 | 12 | [Lean-12-Sensitivity-Theorem](Lean-12-Sensitivity-Theorem.ipynb) | 14 | 3 | **NOUVEAU** |
 | 12b | [Lean-12b-Lean-Sensitivity-Theorem](Lean-12b-Lean-Sensitivity-Theorem.ipynb) | 8 | 3 | **NOUVEAU** (kernel `lean4-wsl`) |
 | 12c | [Lean-12c-Tensor-Product-Representations-Lean](Lean-12c-Tensor-Product-Representations-Lean.ipynb) | 10 | 3 | **NOUVEAU** (kernel `lean4-wsl`) |
@@ -347,6 +356,8 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 41 | [Lean-41-Capstone-MIMO-Python](Lean-41-Capstone-MIMO-Python.ipynb) | 3 | 0 | **NOUVEAU** (kernel `python3`) |
 | 42 | [Lean-42-Independance-Arithmetique-BusyBeaver-Lean](Lean-42-Independance-Arithmetique-BusyBeaver-Lean.ipynb) | 9 | 3 | **NOUVEAU** (kernel `python3`) |
 | 43 | [Lean-43-Borne-Couverture-C24-14-4-Lean](Lean-43-Borne-Couverture-C24-14-4-Lean.ipynb) | 9 | 3 | **NOUVEAU** (kernel `python3`) |
+| LINEAR-01 | [LINEAR/LINEAR-01-Espaces-Vectoriels-Lean](LINEAR/LINEAR-01-Espaces-Vectoriels-Lean.ipynb) | 10 | 0 | **NOUVEAU** (kernel `lean4-wsl-linear`, lake `linear_lean`, Fille 3.2 #24838) |
+| LINEAR-02 | [LINEAR/LINEAR-02-Applications-Lineaires-Lean](LINEAR/LINEAR-02-Applications-Lineaires-Lean.ipynb) | 9 | 0 | **NOUVEAU** (kernel `lean4-wsl-linear`, lake `linear_lean`) |
 
 Conventions de la série — l'état réel de chaque carnet se lit dans la table
 ci-dessus (colonnes mesurées par `scripts/lean/lean_series_maturity.py`,
@@ -521,6 +532,7 @@ Lean/
 ├── Lean-10b-LeanDojo-v2-Pantograph-Lean-Python.ipynb # Python kernel (WSL venv leandojo-v2) - LeanDojo-v2 : DynamicDatabase + serveur RPC Pantograph (See #18430)
 ├── Lean-11-TorchLean.ipynb         # Lean4 kernel - NN verification
 ├── Lean-11b-TorchLean-Python.ipynb  # Python kernel - Implémentation algorithmes
+├── Lean-11c-Escalier-Algebre-Lineaire.ipynb  # Lean4 (WSL) kernel - capstone escalier vers la sous-série LINEAR (Axler ch. 1-3, lac linear_lean)
 ├── Lean-12-Sensitivity-Theorem.ipynb # Python kernel - théorème de sensibilité (Huang 2019, hypercube, signing matrix)
 ├── Lean-12b-Lean-Sensitivity-Theorem.ipynb # Lean4 (WSL) kernel - companion natif du théorème de sensibilité (preuve 0-sorry du lake sensitivity_lean)
 ├── Lean-12c-Tensor-Product-Representations-Lean.ipynb # Lean4 (WSL) kernel - algèbre TPR : binding, unbinding, constituent surgery (jumeau empirique SL-13 SymbolicLearning)
@@ -609,6 +621,11 @@ Lean/
 │   ├── GROTH-06-FormalGroups-Lean.ipynb # Lean4 (WSL) kernel - groupes formels multivariés natifs (lake formal_groups_lean, modules Basic/Hom/Additive/Iterates)
 │   ├── formal_groups_lean/         # Groupes formels multivariés (port de anthropics/fermats-last-theorem, Apache-2.0) - 0 sorry, Lake build ; companion GROTH-06
 │   ├── grothendieck_lean/         # Grothendieck tribute workspace (0 sorry, Lake build)
+│   └── README.md
+├── LINEAR/                        # Sous-série l'algèbre linéaire d'Axler en marches Lean (Fille 3.2 de l'Epic Origami #24838 ; marches .lean = Fille 3.1, capstone Lean-11c à la racine) — lake [linear_lean](LINEAR/linear_lean/README.md) : [README](LINEAR/README.md)
+│   ├── LINEAR-01-Espaces-Vectoriels-Lean.ipynb # Lean4 (WSL) kernel - espaces vectoriels, dimension finie, Grassmann (Axler ch. 1-2, 4 sorry-cibles documentées)
+│   ├── LINEAR-02-Applications-Lineaires-Lean.ipynb # Lean4 (WSL) kernel - applications linéaires, théorème du rang, isomorphismes (Axler ch. 3)
+│   ├── linear_lean/               # Les marches d'Axler (chapitres 1-3) - sorry-baseline 4 (exercices), théorèmes du texte 0 sorry, Lake build
 │   └── README.md
 ├── Langlands/                     # Sous-série formes modulaires et ponts (EPIC #17969) : [README](Langlands/README.md)
 │   ├── 01-formes-modulaires-sl2z-hecke.ipynb

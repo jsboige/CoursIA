@@ -821,6 +821,134 @@ class TestRelativeLinkDirChangeRefused(unittest.TestCase):
             self.assertEqual(plan.path_refused, [])
 
 
+class TestGenericBasenameDirChangeResolves(unittest.TestCase):
+    """#28490 (reserve ai-01 sur la review de #28495) : un basename GENERIQUE
+    (README.md, feuille de sous-serie) deplace de dossier ne porte que sa forme
+    complete. Un lien RELATIF d'un porteur d'un autre dossier, qui RESOLUT vers
+    l'emplacement ANCIEN (`Ancienne/README.md` vu de `ICT/`), ne matche ni un
+    pattern de reecriture (raw_total = 0) ni `_path_context_hits` (saute quand
+    raw_total vaut 0) : ni reecrit, ni signale, 404 silencieux. Le scan le
+    RESOLUT depuis le porteur et le signale (refus, passage manuel) ; un
+    `README.md` homonyme dans un autre dossier, NON deplace, n'est pas signe."""
+
+    OLD = "ICT/Ancienne/README.md"
+    NEW = "ICT/Nouvelle/Guide.md"
+
+    def _forms(self):
+        return [rn.ref_forms(self.OLD, self.NEW)]
+
+    def _repo(self, repo, files):
+        _git(repo, "init", "-q")
+        _git(repo, "config", "user.email", "test@example.invalid")
+        _git(repo, "config", "user.name", "test")
+        for rel, body in files:
+            if isinstance(body, dict):
+                _write_nb(repo, rel, body)
+            else:
+                _write(repo, rel, body)
+        _git(repo, "add", "-A")
+        _git(repo, "commit", "-qm", "base")
+
+    def test_relative_link_resolving_to_moved_generic_file_is_signaled(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            carrier = "ICT/README.md"
+            self._repo(repo, [
+                (self.OLD, "# Ancienne\n"),
+                (carrier, "suite : [suite](Ancienne/README.md)\n"),
+            ])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            # Le lien relatif resolut vers l'ancien emplacement : SIGNE.
+            self.assertIn((carrier, "Ancienne/README.md"), plan.path_refused)
+            # ... mais jamais reecrit (basename generique, forme complete seule).
+            self.assertNotIn(carrier, plan.rewrites)
+            # Rien n'est ecrit : l'ancien lien survit au scan (passage manuel).
+            self.assertIn("Ancienne/README.md",
+                          (repo / carrier).read_text(encoding="utf-8"))
+
+    def test_homonym_readme_in_other_dir_not_linked_is_ignored(self):
+        """Le lien pointe vers un `README.md` homonyme (autre dossier, NON
+        deplace) : il ne resout pas vers le fichier deplace -> rien a signaler.
+        La precision est structurelle : le chemin reconstitue vers le fichier
+        VRAIMENT deplace n'apparait pas dans le porteur."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            carrier = "ICT/README.md"
+            self._repo(repo, [
+                (self.OLD, "# Ancienne\n"),
+                ("ICT/Other/README.md", "# Autre README homonyme\n"),
+                (carrier, "autre : [autre](Other/README.md)\n"),
+            ])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            self.assertEqual(plan.path_refused, [])
+            self.assertNotIn(carrier, plan.rewrites)
+
+    def test_markdown_carrier_with_rewritable_occurrence_is_refused(self):
+        """Reserve ai-01 (2e tour), volet Markdown : un porteur qui porte AUSSI
+        une occurrence reecrivable (la forme complete, raw_total > 0) et un lien
+        relatif qui resout vers l'ancien emplacement ne doit jamais etre
+        declare reecrivable -- le lien resterait en 404 silencieux. L'ordre des
+        branches le garantit par construction (la garde (a)/(b) l'atteint deja
+        aujourd'hui ; le volet notebook, lui, etait reellement muet)."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            carrier = "ICT/notes.md"
+            self._repo(repo, [
+                (self.OLD, "# Ancienne\n"),
+                (carrier, "cible : " + self.OLD + "\n"
+                          "suite : [suite](Ancienne/README.md)\n"),
+            ])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            self.assertTrue([r for r in plan.path_refused if r[0] == carrier])
+            self.assertNotIn(carrier, plan.rewrites)
+            # Rien n'est ecrit : passage manuel du fichier entier.
+            self.assertIn("Ancienne/README.md",
+                          (repo / carrier).read_text(encoding="utf-8"))
+
+    def test_full_form_citation_at_repo_root_still_rewritten(self):
+        """Precision du detecteur de liens resolus : un porteur de la RACINE
+        cite la forme COMPLETE du fichier deplace. Le chemin reconstitue depuis
+        la racine EST cette forme complete, que la reecriture met a jour
+        correctement (prefixe et nom ensemble) : le compter comme un lien non
+        reecrivable serait un faux refus (mesure en ecrivant le temoin)."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            carrier = "notes.md"
+            self._repo(repo, [
+                (self.OLD, "# Ancienne\n"),
+                (carrier, "cible : " + self.OLD + "\n"),
+            ])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            self.assertIn(carrier, plan.rewrites)
+            self.assertEqual(plan.path_refused, [])
+
+    def test_notebook_carrier_relative_link_is_refused(self):
+        """Reserve ai-01 (2e tour) : la branche notebook ne consommait pas
+        `resolve_hits` -- un carnet dont le SEUL referent est le lien relatif
+        resolu (raw_total = det_total = 0, donc pas de motif de reecriture ni
+        de detection) etait saute sans aucun signalement."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            carrier = "ICT/Sujet.ipynb"
+            self._repo(repo, [
+                (self.OLD, "# Ancienne\n"),
+                (carrier, _nb([_md("suite : [suite](Ancienne/README.md)\n")])),
+            ])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            self.assertIn((carrier, "Ancienne/README.md"), plan.path_refused)
+            self.assertNotIn(carrier, plan.rewrites)
+
+
 class TestSameNameDirChangeDetected(unittest.TestCase):
     """#19173 (reserve Hermes sur la review de #19154) : renommage qui change
     de dossier SANS changer de nom. La paire filename y est un no-op,
@@ -1012,6 +1140,86 @@ class TestTwoCommitDiscipline(unittest.TestCase):
             self.assertNotIn("(S-01-Alpha.ipynb)", body)
             c2 = _git(repo, "diff", "--name-status", "HEAD~1", "HEAD")
             self.assertIn(f"M\t{new2}", c2)
+
+
+class TestManualGate(unittest.TestCase):
+    """Un plan incomplet ne doit jamais demarrer de mouvement implicite."""
+
+    def _exercise(self, field: str, entry: object) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo)
+            plan = rn.Plan()
+            getattr(plan, field).append(entry)
+            output = io.StringIO()
+            with mock.patch.object(rn, "repo_root", return_value=repo), \
+                 mock.patch.object(rn, "load_mapping", return_value=[(OLD, NEW)]), \
+                 mock.patch.object(rn, "scan_referents", return_value=plan), \
+                 mock.patch.object(rn, "move_file") as move, \
+                 mock.patch("sys.stdout", output):
+                rc = rn.main(["--mapping", "test", "--apply"])
+            self.assertNotEqual(rc, 0)
+            move.assert_not_called()
+            self.assertTrue((repo / OLD).exists())
+            self.assertFalse((repo / NEW).exists())
+            self.assertEqual(_git(repo, "rev-parse", "HEAD").strip(), base)
+            self.assertIn(OLD, output.getvalue())
+            self.assertIn(f"{field}=1", output.getvalue())
+
+    def test_mixed_refused_blocks(self):
+        self._exercise("mixed_refused", OLD)
+
+    def test_path_refused_blocks(self):
+        self._exercise("path_refused", (OLD, "ancien.ipynb"))
+
+    def test_code_cell_blocks(self):
+        self._exercise("code_cells", (OLD, 1, "ancien.ipynb"))
+
+    def test_fragmented_blocks(self):
+        self._exercise("fragmented", (OLD, 1))
+
+    def test_real_code_reference_blocks_before_move(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            carrier = "MyIA.AI.Notebooks/S/S-02-Beta.ipynb"
+            _write_nb(repo, carrier, _nb([_code('open("S-01-Alpha.ipynb")')]))
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "code reference")
+            base = _git(repo, "rev-parse", "HEAD").strip()
+            output = io.StringIO()
+            with mock.patch.object(rn, "repo_root", return_value=repo), \
+                 mock.patch.object(rn, "load_mapping", return_value=[(OLD, NEW)]), \
+                 mock.patch("sys.stdout", output):
+                rc = rn.main(["--mapping", "test", "--apply"])
+            self.assertNotEqual(rc, 0)
+            self.assertIn(carrier, output.getvalue())
+            self.assertIn("code_cells=1", output.getvalue())
+            self.assertTrue((repo / OLD).exists())
+            self.assertFalse((repo / NEW).exists())
+            self.assertEqual(_git(repo, "rev-parse", "HEAD").strip(), base)
+
+    def test_allow_manual_applies_and_reports_counts(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            plan = rn.Plan()
+            plan.code_cells.append((OLD, 1, "ancien.ipynb"))
+            output = io.StringIO()
+            with mock.patch.object(rn, "repo_root", return_value=repo), \
+                 mock.patch.object(rn, "load_mapping", return_value=[(OLD, NEW)]), \
+                 mock.patch.object(rn, "scan_referents", return_value=plan), \
+                 mock.patch.object(rn, "run_organs", return_value=0), \
+                 mock.patch("sys.stdout", output):
+                rc = rn.main(["--mapping", "test", "--apply", "--allow-manual"])
+            self.assertEqual(rc, 0)
+            self.assertTrue((repo / NEW).exists())
+            verdict = next(line for line in output.getvalue().splitlines()
+                           if line.startswith("VERDICT"))
+            self.assertIn("code_cells=1", verdict)
+            self.assertIn("mixed_refused=0", verdict)
+            self.assertIn("path_refused=0", verdict)
+            self.assertIn("fragmented=0", verdict)
 
 
 class TestMappingRefusals(unittest.TestCase):

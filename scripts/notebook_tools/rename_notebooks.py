@@ -77,6 +77,7 @@ import importlib.util
 import io
 import json
 import os
+import posixpath
 import re
 import subprocess
 import sys
@@ -529,10 +530,20 @@ def build_patterns(forms_list: list[RefForms]) -> list[tuple[RefForms, re.Patter
         old_tail = _tail_of(f.stem)
         pairs = [
             (f.full, f.new_rel),
-            (f.filename, new_stem + ".ipynb"),
-            (f.stem, new_stem),
-            (f.urlencoded, new_stem.replace(" ", "%20")),
         ]
+        # #28490 (defaut 1) : les formes filename/stem/urlencoded ne sont
+        # portantes QUE si l'ancien basename porte l'identifiant de serie
+        # (Prefixe-NN). Pour un basename generique (README.md, les feuilles
+        # des sous-series dissoutes), elles reconnaissent le mot nu dans tout
+        # le corpus : 1 038 fichiers planifies et 1 394 liens refuses par la
+        # garde path_refused (#19154) -- plan inexploitable. On ne garde alors
+        # que la forme complete, inambigue (le referent par chemin).
+        if STEM_RE.match(f.stem):
+            pairs += [
+                (f.filename, new_stem + ".ipynb"),
+                (f.stem, new_stem),
+                (f.urlencoded, new_stem.replace(" ", "%20")),
+            ]
         if old_tail:
             pairs.append((f.abbrev + old_tail,
                           _new_abbrev(f) + _tail_of(new_stem)))
@@ -667,6 +678,49 @@ def _path_context_hits(raw: str, forms_list: list[RefForms],
     return hits
 
 
+def _resolve_link_hits(raw: str, dir_change: list[RefForms],
+                       carrier_rel: str) -> list[str]:
+    """Liens relatifs du porteur qui RESOLVENT vers l'emplacement ANCIEN d'un
+    fichier deplace, reconstitués DEPUIS le dossier du porteur (#28490,
+    reserve ai-01 sur la review de #28495).
+
+    Pour un basename generique (README.md, feuille de sous-serie) la seule
+    forme portante est la forme complete -- un lien relatif `Ancienne/README.md`
+    d'un porteur d'un autre dossier ne la contient pas. Il ne matche donc ni un
+    pattern de reecriture (raw_total = 0) ni `_path_context_hits` (appele quand
+    raw_total vaut 0), et le scan ne le voyait plus : ni reecrit, ni signale,
+    404 silencieux.
+
+    On reconstitue ici, pour CHAQUE porteur, le chemin relatif exact qui mene
+    de son dossier a l'emplacement ANCIEN du fichier deplace, et on le cherche
+    borne comme cible de lien. La precision est structurelle : un homonyme
+    (un `README.md` dans UN AUTRE dossier, NON deplace) n'est pas dans
+    `dir_change`, et un lien vers lui ne coincide pas avec le chemin reconstitue
+    vers le fichier VRAIMENT deplace -- il ne matche pas.
+    """
+    if not dir_change:
+        return []
+    cdir = carrier_rel.rsplit("/", 1)[0] if "/" in carrier_rel else ""
+    out: list[str] = []
+    for f in dir_change:
+        if carrier_rel == f.old_rel:
+            continue  # le fichier deplace lui-meme : auto-mention, pas un lien
+        rel = posixpath.relpath(f.old_rel, cdir) if cdir else f.old_rel
+        if rel == f.full:
+            # Porteur a la RACINE : le chemin reconstitue EST la forme
+            # complete, que la reecriture sait deja mettre a jour (prefixe et
+            # nom ensemble). Le compter ici ferait refuser un porteur sain --
+            # faux refus mesure en ecrivant le temoin.
+            continue
+        # `rel in raw` = court-circuit C rapide sur les porteurs sans aucune
+        # occurrence du chemin reconstitue ; la borne garantit qu'on ne prend
+        # pas `X/Ancienne/README.md` (un autre fichier) pour notre cible.
+        if rel in raw and re.search(
+                r"(?<![\w/])" + re.escape(rel) + r"(?![\w])", raw):
+            out.append(rel)
+    return out
+
+
 _TEXT_SUFFIXES = frozenset({
     ".py", ".md", ".ipynb", ".yaml", ".yml", ".json", ".lean", ".cs", ".txt",
     ".csv", ".sh", ".ps1", ".html", ".htm", ".js", ".ts", ".tex", ".cff",
@@ -746,11 +800,26 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
                     if rel != f.old_rel
                     and cdir == (f.old_rel.rsplit("/", 1)[0]
                                  if "/" in f.old_rel else "")]
+        # #28490 (reserve ai-01) : basename generique deplace -- un lien
+        # relatif d'un porteur qui RESOLUT vers l'ancien emplacement n'est ni
+        # reecrivable (forme complete seule) ni vu par _path_context_hits ;
+        # on le signale (refus, passage manuel) au lieu du 404 silencieux.
+        resolve_hits = _resolve_link_hits(raw, dir_change, rel)
 
         if not rel.endswith(".ipynb"):
             if (raw_total or det_total) and (path_hits or same_dir):
                 plan.path_refused.append(
                     (rel, path_hits[0] if path_hits else same_dir[0].filename))
+            elif resolve_hits:
+                # #28490 (reserve ai-01, 2e tour) : ordre conservateur. Un lien
+                # relatif qui resout vers l'ancien emplacement n'est pas
+                # reecrivable ; il prime sur une reecriture par ailleurs
+                # possible. Mesure : sur un porteur Markdown, ce chemin est
+                # ATTEINT par les signatures (a)/(b) -- le basename d'un lien
+                # relatif est precede de `/`, et un nom nu implique un porteur
+                # du dossier d'origine. L'ordre est garde pour que l'invariant
+                # tienne par construction plutot que par cette interaction.
+                plan.path_refused.append((rel, resolve_hits[0]))
             elif raw_total:
                 plan.rewrites[rel] = raw_total
             continue
@@ -778,7 +847,10 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
                             for _, pat, _, _ in pats)
             if blob_hits < joined_hits:
                 plan.fragmented.append((rel, i))
-        if not raw_total and not det_total:
+        # #28490 (reserve ai-01, 2e tour) : resolve_hits est calcule AVANT ce
+        # saut -- un porteur notebook dont le seul referent est le lien relatif
+        # resolu (raw_total = det_total = 0) etait saute ici, sans refus.
+        if not raw_total and not det_total and not resolve_hits:
             continue
 
         # Comptage par surface : markdown + metadata top-niveau = REESCRIRE ;
@@ -808,6 +880,11 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
             # coup de reecriture (allowed = 0), le refus est pourtant du.
             plan.path_refused.append(
                 (rel, path_hits[0] if path_hits else same_dir[0].filename))
+        elif resolve_hits:
+            # #28490 (reserve ai-01, 2e tour) : meme regle que la branche non
+            # notebook -- le lien relatif resolu prime sur la reecriture des
+            # surfaces saines, sinon il survit au scan en 404 silencieux.
+            plan.path_refused.append((rel, resolve_hits[0]))
         elif allowed:
             plan.rewrites[rel] = allowed
 
@@ -1388,7 +1465,14 @@ def run_organs(base_sha: str, repo: Path | None = None) -> int:
         r = subprocess.run(cmd, cwd=repo, capture_output=True, text=True,
                            encoding="utf-8", errors="replace")
         tail = (r.stdout or r.stderr or "").strip().splitlines()[-1:]
-        print(f"[organe] {Path(cmd[1]).name} -> rc={r.returncode} {' '.join(tail)}")
+        try:
+            print(f"[organe] {Path(cmd[1]).name} -> rc={r.returncode} {' '.join(tail)}")
+        except UnicodeEncodeError:
+            # #28490 (defaut 2) : un caractere non encodable dans la sortie
+            # d'un organe (U+FFFD issu de errors="replace" sur console cp1252)
+            # ne doit pas interrompre la boucle -- les gardes restantes et le
+            # verdict final doivent toujours tourner.
+            print(f"[organe] {Path(cmd[1]).name} -> rc={r.returncode} <sortie non affichable>")
         worst = max(worst, r.returncode)
     return worst
 
@@ -1493,12 +1577,23 @@ def rebase_helper(apply: bool, repo: Path | None = None) -> int:
 # ---------------------------------------------------------------------------
 
 def main(argv: list[str] | None = None) -> int:
+    # #28490 (defaut 2) : sous Windows, la sortie standard est cp1252 sans
+    # PYTHONIOENCODING ; une sortie d'organe lue avec errors="replace" porte
+    # alors U+FFFD et son affichage leve UnicodeEncodeError. Reconfigurer la
+    # sortie du module en UTF-8 (replace) supprime l'erreur a la source.
+    if hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        except (ValueError, OSError):
+            pass
     ap = argparse.ArgumentParser(
         description="Renommage canonique d'une serie : proposition, application "
                     "en 2 commits, reecriture des referents au texte.")
     ap.add_argument("--propose", metavar="DOSSIER")
     ap.add_argument("--mapping", metavar="TSV|issue:N#comment")
     ap.add_argument("--apply", action="store_true", help="sinon : dry-run")
+    ap.add_argument("--allow-manual", action="store_true",
+                    help="autoriser une application avec des references a traiter manuellement")
     ap.add_argument("--rebase-helper", action="store_true")
     ap.add_argument("--lane", default=os.environ.get("ROOSYNC_LANE", "unknown"))
     a = ap.parse_args(argv)
@@ -1546,6 +1641,15 @@ def main(argv: list[str] | None = None) -> int:
         print("\n[dry-run] rien n'a ete ecrit. Avant --apply : passer les hooks "
               "sur les fichiers ci-dessus (HOOKS PRE-COMMIT, en tete du module).")
         return 0
+
+    pending = (f"mixed_refused={len(plan.mixed_refused)} "
+               f"path_refused={len(plan.path_refused)} "
+               f"code_cells={len(plan.code_cells)} "
+               f"fragmented={len(plan.fragmented)}")
+    if not a.allow_manual and (plan.mixed_refused or plan.path_refused
+                               or plan.code_cells or plan.fragmented):
+        print(f"VERDICT : application refusee, passage manuel requis ({pending})")
+        return 1
 
     pre = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo,
                          capture_output=True, text=True, encoding="utf-8",
@@ -1606,7 +1710,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"[commit 2] {len(done)} fichier(s) reecrit(s) au texte")
 
     rc = run_organs(pre, repo)
-    print(f"VERDICT : organes rc={rc} (base = pre-rename {pre[:12]})")
+    manual_status = f" ; en attente : {pending}" if a.allow_manual else ""
+    print(f"VERDICT : organes rc={rc} (base = pre-rename {pre[:12]}){manual_status}")
     return rc
 
 

@@ -1,0 +1,15 @@
+# TRANCHE53 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE53
+guards:
+  -
+    name: "Rust notebook contract (:dep head, C.1, C.2)"
+    argv: ["python", "scripts/notebook_tools/check_rust_notebook_contract.py", "--diff", "{base_ref}...HEAD"]
+    source: "native"
+    paths: ["MyIA.AI.Notebooks/**/*-Rust.ipynb", "scripts/notebook_tools/check_rust_notebook_contract.py", "scripts/notebook_tools/tests/test_check_rust_notebook_contract.py", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py"]
+    blocking: true
+    needs_base: true
+    diff_bounded: true
+    absorbed: true
+    warn_rc:
+      -
+        2
