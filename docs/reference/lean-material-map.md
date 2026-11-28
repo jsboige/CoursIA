@@ -42,13 +42,13 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean` | 5 | 0 | declare | couverte | 1 hors site (3 carnets) | - | 2026-11-16 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean` | 5 | 0 | declare | couverte | non consomme | - | 2026-11-13 |
 | `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean` | 5 | 4 | declare | couverte | 1 hors site (2 carnets) | - | 2026-06-24 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/kls_lean` | 4 | 0 | hors CI | hors matrice | non consomme | - | 2026-10-08 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/kls_lean` | 4 | 0 | declare | couverte | non consomme | - | 2026-10-08 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean` | 4 | 0 | declare | couverte | non consomme | - | 2026-10-18 |
 | `MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean` | 4 | 3 | declare | couverte | ok (1) | - | 2026-06-24 |
 | `MyIA.AI.Notebooks/IIT/iit_lean` | 3 | 1 | declare | couverte | ok (4) | - | 2026-10-24 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/differential_lean` | 3 | 2 | hors CI | hors matrice | non consomme | - | 2026-10-07 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/differential_lean` | 3 | 2 | declare | couverte | non consomme | - | 2026-10-07 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean` | 3 | 1 | declare | couverte | non consomme | - | 2026-06-15 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/torchlean_lean` | 3 | 0 | hors CI | hors matrice | ok (1) | - | 2026-10-22 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/torchlean_lean` | 3 | 0 | declare | couverte | ok (1) | - | 2026-10-22 |
 | `MyIA.AI.Notebooks/GameTheory/conway_cgt_lean` | 2 | 1 | declare | sans gate | ok (1) | - | 2026-06-05 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean` | 2 | 0 | declare | couverte | non consomme | - | 2026-11-20 |
 | `MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters` | 0 | 0 | declare | vendu | non consomme | - | 2026-10-05 |
@@ -67,9 +67,6 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 
 Ces lacs existent dans l'arbre et aucun workflow ne les nomme : ni `scripts/lean/ci_lakes.json`, ni un fichier de `.github/workflows/`. Aucun build de matrice ne les couvre.
 
-- `MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/kls_lean` — 4 modules, ne le 2026-10-08
-- `MyIA.AI.Notebooks/SymbolicAI/Lean/differential_lean` — 3 modules, ne le 2026-10-07
-- `MyIA.AI.Notebooks/SymbolicAI/Lean/torchlean_lean` — 3 modules, ne le 2026-10-22
 - `docs/lean/darksnail/build-evidence-2026-10-31` — 0 modules, ne le 2026-10-31
 
 ### Lacs de la matrice sans gate d'axiomes

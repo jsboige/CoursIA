@@ -299,6 +299,18 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/lake-manifest.json'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/kls_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/kls_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/kls_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/kls_lean/lake-manifest.json'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/differential_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/differential_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/differential_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/differential_lean/lake-manifest.json'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/torchlean_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/torchlean_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/torchlean_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/torchlean_lean/lake-manifest.json'
       # Self-cover allow-list (#8712, dette du wrapper : lean-conway.yml ne
       # la listait pas) : la liste EST la regle du gate axiom de ce lake --
       # un nom ajoute/retire doit rejouer le gate qui l'applique.
@@ -582,6 +594,18 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/lake-manifest.json'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/kls_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/kls_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/kls_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/kls_lean/lake-manifest.json'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/differential_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/differential_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/differential_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/differential_lean/lake-manifest.json'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/torchlean_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/torchlean_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/torchlean_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/torchlean_lean/lake-manifest.json'
       # Self-cover allow-list (#8712, dette du wrapper : lean-conway.yml ne
       # la listait pas) : la liste EST la regle du gate axiom de ce lake --
       # un nom ajoute/retire doit rejouer le gate qui l'applique.
