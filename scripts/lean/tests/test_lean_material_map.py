@@ -110,7 +110,7 @@ def test_chaque_lac_de_la_page_porte_une_epingle():
     ce test tant que son epingle n'a pas ete ajoutee explicitement.
     """
     page = _lignes_de_la_page()
-    assert len(page) == 44, f"la page porte {len(page)} lacs, attendu 44"
+    assert len(page) == 45, f"la page porte {len(page)} lacs, attendu 45"
 
     epingles = mod._pinned_births()
     manquantes = sorted(set(page) - set(epingles))

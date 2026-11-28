@@ -589,6 +589,22 @@
         "MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean/lean-toolchain",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean/lake-manifest.json"
       ]
+    },
+    {
+      "lake": "covering",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/covering_lean",
+      "display-name": "covering_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "axiom-fail-on-sorry": "true",
+      "axiom-include-i18n-siblings": "false",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/covering_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/covering_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/covering_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/covering_lean/lake-manifest.json"
+      ]
     }
   ]
 }
