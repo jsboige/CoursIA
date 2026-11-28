@@ -58,50 +58,50 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 3 | [Opérations de Base sur l'Audio](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-3-Basic-Audio-Operations.ipynb) | BETA | Non |
 | 4 | [Whisper Local - Transcription GPU avec faster-whisper](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb) | BETA | Non |
 | 5 | [Kokoro TTS Local - Synthèse vocale légère](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb) | BETA | Non |
-| 6 | [Chatterbox TTS - Synthese Vocale Expressive](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb) | BETA | Non |
-| 7 | [AudioLDM2 - Generation d'effets sonores par le texte](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-10-Effets-Sonores-AudioLDM2.ipynb) | BETA | Non |
-| 8 | [AudioGen - Generation de Bruitages par IA](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-11-Text-to-Audio-Bruitages.ipynb) | BETA | Non |
-| 9 | [RVC v2 - Conversion de voix chantee (Singing Voice…](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-12-SVS-Singing-Voice-RVC.ipynb) | BETA | Non |
-| 10 | [LLM audio omni-modal - Qwen2-Audio](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-13-Audio-LLM-Omni-Modal-Qwen2Audio.ipynb) | BETA | Non |
-| 11 | [Transcription audio - Qwen3-ASR](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-14-Transcription-Audio-Qwen3-Python.ipynb) | BETA | Non |
+| 6 | [Chatterbox TTS - Synthese Vocale Expressive](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-1-Chatterbox-TTS-Python.ipynb) | BETA | Non |
+| 7 | [AudioLDM2 - Generation d'effets sonores par le texte](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-10-Effets-Sonores-AudioLDM2-Python.ipynb) | BETA | Non |
+| 8 | [AudioGen - Generation de Bruitages par IA](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-11-Text-to-Audio-Bruitages-Python.ipynb) | BETA | Non |
+| 9 | [RVC v2 - Conversion de voix chantee (Singing Voice…](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-12-SVS-Singing-Voice-RVC-Python.ipynb) | BETA | Non |
+| 10 | [LLM audio omni-modal - Qwen2-Audio](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-13-Audio-LLM-Omni-Modal-Qwen2Audio-Python.ipynb) | BETA | Non |
+| 11 | [Transcription audio - Qwen3-ASR](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-14-Transcription-Audio-Qwen3-Python.ipynb) | BETA | Non |
 | 12 | [XTTS v2 - Clonage Vocal Zero-Shot](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb) | BETA | Non |
 | 13 | [MusicGen - Generation Musicale par IA](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb) | BETA | Non |
 | 14 | [Demucs v4 - Separation de Sources Audio](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb) | BETA | Non |
-| 15 | [Multi-Model TTS Gateway - Synthese Vocale Multi-Modèles](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb) | BETA | Non |
-| 16 | [Generation MIDI avec midi-model (SkyTNT)](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb) | BETA | Non |
-| 17 | [Generation de Chansons Completes : YuE2](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb) | BETA | Non |
+| 15 | [Multi-Model TTS Gateway - Synthese Vocale Multi-Modèles](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-5-Multi-Model-TTS-Gateway-Python.ipynb) | BETA | Non |
+| 16 | [Generation MIDI avec midi-model (SkyTNT)](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-6-MIDI-Generation-Python.ipynb) | BETA | Non |
+| 17 | [Generation de Chansons Completes : YuE2](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-7-YuE2-Song-Generation-Python.ipynb) | BETA | Non |
 | 18 | [TTS Expressif : Fish S2 Pro et Modèles SOTA](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb) | BETA | Non |
-| 19 | [Ace-Step v1.5 - Generation Musicale avec Paroles](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb) | BETA | Non |
-| 20 | [Comparaison Multi-Modèles Audio](../../MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) | BETA | Non |
-| 21 | [Orchestration de Pipelines Audio](../../MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb) | BETA | Non |
-| 22 | [OpenAI Realtime Voice API](../../MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb) | BETA | Non |
-| 23 | [TTS streaming local avec pipecat et Kokoro-82M](../../MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-4-TTS-Streaming-Local-Pipecat.ipynb) | BETA | Oui |
+| 19 | [Ace-Step v1.5 - Generation Musicale avec Paroles](../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-9-AceStep-Music-Generation-Python.ipynb) | BETA | Non |
+| 20 | [Comparaison Multi-Modèles Audio](../../MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/Audio-03-1-Multi-Model-Audio-Comparison-Python.ipynb) | BETA | Non |
+| 21 | [Orchestration de Pipelines Audio](../../MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/Audio-03-2-Audio-Pipeline-Orchestration-Python.ipynb) | BETA | Non |
+| 22 | [OpenAI Realtime Voice API](../../MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/Audio-03-3-Realtime-Voice-API-Python.ipynb) | BETA | Non |
+| 23 | [TTS streaming local avec pipecat et Kokoro-82M](../../MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/Audio-03-4-TTS-Streaming-Local-Pipecat-Python.ipynb) | BETA | Oui |
 | 24 | [MCP audio : exposer la transcription, la synthèse et…](../../MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-5-MCP-Audio.ipynb) | BETA | Non |
-| 25 | [Création de Contenu Audio Educatif](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb) | BETA | Non |
-| 26 | [Voice Leading Rendu GenAI — donner un spectre aux…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-14-VoiceLeading-Rendu-GenAI.ipynb) | BETA | Non |
+| 25 | [Création de Contenu Audio Educatif](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/Audio-04-1-Educational-Audio-Content-Python.ipynb) | BETA | Non |
+| 26 | [Voice Leading Rendu GenAI — donner un spectre aux…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/Audio-04-14-VoiceLeading-Rendu-GenAI-Python.ipynb) | BETA | Non |
 | 27 | [Pipeline de Transcription et Sous-titrage](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-2-Transcription-Pipeline.ipynb) | BETA | Non |
 | 28 | [Workflow de Composition Musicale](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-Music-Composition-Workflow.ipynb) | BETA | Non |
 | 29 | [Synchronisation Audio-Video (Passerelle)](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-4-Audio-Video-Sync.ipynb) | BETA | Non |
-| 30 | [Live Coding Musical pilote par LLM](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-5-LiveCoding-LLM-Music.ipynb) | BETA | Non |
-| 31 | [P3 - Annotation Prosodique pour TTS Agentique](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-10-Annotation-Prosodique.ipynb) | BETA | Non |
+| 30 | [Live Coding Musical pilote par LLM](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/Audio-04-5-LiveCoding-LLM-Music-Python.ipynb) | BETA | Non |
+| 31 | [P3 - Annotation Prosodique pour TTS Agentique](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-10-Annotation-Prosodique-Python.ipynb) | BETA | Non |
 | 32 | [P4 — Generation TTS pour Audiobook](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-11-Generation-TTS.ipynb) | BETA | Non |
-| 33 | [P5 — Compilation Audio pour Audiobook](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-12-Compilation-Audio.ipynb) | BETA | Oui |
-| 34 | [Audiobook Agentique avec FishAudio S2-Pro](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-13-Audiobook-FishAudio-S2Pro.ipynb) | BETA | Non |
-| 35 | [Pipeline Audiobook Agentique](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-6-Audiobook-Pipeline.ipynb) | BETA | Non |
+| 33 | [P5 — Compilation Audio pour Audiobook](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-12-Compilation-Audio-Python.ipynb) | BETA | Oui |
+| 34 | [Audiobook Agentique avec FishAudio S2-Pro](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-13-Audiobook-FishAudio-S2Pro-Python.ipynb) | BETA | Non |
+| 35 | [Pipeline Audiobook Agentique](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-6-Audiobook-Pipeline-Python.ipynb) | BETA | Non |
 | 36 | [Lecture Analytique pour Audiobook](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-8-Lecture-Analytique.ipynb) | BETA | Oui |
-| 37 | [Comprehension Musicale avec MERT2 : Embeddings et…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/04-15-MERT2-Music-Understanding.ipynb) | BETA | Non |
-| 38 | [De l'Audio a la Partition : SheetSage2](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/04-16-SheetSage2-Audio-To-Score.ipynb) | BETA | Non |
-| 39 | [Analyse musicale classique (MIR) : beat, tempo,…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/04-17-MIR-Classique.ipynb) | BETA | Oui |
-| 40 | [Transcription Note a Note : basic-pitch](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/04-18-Basic-Pitch-Transcription.ipynb) | BETA | Oui |
-| 41 | [Separation Avancee de Sources — Qualite Mesuree sur un…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/04-20-Separation-Avancee-Qualite.ipynb) | BETA | Non |
-| 42 | [SI-SDR — ce que la métrique mesure, et son point zéro](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/04-21-SI-SDR-Contre-Epreuve.ipynb) | BETA | Non |
-| 43 | [Évaluation subjective (MOS) : protocole d'écoute et…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-19-Evaluation-MOS.ipynb) | BETA | Oui |
+| 37 | [Comprehension Musicale avec MERT2 : Embeddings et…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/Audio-04-15-MERT2-Music-Understanding-Python.ipynb) | BETA | Non |
+| 38 | [De l'Audio a la Partition : SheetSage2](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/Audio-04-16-SheetSage2-Audio-To-Score-Python.ipynb) | BETA | Non |
+| 39 | [Analyse musicale classique (MIR) : beat, tempo,…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/Audio-04-17-MIR-Classique-Python.ipynb) | BETA | Oui |
+| 40 | [Transcription Note a Note : basic-pitch](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/Audio-04-18-Basic-Pitch-Transcription-Python.ipynb) | BETA | Oui |
+| 41 | [Separation Avancee de Sources — Qualite Mesuree sur un…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/Audio-04-20-Separation-Avancee-Qualite-Python.ipynb) | BETA | Non |
+| 42 | [SI-SDR — ce que la métrique mesure, et son point zéro](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/Audio-04-21-SI-SDR-Contre-Epreuve-Python.ipynb) | BETA | Non |
+| 43 | [Évaluation subjective (MOS) : protocole d'écoute et…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/Audio-04-19-Evaluation-MOS-Python.ipynb) | BETA | Oui |
 | 44 | [Benchmark TTS : Comparaison des Modèles Vocaux pour…](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-7-TTS-Voice-Benchmark.ipynb) | BETA | Non |
 | 45 | [Voice Casting : Attribution de voix TTS par personnage](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-9-Voice-Casting.ipynb) | BETA | Non |
 | 46 | [05-1 — Diffusion latente audio depuis zéro](../../MyIA.AI.Notebooks/GenAI/Audio/05-Diffusion-from-scratch/05-1-AudioDiffusion-Latent-From-Scratch.ipynb) | BETA | Non |
 | 47 | [Vocodeur neuronal from scratch : un mini HiFi-GAN](../../MyIA.AI.Notebooks/GenAI/Audio/05-Diffusion-from-scratch/05-2-Vocoder-From-Scratch.ipynb) | BETA | Non |
 | 48 | [Le vocodeur pré-entraîné : le geste industriel](../../MyIA.AI.Notebooks/GenAI/Audio/06-Diffusion-SOTA/06-2-HiFiGAN-SOTA-Comparison.ipynb) | BETA | Non |
-| 49 | [Comparaison Bloc A (from scratch) vs Bloc B (SOTA) —…](../../MyIA.AI.Notebooks/GenAI/Audio/06-Diffusion-SOTA/06-3-AudioDiffusion-Comparison-A-vs-B.ipynb) | ALPHA | Non |
+| 49 | [Comparaison Bloc A (from scratch) vs Bloc B (SOTA) —…](../../MyIA.AI.Notebooks/GenAI/Audio/06-Diffusion-SOTA/Audio-06-3-AudioDiffusion-Comparison-A-vs-B-Python.ipynb) | ALPHA | Non |
 
 ## GenAI/CaseStudies (6 notebooks)
 
