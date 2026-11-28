@@ -12,7 +12,7 @@ Un README de série se lit à plusieurs vitesses : le parcours par les numéros 
 
 - **Vous suivez le cœur de la partie** : les tables de parcours de haut en bas — [Puissance 4](#cas-pratiques-search--puissance-4), [CSP](#cas-pratiques-csp), [Hybrides](#cas-pratiques-hybrides--métaheuristiques), [Informed](#cas-pratiques-informed--puzzles-en-espace-détats) — chaque famille suppose les parties théoriques listées en [Prérequis par notebook](#prérequis-par-notebook).
 - **Vous creusez un palier** : les jumeaux partagent la ligne de leur numéro (même arc, deux langages) ; les extensions lettrées vivent en [Approfondissements](#approfondissements).
-- **Vous cherchez la recherche en cours** : les carnets de niveau Recherche (App-21, App-22, App-23, App-27) et la section [Références](#références).
+- **Vous cherchez la recherche en cours** : les carnets de niveau Recherche (App-21, App-22, App-23, App-24) et la section [Références](#références).
 
 ## Pourquoi cette sous-série
 
@@ -138,7 +138,7 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 | 5 | [App-18-HyperparameterTuning-Python](App-18-HyperparameterTuning-Python.ipynb) — jumeaux [C#](App-18-HyperparameterTuning-CSharp.ipynb) et [Python](App-18-HyperparameterTuning-Implementation-Manuelle-Python.ipynb) | Optimisation ML : bayésienne, GA, PSO, Optuna — la boucle qui se referme, on optimise l'optimiseur. Les jumeaux refont Grid/Random Search, GP-EI, GA et PSO *from-scratch* sur l'objectif k-NN CV 5-fold (parité #4956) | Licence | [Rustuna vs Optuna](App-18c-HyperparameterTuning-Rustuna-vs-Optuna-Python.ipynb) |
 | 6 | [App-22-AlgorithmSelection-Python](App-22-AlgorithmSelection-Python.ipynb) — jumeau [C#](App-22-AlgorithmSelection-CSharp.ipynb) | Sélection empirique d'algorithmes : 3 jeux (Sudoku, Puissance 4, Wordle), 13 familles conceptuelles / 14 étiquettes mesurées, non-commensurabilité des métriques + frontières de Pareto + choix sous préférences — hommage PR IS #42 (Théodore Deguest). Le jumeau C# refait toute l'analyse en BCL pure (lecteur CSV, dominance, normalisation, bootstrap, SVG inline) et retrouve les mêmes fronts, vainqueurs et point de bascule | Recherche | — |
 | 7 | [App-23-PRESENT-Differential-Cryptanalysis-SAT-Python](App-23-PRESENT-Differential-Cryptanalysis-SAT-Python.ipynb) | PRESENT : DDT, compression d'implicants, CNF pondérée, frontière SAT/UNSAT du meilleur trail et limites de certification — distillation PrCon F2 (Théodore Deguest) | Recherche | — |
-| 8 | [App-27-Sparse-Index-Tracking-Walk-Forward-Python](App-27-Sparse-Index-Tracking-Walk-Forward-Python.ipynb) | Sparse index tracking : modèle CP-SAT vérifiable, walk-forward sans fuite et lecture pédagogique des résultats QuantConnect réels — une recherche, deux lectures — distillation PrCon M2 (Godric Bouteloup) | Recherche | [Sparse-Index-Tracking-QC](../../QuantConnect/projects/Sparse-Index-Tracking-QC/README.md) |
+| 8 | [App-24-Sparse-Index-Tracking-Walk-Forward-Python](App-24-Sparse-Index-Tracking-Walk-Forward-Python.ipynb) | Sparse index tracking : modèle CP-SAT vérifiable, walk-forward sans fuite et lecture pédagogique des résultats QuantConnect réels — une recherche, deux lectures — distillation PrCon M2 (Godric Bouteloup) | Recherche | [Sparse-Index-Tracking-QC](../../QuantConnect/projects/Sparse-Index-Tracking-QC/README.md) |
 
 ---
 
@@ -148,8 +148,8 @@ Le terrain d'application le plus direct de la [Partie 1](../Part1-Foundations/RE
 
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|----------|--------------------|--------|------------------|
-| 1 | [App-33-RushHour-Admissible-Astar-Python](App-33-RushHour-Admissible-Astar-Python.ipynb) · [jumeau Rust](App-33-RushHour-Admissible-Astar-Rust.ipynb) | Rush Hour 6x6 : BFS, A\* (heuristique admissible par comptage des voitures bloquantes) et recherche gloutonne *from-scratch* (stdlib Python seule), instances générées par scramble, benchmark à l'état près | Découverte | — |
-| 2 | [App-34-15Puzzle-Admissible-Astar-Python](App-34-15Puzzle-Admissible-Astar-Python.ipynb) — jumeau [C#](App-34-15Puzzle-Admissible-Astar-CSharp.ipynb) | 15-puzzle : A\* et heuristiques admissibles **mesurées** (Manhattan contre linear conflict), résolvabilité par parité des inversions, contraste avec un glouton sous-optimal. Le jumeau C# refait l'espace d'états en .NET avec l'état encodé dans un `ulong` (4 bits par case, parité #4956) | Licence | — |
+| 1 | [App-25-RushHour-Admissible-Astar-Python](App-25-RushHour-Admissible-Astar-Python.ipynb) · [jumeau Rust](App-25-RushHour-Admissible-Astar-Rust.ipynb) | Rush Hour 6x6 : BFS, A\* (heuristique admissible par comptage des voitures bloquantes) et recherche gloutonne *from-scratch* (stdlib Python seule), instances générées par scramble, benchmark à l'état près | Découverte | — |
+| 2 | [App-26-15Puzzle-Admissible-Astar-Python](App-26-15Puzzle-Admissible-Astar-Python.ipynb) — jumeau [C#](App-26-15Puzzle-Admissible-Astar-CSharp.ipynb) | 15-puzzle : A\* et heuristiques admissibles **mesurées** (Manhattan contre linear conflict), résolvabilité par parité des inversions, contraste avec un glouton sous-optimal. Le jumeau C# refait l'espace d'états en .NET avec l'état encodé dans un `ulong` (4 bits par case, parité #4956) | Licence | — |
 
 ## Approfondissements
 
@@ -237,15 +237,15 @@ Le [pont SOTA Rustuna vs Optuna](App-18c-HyperparameterTuning-Rustuna-vs-Optuna-
 | App-22 AlgorithmSelection-Python | MGS-16 (Rice / No Free Lunch) | pandas, numpy, matplotlib |
 | App-22 AlgorithmSelection (C#) | MGS-16 (Rice / No Free Lunch) | dotnet-interactive |
 | App-23 PRESENT Differential Cryptanalysis | SAT, CNF, bit-vectors | python-sat, numpy, matplotlib |
-| App-27 Sparse Index Tracking Walk-Forward | CSP-3 (CP-SAT), CSP-5 (optimisation), App-10 (portefeuille) | ortools, pandas, numpy |
+| App-24 Sparse Index Tracking Walk-Forward | CSP-3 (CP-SAT), CSP-5 (optimisation), App-10 (portefeuille) | ortools, pandas, numpy |
 
 ### Cas pratiques Informed
 
 | Notebook | Fondations requises | Dépendances |
 |----------|--------------------|-------------|
-| App-33 RushHour | Search-1 (espace d'états), Search-2 (BFS), Search-3 (A*) | Python 3.10+ (stdlib seule) |
-| App-34 15Puzzle | Search-1 (espace d'états), Search-2 (BFS), Search-3 (A*) | numpy, matplotlib |
-| App-34-CSharp 15Puzzle | Search-1 (espace d'états), Search-2 (BFS), Search-3 (A*) | dotnet-interactive |
+| App-25 RushHour | Search-1 (espace d'états), Search-2 (BFS), Search-3 (A*) | Python 3.10+ (stdlib seule) |
+| App-26 15Puzzle | Search-1 (espace d'états), Search-2 (BFS), Search-3 (A*) | numpy, matplotlib |
+| App-26-CSharp 15Puzzle | Search-1 (espace d'états), Search-2 (BFS), Search-3 (A*) | dotnet-interactive |
 
 ## Origine des projets
 
@@ -255,7 +255,7 @@ Le [App-22-AlgorithmSelection-Python](App-22-AlgorithmSelection-Python.ipynb) es
 
 Le [App-23-PRESENT-Differential-Cryptanalysis-SAT-Python](App-23-PRESENT-Differential-Cryptanalysis-SAT-Python.ipynb) distille le projet PrCon F2 de **Théodore Deguest**, *« Cryptanalyse différentielle de PRESENT via SAT »*, PR [PrCon #49](https://github.com/jsboigeEpita/2026-Epita-Programmation-par-Contraintes/pull/49). Le notebook reconstruit l'expérience de façon autonome, reproduit la DDT et les frontières SAT/UNSAT, corrige le seuil documentaire à R=15/W=66 et distingue explicitement trail, cluster et niveau de preuve.
 
-Le [App-27-Sparse-Index-Tracking-Walk-Forward-Python](App-27-Sparse-Index-Tracking-Walk-Forward-Python.ipynb) distille le projet PrCon M2 de **Godric Bouteloup**, *« Sparse Index Tracking »*, PR [PrCon #52](https://github.com/jsboigeEpita/2026-Epita-Programmation-par-Contraintes/pull/52). Le notebook conserve la modélisation CP-SAT en lots entiers, mais reconstruit l'expérience sur un marché synthétique seedé : cardinalité exacte, turnover entre rebalancements consécutifs, validation indépendante, choix de K avant le test et statut/borne/gap explicites. Il matérialise aussi un protocole contaminé pour montrer qu'un score obtenu après consultation du test est ininterprétable, qu'il paraisse meilleur ou moins bon. Cette lecture de méthode reprend ensuite, sans relancer de recherche de marché, les résultats autoritatifs du projet [Sparse-Index-Tracking-QC](../../QuantConnect/projects/Sparse-Index-Tracking-QC/README.md) intégré par la PR CoursIA [#14068](https://github.com/jsboige/CoursIA/pull/14068) : 703 contre 1 414 ordres, mais pas de domination sparse sur les performances ni sur le turnover. **Une recherche, deux lectures.** Provenance : [`data/app27-sparse-index-tracking/SOURCE.md`](data/app27-sparse-index-tracking/SOURCE.md).
+Le [App-24-Sparse-Index-Tracking-Walk-Forward-Python](App-24-Sparse-Index-Tracking-Walk-Forward-Python.ipynb) distille le projet PrCon M2 de **Godric Bouteloup**, *« Sparse Index Tracking »*, PR [PrCon #52](https://github.com/jsboigeEpita/2026-Epita-Programmation-par-Contraintes/pull/52). Le notebook conserve la modélisation CP-SAT en lots entiers, mais reconstruit l'expérience sur un marché synthétique seedé : cardinalité exacte, turnover entre rebalancements consécutifs, validation indépendante, choix de K avant le test et statut/borne/gap explicites. Il matérialise aussi un protocole contaminé pour montrer qu'un score obtenu après consultation du test est ininterprétable, qu'il paraisse meilleur ou moins bon. Cette lecture de méthode reprend ensuite, sans relancer de recherche de marché, les résultats autoritatifs du projet [Sparse-Index-Tracking-QC](../../QuantConnect/projects/Sparse-Index-Tracking-QC/README.md) intégré par la PR CoursIA [#14068](https://github.com/jsboige/CoursIA/pull/14068) : 703 contre 1 414 ordres, mais pas de domination sparse sur les performances ni sur le turnover. **Une recherche, deux lectures.** Provenance : [`data/app27-sparse-index-tracking/SOURCE.md`](data/app27-sparse-index-tracking/SOURCE.md).
 
 ---
 
@@ -267,13 +267,13 @@ Le [App-27-Sparse-Index-Tracking-Walk-Forward-Python](App-27-Sparse-Index-Tracki
 | [Partie 2 : CSP](../Part2-CSP/README.md) | Programmation par contraintes | Solveurs CP-SAT, MiniZinc |
 | [Search (parent)](../README.md) | Vue d'ensemble | Contexte et parcours global |
 | [ML/ML.Net](../../ML/ML.Net/) | App-18 (HyperparameterTuning) | Optimisation bayésienne + GA |
-| [QuantConnect](../../QuantConnect/) | App-27 (Sparse Index Tracking) | Épreuve réelle autoritaire déjà intégrée : backtests QC Cloud sparse/full, frais explicites et lecture conjointe cardinalité–ordres–turnover |
+| [QuantConnect](../../QuantConnect/) | App-24 (Sparse Index Tracking) | Épreuve réelle autoritaire déjà intégrée : backtests QC Cloud sparse/full, frais explicites et lecture conjointe cardinalité–ordres–turnover |
 | [Sudoku](../../Sudoku/) | App-11 (Picross), App-1 (NQueens) | Problèmes combinatoires similaires |
 | [GameTheory](../../GameTheory/) | App-12/App-14 (ConnectFour) | Jeux à deux joueurs, MCTS |
 
 ### Rush Hour en Python et C#
 
-[Python](App-33-RushHour-Admissible-Astar-Python.ipynb) et [C#](App-33-RushHour-Admissible-Astar-CSharp.ipynb) comparent BFS, A* et glouton sur six variantes. Les générateurs aléatoires diffèrent, tandis que les règles de glissement et les budgets de sélection sont communs.
+[Python](App-25-RushHour-Admissible-Astar-Python.ipynb) et [C#](App-25-RushHour-Admissible-Astar-CSharp.ipynb) comparent BFS, A* et glouton sur six variantes. Les générateurs aléatoires diffèrent, tandis que les règles de glissement et les budgets de sélection sont communs.
 
 ## Références
 
@@ -294,7 +294,7 @@ Couverture par application des sources fondatrices mobilisées dans cette sous-s
 | App-22 (AlgorithmSelection-Python) | Rice, J. R. (1976) — « The Algorithm Selection Problem », *Advances in Computers* 15, pp. 65-118 ; et Wolpert, D. H., & Macready, W. G. (1997) — « No Free Lunch Theorems for Optimization », *IEEE Trans. on Evolutionary Computation* 1(1), pp. 67-82. |
 | App-23 (PRESENT Differential Cryptanalysis SAT) | Bogdanov, A., et al. (2007) — « PRESENT: An Ultra-Lightweight Block Cipher », *CHES 2007* ; Tseitin, G. S. (1968) — transformations CNF ; Eén, N., & Sörensson, N. (2006) — « Translating Pseudo-Boolean Constraints into SAT ». |
 | App-19 (ProceduralGeneration-WFC) | Gumin, M. (2016) — *WaveFunctionCollapse*, github.com/mxgmn/WaveFunctionCollapse. Génération procédurale de niveaux par propagation de contraintes. |
-| App-27 (Sparse Index Tracking Walk-Forward) | Beasley, J. E., Meade, N., & Chang, T.-J. (2003) — « An Evolutionary Heuristic for the Index Tracking Problem », *European Journal of Operational Research* 148(3) ; Bailey, D. H., Borwein, J. M., López de Prado, M., & Zhu, Q. J. (2014) — « Pseudo-Mathematics and Financial Charlatanism: The Effects of Backtest Overfitting on Out-of-Sample Performance », *Notices of the AMS* 61(5). |
+| App-24 (Sparse Index Tracking Walk-Forward) | Beasley, J. E., Meade, N., & Chang, T.-J. (2003) — « An Evolutionary Heuristic for the Index Tracking Problem », *European Journal of Operational Research* 148(3) ; Bailey, D. H., Borwein, J. M., López de Prado, M., & Zhu, Q. J. (2014) — « Pseudo-Mathematics and Financial Charlatanism: The Effects of Backtest Overfitting on Out-of-Sample Performance », *Notices of the AMS* 61(5). |
 
 ## Conclusion / Prochaines étapes
 
@@ -322,3 +322,4 @@ Le pont entre les deux cultures de la recherche s'exprime dans les notebooks Hyb
 ## Comparaison statistique de colorations
 
 Le compagnon [Python](App-02-GraphColoring-Statistical-Validity-Python.ipynb) et son [jumeau C#](App-02-GraphColoring-Statistical-Validity-CSharp.ipynb) comparent des colorations sur plusieurs graphes, avec bootstrap, tests appariés et balayage de densité. Le C# appelle CP-SAT natif et les références NetworkX et SciPy par Python.NET ; les générateurs de graines diffèrent et les résultats numériques peuvent varier. Les résolutions CP-SAT sans solution sont exclues des mesures du solveur.
+

@@ -9,16 +9,16 @@
 Sparse index tracking sous contrainte de cardinalité, sur **données réelles** : suivre SPY avec
 un sous-ensemble réduit d'actions (K ∈ {6, 8, 10}) plutôt que d'optimiser sans contrainte de cardinalité sur l'univers candidat complet.
 Versant « épreuve du réel » du compagnon de méthode
-[App-27 — Sparse index tracking walk-forward](../../../Search/Part3-Cas-pratiques/App-27-Sparse-Index-Tracking-Walk-Forward-Python.ipynb)
+[App-24 — Sparse index tracking walk-forward](../../../Search/Part3-Cas-pratiques/App-24-Sparse-Index-Tracking-Walk-Forward-Python.ipynb)
 (série Search), qui pose le même problème en CP-SAT sur données synthétiques à vérité
-connue. App-27 porte le modèle et le validateur ; ce projet porte le test sur prix réels avec un
+connue. App-24 porte le modèle et le validateur ; ce projet porte le test sur prix réels avec un
 backtest QC Cloud et des coûts explicites. Les deux artefacts forment **une recherche, deux
 lectures** : le notebook pédagogique reprend les résultats autoritatifs de ce projet sans relancer
 une seconde recherche de marché.
 
 ### Distinction de moteur (documentée honnêtement)
 
-| Dimension | App-27 (méthode) | Ce projet (réel) |
+| Dimension | App-24 (méthode) | Ce projet (réel) |
 |---|---|---|
 | Solveur | OR-Tools CP-SAT, lots entiers | `scipy.optimize.nnls` + **énumération exacte sur short-list** |
 | Optimalité | globale, statut/borne/gap | exacte **dans** la short-list de 12 (classement par corrélation = filtre heuristique) |
@@ -28,9 +28,9 @@ une seconde recherche de marché.
 Cette implémentation QC choisit délibérément SciPy NNLS et une énumération bornée afin de garder
 l'algorithme cloud directement reproductible. Ce n'est pas un faux CP-SAT : le sélecteur est un
 compromis distinct et documenté (cf. `main.py` et notebook section 2), sans revendiquer les bornes
-ni les contraintes supplémentaires d'App-27.
+ni les contraintes supplémentaires d'App-24.
 
-### Protocole walk-forward (miroir d'App-27 section 5)
+### Protocole walk-forward (miroir d'App-24 section 5)
 
 - Rebalancement trimestriel (63 jours ouvrés).
 - À chaque date $t$ : **calibration** = 252 rendements se terminant 63 jours avant $t$ (sélection
@@ -40,7 +40,7 @@ ni les contraintes supplémentaires d'App-27.
   calibration/validation est distincte du trimestre OOS qui suit. QC charge cette histoire avant
   la première décision via `set_warm_up(316, Resolution.DAILY)` ; la simulation yfinance, elle,
   matérialise explicitement 316 jours non tradés avant son premier bloc test.
-- **Validateur indépendant** (App-27 section 4) : budget, cardinalité ≤ K, poids minimum
+- **Validateur indépendant** (App-24 section 4) : budget, cardinalité ≤ K, poids minimum
   re-vérifiés depuis le seul vecteur de poids après chaque construction.
 - Coûts : **5 bps par transaction** sur le notionnel via `PercentFeeModel` (pattern canonique du
   dépôt, cf `Portfolio-IBKR-Coinbase-Hybrid/main.py`), identiques dans les deux modes, sans
@@ -151,7 +151,7 @@ de séance, comme le décrit le protocole, sans trimestre perdu.
   le niveau absolu (CAGR ~17 %) surestime la capacité réelle à suivre un indice ; seule la
   comparaison sparse vs full est informative.
 - Pas de contrainte sectorielle ni de turnover dur : cette implémentation choisit délibérément
-  NNLS et l'énumération bornée pour l'expérience Cloud ; App-27 étudie séparément ces contraintes
+  NNLS et l'énumération bornée pour l'expérience Cloud ; App-24 étudie séparément ces contraintes
   avec CP-SAT. Cette différence relève du protocole comparé, pas d'une incapacité générale de QC Cloud.
 - Short-list de 12 par corrélation = filtre heuristique : l'énumération est exacte dans la
   short-list, pas sur l'univers.
@@ -167,6 +167,7 @@ de séance, comme le décrit le protocole, sans trimestre perdu.
 
 ## Renvois
 
-- **Méthode** : [App-27 — Sparse index tracking walk-forward](../../../Search/Part3-Cas-pratiques/App-27-Sparse-Index-Tracking-Walk-Forward-Python.ipynb) — modèle CP-SAT, validateur, fuite reproduite et lecture pédagogique des présents résultats QC.
-- **Issue** : #14062 (développement d'App-27 côté QuantConnect).
+- **Méthode** : [App-24 — Sparse index tracking walk-forward](../../../Search/Part3-Cas-pratiques/App-24-Sparse-Index-Tracking-Walk-Forward-Python.ipynb) — modèle CP-SAT, validateur, fuite reproduite et lecture pédagogique des présents résultats QC.
+- **Issue** : #14062 (développement d'App-24 côté QuantConnect).
 - **Tracking error sans cardinalité** : [QC-Py-14 — Portfolio Construction & Execution](../../Python/QC-Py-14-Portfolio-Construction-Execution.ipynb) — l'arête manquante que ce projet ajoute.
+
