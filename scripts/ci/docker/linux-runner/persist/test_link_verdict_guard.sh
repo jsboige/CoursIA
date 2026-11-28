@@ -56,9 +56,34 @@ EOF
 fabrique_verdict "$TMP/v-unbilled.sh" UNBILLED 0 "reason=adapter=test cost=Unrestricted"
 fabrique_verdict "$TMP/v-billed.sh" BILLED 3 "reason=adapter=test-hotshot cost=Metered"
 fabrique_verdict "$TMP/v-unknown.sh" UNKNOWN 4 "reason=probe-failed"
-# Desaccord entre le mot et le code de sortie : la sonde se contredit. Le
-# lecteur doit alors rendre UNKNOWN (jamais « va » suppose).
+# Le mot/code sont contradictoires : le verdict le plus strict doit gagner.
 fabrique_verdict "$TMP/v-incoherent.sh" BILLED 0 "reason=adapter=test"
+fabrique_verdict "$TMP/v-unbilled-3.sh" UNBILLED 3 "reason=adapter=test"
+fabrique_verdict "$TMP/v-unbilled-4.sh" UNBILLED 4 "reason=adapter=test"
+# Contrat absent : PowerShell peut imprimer un diagnostic français et rendre rc=0.
+cat >"$TMP/v-missing.sh" <<'EOF'
+#!/usr/bin/env bash
+printf 'L\x27argument « D:\\absent.ps1 » du paramètre -File n\x27existe pas.\\n'
+printf 'Windows PowerShell 5.1\\n'
+exit 0
+EOF
+chmod +x "$TMP/v-missing.sh"
+# Racine explicite et sonde absente : fail-closed, sans chemin siège par défaut.
+mkdir -p "$TMP/roo-root/scripts/monitoring"
+# La sonde d'essai ne touche pas aux API Windows : elle ne rend que UNKNOWN.
+cat >"$TMP/roo-root/scripts/monitoring/test-link-billed.ps1" <<'EOF'
+Write-Output 'UNKNOWN reason=probe-failed'
+exit 4
+EOF
+sortie="$(COURSIA_LINK_VERDICT_CMD="bash $TMP/roo-root/scripts/monitoring/test-link-billed.ps1" \
+  env -u COURSIA_LINK_BILLED_SCRIPT ROO_EXTENSIONS_ROOT="$TMP/roo-root" \
+  bash "$ICI/link-verdict.sh" 2>&1)"
+code=$?
+if [ "$code" -ne 4 ] || ! printf '%s' "$sortie" | grep -q '^UNKNOWN'; then
+  ko "cas 1h racine déclarée + sonde UNKNOWN -> UNKNOWN (sortie : $sortie, rc=$code)"
+else
+  ok "cas 1h racine déclarée + sonde UNKNOWN -> UNKNOWN"
+fi
 
 # La sonde qui bascule : UNBILLED au premier tour, BILLED ensuite.
 cat >"$TMP/v-bascule.sh" <<EOF
@@ -99,16 +124,42 @@ else
   ok "cas 1c CONTROLE UNBILLED -> passage (code 0)"
 fi
 
-# Le lecteur lui-meme : un mot et un code qui se contredisent donnent
-# UNKNOWN, pas un feu vert.
+# Verdicts contradictoires : « le plus strict l'emporte ».
 sortie="$(COURSIA_LINK_VERDICT_CMD="bash $TMP/v-incoherent.sh" bash "$ICI/link-verdict.sh" 2>&1)"
 code=$?
-if [ "$code" -ne 4 ]; then
-  ko "cas 1d mot et code de sortie divergents -> UNKNOWN (code attendu 4, obtenu $code)"
-elif ! printf '%s' "$sortie" | grep -q 'UNKNOWN'; then
-  ko "cas 1d mot et code de sortie divergents -> UNKNOWN (sortie : $sortie)"
+if [ "$code" -ne 3 ] || ! printf '%s' "$sortie" | grep -q '^BILLED'; then
+  ko "cas 1d BILLED/0 -> BILLED (rc=3, sortie : $sortie, rc=$code)"
 else
-  ok "cas 1d mot et code de sortie divergents -> UNKNOWN"
+  ok "cas 1d BILLED/0 -> BILLED (le code permissif ne l'affaiblit pas)"
+fi
+
+for pair in "v-unbilled-3.sh:3:BILLED" "v-unbilled-4.sh:4:UNKNOWN"; do
+  f=${pair%%:*}; tail=${pair#*:}; rc=${tail%%:*}; attendu=${tail#*:}
+  sortie="$(COURSIA_LINK_VERDICT_CMD="bash $TMP/$f" bash "$ICI/link-verdict.sh" 2>&1)"
+  code=$?
+  if [ "$code" -ne "$rc" ] || ! printf '%s' "$sortie" | grep -q "^$attendu"; then
+    ko "cas 1e $f -> $attendu (rc=$rc, sortie : $sortie, rc obtenu=$code)"
+  else
+    ok "cas 1e $f -> $attendu (le plus strict l'emporte)"
+  fi
+done
+
+# Contrat absent / bannière de démarrage powershell.exe : jamais UNBILLED.
+sortie="$(COURSIA_LINK_VERDICT_CMD="bash $TMP/v-missing.sh" bash "$ICI/link-verdict.sh" 2>&1)"
+code=$?
+if [ "$code" -ne 4 ] || ! printf '%s' "$sortie" | grep -q 'contract-script-missing'; then
+  ko "cas 1f diagnostic français + rc=0 -> UNKNOWN (sortie : $sortie, rc=$code)"
+else
+  ok "cas 1f diagnostic français + rc=0 -> UNKNOWN"
+fi
+
+sortie="$(env -u ROO_EXTENSIONS_ROOT -u ROO_EXTENSIONS_PATH -u COURSIA_LINK_BILLED_SCRIPT \
+  bash "$ICI/link-verdict.sh" 2>&1)"
+code=$?
+if [ "$code" -ne 4 ] || ! printf '%s' "$sortie" | grep -q 'probe-dir-missing'; then
+  ko "cas 1g racine absente -> UNKNOWN fail-closed (sortie : $sortie, rc=$code)"
+else
+  ok "cas 1g racine absente -> UNKNOWN fail-closed"
 fi
 
 # --- CAS 2 : ARRET SUR BASCULE -------------------------------------------

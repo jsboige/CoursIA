@@ -19,39 +19,74 @@
 #     BILLED     exit 3   le lien est facture -- ne pas lancer de travail lourd
 #     UNKNOWN    exit 4   la sonde n'a pas repondu -- l'appelant tranche
 #
-# Le contrat publie (roo-extensions) dit : « "exit 0" alone is not enough to
-# mean "go": read the first word ». La regle est donc appliquee a l'envers :
-# c'est le PREMIER MOT qui fait foi, et le code de sortie du contrat sert de
-# CONTRE-VERIFICATION. Mot inattendu ou desaccord entre mot et code de sortie
-# => UNKNOWN, jamais un « va » suppose. Le cote Windows a le lecteur jumeau
-# `link-verdict.ps1` ; les deux appliquent la MEME regle.
+# Contrat roo-extensions : lire le PREMIER MOT et le code, puis garder le
+# verdict le plus strict selon BILLED > UNKNOWN > UNBILLED. Une contradiction
+# ne doit jamais affaiblir BILLED ; un appel sans mot lisible vaut UNKNOWN.
+# Le lecteur jumeau Windows `link-verdict.ps1` applique la meme regle.
 #
-# Le contrat est APPELLE, jamais modifie : rien n'est ecrit cote roo-extensions.
+# Le contrat est APPELE, jamais modifie : rien n'est ecrit cote roo-extensions.
 #
 # Variables d'environnement :
-#   COURSIA_LINK_BILLED_SCRIPT   chemin Windows du contrat publie
-#                                 (defaut D:\roo-extensions\scripts\monitoring\test-link-billed.ps1)
-#   COURSIA_LINK_VERDICT_CMD      commande produisant la ligne de verdict
-#                                 (surcharge totale ; utilisee par le harnais
-#                                 et par un siege qui a sa propre sonde)
+#   ROO_EXTENSIONS_ROOT        racine Windows du depot roo-extensions
+#   ROO_EXTENSIONS_PATH        repli compatible RSM si ROOT absent
+#   COURSIA_LINK_BILLED_SCRIPT surcharge directe du chemin vers la sonde
+#   COURSIA_LINK_VERDICT_CMD   commande de sonde (surcharge reservee aux tests)
+#   WSL_INTEROP               doit etre present pour appeler powershell.exe
+#                                 depuis WSL ; son absence produit UNKNOWN
+#
+# Aucune racine connue ou sonde absente = UNKNOWN (fail-closed). Aucun chemin
+# de siege n'est embarque en valeur par defaut.
 set -uo pipefail
 
-CONTRAT_WIN="${COURSIA_LINK_BILLED_SCRIPT:-D:\\roo-extensions\\scripts\\monitoring\\test-link-billed.ps1}"
-
-# La commande qui produit la ligne de verdict.
+# La commande injectable n'existe que pour les temoins secs. En production,
+# construire le chemin de sonde depuis une racine explicitement fournie.
 if [ -n "${COURSIA_LINK_VERDICT_CMD:-}" ]; then
   commande="$COURSIA_LINK_VERDICT_CMD"
-elif command -v powershell.exe >/dev/null 2>&1; then
-  # Interop WSL : le contrat est un script PowerShell cote hote.
-  commande="powershell.exe -NoProfile -ExecutionPolicy Bypass -File '$CONTRAT_WIN'"
+  contrat_affiche="test-stub"
 else
-  # Pas d'interop : aucune lecture possible. C'est UNKNOWN, pas UNBILLED.
-  echo "UNKNOWN reason=no-interop contract=$CONTRAT_WIN" >&2
-  exit 4
+  if [ -n "${COURSIA_LINK_BILLED_SCRIPT:-}" ]; then
+    CONTRAT_WIN="$COURSIA_LINK_BILLED_SCRIPT"
+  else
+    ROO_ROOT="${ROO_EXTENSIONS_ROOT:-${ROO_EXTENSIONS_PATH:-}}"
+    if [ -z "$ROO_ROOT" ]; then
+      echo "UNKNOWN reason=probe-dir-missing variable=ROO_EXTENSIONS_ROOT" >&2
+      exit 4
+    fi
+    # Convertir /mnt/<drive>/... en chemin Windows DOS, forme acceptée par -File.
+    case "$ROO_ROOT" in
+      /mnt/[a-zA-Z]/*)
+        drive="$(printf '%s' "$ROO_ROOT" | cut -c6 | tr '[:lower:]' '[:upper:]')"
+        rest="$(printf '%s' "$ROO_ROOT" | cut -c8- | tr '/' '\\\\')"
+        ROO_ROOT_WIN="${drive}:\\\\${rest}"
+        ;;
+      *) ROO_ROOT_WIN="$ROO_ROOT" ;;
+    esac
+    CONTRAT_WIN="${ROO_ROOT_WIN%\\\\}\\\\scripts\\\\monitoring\\\\test-link-billed.ps1"
+  fi
+  contrat_affiche="$CONTRAT_WIN"
+  if [ -z "${WSL_INTEROP:-}" ]; then
+    echo "UNKNOWN reason=no-interop contract=$CONTRAT_WIN" >&2
+    exit 4
+  fi
+  if ! command -v powershell.exe >/dev/null 2>&1; then
+    echo "UNKNOWN reason=powershell-5.1-missing contract=$CONTRAT_WIN" >&2
+    exit 4
+  fi
+  commande="powershell.exe -NoProfile -ExecutionPolicy Bypass -File '$CONTRAT_WIN'"
 fi
 
-sortie="$(bash -c "$commande" 2>/dev/null)"
+# stdout ET stderr sont conserves pour détecter l'erreur de -File absent. Le
+# contrat affiche alors une erreur localisée avant sa bannière ; certaines
+# versions rendent rc=0 malgré cet échec, donc l'appel reste UNKNOWN.
+sortie="$(bash -c "$commande" 2>&1)"
 code=$?
+# PowerShell localise le diagnostic d'un fichier -File absent. Rejeter les
+# messages d'invocation avant de chercher le premier mot ; rc peut être 0.
+if printf '%s' "$sortie" | grep -Eiq '(-File.*(n.existe|does not exist|not exist)|argument.*(-File|paramètre)|cannot find.*(path|file))'; then
+  echo "UNKNOWN reason=contract-script-missing contract=$contrat_affiche" >&2
+  exit 4
+fi
+case "$code" in 0|3|4) ;; *) code=4 ;; esac
 
 ligne=""
 while IFS= read -r l; do
@@ -65,33 +100,32 @@ if [ -z "$ligne" ]; then
   exit 4
 fi
 
-# Le PREMIER MOT de la ligne fait foi.
-mot="$(printf '%s' "$ligne" | awk '{print $1}' | tr '[:lower:]' '[:upper:]')"
+# Lire le premier mot non vide de stdout/stderr. Si aucun mot de verdict n'est
+# lisible (banniere, exception, sortie vide), classer UNKNOWN.
+mot="$(printf '%s\n' "$sortie" | awk 'NF {print toupper($1); exit}')"
+ligne="$(printf '%s\n' "$sortie" | awk 'NF {print; exit}')"
+[ -n "$mot" ] || { echo "UNKNOWN reason=no-output contract=$contrat_affiche" >&2; exit 4; }
 reste="$(printf '%s' "$ligne" | cut -d' ' -f2- | sed 's/^[[:space:]]*//')"
-
 case "$mot" in
   UNBILLED|BILLED|UNKNOWN) ;;
-  *)
-    echo "UNKNOWN reason=unexpected-verdict word=$mot line=$ligne" >&2
-    exit 4
-    ;;
+  *) echo "UNKNOWN reason=unexpected-verdict word=$mot contract=$contrat_affiche" >&2; exit 4 ;;
 esac
 
-# Contre-verification : le mot et le code de sortie du contrat doivent dire la
-# meme chose. Un desaccord est un etat degrade, pas un feu vert.
-attendu=4
-case "$mot" in
-  UNBILLED) attendu=0 ;;
-  BILLED) attendu=3 ;;
+# Fold the two channels conservatively: the strictest evidence wins. A higher
+# return code can never downgrade BILLED; a recognized word can never be
+# overridden by an apparently more permissive code.
+case "$mot:$code" in
+  BILLED:0|BILLED:3|BILLED:4) verdict=BILLED ;;
+  UNKNOWN:0|UNKNOWN:3|UNKNOWN:4) verdict=UNKNOWN ;;
+  UNBILLED:0) verdict=UNBILLED ;;
+  UNBILLED:3) verdict=BILLED ;;
+  UNBILLED:4) verdict=UNKNOWN ;;
+  *) verdict=UNKNOWN ;;
 esac
-if [ "$code" -ne "$attendu" ]; then
-  echo "UNKNOWN reason=verdict-exit-mismatch word=$mot contract_exit=$code" >&2
-  exit 4
-fi
-
-echo "$mot $reste"
-case "$mot" in
+[ -n "$reste" ] || reste="reason=contract-output"
+echo "$verdict $reste"
+case "$verdict" in
   UNBILLED) exit 0 ;;
   BILLED) exit 3 ;;
+  *) exit 4 ;;
 esac
-exit 4

@@ -31,22 +31,20 @@ LECTEUR="${LINK_GUARD_VERDICT_CMD:-bash '$ICI/link-verdict.sh'}"
 sortie="$(bash -c "$LECTEUR" 2>&1)"
 code=$?
 
-# Le code du lecteur EST la decision (0 UNBILLED, 3 BILLED, 4 UNKNOWN) ; le
-# mot de la ligne ne sert qu'a nommer la cause dans le journal.
-mot="$(printf '%s' "$sortie" | awk '{print $1}' | tr '[:lower:]' '[:upper:]')"
-reste="$(printf '%s' "$sortie" | cut -d' ' -f2- | sed 's/^[[:space:]]*//')"
-
-case "$code" in
-  0)
+# Lire les deux canaux : un code 0 ne peut pas effacer un mot BILLED.
+mot="$(printf '%s\n' "$sortie" | awk 'NF {print toupper($1); exit}')"
+reste="$(printf '%s\n' "$sortie" | awk 'NF {$1=""; sub(/^[[:space:]]+/, ""); print; exit}')"
+case "$mot:$code" in
+  UNBILLED:0)
     echo "GO link-unbilled ${reste}"
     exit 0
     ;;
-  3)
+  BILLED:0|BILLED:3|BILLED:4|UNBILLED:3)
     echo "REFUSE link-billed ${reste}" >&2
     exit 4
     ;;
   *)
-    echo "REFUSE link-verdict-unknown ${reste}" >&2
+    echo "REFUSE link-verdict-unknown word=${mot:-absent} reader_exit=$code ${reste}" >&2
     exit 4
     ;;
 esac

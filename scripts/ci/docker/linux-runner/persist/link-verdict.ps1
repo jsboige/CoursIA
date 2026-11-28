@@ -22,11 +22,10 @@
 #     BILLED     exit 3   le lien est facture -- ne pas lancer de travail lourd
 #     UNKNOWN    exit 4   la sonde n'a pas repondu -- l'appelant tranche
 #
-# « exit 0 alone is not enough to mean "go": read the first word » -- l'en-tete
-# du contrat publie. On applique donc la regle a l'envers et de facon
-# verifiable : c'est le PREMIER MOT qui fait foi, et le code de sortie du
-# contrat sert de CONTRE-VERIFICATION. Un desaccord entre les deux (ou un mot
-# inattendu) donne UNKNOWN -- fail-closed, jamais un « va » suppose.
+# Le contrat publie dit de lire le premier mot ET le code de sortie, en gardant
+# le verdict le plus strict : BILLED > UNKNOWN > UNBILLED. Une contradiction ne
+# peut jamais affaiblir BILLED ; un mot absent ou illisible devient UNKNOWN.
+# La commande de service appelle toujours Windows PowerShell 5.1.
 #
 # RIEN N'EST MODIFIE COTE ROO-EXTENSIONS : ce fichier appelle le contrat
 # publie, il ne le reecrit pas et ne l'ecrit pas.
@@ -36,7 +35,9 @@
 #     powershell -NoProfile -ExecutionPolicy Bypass -File link-verdict.ps1 -Script <chemin>
 #
 # Variables d'environnement reconnues :
-#     COURSIA_LINK_BILLED_SCRIPT  chemin du contrat publie (defaut ci-dessous)
+#     COURSIA_LINK_BILLED_SCRIPT  chemin du contrat publie (override direct)
+#     ROO_EXTENSIONS_ROOT        racine du depot (prioritaire)
+#     ROO_EXTENSIONS_PATH        repli compatible RSM
 param(
     [string]$Script = $env:COURSIA_LINK_BILLED_SCRIPT,
     [switch]$Quiet
@@ -53,25 +54,30 @@ function Verdict([string]$word, [string]$detail) {
     }
 }
 
-# Le contrat publie vit dans le depot roo-extensions. Son chemin par defaut
-# est celui du siege type (D:\roo-extensions) ; un siege qui l'a ailleurs
-# surcharge COURSIA_LINK_BILLED_SCRIPT ou -Script. Un chemin absent n'est pas
-# un « lien non facture » : c'est UNKNOWN.
-if (-not $Script) { $Script = 'D:\roo-extensions\scripts\monitoring\test-link-billed.ps1' }
+# Localiser la sonde : override direct de test, sinon racine explicitement
+# injectee par l'environnement du runner. Pas de chemin propre a un siege.
+if (-not $Script) {
+    $root = $env:ROO_EXTENSIONS_ROOT
+    if (-not $root) { $root = $env:ROO_EXTENSIONS_PATH }
+    if (-not $root) { Verdict 'UNKNOWN' 'reason=probe-dir-missing variable=ROO_EXTENSIONS_ROOT' }
+    $Script = Join-Path $root 'scripts/monitoring/test-link-billed.ps1'
+}
 
 if (-not (Test-Path -LiteralPath $Script)) {
     Verdict 'UNKNOWN' ("reason=contract-script-missing path=" + $Script)
 }
 
-# Appel du contrat : sa premiere ligne NON VIDE porte le verdict, son code de
-# sortie le contre-verifie. On capture stdout ET stderr pour qu'une erreur
-# d'invocation ne se fasse pas passer pour une reponse.
-$sortie = & $Script 2>&1 | Out-String
+# Appel du contrat : son premier mot de verdict + code. Les erreurs stderr
+# (dont les bannieres localisees de powershell.exe) ne sont pas des verdicts.
+$stdout = @(& $Script)
 $code = $LASTEXITCODE
-
 $ligne = ''
-foreach ($l in ($sortie -split "`r?`n")) {
-    if ($l.Trim().Length -gt 0) { $ligne = $l.Trim(); break }
+foreach ($l in $stdout) {
+    $candidate = [string]$l
+    if ($candidate.Trim().Length -gt 0 -and $candidate.Trim() -match '^(UNBILLED|BILLED|UNKNOWN)(\s|$)') {
+        $ligne = $candidate.Trim()
+        break
+    }
 }
 if (-not $ligne) {
     Verdict 'UNKNOWN' ("reason=no-output path=" + $Script)
@@ -84,11 +90,13 @@ if ($mot -notin @('UNBILLED', 'BILLED', 'UNKNOWN')) {
     Verdict 'UNKNOWN' ("reason=unexpected-verdict word=" + $mot + " line=" + $ligne)
 }
 
-# Contre-verification : le mot et le code du contrat doivent dire la meme
-# chose. Un desaccord est un etat degrade, pas un feu vert.
-$attendu = switch ($mot) { 'UNBILLED' { 0 } 'BILLED' { 3 } default { 4 } }
-if ($code -ne $attendu) {
-    Verdict 'UNKNOWN' ("reason=verdict-exit-mismatch word=" + $mot + " contract_exit=" + $code)
+# Les deux canaux peuvent diverger : garder le plus strict. Codes connus 0/3/4 ;
+# tout autre code est UNKNOWN, sauf si le mot dit BILLED, qui reste BILLED.
+$verdict = $mot
+switch ($code) {
+    0 { }
+    3 { if ($verdict -eq 'UNBILLED') { $verdict = 'BILLED' } }
+    4 { if ($verdict -ne 'BILLED') { $verdict = 'UNKNOWN' } }
+    default { if ($verdict -ne 'BILLED') { $verdict = 'UNKNOWN' } }
 }
-
-Verdict $mot $reste
+Verdict $verdict $reste
