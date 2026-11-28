@@ -1,0 +1,13 @@
+- name: "Chaines-01 Axiome Intrication Constante Structure Fine"
+  family: Physique/Chaines
+  python: MyIA.AI.Notebooks/Physique/Chaines/Chaines-01-Axiome-Intrication-Constante-Structure-Fine-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Physique/Chaines/Chaines-01-Axiome-Intrication-Constante-Structure-Fine-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Solver-free by design : le jumeau C# est en BCL pur (zero paquet NuGet). L'algebre lineaire quantique (vecteurs/matrices complexes, produit de Kronecker, trace, solveur hermitien par Jacobi cyclique) et l'arithmetique exacte (System.Numerics.BigInteger, echelle fixe 10^-72 pour les racines de 2/3/6) sont reconstruits depuis le bas : c'est le SUJET du carnet (axiome d'intrication et derivation de 1/alpha depuis les premieres primitives), pas un substitut a un outil SOTA. Le cote Python utilise numpy ; memes mathematiques, API idiomatique differente (snake_case/numpy d'un cote, PascalCase/BCL pur de l'autre)."
+  known_differences:
+    - "Chiffre 60 d'alpha_cand : le jumeau C# (plancher d'echelle fixe, arrondi exact) affiche ...61402, le carnet Python (Decimal precision 60, arrondi apres chaque operation) affiche ...61404 ; ecart 2e-62, asserte < 5 et annonce (cellules 0, 20, 21). L'inverse 1/alpha est identique aux 60 chiffres (137.035999189566155029183744020866799566408684673854265541249), ecart 0E-57."
+    - "Cellule 1 : le cote C# imprime la version .NET (10.0.15) au lieu des versions numpy/matplotlib (le kernel .net-csharp n'a ni numpy ni matplotlib)."
+    - "Figure 3 : un tableau texte, sans trace (le kernel .net-csharp ne trace pas de figure sans dependance graphique)."
+    - "Cellule 16 : les 172 enregistrements sont des donnees CITEES (table saisie), chaque ligne annotee de sa construction ; produits()/commutateur() ne sont pas re-implémentees. Empreinte de la table (temoin de transcription) : 903342103."
+    - "Cellule 18 : la carte de re-injection des commutateurs est saisie (la calculer exigerait commutateur(), exclue) ; trois assertions controlent que chaque image est l'opposee de sa ligne."
