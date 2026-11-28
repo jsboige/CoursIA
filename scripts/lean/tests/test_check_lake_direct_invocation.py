@@ -353,7 +353,10 @@ def test_negative_ordinary_variable_list_head(tmp: Path) -> None:
 
 def test_is_test_path() -> None:
     assert guard._is_test_path("scripts/lean/tests/test_lean_exec.py")
-    assert guard._is_test_path("scripts/lean/test_check_grothendieck_readme.py")
+    # Branche basename : un test directement sous scripts/lean/, hors dossier
+    # tests/ (chemin synthetique -- #28721 a fait passer le seul cas reel,
+    # test_check_grothendieck_readme, dans scripts/lean/tests/).
+    assert guard._is_test_path("scripts/lean/test_hors_dossier_tests.py")
     assert not guard._is_test_path("scripts/lean/lean_exec.py")
     assert not guard._is_test_path("MyIA.AI.Notebooks/x/verifiers/lean_rlvr_verifier.py")
 

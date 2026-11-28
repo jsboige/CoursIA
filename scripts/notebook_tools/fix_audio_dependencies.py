@@ -23,7 +23,7 @@ GPU_DEPENDENCIES = {
         'optional': True,
         'description': 'Kokoro TTS local (82M params, MIT license)',
     },
-    'Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb': {
+    'Audio/02-Advanced/Audio-02-1-Chatterbox-TTS-Python.ipynb': {
         'packages': ['chatterbox-tts'],
         'primary': 'chatterbox-tts',
         'install': 'pip install chatterbox-tts',
