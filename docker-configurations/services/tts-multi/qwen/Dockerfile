@@ -22,7 +22,9 @@ EXPOSE 8000
 
 # Set environment variables for Qwen3-TTS
 ENV PYTHONUNBUFFERED=1
-ENV VLLM_USE_MODELSCOPE=false
+# No VLLM_USE_MODELSCOPE: vllm_omni treats any non-empty value as "use ModelScope"
+# (string truthiness), so even "false" would route the download through ModelScope.
+# Leaving the variable unset is what selects HuggingFace. See entrypoint.sh.
 ENV HF_HUB_ENABLE_HF_TRANSFER=1
 ENV VLLM_ALLOW_LONG_MAX_MODEL_LEN=1
 

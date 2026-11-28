@@ -2506,6 +2506,62 @@ def _decode_nul_paths(raw: bytes) -> set[str]:
     }
 
 
+# #28843 : Windows borne la ligne de commande de CreateProcess a 32 767
+# caracteres. Au-dela, Popen leve OSError (WinError 206) AVANT tout code de
+# retour : la liste des chemins d'une PR de renommage (~360 fichiers suffisent,
+# mesuree a 46 718 caracteres sur 508 chemins) rendait donc l'organe inutilisable
+# sur un siege Windows. Budget sous la limite, avec la marge des prefixes.
+_PATHSPEC_BUDGET_WINDOWS = 30_000
+_DIFF_PATHSPEC_PREFIX = ["git", "diff", "--name-only", "-z"]
+
+
+def _chunk_pathspecs(base_ref: str, head: str, paths: list[str], budget: int) -> list[list[str]]:
+    """#28843: split ``paths`` into chunks whose command line stays under ``budget``.
+
+    ``subprocess.list2cmdline`` is the function ``Popen`` applies itself on
+    Windows, so the measured length is the one the kernel sees. A single path
+    longer than the budget stays alone in its chunk: the caller's ``OSError``
+    fail-safe then covers it rather than silently dropping it.
+    """
+    prefix = _DIFF_PATHSPEC_PREFIX + [base_ref, head, "--"]
+    chunks: list[list[str]] = []
+    current: list[str] = []
+    for path in paths:
+        if current and len(subprocess.list2cmdline(prefix + current + [path])) > budget:
+            chunks.append(current)
+            current = [path]
+        else:
+            current.append(path)
+    if current:
+        chunks.append(current)
+    return chunks
+
+
+def _changed_paths(base_ref: str, head: str, paths: list[str]) -> Optional[set[str]]:
+    """#28843: union of ``git diff --name-only -z`` over command-line-sized chunks.
+
+    None on any failure (git error, ``OSError`` from an over-long command line,
+    undecodable output) so the caller keeps its documented fail-safe.
+    """
+    if sys.platform == "win32":
+        chunks = _chunk_pathspecs(base_ref, head, paths, _PATHSPEC_BUDGET_WINDOWS)
+    else:
+        chunks = [paths]
+    changed: set[str] = set()
+    try:
+        for chunk in chunks:
+            proc = subprocess.run(
+                _DIFF_PATHSPEC_PREFIX + [base_ref, head, "--"] + chunk,
+                capture_output=True,
+            )
+            if proc.returncode != 0:
+                return None
+            changed |= _decode_nul_paths(proc.stdout)
+    except (OSError, UnicodeDecodeError):
+        return None
+    return changed
+
+
 def _classify_carried(pr: int, files: list[dict]) -> CarriedNote:
     """#13637: partition ``files`` (the API list) into the PR's own contribution
     and the carried files.
@@ -2517,8 +2573,10 @@ def _classify_carried(pr: int, files: list[dict]) -> CarriedNote:
     origin/<base> <head> -- p`` empty => carried.
 
     Fail-safe: on any resolution failure (base ref unfetchable, head unknown,
-    git error) returns an empty ``charries`` -- no file is ever wrongly
-    excluded, the fallback is the pre-fix behaviour.
+    git error, ``OSError`` raised by an over-long command line) returns an
+    empty ``charries`` -- no file is ever wrongly excluded, the fallback is the
+    pre-fix behaviour. The pathspec list is chunked on Windows so that a large
+    PR is measured instead of falling back (#28843).
     """
     if not files:
         return CarriedNote(propres=files, charries=[], base_age_hours=None)
@@ -2528,15 +2586,8 @@ def _classify_carried(pr: int, files: list[dict]) -> CarriedNote:
     api_paths = sorted({f["path"] for f in files if f.get("path")})
     if not api_paths:
         return CarriedNote(propres=files, charries=[], base_age_hours=None)
-    proc = subprocess.run(
-        ["git", "diff", "--name-only", "-z", base_ref, head, "--"] + api_paths,
-        capture_output=True,
-    )
-    if proc.returncode != 0:
-        return CarriedNote(propres=files, charries=[], base_age_hours=None)
-    try:
-        changed = _decode_nul_paths(proc.stdout)
-    except UnicodeDecodeError:
+    changed = _changed_paths(base_ref, head, api_paths)
+    if changed is None:
         return CarriedNote(propres=files, charries=[], base_age_hours=None)
     carried = set(api_paths) - changed
     propres, charries = partition_propres(files, carried)
