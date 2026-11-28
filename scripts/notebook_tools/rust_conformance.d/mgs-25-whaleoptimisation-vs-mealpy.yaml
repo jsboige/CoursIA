@@ -20,6 +20,14 @@
 # tolérance de 12 que le carnet déclare lui-même ; ce que l'autre côté ne mesure pas est
 # déclaré `absent` avec son motif.
 #
+# ALIGNEMENT DES LIBELLÉS du 2026-11-28 (option (a) de l'arbitrage du coordinateur
+# CoursIA, RooSync c0179) : le carnet Rust nomme désormais ses trois bras comme la
+# source — « MGS spirale », « MGS naive », « mealpy » — au lieu de « WOA spirale /
+# WOA naive / WOA de contrôle ». Les motifs Rust ci-dessous sont donc LES MÊMES que
+# les motifs Python, ancrés en début de ligne sur le libellé : un libellé qui
+# divergerait rendrait « motif absent », donc une divergence. L'en-tête du tableau de
+# la cellule 10 (même largeur de colonnes que la source) est comparé strictement.
+#
 # Cellules non mesurées (motif relevé à la génération) :
 #   - c6: sortie riche côté Python (figure/HTML), non mesurée
 - name: "MGS-25-WhaleOptimisation-vs-Mealpy"
@@ -67,7 +75,7 @@
           pattern: "\\(graine\\ 7,\\ témoin\\)\\ :\\ (\\d+)\\ conflits"
           transform: int
     - id: c8_contre_verif
-      description: "Verdict de la contre-verification croisee de la cellule 8 (« -> IDENTIQUE ») : c'est une coherence interne, pas une duree ; elle doit etre identique. Le libelle du cote mesure differe legitimement (Python « cout C# du meilleur mealpy », Rust « cout noyau du meilleur port ») et n'est pas compare."
+      description: "Verdict de la contre-verification croisee de la cellule 8 (« -> IDENTIQUE ») : c'est une coherence interne, pas une duree ; elle doit etre identique. Le libelle du cote mesure differe legitimement (Python « cout C# du meilleur mealpy », Rust « cout noyau du meilleur mealpy ») et n'est pas compare."
       tolerance: 0
       reference: python
       sides:
@@ -79,8 +87,21 @@
           cell: 8
           pattern: "->[ ]*(\\w+)\\s*\\Z"
           transform: text
+    - id: c10_entete
+      description: "En-tete du tableau de la cellule 10 (« moteur graine conflits evals ms ms/eval »), memes largeurs de colonnes que la source : texte identique."
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "\\A\\s*(moteur[^\\r\\n]*)"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "\\A\\s*(moteur[^\\r\\n]*)"
+          transform: text
     - id: c10_evals_spirale
-      description: "Colonne « evals » du bras spirale en cellule 10 (premiere ligne du tableau) : grandeur de protocole, strictement egale. Les colonnes de conflits et de duree du meme tableau mesurent le troisieme moteur et ne sont pas comparees a l'egalite (voir c10_mediane_*)."
+      description: "Colonne « evals » du bras « MGS spirale » en cellule 10 (premiere ligne du tableau) : grandeur de protocole, strictement egale. Le motif est ancre en debut de ligne sur le libelle de la source, le meme des deux cotes : il verifie aussi le libelle. Les colonnes de conflits et de duree du meme tableau mesurent le troisieme moteur et ne sont pas comparees a l'egalite (voir c10_mediane_*)."
       tolerance: 0
       reference: python
       sides:
@@ -90,10 +111,10 @@
           transform: int
         rust:
           cell: 10
-          pattern: "(?m:^WOA[ ]spirale[ \\t]+(?:\\d+)[ \\t]+(?:\\d+)[ \\t]+(\\d+))"
+          pattern: "(?m:^MGS[ ]spirale[ \\t]+(?:\\d+)[ \\t]+(?:\\d+)[ \\t]+(\\d+))"
           transform: int
     - id: c10_evals_naive
-      description: "Colonne « evals » du bras naive en cellule 10 : grandeur de protocole, strictement egale."
+      description: "Colonne « evals » du bras « MGS naive » en cellule 10 : grandeur de protocole, strictement egale ; motif ancre sur le libelle de la source, le meme des deux cotes."
       tolerance: 0
       reference: python
       sides:
@@ -103,10 +124,10 @@
           transform: int
         rust:
           cell: 10
-          pattern: "(?m:^WOA[ ]naive[ \\t]+(?:\\d+)[ \\t]+(?:\\d+)[ \\t]+(\\d+))"
+          pattern: "(?m:^MGS[ ]naive[ \\t]+(?:\\d+)[ \\t]+(?:\\d+)[ \\t]+(\\d+))"
           transform: int
     - id: c10_evals_controle
-      description: "Colonne « evals » du troisieme bras en cellule 10 (le Python l'appelle « mealpy », le Rust « WOA de controle » — etiquettes propres a chaque cote, seule la grandeur est comparee) : grandeur de protocole, strictement egale."
+      description: "Colonne « evals » du troisieme bras « mealpy » en cellule 10 (cote Rust, le port de controle qui reproduit mealpy OriginalWOA ; libelle aligne sur la source le 28/11, ancre en debut de ligne des deux cotes) : grandeur de protocole, strictement egale."
       tolerance: 0
       reference: python
       sides:
@@ -116,7 +137,7 @@
           transform: int
         rust:
           cell: 10
-          pattern: "(?m:^WOA[ ]de[ ]contrôle[ \\t]+(?:\\d+)[ \\t]+(?:\\d+)[ \\t]+(\\d+))"
+          pattern: "(?m:^mealpy[ \\t]+(?:\\d+)[ \\t]+(?:\\d+)[ \\t]+(\\d+))"
           transform: int
     - id: c10_mediane_spirale
       description: "Mediane de conflits du bras spirale (ligne de synthese de la cellule 10) : 49,5 cote Python, 50,5 cote Rust — ecart 1, dans la tolerance de 12 que le carnet declare. La grandeur mesure le troisieme moteur : bornee, pas comparee a l'egalite."
@@ -145,7 +166,7 @@
           pattern: "naive[ \\t]*:[ \\t]*médiane[ \\t]+conflits[ \\t]+(\\d+(?:[.,]\\d+)?)"
           transform: float
     - id: c10_mediane_controle
-      description: "Mediane de conflits du troisieme bras (cellule 10) : 51,0 cote Python (« mealpy »), 50,5 cote Rust (« WOA de controle »). Meme doctrine que c10_mediane_spirale."
+      description: "Mediane de conflits du troisieme bras « mealpy » (cellule 10) : 51,0 cote Python, 50,5 cote Rust (le port de controle). Meme motif des deux cotes, ancre sur le libelle. Meme doctrine que c10_mediane_spirale."
       tolerance: 12
       reference: python
       sides:
@@ -155,7 +176,7 @@
           transform: float
         rust:
           cell: 10
-          pattern: "contrôle[ \\t]*:[ \\t]*médiane[ \\t]+conflits[ \\t]+(\\d+(?:[.,]\\d+)?)"
+          pattern: "(?m:^mealpy[ \\t]*:[ \\t]*médiane[ \\t]+conflits[ \\t]+(\\d+(?:[.,]\\d+)?))"
           transform: float
     - id: c11_entete
       description: "En-tete de la cellule 11 — la ligne qui introduit l'experience « Fitness seule, 500 vecteurs identiques » — texte identique au jumeau Python. Les lignes de duree qui suivent sont des ancres en PRESENCE SEULE : chaque cote nomme ses propres moteurs et publie ses propres valeurs, jamais comparees."
@@ -171,7 +192,7 @@
           pattern: "\\A\\s*(.*?)\\s*(?m:^[^\\n]*\\bms[ ]total\\b[^\\n]*\\r?$)"
           transform: text
     - id: c11_rapport
-      description: "Rapport publie en fin de cellule 11. Les deux cotes ne mesurent pas la MEME chose : le Python publie « rapport Python/C# : 4,29x » — un rapport a un troisieme langage —, le Rust « rapport port/noyau : 4,91x », une mesure interne, suivie d'une ligne d'accord des couts. Aucune grandeur de conformite n'est comparable : absence declaree cote Rust, motif mesure (meme doctrine que MGS-29)."
+      description: "Rapport publie en fin de cellule 11. Les deux cotes ne mesurent pas la MEME chose : le Python publie « rapport Python/C# : 4,29x » — un rapport a un troisieme langage —, le Rust « rapport port/noyau : <r>x » (duree locale, non figee), une mesure interne, suivie d'une ligne d'accord des couts. Aucune grandeur de conformite n'est comparable : absence declaree cote Rust, motif mesure (meme doctrine que MGS-29)."
       tolerance: 0
       reference: python
       sides:
@@ -181,7 +202,8 @@
           transform: float
         rust:
           absent: >-
-            Le carnet Rust publie « rapport port/noyau : 4,91x » puis « Ordre
+            Le carnet Rust publie « rapport port/noyau : <r>x » (une duree
+            locale, differente a chaque execution) puis « Ordre
             observe … accord des couts : 500/500 » : le Python se compare a son
             jumeau C#, le port se compare a son propre noyau. Declare ABSENT,
             pas mesure — exiger ici le rapport Python/C# obligerait le port a
