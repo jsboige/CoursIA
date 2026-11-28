@@ -660,7 +660,7 @@ class TestRunPipeline:
         assert ".scope()" not in result["strudel_script"]
 
     def test_no_voice_cloning_legal_proof(self):
-        """Aucune voix clonee de tiers (regle 02-2-XTTS-Voice-Cloning.ipynb
+        """Aucune voix clonee de tiers (regle Audio-02-2-XTTS-Voice-Cloning-Python.ipynb
         ligne 2018 'consentement ecrit obligatoire'). Le test verifie
         qu'aucun IDENTIFIER ou APPEL lie au clonage n'est expose dans le
         code source. La docstring peut mentionner la voie de retrait

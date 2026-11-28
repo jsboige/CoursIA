@@ -133,7 +133,7 @@ du code de ce dépôt. Les poids **ne sont pas** commités dans l'arbre (téléc
 
 | Modèle | Fournisseur | Source | Licence (SPDX / label amont) | Conditions clés |
 |--------|-------------|--------|------------------------------|-----------------|
-| **Kokoro TTS** (Kokoro-82M) | hexgrad (+ Silero) | HF `hexgrad/Kokoro-82M` | **Apache-2.0** | Permissif ; ⚠️ _le notebook `01-5-TTS-Local-ONNX.ipynb` indique « MIT » — c'est une **hallucination à corriger** (vérifié firsthand via model card HF : Apache-2.0)_ |
+| **Kokoro TTS** (Kokoro-82M) | hexgrad (+ Silero) | HF `hexgrad/Kokoro-82M` | **Apache-2.0** | Permissif ; ⚠️ _le notebook `Audio-01-5-TTS-Local-ONNX-Python.ipynb` indique « MIT » — c'est une **hallucination à corriger** (vérifié firsthand via model card HF : Apache-2.0)_ |
 | **Chatterbox Turbo / Chatterbox TTS** | Resemble AI | HF `resemble-ai/chatterbox` | _à confirmer_ | Page HF gated (401) au moment de l'inventaire ; pas de SPDX firsthand |
 | **Qwen3-TTS** (0.6B / 1.7B Base & CustomVoice) | Alibaba (Qwen) | HF `Qwen/Qwen3-TTS-12Hz-1.7B-Base` | **Apache-2.0** | Permissif |
 | **Coqui XTTS v2** | Coqui AI (archivé 2024) | HF `coqui/XTTS-v2` | **CPML — Coqui Public Model License** (custom) | ⚠️ Coqui AI shut down 2024 ; **CPML reste applicable** sur les poids redistribués. Custom non-standard SPDX. Gated |
@@ -179,7 +179,7 @@ modèles suivants dont la licence **interdit ou restreint l'usage commercial** :
   (24/28 = 86%), 4 gated ou introuvables au moment de l'inventaire
   (Z-Image, Chatterbox Turbo, SongGeneration 2 / LeVo, SkyTNT MIDI, TADA 3B ML).
 - **Anti-hallucination** : une erreur factuelle a été détectée et corrigée
-  dans le notebook `01-5-TTS-Local-ONNX.ipynb` qui prétendait "MIT" pour
+  dans le notebook `Audio-01-5-TTS-Local-ONNX-Python.ipynb` qui prétendait "MIT" pour
   Kokoro TTS — la model card HF officielle indique **Apache-2.0**.
   Cette erreur sera corrigée dans une PR séparée (sub-grain notebook).
 

@@ -28,7 +28,7 @@ import check_external_consumer_links as organ  # noqa: E402
 BASE = "https://github.com/jsboige/CoursIA/blob/main/"
 TREE_FILES = {
     "MyIA.AI.Notebooks/GenAI/Texte/01-Intro.ipynb",
-    "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-7-TTS-Voice-Benchmark.ipynb",
+    "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/Audio-04-7-TTS-Voice-Benchmark-Python.ipynb",
     "Other/Series/Rapport.ipynb",
     "Rapport.ipynb",
     "new/dossier/a.ipynb",
@@ -160,11 +160,11 @@ def test_ledger_cycle_does_not_hang():
 
 def test_moved_via_unique_basename():
     link = one_link(BASE + "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/"
-                    "04-7-TTS-Voice-Benchmark.ipynb")
+                    "Audio-04-7-TTS-Voice-Benchmark-Python.ipynb")
     v = organ.classify(link, TREE_FILES, TREE_DIRS, {})
     assert v.status == "moved"
     assert v.suggestion == ("MyIA.AI.Notebooks/GenAI/Audio/04-Applications/"
-                            "04-Voix/04-7-TTS-Voice-Benchmark.ipynb")
+                            "04-Voix/Audio-04-7-TTS-Voice-Benchmark-Python.ipynb")
     assert v.via == "basename"
 
 

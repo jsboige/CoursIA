@@ -48,8 +48,8 @@
 | `Planners-08-Temporal-Python.ipynb` | 0 | 0 | 3 | 0 |
 | `00-3-API-Endpoints-Configuration.ipynb` | 0 | 2 | 0 | 0 |
 | `Audio-03-1-Multi-Model-Audio-Comparison-Python.ipynb` | 0 | 0 | 2 | 1 |
-| `04-3-Music-Composition-Workflow.ipynb` | 1 | 1 | 0 | 4 |
-| `04-7-TTS-Voice-Benchmark.ipynb` | 2 | 0 | 0 | 0 |
+| `Audio-04-3-Music-Composition-Workflow-Python.ipynb` | 1 | 1 | 0 | 4 |
+| `Audio-04-7-TTS-Voice-Benchmark-Python.ipynb` | 2 | 0 | 0 | 0 |
 | `03-3-Performance-Optimization.ipynb` | 0 | 0 | 2 | 0 |
 | `03-Chat-Streaming-QA-OWUI.ipynb` | 0 | 2 | 0 | 0 |
 

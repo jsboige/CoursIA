@@ -72,18 +72,18 @@ Les consommateurs sont mesurés par `grep -rlE "localhost:PORT"` sur
 | --- | --- | --- | --- |
 | [planners-fast-downward](../services/planners-fast-downward/) | 8200 | **CPU** | Planners-01-Introduction-Csharp, Planners-04-Fast-Downward-Python, Planners-13-Mesure-Qualite-Plans-Python (via `fast_downward_backend.py`) |
 | orchestrator (passerelle) | 8090 | CPU (ses services modèles sont GPU) | aucun carnet direct mesuré |
-| tts-gateway ([tts-multi](../services/tts-multi/)) | 8196 | CPU (ses backends kokoro/tada/qwen sont GPU) | GenAI Audio Audio-02-5-Multi-Model-TTS-Gateway-Python, 04-7-TTS-Voice-Benchmark |
+| tts-gateway ([tts-multi](../services/tts-multi/)) | 8196 | CPU (ses backends kokoro/tada/qwen sont GPU) | GenAI Audio Audio-02-5-Multi-Model-TTS-Gateway-Python, Audio-04-7-TTS-Voice-Benchmark-Python |
 | [comfyui-qwen](../services/comfyui-qwen/) | 8188 | GPU | GenAI 00-1-Environment-Setup, 00-5-ComfyUI-Local-Test |
 | [comfyui-video](../services/comfyui-video/) | 8189 | GPU | GenAI 00-1, Video 02-3-Wan-Video-Generation |
 | orchestrator : flux-1-dev / stable-diffusion-35 / comfyui-workflows | 8189 / 8190 / 8191 | GPU | via la passerelle orchestrator |
 | [whisper-api](../services/whisper-api/) | 8190 | GPU | GenAI 00-1, Audio Audio-04-13-Audiobook-FishAudio-S2Pro-Python |
-| [tts-api](../services/tts-api/) (kokoro) | 8191 | GPU | Audio Audio-04-10-Annotation-Prosodique-Python, 04-11-Generation-TTS |
+| [tts-api](../services/tts-api/) (kokoro) | 8191 | GPU | Audio Audio-04-10-Annotation-Prosodique-Python, Audio-04-11-Generation-TTS-Python |
 | [musicgen-api](../services/musicgen-api/) | 8192 | GPU | aucun consommateur mesuré |
 | [demucs-api](../services/demucs-api/) | 8193 | GPU | aucun consommateur mesuré |
 | [funasr-api](../services/funasr-api/) | 8194 | GPU | aucun consommateur mesuré |
 | [qwen-asr-api](../services/qwen-asr-api/) | 8195 | GPU | aucun consommateur mesuré |
 | tts-multi : backends kokoro / tada / qwen | — | GPU | via tts-gateway (8196) |
-| [tts-fishaudio](../services/tts-fishaudio/) | 8197 | GPU | Audio 02-8-Expressive-TTS, Audio-04-10-Annotation-Prosodique-Python |
+| [tts-fishaudio](../services/tts-fishaudio/) | 8197 | GPU | Audio Audio-02-8-Expressive-TTS-Python, Audio-04-10-Annotation-Prosodique-Python |
 | [sd-forge](../services/sd-forge/) | 7860 | GPU | Image 01-4-Forge-SD-XL-Turbo, Aspire 02-Aspire-GenAiStack-Reel |
 | [sdnext](../services/sdnext/) | 7861 | GPU | aucun consommateur mesuré |
 | [sd-forge-main](../services/sd-forge-main/) | 7862 | GPU | aucun consommateur mesuré |

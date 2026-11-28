@@ -1386,7 +1386,7 @@ def test_extract_vein_key_skips_prev_clause_to_target_issue():
     body = (
         "Grain: MED/notebook-python — lane myia-po-2024:CoursIA-2 "
         "— prev: MED/tooling #11479\n\n"
-        "feat(genai,#11271): Audio 04-11-Generation-TTS densite 988->1311"
+        "feat(genai,#11271): Audio Audio-04-11-Generation-TTS-Python densite 988->1311"
     )
     pr = {"number": 11498, "body": body}
     assert vlc.extract_vein_key(pr) == 11271

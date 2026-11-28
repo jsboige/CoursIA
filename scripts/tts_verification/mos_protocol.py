@@ -6,7 +6,7 @@ l'evaluation de la qualite audio. Il ne remplace pas l'oreille : il l'organise.
 
 Il ne recopie rien de ce que le depot possede deja :
 
-* la **rubrique** MOS (`04-7-TTS-Voice-Benchmark.ipynb`, section 10) est lue a
+* la **rubrique** MOS (`Audio-04-7-TTS-Voice-Benchmark-Python.ipynb`, section 10) est lue a
   l'execution par `load_rubric` : criteres, echelle et reference viennent du
   carnet lui-meme, pas d'une liste reecrite ici ;
 * la chaine d'outils objective du meme dossier (`verify_transcript.py`,
@@ -45,7 +45,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 #: Carnet qui porte la rubrique MOS de reference (source de verite unique).
 DEFAULT_RUBRIC_NOTEBOOK = (
-    "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-7-TTS-Voice-Benchmark.ipynb"
+    "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/Audio-04-7-TTS-Voice-Benchmark-Python.ipynb"
 )
 
 #: Variable de code qui porte la grille dans le carnet de reference.

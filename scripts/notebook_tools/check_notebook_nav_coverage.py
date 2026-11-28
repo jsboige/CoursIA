@@ -22,7 +22,7 @@ ecrites autrement. Sur `GenAI/Audio/04-Applications`, #24224 §4 annonce 5
 carnets sans barre et nomme `04-5`, `04-8`, `04-14`, `04-15`, `04-20` ; deux
 d'entre eux portent une barre parfaitement lisible, avec des chevrons :
 
-    04-5   **Navigation :** [<< 04-4](04-4-Audio-Video-Sync.ipynb) | [Index](../README.md) | [Image >>](../../Image/README.md)
+    04-5   **Navigation :** [<< 04-4](Audio-04-4-Audio-Video-Sync-Python.ipynb) | [Index](../README.md) | [Image >>](../../Image/README.md)
     04-14  **Navigation** : [<< App-21 VoiceLeading (Search)](...) | [Index](...) | [04-3 Workflow >>](...)
 
 Le deficit reel de ce dossier est de **3** carnets (`04-8`, `04-15`, `04-20`).

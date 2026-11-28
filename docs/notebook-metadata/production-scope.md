@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-24
+> REFERENCE — vivante — dernière révision 2026-11-28
 
 # Périmètre PRODUCTION — dérivation mécanique v1
 
@@ -42,7 +42,7 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 |-------|-------|---------------|------------|---------|
 | QuantConnect Python | ECE IA Finance Ing4 + Partner Algo Trading | `QC-Py-02-Platform-Fundamentals.ipynb` | 35 | |
 | GenAI Image — Foundation | EPF GenAI Bachelor 3A | `01-1-OpenAI-DALL-E-3.ipynb` | 5 | |
-| GenAI Audio — Foundation | EPF GenAI Bachelor 3A | `01-1-OpenAI-TTS-Intro.ipynb` | 5 | |
+| GenAI Audio — Foundation | EPF GenAI Bachelor 3A | `Audio-01-1-OpenAI-TTS-Intro-Python.ipynb` | 5 | |
 | GenAI Video — Foundation | EPF GenAI Bachelor 3A | `01-1-Video-Operations-Basics.ipynb` | 5 | |
 | GenAI Texte (1-8) | EPF GenAI Bachelor 3A | `01_OpenAI_Intro.ipynb` | 8 | |
 | Search — Part 1 Foundations | EPITA Programmation par Contraintes | `Search-01-StateSpace.ipynb` | 13 | |
@@ -69,11 +69,11 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb`
 <!-- MyIA.AI.Notebooks/GenAI/Audio/01-Foundation -->
 
-- [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-3-Basic-Audio-Operations.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-1-OpenAI-TTS-Intro-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-2-OpenAI-Whisper-STT-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-3-Basic-Audio-Operations-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-4-Whisper-Local-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-5-TTS-Local-ONNX-Python.ipynb`
 <!-- MyIA.AI.Notebooks/GenAI/Video/01-Foundation -->
 
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1-Video-Operations-Basics.ipynb`
@@ -214,13 +214,13 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 <!-- MyIA.AI.Notebooks/GenAI/Audio/02-Advanced -->
 
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-1-Chatterbox-TTS-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-2-XTTS-Voice-Cloning-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-3-MusicGen-Generation-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-4-Demucs-Source-Separation-Python.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-5-Multi-Model-TTS-Gateway-Python.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-6-MIDI-Generation-Python.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-7-YuE2-Song-Generation-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-8-Expressive-TTS-Python.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-9-AceStep-Music-Generation-Python.ipynb`
 <!-- MyIA.AI.Notebooks/GenAI/Video/02-Advanced -->
 

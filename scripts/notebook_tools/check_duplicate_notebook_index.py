@@ -311,7 +311,7 @@ _SCENARIOS = [
      ["g/Texte/22_TensorSharp_DotNet_Inference.ipynb"],
      ["g/Texte/22_Evaluating_Generated_Text.ipynb"], 1),
     ("FAUX POSITIF  serie a deux niveaux 04-1 vs 04-2",
-     ["g/Audio/04-2-Transcription-Pipeline.ipynb"],
+     ["g/Audio/Audio-04-2-Transcription-Pipeline-Python.ipynb"],
      ["g/Audio/Audio-04-1-Educational-Audio-Content-Python.ipynb"], 0),
     ("FAUX POSITIF  paire de langue Csharp",
      ["s/ChoixSocial-01-Arrow-Impossibility-Theorem-CSharp.ipynb"],
@@ -374,8 +374,8 @@ _SCENARIOS_DELETED = [
     ("VRAI POSITIF  suppression etrangere, le tenant reste",
      ["g/Video/04-5-Video-Cloud-API.ipynb"],
      ["g/Video/04-5-MiniMax-H3-Cloud-Video.ipynb",
-      "g/Audio/02-3-MusicGen-Generation.ipynb"],
-     {"g/Audio/02-3-MusicGen-Generation.ipynb"}, 1),
+      "g/Audio/Audio-02-3-MusicGen-Generation-Python.ipynb"],
+     {"g/Audio/Audio-02-3-MusicGen-Generation-Python.ipynb"}, 1),
 ]
 
 

@@ -110,7 +110,7 @@ class TestDetectCell:
 # ---------- 2. TestAllowlist ----------
 class TestAllowlist:
     def test_audio_tts_demo_allowed(self):
-        reason = mod._is_allowed("MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb")
+        reason = mod._is_allowed("MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-8-Expressive-TTS-Python.ipynb")
         assert reason is not None
         assert "TTS" in reason or "multilingue" in reason
 
@@ -157,7 +157,7 @@ class TestScanNotebook:
         # but is skipped (legitimate multilingual demo).
         tts_dir = tmp_path / "GenAI" / "Audio" / "02-Advanced"
         tts_dir.mkdir(parents=True)
-        p = tts_dir / "02-8-Expressive-TTS.ipynb"
+        p = tts_dir / "Audio-02-8-Expressive-TTS-Python.ipynb"
         p.write_text(json.dumps(_nb([("code", "print('こんにちは！多言語音声合成')")])), encoding="utf-8")
         r = mod.scan_notebook(p, tmp_path)
         assert r["allowed"] is not None

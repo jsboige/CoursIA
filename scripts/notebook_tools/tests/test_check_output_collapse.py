@@ -231,12 +231,12 @@ def test_parse_collapse_justification_hyphenated_cell_id():
     The nbformat ids of this repo are `cell-<nom>`; a capture that stopped
     at the hyphen named a cell that does not exist, and the finding stayed
     unaddressed on exactly the notebooks the bypass targets (measured on
-    `02-3-MusicGen-Generation.ipynb`, cell `cell-melody`).
+    `Audio-02-3-MusicGen-Generation-Python.ipynb`, cell `cell-melody`).
     """
     from check_output_collapse import (
         parse_collapse_justification, _unaddressed,
     )
-    nb = "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb"
+    nb = "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-3-MusicGen-Generation-Python.ipynb"
     body = ("## Output-collapse justification\n"
             f"- {nb} cell cell-melody: allegement declare (sorties de progression)\n")
     j = parse_collapse_justification(body)
@@ -554,7 +554,8 @@ def test_history_rejects_missing_ref_and_accepts_empty_valid_history(tmp_path):
 
     def git(*args):
         subprocess.run(["git", *args], cwd=tmp_path, check=True,
-                       capture_output=True, text=True)
+                       capture_output=True, text=True,
+                       encoding="utf-8", errors="replace")
 
     git("init", "-q")
     git("config", "user.name", "Test")
@@ -565,12 +566,14 @@ def test_history_rejects_missing_ref_and_accepts_empty_valid_history(tmp_path):
     script = Path(__file__).resolve().parent.parent / "check_output_collapse.py"
     command = [sys.executable, str(script), "--history", "--since", "2020-01-01", "--json"]
     env = os.environ.copy()
-    result = subprocess.run(command, cwd=tmp_path, capture_output=True, text=True, env=env)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True, text=True, env=env,
+                            encoding="utf-8", errors="replace")
     assert result.returncode != 0
     assert "origin/main" in result.stderr
     assert "# findings: 0" not in result.stderr
     git("update-ref", "refs/remotes/origin/main", "HEAD")
-    result = subprocess.run(command, cwd=tmp_path, capture_output=True, text=True, env=env)
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True, text=True, env=env,
+                            encoding="utf-8", errors="replace")
     assert result.returncode == 0, result.stderr
     assert "# findings: 0" in result.stderr
 
@@ -615,7 +618,8 @@ def test_history_preserves_good_finding_beside_corrupt_notebook(tmp_path):
 
     def git(*args):
         return subprocess.run(["git", *args], cwd=tmp_path, check=True,
-                              capture_output=True, text=True).stdout.strip()
+                              capture_output=True, text=True,
+                              encoding="utf-8", errors="replace").stdout.strip()
 
     def notebook(text):
         return {"cells": [{"cell_type": "code", "id": "cell-a", "outputs": [
@@ -638,7 +642,8 @@ def test_history_preserves_good_finding_beside_corrupt_notebook(tmp_path):
     script = Path(__file__).resolve().parent.parent / "check_output_collapse.py"
     run = subprocess.run([sys.executable, str(script), "--history", "--since",
                           "2000-01-01", "--json"], cwd=tmp_path,
-                         capture_output=True, text=True)
+                         capture_output=True, text=True,
+                         encoding="utf-8", errors="replace")
     assert run.returncode == 0, run.stderr
     results = [json.loads(line) for line in run.stdout.splitlines()]
     assert any(row["notebook"] == "z-good.ipynb" for row in results)

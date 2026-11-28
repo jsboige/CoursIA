@@ -28,7 +28,7 @@ Pour chaque cellule markdown d'interpretation (pattern `### Lecture du resultat`
 | `Lean-11-TorchLean.ipynb` | 2/11 | MISPLACED |
 | `Lean-17-Knots-a-Conway-and-Proofs.ipynb` | 2/3 | MISPLACED |
 | `OR-tools-Stiegler.ipynb` | 2/2 | MISPLACED |
-| `02-8-Expressive-TTS.ipynb` | 1/5 | MISPLACED |
+| `Audio-02-8-Expressive-TTS-Python.ipynb` | 1/5 | MISPLACED |
 | `02-SemanticKernel-Advanced.ipynb` | 1/5 | MISPLACED |
 | `03-SemanticKernel-Agents.ipynb` | 1/3 | MISPLACED |
 | `06-SemanticKernel-ProcessFramework.ipynb` | 1/5 | MISPLACED |
@@ -68,7 +68,7 @@ Pour chaque cellule markdown d'interpretation (pattern `### Lecture du resultat`
 - **next_code[18]** : `def best_response_row(game: NormalFormGame, col_strategy: int) -> List[int]: /     """ /     Meilleure(s) reponse(s) du joueur Ligne a la strategie de Colonne. /      /     Returns: /         Liste des indices `
 - reason : gap_b=6 (interp 5+ cells after preceding code, possibly misplaced in cluster)
 
-### `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb` (1 cellules)
+### `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-8-Expressive-TTS-Python.ipynb`
 #### cell[8] gap_b=1 gap_a=5
 - **interp** : `### Interprétation : Chargement des variables d'environnement /  / **Sortie obtenue** : `.env` chargé depuis `.env` (trouvé) ; mode API cloud désactivé par le paramètre Papermill `use_fish_api=False`. /  / | Variable | Statut | Impact | / |----------|--------|`
 - **prev_code[7]** : `# Chargement robuste de la configuration .env / from dotenv import load_dotenv / import os /  / current_path = Path.cwd() / env_loaded = False / for _ in range(10): /     env_path = current_path / ".env" /     if env`

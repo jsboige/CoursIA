@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Test de non-regression — protocole d'ecoute MOS et agregateur P.808.
 
-Le carnet `04-7-TTS-Voice-Benchmark.ipynb` livre une **rubrique** et une
+Le carnet `Audio-04-7-TTS-Voice-Benchmark-Python.ipynb` livre une **rubrique** et une
 grille **vide** : il dit quoi noter, il ne dit pas comment conduire la seance
 ni comment agreger les notes. L'organe `mos_protocol.py` remplit ce trou.
 
@@ -71,7 +71,7 @@ class TestRubric(unittest.TestCase):
         rubric = load_rubric()
         self.assertEqual(rubric.criteria, EXPECTED_CRITERIA)
         self.assertEqual(rubric.scale, (1, 5))
-        self.assertIn("04-7-TTS-Voice-Benchmark.ipynb", rubric.source)
+        self.assertIn("Audio-04-7-TTS-Voice-Benchmark-Python.ipynb", rubric.source)
 
     def test_missing_notebook_is_a_clear_error(self):
         with self.assertRaises(RubricError):

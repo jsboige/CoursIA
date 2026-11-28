@@ -3586,7 +3586,7 @@ def test_run_check_paren_annotation_does_not_fabricate_block(capsys):
     # #10958 mirror returns all others unfiltered.
     rc = clc._run_check(
         p, "myia-po-2026:CoursIA-2",
-        my_paths=["MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb"],
+        my_paths=["MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-1-OpenAI-TTS-Intro-Python.ipynb"],
     )
     captured = capsys.readouterr()
     # CLEAR, not BLOCKED: the truncation yielded a single glob
@@ -4887,14 +4887,14 @@ def test_lint_epic_wide_marker_with_inferred_path_echoes_expected_shape(capsys):
     body = (
         "[CLAIMED] lane myia-po-2024:CoursIA-2 -- tranche 04-7\n"
         "\n"
-        "Path : MyIA.AI.Notebooks/GenAI/Audio/04-7-TTS-Voice-Benchmark.ipynb\n"
+        "Path : MyIA.AI.Notebooks/GenAI/Audio/Audio-04-7-TTS-Voice-Benchmark-Python.ipynb\n"
     )
     events = clc._parse_claim_events(comment(body, "2026-08-18T00:00:00Z"))
     clc._lint_claim_events(events, issue_number=11112)
     captured = capsys.readouterr()
     assert "INFO: marqueur CLAIMED epic-wide" in captured.err
     assert (
-        "MyIA.AI.Notebooks/GenAI/Audio/04-7-TTS-Voice-Benchmark.ipynb"
+        "MyIA.AI.Notebooks/GenAI/Audio/Audio-04-7-TTS-Voice-Benchmark-Python.ipynb"
         in captured.err
     ), (
         "The inferred `Path:` MUST appear on stderr so the lane learns at "
@@ -5169,7 +5169,7 @@ def test_lint_warns_off_marker_scope_on_epic_wide(capsys):
     body = (
         "[CLAIMED] lane myia-po-2024:CoursIA-2 -- tranche 04-7\n"
         "\n"
-        "Paths: MyIA.AI.Notebooks/GenAI/Audio/04-7-TTS-Voice-Benchmark.ipynb\n"
+        "Paths: MyIA.AI.Notebooks/GenAI/Audio/Audio-04-7-TTS-Voice-Benchmark-Python.ipynb\n"
     )
     events = clc._parse_claim_events(comment(body, "2026-08-20T12:00:00Z"))
     clc._lint_claim_events(events, issue_number=12072)
@@ -5177,7 +5177,7 @@ def test_lint_warns_off_marker_scope_on_epic_wide(capsys):
     assert "scope declare hors ligne de marqueur" in captured.err, (
         "le WARN doit nommer explicitement le defaut (#12072)"
     )
-    assert "04-7-TTS-Voice-Benchmark.ipynb" in captured.err, (
+    assert "Audio-04-7-TTS-Voice-Benchmark-Python.ipynb" in captured.err, (
         "la ligne fautive doit etre exposee verbatim"
     )
     assert "paths: <g1>, <g2>" in captured.err, (
@@ -5212,7 +5212,7 @@ def test_run_check_summary_exposes_scope_declared_off_marker(capsys):
         comment(
             "[CLAIMED] lane myia-po-2024:CoursIA-2 -- tranche 04-7\n"
             "\n"
-            "Paths: MyIA.AI.Notebooks/GenAI/Audio/04-7-TTS-Voice-Benchmark.ipynb\n",
+            "Paths: MyIA.AI.Notebooks/GenAI/Audio/Audio-04-7-TTS-Voice-Benchmark-Python.ipynb\n",
             "2026-08-20T12:00:00Z",
         ),
     )
@@ -5220,7 +5220,7 @@ def test_run_check_summary_exposes_scope_declared_off_marker(capsys):
     assert rc == 2  # #12322 NOT_SCOPED (epic-wide + caller has no scope)
     out = capsys.readouterr().out
     assert '"scope_declared_off_marker"' in out
-    assert "04-7-TTS-Voice-Benchmark.ipynb" in out
+    assert "Audio-04-7-TTS-Voice-Benchmark-Python.ipynb" in out
     # Le claim n'est PAS re-scope : `paths` reste null dans le JSON.
     assert '"paths": null' in out
     assert '"query_scope": "EPIC_WIDE_NO_PATHS_DECLARED"' in out

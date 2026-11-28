@@ -12,19 +12,19 @@ Suivez l'ordre de la table pour passer de la comparaison de moteurs au casting, 
 
 | Notebook | Ce qu'on y apprend | Place dans le parcours |
 |---|---|---|
-| [04-7 — Benchmark de voix TTS](04-7-TTS-Voice-Benchmark.ipynb) | Comparer des systèmes et des rendus de synthèse vocale dans un cadre commun. | Point de départ pour situer les moteurs et leurs voix. |
-| [04-9 — Voice casting](04-9-Voice-Casting.ipynb) | Associer une voix à un personnage et raisonner sur la distribution vocale d'un texte. | Applique le choix de voix au pipeline narratif. |
+| [04-7 — Benchmark de voix TTS](Audio-04-7-TTS-Voice-Benchmark-Python.ipynb) | Comparer des systèmes et des rendus de synthèse vocale dans un cadre commun. | Point de départ pour situer les moteurs et leurs voix. |
+| [04-9 — Voice casting](Audio-04-9-Voice-Casting-Python.ipynb) | Associer une voix à un personnage et raisonner sur la distribution vocale d'un texte. | Applique le choix de voix au pipeline narratif. |
 | [04-19 — Évaluation MOS](Audio-04-19-Evaluation-MOS-Python.ipynb) | Construire une évaluation subjective, agréger des notes et examiner l'incertitude et les auditeurs aberrants. | Approfondit l'évaluation de la qualité perçue. |
 
 ## Approfondissements — Pratique
 
 ### Comparer les moteurs
 
-Le [benchmark 04-7](04-7-TTS-Voice-Benchmark.ipynb) pose les bases de la comparaison : un système TTS ne se juge pas seulement à son nom ou à une sortie isolée, mais à l'écoute des rendus produits dans le contexte du carnet. Les services et modèles disponibles peuvent varier ; consultez sa configuration avant de lancer les expériences.
+Le [benchmark 04-7](Audio-04-7-TTS-Voice-Benchmark-Python.ipynb) pose les bases de la comparaison : un système TTS ne se juge pas seulement à son nom ou à une sortie isolée, mais à l'écoute des rendus produits dans le contexte du carnet. Les services et modèles disponibles peuvent varier ; consultez sa configuration avant de lancer les expériences.
 
 ### Choisir une voix pour un personnage
 
-[04-9](04-9-Voice-Casting.ipynb) déplace la question de la qualité générale vers l'adéquation entre personnage, interprétation et voix. Pour replacer ce choix dans une chaîne complète, retournez au [pipeline audiobook](../04-Audiobook/README.md).
+[04-9](Audio-04-9-Voice-Casting-Python.ipynb) déplace la question de la qualité générale vers l'adéquation entre personnage, interprétation et voix. Pour replacer ce choix dans une chaîne complète, retournez au [pipeline audiobook](../04-Audiobook/README.md).
 
 ### Évaluer l'écoute avec un protocole
 

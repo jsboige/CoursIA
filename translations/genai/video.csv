@@ -17618,7 +17618,7 @@ scheduler = HybridVideoScheduler(config)
 for req in test_requests:
     result = scheduler.generate(req)
     print(f""Request: budget=${req['budget']}, deadline={req['deadline']}s -> Method: {result['method']}, Status: {result['status']}"")",,,,,,,,d25dae649585058a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,cell-0,markdown,fr,764bb366ec5b4285,"# Pipeline Video de Production
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,cell-0,markdown,fr,b66774923498083b,"# Pipeline Video de Production
 
 **Module :** 04-Applications  
 **Niveau :** Applications  
@@ -17648,7 +17648,7 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipy
 Ce notebook est le **point culminant** de la serie Video et fait reference
 aux techniques des series Video et Audio.
 
-**Navigation** : [<< 04-3 Sora API](04-3-Sora-API-Cloud-Video.ipynb) | [Audio 01-1 >>](../../Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb)",,,,,,,,764bb366ec5b4285,,,,,,,,,,,,,,,
+**Navigation** : [<< 04-3 Sora API](04-3-Sora-API-Cloud-Video.ipynb) | [Audio 01-1 >>](../../Audio/01-Foundation/Audio-01-1-OpenAI-TTS-Intro-Python.ipynb)",,,,,,,,b66774923498083b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,cell-1,code,fr,13f7e8848310593f,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -18307,7 +18307,7 @@ else:
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,zf193mwllte,markdown,fr,41d2a2fc4e79a8a0,"Les statistiques de session résument l'état du pipeline : compteurs de scènes et de frames, format de sortie, étapes activées, fichiers produits avec leur taille, et dépendances effectivement utilisées.
 
 Ce que ces statistiques vérifient, et pourquoi elles sont la preuve de fin d'exercice : un seul artefact écrit (`subtitles.srt`, 0.0 KB) — la chaîne s'est arrêtée avant la première scène. La sortie montre `Scenes : 0` et `Frames finales : 0` — l'état cohérent d'un pipeline non complété, chaque compteur à zéro pour la même raison de chaîne. Une fois l'exercice `generate_script_with_llm` complété, ces mêmes compteurs non nuls (scènes, images, frames, durée, taille du MP4) constitueront la trace mesurable du pipeline réel. La table ne chronomètre pas les étapes et ne mesure pas la VRAM : elle dit quels organes ont tourné (`activee` par étape, `utilisee` par dépendance) et combien ils ont produit. Le `GPU: True` de la sortie appartient à la vérification des dépendances (cellule 3), pas à cette table : il atteste que la voie locale `diffusers` est **disponible** — et le `5/5` des dépendances ne prouve que l'importabilité des modules, pas le comportement du pipeline — les optimisations (cache des images, TTS en parallèle, export en résolution réduite) supposent d'ajouter un chronomètre par étape, que cette table ne porte pas.",,,,,,,,41d2a2fc4e79a8a0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,cell-17,code,fr,97f4107410bebab3,"# Statistiques de session
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,cell-17,code,fr,7f4ce548156b2a19,"# Statistiques de session
 print(""\n--- STATISTIQUES DE SESSION ---"")
 print(""="" * 40)
 
@@ -18349,9 +18349,9 @@ for dep, available in dependencies.items():
 print(f""\n--- FIN DE LA SERIE VIDEO ---"")
 print(f""Ce notebook conclut la serie Video (04-Applications)."")
 print(f""Pour combiner audio et video, consultez la serie Audio :"")
-print(f""  -> Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb"")
+print(f""  -> Audio/01-Foundation/Audio-01-1-OpenAI-TTS-Intro-Python.ipynb"")
 
-print(f""\nNotebook 04-4 Production Video Pipeline termine - {datetime.now().strftime('%H:%M:%S')}"")",,,,,,,,97f4107410bebab3,,,,,,,,,,,,,,,
+print(f""\nNotebook 04-4 Production Video Pipeline termine - {datetime.now().strftime('%H:%M:%S')}"")",,,,,,,,7f4ce548156b2a19,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb,ewr7y1erz9h,markdown,fr,485dd9034cd12ee6,"***
 
 ## Exercice : Pipeline Production End-to-End
@@ -20500,13 +20500,13 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb,ex1-cod
 
 
 print(""Exercice 1 — parser response.json :"", parse_hailuo_response(""image_plus_prompt_orchestre""))",,,,,,,,20e0ba55f097aca2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb,ex2-md,markdown,fr,ae33de508fba3025,"### Exercice 2 — Statistiques d'une piste audio (sur les échantillons, pas sur le dessin)
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb,ex2-md,markdown,fr,b02d1f0febe795c3,"### Exercice 2 — Statistiques d'une piste audio (sur les échantillons, pas sur le dessin)
 
 **Objectif** : calculer des statistiques d'amplitude (RMS, crête, dynamique) **sur les échantillons PCM de la piste audio** d'un scénario — jamais sur l'image de la forme d'onde. Ces nombres répondent à deux questions mesurables : la piste est-elle **présente**, et son énergie est-elle **non nulle**.
 
 **Contexte** : `waveform.png` est la **visualisation** extraite via `ffmpeg` de la piste stéréo d'une génération H3 — pas la donnée (sur ce carnet, aucun `waveform.png` n'est commité : la série est bloquée par le plan, cf. §1 ; l'exercice porte donc sur le contrat de mesure, pas sur un fichier présent). Tout traceur de forme d'onde **autoscale son axe vertical** : un signal faible et un signal 10x plus fort donnent le même dessin, seule l'étiquette de l'axe change (audit D07 : le rapport d'énergie rendu par la recette « pixels du PNG » est 1.0 là où le rapport réel est 10.0, et le silence s'y lit à 0.7 % d'un sinus pleine échelle — le résidu est le fond blanc de l'image). La mesure se fait donc sur la piste décodée ; le PNG reste l'illustration.
 
-Le contrat de mesure est celui du corpus ([02-3-MusicGen](../../Audio/02-Advanced/02-3-MusicGen-Generation.ipynb) c22) : `rms = sqrt(mean(samples**2))`, `peak = max(abs(samples))`, `dynamic_range = 20·log10(peak/rms)` en dB, sur une échelle **flottante [-1, 1]** ; par convention, un signal nul rend les trois grandeurs à 0.0.
+Le contrat de mesure est celui du corpus ([02-3-MusicGen](../../Audio/02-Advanced/Audio-02-3-MusicGen-Generation-Python.ipynb) c22) : `rms = sqrt(mean(samples**2))`, `peak = max(abs(samples))`, `dynamic_range = 20·log10(peak/rms)` en dB, sur une échelle **flottante [-1, 1]** ; par convention, un signal nul rend les trois grandeurs à 0.0.
 
 **Quatre questions à ne pas confondre** (seules les deux premières sont mesurables par ce grain) :
 1. Piste **présente** — un fichier audio existe-t-il pour le scénario ? (fait vérifiable)
@@ -20518,7 +20518,7 @@ Le contrat de mesure est celui du corpus ([02-3-MusicGen](../../Audio/02-Advance
 - `# Étape 1` : localiser la piste audio du scénario sous `ARTIFACTS_PATH / name` ; si aucun fichier audio n'est présent, retourner `None` — quand il en existe un, l'artefact committé permet d'examiner le résultat sans charger un .mp4 ; quand il n'en existe pas (cas de ce carnet), `None` est la réponse correcte et distingue « absent » de « mesuré à zéro ».
 - `# Étape 2` : décoder les échantillons en échelle [-1, 1] (par ex. `ffmpeg -i <piste> -ac 1 -f wav` vers un wav temporaire, puis le module `wave` + numpy : entiers 16 bits divisés par 32768.0).
 - `# Étape 3` : appliquer le contrat ci-dessus ; retourner `{""rms"": float, ""peak"": float, ""dynamic_range"": float}` ou `None` si la piste est absente (NON_TESTE — distinct d'un zéro mesuré).
-",,,,,,,,ae33de508fba3025,,,,,,,,,,,,,,,
+",,,,,,,,b02d1f0febe795c3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb,ex2-code,code,fr,8300acf81e452ff5,"def audio_track_stats(name: str) -> dict:
     """"""Statistiques d'amplitude sur la PISTE AUDIO DÉCODÉE (échantillons PCM) d'un scénario.
 
@@ -22121,14 +22121,14 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipyn
 
 ## Section 3 : Effets stop-motion et color grading
 ",,,,,,,,d3e03997467f2dc2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb,9c7fe07f,markdown,fr,4f58e1f30d5682a2,"### Exemple guidé — Les contrôles de la mesure (pourquoi le PNG ne mesure rien)
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb,9c7fe07f,markdown,fr,811ce54605c00a58,"### Exemple guidé — Les contrôles de la mesure (pourquoi le PNG ne mesure rien)
 
 L'exercice 2 exige une mesure sur les échantillons ; les deux contrôles qui le prouvent sont joués ici sur des **signaux synthétiques locaux** (aucun service, aucune clé, aucun réseau) :
 
 1. **Sensibilité** : un silence et deux sinus d'amplitudes dans un rapport 10. Sur les échantillons, le silence rend exactement 0 et le rapport d'énergie rendu est 10.0. La recette « écart à 128 sur les pixels du PNG » (audit D07) rendait 1.0 sur les mêmes signaux et lisait le silence à 0.7 % d'un sinus pleine échelle : tout traceur autoscale son axe, le dessin ne porte pas l'amplitude.
 2. **Invariance au rendu** : deux PNG différents du même signal. Les dessins diffèrent (taille, gris moyen — statistiques d'image), les mesures sur échantillons ne changent pas : la source de la mesure est la piste décodée, jamais le dessin.
 
-Application directe du contrat de mesure du corpus ([02-3-MusicGen](../../Audio/02-Advanced/02-3-MusicGen-Generation.ipynb) c22).",,,,,,,,4f58e1f30d5682a2,,,,,,,,,,,,,,,
+Application directe du contrat de mesure du corpus ([02-3-MusicGen](../../Audio/02-Advanced/Audio-02-3-MusicGen-Generation-Python.ipynb) c22).",,,,,,,,811ce54605c00a58,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb,9be7c4de,code,fr,e5e2a5ec99198876,"# Exemple guidé : contrôles de la mesure audio (100% local, déterministe).
 import io
 import numpy as np
