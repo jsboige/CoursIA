@@ -266,6 +266,23 @@
           cell: 13
           pattern: "Accord des co[ûu]ts[ ]*:[ ]*(\\d+/\\d+)"
           transform: text
+    - id: c13_rapport_python_csharp
+      description: "Rapport de duree Python/C# du banc de fitness de la cellule 13 (« rapport Python/C# : 4,01x » cote Python). La ligne compare deux moteurs, C# et Python, dont aucun ne tourne dans le carnet Rust : le port imprime a sa place le rapport de ses deux voies Rust (« rapport Rust B/Rust A »), une autre grandeur, qui n'est pas comparee. Cote Rust, absence DECLAREE, pas mesuree."
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "rapport[ ]Python/C#[ ]*:[ ]*([0-9]+,[0-9]+)x"
+          transform: text
+        rust:
+          absent: >-
+            Le carnet Rust n'execute ni le moteur C# ni le moteur Python : il
+            n'a pas de rapport Python/C# a imprimer. Son banc de fitness compare
+            deux voies Rust entre elles (« rapport Rust B/Rust A »), une
+            grandeur differente, propre au port. Declare ABSENT, pas mesure :
+            exiger ce rapport du carnet Rust obligerait le port a rejouer deux
+            moteurs qui ne sont pas le sien.
     - id: c16_text
       description: "Sortie de la cellule 16, texte identique au jumeau Python"
       tolerance: 0
