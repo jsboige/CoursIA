@@ -485,8 +485,28 @@ CMD_TIMEOUT_S = 300.0
 #: disjoncteur propre, `MergeFailedError`).
 PR_DEADLINE_S = 600.0
 
+#: Plafond du TEMPS CUMULE perdu en timeouts dans UNE passe (s).
+#: Apres une echeance complete de PR perdue en timeout, la passe entre en
+#: mode degrade. Les evaluations suivantes utilisent l'echeance courte
+#: `PR_EVALUATION_FLOOR_S`, ce qui borne le cout avant l'arret de passe.
+PASS_TIMEOUT_BUDGET_S = 600.0
+
+#: Echeance d'evaluation d'UNE PR en MODE DEGRADE (s).
+#: Une PR expiree reste saisie, jamais rougie, et sera retentee au cycle suivant.
+PR_DEADLINE_DEGRADED_S = 120.0
+
+#: Nombre minimal d'evaluations vise par passe meme si les PRs expirent.
+MIN_EVALUATIONS_PER_PASS = 20
+#: Duree maximale de l'evaluation d'une PR en mode degrade.
+PR_EVALUATION_FLOOR_S = min(20.0, PASS_BUDGET_S / MIN_EVALUATIONS_PER_PASS)
+
 #: rc d'un delai depasse -- convention `timeout(1)` (124).
 TIMEOUT_RC = 124
+
+
+def _est_un_timeout(motif: str | None) -> bool:
+    """Indique si un motif de verdict nomme un delai expire."""
+    return bool(motif) and "timeout" in motif
 
 #: Verdict d'une PR que la passe n'a pas EVALUEE (arret sur le budget de
 #: duree, #28009).
@@ -651,6 +671,9 @@ class SubprocessRunner:
     def __init__(self) -> None:
         self._pr_budget_s: float | None = None
         self._pr_deadline: float | None = None
+        self.timeout_observer = None
+        self.timeout_elapsed_s = 0.0
+        self.pr_timeout_elapsed_s = 0.0
 
     def set_pr_budget(self, budget_s: float | None) -> None:
         """Pose (ou leve) l'echeance de l'evaluation de la PR en cours.
@@ -661,6 +684,9 @@ class SubprocessRunner:
         """
         self._pr_budget_s = budget_s
         self._pr_deadline = None
+        if budget_s is not None:
+            self.timeout_elapsed_s = 0.0
+            self.pr_timeout_elapsed_s = 0.0
 
     def _remaining_s(self) -> float | None:
         """Reste avant l'echeance de la PR, ou None s'il n'y en a pas."""
@@ -681,10 +707,13 @@ class SubprocessRunner:
                 # Echeance de la PR passee : rien ne part. La mesure est
                 # IMPOSSIBLE, pas negative -- d'ou le meme rc qu'un delai
                 # de sous-processus.
-                return RunResult(
+                res = RunResult(
                     TIMEOUT_RC, "",
                     f"echeance de PR atteinte avant {cmd[0] if cmd else '?'}",
                 )
+                if callable(self.timeout_observer):
+                    self.timeout_observer(cmd, res.returncode, 0.0)
+                return res
             timeout = min(timeout, remaining)
         try:
             proc = subprocess.run(
@@ -698,10 +727,15 @@ class SubprocessRunner:
                 timeout=timeout,
             )
         except subprocess.TimeoutExpired:
-            return RunResult(
+            res = RunResult(
                 TIMEOUT_RC, "",
                 f"delai depasse ({timeout:.0f} s) sur {cmd[0] if cmd else '?'}",
             )
+            self.timeout_elapsed_s += timeout
+            self.pr_timeout_elapsed_s += timeout
+            if callable(self.timeout_observer):
+                self.timeout_observer(cmd, res.returncode, timeout)
+            return res
         return RunResult(proc.returncode, proc.stdout or "", proc.stderr or "")
 
     def run_many(
@@ -4135,6 +4169,7 @@ def emit_output(
     exit_code: int,
     warmup: dict | None = None,
     not_evaluated: list[PRVerdict] | None = None,
+    timeouts: dict | None = None,
     priority: dict | None = None,
 ) -> None:
     """Resume humain sur stdout, ou payload machine unique en --json."""
@@ -4154,6 +4189,8 @@ def emit_output(
         }
         if warmup:
             payload["warmup"] = warmup
+        if timeouts:
+            payload["timeouts"] = timeouts
         if priority is not None:
             payload["priority"] = _priorite_resume(priority)
         print(json.dumps(payload, ensure_ascii=False))
@@ -4231,6 +4268,24 @@ def emit_output(
                 int(warmup.get("reads") or 0),
                 int(warmup.get("candidates") or 0),
                 int(warmup.get("pool") or 0),
+            )
+        )
+    if timeouts:
+        # Le temps perdu en timeouts est nomme : c'est lui qui affame une
+        # passe (28/11).
+        print(
+            "timeouts : %s s cumule(s) sur un plafond de %s s%s"
+            % (
+                timeouts.get("cumul_s"),
+                timeouts.get("plafond_s"),
+                " -- MODE DEGRADE (echeance max %s s, plancher %s s, minimum %s PRs)"
+                % (
+                    timeouts.get("echeance_degradee_s"),
+                    timeouts.get("plancher_evaluation_s"),
+                    timeouts.get("minimum_prs"),
+                )
+                if timeouts.get("degrade")
+                else "",
             )
         )
 
@@ -4405,16 +4460,55 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
     global COMBINED_CTX
     COMBINED_CTX = combined_pass_context()
 
-    def _budget_depasse() -> bool:
+    def _budget_depasse(maintenant: float | None = None) -> bool:
         if args.pass_budget_s <= 0:
             return False
-        return (_clock() - pass_started) >= args.pass_budget_s
+        if maintenant is None:
+            maintenant = _clock()
+        return (maintenant - pass_started) >= args.pass_budget_s
+
+    #: Chaque PR comptabilise son cout cumule de commandes expirees. Quand
+    #: le total atteint le budget timeout, les evaluations suivantes recoivent
+    #: une echeance courte.
+    temps_timeout_cumule = 0.0
+    mode_degrade = False
+    temps_timeout_par_pr: dict[int, float] = {}
+    evaluation_min_s = min(
+        PR_EVALUATION_FLOOR_S, args.pass_budget_s / MIN_EVALUATIONS_PER_PASS
+    )
+    echeance_en_cours = args.pr_deadline_s
+    pr_en_cours: int | None = None
+
+    def _echeance_de_pr() -> float:
+        if not mode_degrade:
+            return args.pr_deadline_s
+        return min(args.pr_deadline_degraded_s, evaluation_min_s)
+
+    def _compter_timeout(pr_num: int, motif: str | None) -> None:
+        nonlocal temps_timeout_cumule, mode_degrade
+        if not _est_un_timeout(motif):
+            return
+        elapsed = getattr(active_runner, "pr_timeout_elapsed_s", 0.0)
+        cout = elapsed or echeance_en_cours
+        precedent = temps_timeout_par_pr.get(pr_num, 0.0)
+        temps_timeout_par_pr[pr_num] = max(precedent, cout)
+        temps_timeout_cumule = sum(temps_timeout_par_pr.values())
+        if hasattr(active_runner, "pr_timeout_elapsed_s"):
+            active_runner.pr_timeout_elapsed_s = 0.0
+        if temps_timeout_cumule >= args.timeout_budget_s:
+            mode_degrade = True
+
+    def _observer_timeout_commande(
+        cmd: list[str], rc: int, timeout_s: float
+    ) -> None:
+        if pr_en_cours is not None and rc == TIMEOUT_RC:
+            _compter_timeout(pr_en_cours, f"timeout:{timeout_s}")
+
+    if isinstance(active_runner, SubprocessRunner):
+        active_runner.timeout_observer = _observer_timeout_commande
 
     for pr in prs:
-        # Disjoncteur --max : plafond de DECISIONS de merge du run (merges
-        # reels en --apply, would-merge en dry-run : le dry-run doit refléter
-        # ce que --apply ferait). Une fois le plafond atteint, les PRs
-        # restantes ne sont pas evaluees (le journal ne couvre que l'evalue).
+        # Disjoncteur --max : plafond de DECISIONS de merge du run.
         if merged_count >= args.max:
             stopped_reason = "max-merges-reached"
             break
@@ -4434,19 +4528,19 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
             dernier_evalue = pr
             continue
         try:
-            # Cette PR est EVALUEEe : le curseur de reprise doit le dire.
             dernier_evalue = pr
-            # Echeance de la PR : portee par le runner, chaque
-            # sous-processus de cette PR recoit `min(CMD_TIMEOUT_S,
-            # reste)`. Elle couvre la lecture ET l'evaluation ; le merge
-            # reste hors echeance (une echeance atteinte au milieu d'un
-            # merge laisserait l'etat de la fusion inconnu).
-            _set_pr_budget(active_runner, args.pr_deadline_s)
+            pr_en_cours = pr
+            echeance_en_cours = _echeance_de_pr()
+            if isinstance(active_runner, SubprocessRunner):
+                active_runner.timeout_observer = _observer_timeout_commande
+            _set_pr_budget(active_runner, echeance_en_cours)
             try:
                 view = fetch_pr_view(active_runner, pr, gh_env)
                 decision = evaluate_pr(view, pr, active_runner, gh_env)
             finally:
                 _set_pr_budget(active_runner, None)
+            _compter_timeout(pr, decision.reason)
+            pr_en_cours = None
             if decision.verdict == "would-merge":
                 if args.apply:
                     decision, stop, code = merge_verdict(
@@ -4486,14 +4580,17 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
             results.append(decision)
             append_journal(journal_path, decision)
         except PrTimeout as exc:
-            # Delai depasse : la PR est SAISIE, jamais ROUGIE. Le motif
-            # nomme le delai, le bilan ne compte ni erreur ni rouge, et la
-            # passe continue (le passage suivant reessaie).
+            # Delai depasse : la PR est SAISIE, jamais ROUGIE. L'observateur
+            # du runner compte les timeouts de commande ; le timeout composite
+            # est compte via la duree de son echeance de PR.
+            _compter_timeout(pr, f"timeout:{exc}")
+            pr_en_cours = None
             timed_out = PRVerdict(pr, None, "skipped", f"timeout:{exc}", False)
             results.append(timed_out)
             append_journal(journal_path, timed_out)
             continue
         except UnexpectedError as exc:
+            pr_en_cours = None
             errored = PRVerdict(pr, None, "run-error", str(exc), False)
             results.append(errored)
             append_journal(journal_path, errored)
@@ -4567,7 +4664,11 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                     append_journal(journal_path, parked)
                     break
                 try:
-                    _set_pr_budget(active_runner, args.pr_deadline_s)
+                    pr_en_cours = pr
+                    echeance_en_cours = _echeance_de_pr()
+                    if isinstance(active_runner, SubprocessRunner):
+                        active_runner.timeout_observer = _observer_timeout_commande
+                    _set_pr_budget(active_runner, echeance_en_cours)
                     try:
                         view = fetch_pr_view(active_runner, pr, gh_env)
                         decision = evaluate_pr(
@@ -4576,6 +4677,8 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                         )
                     finally:
                         _set_pr_budget(active_runner, None)
+                    _compter_timeout(pr, decision.reason)
+                    pr_en_cours = None
                     if decision.verdict == "would-merge":
                         if args.apply:
                             # Meme gestion du merge que la boucle principale
@@ -4599,6 +4702,8 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                     results.append(decision)
                     append_journal(journal_path, decision)
                 except PrTimeout as exc:
+                    _compter_timeout(pr, f"timeout:{exc}")
+                    pr_en_cours = None
                     timed_out = PRVerdict(pr, None, "skipped", f"timeout:{exc}", False)
                     results.append(timed_out)
                     append_journal(journal_path, timed_out)
@@ -4625,6 +4730,14 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
             "pool": len(prs),
         },
         not_evaluated=not_evaluated,
+        timeouts={
+            "cumul_s": round(temps_timeout_cumule, 1),
+            "plafond_s": args.timeout_budget_s,
+            "degrade": mode_degrade,
+            "echeance_degradee_s": args.pr_deadline_degraded_s,
+            "plancher_evaluation_s": evaluation_min_s,
+            "minimum_prs": MIN_EVALUATIONS_PER_PASS,
+        },
         priority=priorite,
     )
     return exit_code
@@ -4703,6 +4816,30 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--timeout-budget-s",
+        type=float,
+        default=PASS_TIMEOUT_BUDGET_S,
+        metavar="S",
+        help=(
+            "plafond du temps CUMULE perdu en timeouts dans une passe, en "
+            f"secondes (defaut {int(PASS_TIMEOUT_BUDGET_S)} s). Depasse, la "
+            "passe bascule en mode degrade : l'echeance par PR tombe a "
+            f"`--pr-deadline-degraded-s` (defaut {int(PR_DEADLINE_DEGRADED_S)} s)."
+        ),
+    )
+    parser.add_argument(
+        "--pr-deadline-degraded-s",
+        type=float,
+        default=PR_DEADLINE_DEGRADED_S,
+        metavar="S",
+        help=(
+            "echeance d'evaluation d'UNE PR en mode degrade, en secondes "
+            f"(defaut {int(PR_DEADLINE_DEGRADED_S)} s). Elle est plafonnee "
+            "par le plancher derive du budget de passe / "
+            f"{MIN_EVALUATIONS_PER_PASS} evaluations."
+        ),
+    )
+    parser.add_argument(
         "--json",
         action="store_true",
         help="sortie machine (un seul objet JSON) sur stdout",
@@ -4714,6 +4851,10 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         parser.error("--pass-budget-s doit etre >= 0")
     if args.pr_deadline_s < 0:
         parser.error("--pr-deadline-s doit etre >= 0")
+    if args.timeout_budget_s < 0:
+        parser.error("--timeout-budget-s doit etre >= 0")
+    if args.pr_deadline_degraded_s < 0:
+        parser.error("--pr-deadline-degraded-s doit etre >= 0")
     return args
 
 
