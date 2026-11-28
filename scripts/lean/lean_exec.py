@@ -1584,6 +1584,39 @@ def effective_granted(granted: int, budget: int) -> int:
     return max(0, min(granted, budget))
 
 
+def cap_memoire(avail_mb: int, mem_per_job_mb: int) -> int:
+    """Nombre de compilations Lean que la memoire restante peut heberger.
+
+    Le cap machine-wide compte des PROCESSUS ; la memoire se paie par
+    COMPILATION. La grandeur qui doit tenir est donc le **produit**
+    ``places x mem_per_job_mb``, pas le seul nombre de processus : a
+    6144 Mo libres et 2048 Mo par compilation, trois compilations tiennent,
+    quel que soit le cap de processus (#28840).
+    """
+    return max(0, int(avail_mb) // max(1, int(mem_per_job_mb)))
+
+
+def raison_depassement_memoire(
+    engaged: int, avail_mb: int, mem_per_job_mb: int
+) -> str | None:
+    """Raison nommee quand ``engaged`` compilations engagees depassent la
+    borne memoire, ou ``None``.
+
+    ``engaged`` est le produit des places demandees par la memoire d'une
+    compilation : c'est lui qui doit tenir, jamais le compte de processus.
+    Fonction **pure** : elle se teste sans Windows, sans Lake, sans
+    toolchain -- le temoin du defaut #28840.
+    """
+    borne = cap_memoire(avail_mb, mem_per_job_mb)
+    if engaged <= borne:
+        return None
+    return (
+        f"concurrence effective {engaged} compilations > borne memoire "
+        f"{borne} ({avail_mb} Mo disponibles / {mem_per_job_mb} Mo par "
+        f"compilation)"
+    )
+
+
 def kill_pids(pids: list[int]) -> None:
     if os.name == "nt":
         k32 = ctypes.windll.kernel32
@@ -1811,10 +1844,10 @@ def run_command(
     # --- Admission machine-wide sous verrou (ferme count->spawn TOCTOU) ---
     def _attempt() -> str:
         """Un passage d'admission complet sous verrou : sweep, telemetrie,
-        budget, cap, backend epingle, lease d'arbre, spawn confine,
-        enregistrement. Rend 'ok', ou le kind du refus ('telemetry' |
-        'insufficient' | 'cap' | 'backend' | 'tree' | 'spawn' | 'internal')
-        pose dans result['reason']."""
+        budget, cap, borne memoire, backend epingle, lease d'arbre, spawn
+        confine, enregistrement. Rend 'ok', ou le kind du refus ('telemetry'
+        | 'insufficient' | 'cap' | 'memory' | 'backend' | 'tree' | 'spawn'
+        | 'internal') pose dans result['reason']."""
         nonlocal proc, job, confined, tree_lease, granted, budgets
         nonlocal child_out_fh, child_err_fh, child_in_fh
         with AdmissionLock():
@@ -1892,6 +1925,35 @@ def run_command(
                     population_before={"native": native_pop},
                 )
                 return "cap"
+            # La borne memoire, elle, se paie par COMPILATION : le produit
+            # `places engagees x mem_per_job_mb` doit tenir dans la memoire
+            # disponible. Sans cette regle, le cap de processus admet un
+            # nombre de compilations que la memoire ne peut pas heberger --
+            # et un run isole calcule sa propre borne RAM contre la memoire
+            # ENTIERE, donc chaque place simultanee la suppose libre
+            # (#28840).
+            mem_per_job_mb = cfg["mem_per_job_mb"]
+            avail_mb = int(resources["ram"].get("avail_mb") or 0)
+            for pop_name, pop in (("native population", native_pop),
+                                  ("live registered budgets", registered)):
+                raison_memoire = raison_depassement_memoire(
+                    pop + budget, avail_mb, mem_per_job_mb)
+                if raison_memoire is not None:
+                    # Retentable seulement si la contention peut se liberer :
+                    # le run tient dans la borne a lui seul, les autres runs
+                    # occupent la memoire. Si son budget depasse la borne a
+                    # lui seul, attendre ne changerait rien (refus structurel).
+                    result["memory_transient"] = (
+                        budget <= cap_memoire(avail_mb, mem_per_job_mb))
+                    result.update(
+                        status="refused", exit_code=EXIT_REFUSED,
+                        reason=(
+                            f"memory bound: {pop_name} {pop} + requested "
+                            f"budget {budget} -> {raison_memoire}"
+                        ),
+                        population_before={"native": native_pop},
+                    )
+                    return "memory"
             lean_backend, backend_detail = resolve_backend(
                 lake_root, requested=backend, repin=repin,
                 available=available)
@@ -2060,7 +2122,8 @@ def run_command(
             break
         if kind in ("internal", "spawn", "backend"):
             return _emit(result, as_json)
-        retryable = kind in ("cap", "tree")
+        retryable = kind in ("cap", "tree") or (
+            kind == "memory" and bool(result.get("memory_transient")))
         if wait_deadline is None or not retryable:
             queue_remove(queue_file)
             queue_file = None

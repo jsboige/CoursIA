@@ -54,8 +54,8 @@
       "note": "Hashlife : cible T7 (second rang). Plafond pose sur la taille du 13/11."
     },
     "scripts/lean/lean_exec.py": {
-      "lines": 3010,
-      "note": "Execution Lean (`run_command`, 465 lignes) : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 80 lignes depuis la mesure du 13/11 (2917 -> 2997). Tranche T7 #26364 : extraction de la terminaison et de la supervision en fonctions distinctes, sans modification de la CLI ; signatures et passage explicite des ressources ajoutent 13 lignes (2997 -> 3010). Admission restant a extraire."
+      "lines": 3073,
+      "note": "Execution Lean (`run_command`, 465 lignes) : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 80 lignes depuis la mesure du 13/11 (2917 -> 2997). Tranche T7 #26364 : extraction de la terminaison et de la supervision en fonctions distinctes, sans modification de la CLI ; signatures et passage explicite des ressources ajoutent 13 lignes (2997 -> 3010). Releve le 27/11 dans la PR #28862 (#28840) : la borne memoire de l'admission -- `cap_memoire`, `raison_depassement_memoire` et le refus `memory` dans `run_command` -- ajoute 63 lignes nettes (+68/-5 de diff). Releve au 28/11 sur l'arbre fusionne avec origin/main : les deux releves se cumulent (2997 + 13 + 63 = 3073), la fusion de `lean_exec.py` s'etant faite sans conflit."
     },
     "scripts/notebook_tools/check_twin_parity.py": {
       "lines": 2562,
