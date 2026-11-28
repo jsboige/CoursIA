@@ -38,7 +38,7 @@ EXCLUDED_CONSUMER = re.compile(r"(^|/)_archive/|-EN\.ipynb$")
 
 def git(*args: str, cwd: Path | None = None) -> str:
     proc = subprocess.run(
-        ["git", *args],
+        ["git", "-c", "core.quotePath=false", *args],
         capture_output=True,
         text=True,
         encoding="utf-8",

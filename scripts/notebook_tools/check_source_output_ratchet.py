@@ -129,7 +129,7 @@ def git(*args, cwd=None):
     « 0 changement » est un faux vert, pas une mesure).
     """
     try:
-        out = run_with_fork_retry(["git", *args], cwd=cwd, capture_output=True,
+        out = run_with_fork_retry(["git", "-c", "core.quotePath=false", *args], cwd=cwd, capture_output=True,
                                   encoding="utf-8", errors="replace", check=False)
     except OSError:
         return None
