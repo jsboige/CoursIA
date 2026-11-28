@@ -761,9 +761,9 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # tapis_rotation.py pour que le repli chronologique et la rotation lisent la
 # MEME arithmetique, 26/11 : le repli comptait 60 blocs pour 80 reels, et
 # 115 issues sur 558 n'etaient jamais servies).
-# 28/11, fusion de main dans #28768 (c0177) : tapis_repli.py passe a 162 lignes
-# apres l'extraction de la fenetre bloc dans `_servir_bloc` ; main ajoute la
-# BORNE de commande et la branche `tapis_blocs`, conservees ensemble.
+# 28/11, fusion de main dans #28768 (c0177) : tapis_repli.py reste a 166 lignes
+# apres union de `tapis_borne` (echeance de main) et `tapis_blocs` (tailles
+# partagees de la branche). Le releve a ete mesure sur l'arbre fusionne.
 
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 523),
                                               ("tapis_marqueurs.py", 130),
