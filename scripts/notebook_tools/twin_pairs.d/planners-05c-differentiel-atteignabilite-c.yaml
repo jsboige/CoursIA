@@ -1,0 +1,9 @@
+- name: "Planners-05c-Differentiel-Atteignabilite C#"
+  family: SymbolicAI/Planners/02-Classical
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "2026-11-26 (myia-po-2028:claudish) : parity_level corrige de native-both a semantic -- le niveau natif des deux cotes exige de nommer un moteur externe par cote (_schema.yaml) ; ici cote Python : collections, heapq et itertools (bibliotheque standard) seulement ; cote C# : aucune directive #r, aucun using hors System. Aucun verdict de pont n'est porte : il se juge sur le travail, pas sur l'inventaire des imports."
+    - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de Planners-05c-Differentiel-Atteignabilite-Python.ipynb. Execution reelle sur kernel .net-csharp : 11 cellules, 0 erreur. Verification independente : approve. Premiere attestation ecrite par l'integration de livraison (check_twin_parity --update), en DERNIERE operation (cf #8957)."
+    - "Correction de prose (myia-po-2028:claudish, 2026-11-26, reserve de revue myia-ai-01) : le lemme de relaxation sans delete donne l'inclusion FAIT PAR FAIT des etats d'un meme plan (run pi s inclus dans runR pi s) et preserve l'atteignabilite des buts ; il ne dit pas que tout etat reel atteignable est un etat relaxe atteignable. Contre-exemple ajoute (un fait ajoute pendant que p est supprime). Les cellules 0 et 3 de la source Python portent encore la formulation trop large ; aucune cellule de code, aucune comparaison de parite ne change (sortie de la cellule d'attestation : 8 sections, 78 controles, 0 ecart)."
