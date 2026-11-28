@@ -147,6 +147,7 @@ Un backtest à la fois, annoncé sur le tableau de bord de coordination : le quo
 | Point d'entrée | Ce qu'il rejoue | Paramètres |
 |---|---|---|
 | `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/shadow_inverse_vol.py:inverse_vol` | la règle à inverse de la volatilité du harnais papier, sur SPY, QQQ, IEF et GLD, telle que l'expérience #19072 l'a mesurée ; rendements d'un investisseur en euros | `convention` : `"U"` (volatilité des cours en dollars) ou `"F"` (volatilité des cours convertis en euros) ; `target` : la cible de `inverse_vol_weights` (0,025 dans le verdict de #19072) |
+| `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/shadow_etf_rotation.py:etf_rotation` | la rotation mensuelle par momentum entre six poches d'actions UCITS cotées en euros, pré-inscrite dans #28992, avec repli sur une ligne d'attente monétaire | `top` : nombre de poches choisies (2) ; `look` et `skip` : fenêtre du momentum en fins de mois (9 et 1) ; `band` : écart de poids qui déclenche un ordre (0,02) ; `fee` : frais par unité de poids échangée (0,001) |
 
 Fonctionnement de `inverse_vol` :
 
@@ -155,6 +156,14 @@ Fonctionnement de `inverse_vol` :
 - les séances rejouées vont de D inclus à la date du passage exclue : la séance du jour peut être encore ouverte quand le passage tourne ;
 - fenêtre de volatilité, plafond par ligne, bande et frais sont ceux de #19072 ;
 - les cours (Yahoo, ajustés des dividendes) sont téléchargés à chaque passage dans un dossier temporaire.
+
+Fonctionnement de `etf_rotation` :
+
+- à chaque fin de mois, il classe six poches d'actions cotées à Paris (petites capitalisations de la zone euro, valeur, qualité, croissance, émergents, Japon) par leur momentum 9-1, le rendement de la fin de mois t-9 à la fin de mois t-1 ;
+- les deux premières reçoivent chacune la moitié. Une poche choisie dont le momentum n'est pas strictement positif laisse sa moitié à la ligne d'attente (taux au jour le jour en euros) ;
+- ouverture, fenêtre et calendrier des rotations sont ceux d'`inverse_vol` ; une ligne n'est retraitée que si son écart au poids cible atteint la bande ;
+- le calendrier est celui des séances communes aux six poches, et la ligne d'attente, cotée sur une autre place, y est reportée à sa dernière clôture ;
+- une poche sans ses neuf fins de mois d'historique arrête le passage en erreur : la règle ne se replie jamais sur moins de poches.
 
 ## Corrélation hebdomadaire de la ligue
 
