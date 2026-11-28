@@ -54,6 +54,19 @@ HERE = Path(__file__).resolve().parent
 CACHE_PATH = HERE / "oversight-nim-llm-cache.json"
 
 # Quatre modeles de niveaux differents. `route` designe le point d'entree.
+#
+# Conservation deliberee (#22783, classe C de docs/genai/model-mapping-openai.md) :
+# ce dict est a la fois l'echelle de comparaison du tournoi (quatre niveaux) et
+# la source des cles de cache -- la cle vaut `PROTOCOL|cle_de ce dict|...`, et
+# le cache commite porte 94 entrees `v2|gpt-4o-mini|...`. Renommer l'echelon
+# orphelinerait le cache commite, et le tournoi enregistre
+# (oversight-nim-llm-cache.tournament.json, 40 parties par modele) dirait alors
+# avoir ete mesure sur un modele qui n'a pas ete interroge. Le nom est donc
+# conserve comme donnee de protocole mesuree, pas comme cible d'execution.
+# Cible recommandee pour une campagne neuve (protocole v3) : `gpt-5.6-luna`
+# pour l'echelon distant, l'alias Swift local (`swift-1.5-27b`) pour l'echelon
+# local -- et une regeneration complete du cache, donc des cles v3.
+# obsolescence: DOC
 MODELS = {
     "gpt-4o-mini": {"route": "openrouter", "id": "openai/gpt-4o-mini"},
     "gemini-flash": {"route": "openrouter", "id": "google/gemini-3.8-flash"},
