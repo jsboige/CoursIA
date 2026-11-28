@@ -3,7 +3,7 @@
 
 Backing notebook : GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-Python.ipynb.
 Source : Czechowski & Piliouras 2021, *Poincare-Bendixson Limit Sets in
-Multi-Agent Learning* — cite par chemin bibliotheque
+Multi-Agent Learning* — arXiv:2102.00053 — cite par chemin bibliotheque
 (G:/Mon Drive/MyIA/IA/Bibliographie IA/GameTheory/), jamais copiee.
 
 Ce module fournit les deux briques que le notebook execute :

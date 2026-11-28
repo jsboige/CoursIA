@@ -1,0 +1,8 @@
+- name: "GameTheory-06i Ensembles-Limites-Poincare-Bendixson"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  known_differences:
+    - "2026-11-23 (myia-po-2028:claudish, #28208) : jumeau C# cree depuis le jumeau Python -- les 27 cellules sont portees dans le meme ordre et sous les memes titres, plus une cellule d'attestation de parite en fin de carnet. Les trois exercices restent des stubs compilables (TODO etudiant), sans solution revelee. Tous les calculs sont en double ; les tolérances declarees (tolPoint 2e-3, tolRetour 5e-2, tolBord 1e-3) et les verdicts mesures des cinq configurations (w,l) reproduisent les references citees ; l'ecart d'arrondi de (l-w)/6 vaut 3,333e-4 au plus pour une tolerance de 5,0e-4."
