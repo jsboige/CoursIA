@@ -114,7 +114,7 @@ Les durées par carnet et le total de la série vivent dans le [catalogue géné
 
 ### Parcours alternatifs
 
-Quatre entrées dans la série, selon ce que le lecteur vient chercher. Les budgets sont des ordres de grandeur de lecture, les durées mesurées vivant dans le catalogue généré.
+Cinq entrées dans la série, selon ce que le lecteur vient chercher. Les budgets sont des ordres de grandeur de lecture, les durées mesurées vivant dans le catalogue généré.
 
 - **Parcours rapide** — carnets 01, 07, 09 et 11 (~4 h) : le fil complet en quatre étapes, de l'espace d'hypothèses conjonctives au pipeline où un LLM et un vérificateur se corrigent l'un l'autre. C'est le parcours à conseiller avant une séance de restitution.
 - **ILP approfondi** — carnets 01 à 06 (~5 h 30) : les deux voies de l'induction de programmes, puis les quatre moteurs réels. Le lecteur y apprend autant par les algorithmes écrits de zéro que par l'écart mesuré avec Aleph, Popper ou clingo.
@@ -124,7 +124,7 @@ Quatre entrées dans la série, selon ce que le lecteur vient chercher. Les budg
 
 ### Séance de restitution
 
-Modalité de la séance : chaque groupe choisit **un exercice** dans la table ci-dessous, le prépare et le présente. Résoudre l'exercice est le minimum attendu ; chaque exercice est assorti d'une **question-twist** — détaillée dans la section « Defi presentation » du carnet correspondant — qui fait partie intégrante de la présentation. Premier arrivé, premier servi : annoncez votre choix pour éviter les doublons. Une soixantaine d'exercices couvrent les quinze carnets ; le nombre exact par carnet vit dans les carnets eux-mêmes.
+Modalité de la séance : chaque groupe choisit **un exercice** dans la table ci-dessous, le prépare et le présente. Résoudre l'exercice est le minimum attendu ; chaque exercice est assorti d'une **question-twist** — détaillée dans la section « Defi presentation » du carnet correspondant — qui fait partie intégrante de la présentation. Premier arrivé, premier servi : annoncez votre choix pour éviter les doublons. Une soixantaine d'exercices couvrent la série ; le nombre exact par carnet vit dans les carnets eux-mêmes.
 
 | # | Notebook | Exercice | Question-twist (en bref) |
 |---|----------|----------|--------------------------|
@@ -331,7 +331,7 @@ Les dépendances sont listées dans [requirements.txt](requirements.txt) ; par c
 - carnet 10 : `matplotlib` ;
 - carnets 12, 13 et 13b : `numpy`, `torch` et `matplotlib` ; le carnet 12 ajoute `difflogic` et `torchvision`, le carnet 13b le paquet `ict` ;
 - carnets 12b et 12c : `numpy`, et `matplotlib` pour le 12b ;
-- carnet 14 : le paquet `aifeynman` n'est plus installable tel quel sur l'interpréteur actuel de la flotte (son `setup.py` importe `numpy.distutils`) : le carnet s'exécute dans le conteneur construit par [`assets/Dockerfile.aifeynman-py313`](assets/Dockerfile.aifeynman-py313), qui rend l'environnement fidèle au paquet figé en 2021 ;
+- carnet 14 : le paquet `aifeynman` n'est plus installable tel quel avec NumPy 2 (son `setup.py` importe `numpy.distutils`, retiré de cette version) : le carnet s'exécute dans le conteneur construit par [`assets/Dockerfile.aifeynman-py313`](assets/Dockerfile.aifeynman-py313), qui rend l'environnement fidèle au paquet figé en 2021 ;
 - carnet 15 : `numpy`, `ortools` et `scikit-learn`.
 
 Aleph s'exécute via `janus_swi` sur SWI-Prolog ; Metagol est fourni dans [`vendor/metagol/`](vendor/metagol/), sous licence BSD-3 ; Popper tourne en sous-processus ; l'ILP différentiable (Lernd) tourne dans un environnement conda dédié, `lernd-dilp` (TensorFlow, licence GPL-3.0), importé et jamais vendu. Chaque moteur indisponible se signale proprement (drapeau `HAS_*`) sans interrompre le carnet. La section Aleph du carnet 05 ne tourne que sur un noyau Linux : son délai de garde repose sur `SIGALRM`.
@@ -353,7 +353,7 @@ Les carnets 09 et 11 lisent leur clé LLM dans un fichier `.env` construit depui
 - **`MemoryError` sur le treillis des déterminations** (carnet 03) : le treillis des déterminations croît exponentiellement avec le nombre d'attributs (l'exemple du carnet en a dix : `Sous-ensembles testes : 11 / 1023`) ; limitez l'analyse aux attributs les plus informatifs en premier.
 - **Un carnet ne trouve pas son noyau** : `python -m ipykernel install --user --name python3 --display-name "Python 3"`, puis `pip install papermill`, et redémarrez le noyau avant une exécution complète.
 - **Les carnets 04 et 06 échouent sous Windows** : Aleph et Popper passent par SWI-Prolog et par `SIGALRM` pour leur délai de garde, tous deux absents d'un noyau Windows natif. Il faut le noyau `python3-wsl` (voir Noyaux Jupyter) ; un moteur introuvable est signalé par son drapeau `HAS_*` et le carnet poursuit sans lui.
-- **Le carnet 14 échoue hors de son conteneur** : le paquet `aifeynman` figé en 2021 importe `numpy.distutils`, retiré de NumPy 2. Lancez-le par papermill dans l'image `aifeynman:sl14-py313` plutôt que dans l'environnement de la flotte.
+- **Le carnet 14 échoue hors de son conteneur** : le paquet `aifeynman` figé en 2021 importe `numpy.distutils`, retiré de NumPy 2. Lancez-le par papermill dans l'image `aifeynman:sl14-py313` plutôt que dans un environnement Python standard.
 
 ## Organisation du dossier
 
