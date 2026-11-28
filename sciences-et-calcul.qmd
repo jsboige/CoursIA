@@ -1,0 +1,46 @@
+---
+title: "Sciences et calcul"
+subtitle: "Quatre portes d'entrée pour explorer, calculer et vérifier"
+---
+
+Cette carte présente quatre entrées complémentaires. Choisissez une question plutôt qu'un outil : les séries restent à leur place et vous pouvez passer de l'une à l'autre selon vos besoins.
+
+## Mathématiques
+
+**Notions.** Logique et démonstration, géométrie, théorie des nœuds : ces sujets sont explorés par des calculs et, pour certains, des preuves formelles.
+
+**Prérequis.** Pour commencer, être à l'aise avec les propositions et le raisonnement mathématique ; les carnets Lean demandent aussi l'environnement de preuve indiqué dans leur série.
+
+**Points d'entrée.** [De la figure à l'équation](MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-01-From-Figure-To-Equation.ipynb) introduit un parcours géométrique ; [Propositions et preuves](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-03-Propositions-Proofs-Lean.ipynb) présente la logique en Lean.
+
+**Pour continuer.** Le [parcours Lean](MyIA.AI.Notebooks/SymbolicAI/Lean/README.md) rassemble les outils de preuve et leurs applications ; la [carte des prérequis](docs/curriculum/prerequis.qmd) relie les notions entre séries.
+
+## Information et calcul
+
+**Notions.** Entropie, compression, automates et complexité : comment représenter une information et mesurer le coût de son traitement ?
+
+**Prérequis.** Une pratique élémentaire de Python aide à expérimenter ; les probabilités discrètes facilitent la lecture de l'entropie.
+
+**Points d'entrée.** [Entropie et information mutuelle](MyIA.AI.Notebooks/InformationCalcul/InformationTheory/InformationTheory-01-Entropie-Et-Information-Mutuelle.ipynb) étudie l'information d'une source ; [Compter des pas](MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-01-StepCounting-Python.ipynb) mesure le coût d'un calcul.
+
+**Pour continuer.** Le [hub Information et calcul](MyIA.AI.Notebooks/InformationCalcul/README.md) relie notamment compression, complexité et automates.
+
+## Physique
+
+**Notions.** Symétries, lois de conservation, équations différentielles et discrétisation : confronter un calcul à une solution ou à une identité indépendante.
+
+**Prérequis.** Analyse, algèbre linéaire et Python scientifique ; la série introduit sur place les notions de théorie des groupes nécessaires à la jauge.
+
+**Points d'entrée.** [Théorème de Noether](MyIA.AI.Notebooks/Physique/Jauge/Jauge-01-Theoreme-Noether-Python.ipynb) relie symétrie et conservation ; [Burgers par volumes finis](MyIA.AI.Notebooks/Physique/Numerique/Numerique-01-Burgers-Volumes-Finis-Python.ipynb) étudie un choc numérique.
+
+**Pour continuer.** La [série Physique](MyIA.AI.Notebooks/Physique/index.qmd) présente les sous-séries et leurs contrôles.
+
+## Bio & Médecine
+
+**Notions.** Dynamique des populations et des épidémies : comparer un modèle à une solution exacte, une quantité conservée ou une équation indépendante.
+
+**Prérequis.** Python scientifique et équations différentielles ordinaires pour cette première entrée.
+
+**Point d'entrée.** [Populations et épidémies](MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb) confronte les modèles logistique, Lotka-Volterra et SIR à des contrôles distincts.
+
+**Pour continuer.** La [série Bio & Médecine](MyIA.AI.Notebooks/BioMedecine/index.qmd) distingue le contenu disponible des autres thèmes prévus. La [physique](MyIA.AI.Notebooks/Physique/index.qmd) partage cette démarche de vérification ; les [probabilités](MyIA.AI.Notebooks/Probas/index.qmd) apportent une autre approche des modèles et de l'incertitude.
