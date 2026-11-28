@@ -2,7 +2,7 @@
 
 > REFERENCE — vivante — dernière révision 2026-11-27
 >
-> **Provenance** : [Epic #26510](https://github.com/jsboige/CoursIA/issues/26510) (Parité Rust), **Pli 3** [#27098](https://github.com/jsboige/CoursIA/issues/27098), point 4 (« le gabarit de spécification de portage »). Le pli 1 a livré la table de correspondance : [rust-ecosystem-map.md](rust-ecosystem-map.md). Le pli 0 a livré la chaîne d'outils : [kernels-runtime.md § Rust](kernels-runtime.md#rust-notebooks-rust-via-evcxr).
+> **Provenance** : [Epic #26510](https://github.com/jsboige/CoursIA/issues/26510) (Parité Rust), **Pli 3** [#27098](https://github.com/jsboige/CoursIA/issues/27098), points 3 (« la crate pédagogique partagée ») et 4 (« le gabarit de spécification de portage »). Le pli 1 a livré la table de correspondance : [rust-ecosystem-map.md](rust-ecosystem-map.md). Le pli 0 a livré la chaîne d'outils : [kernels-runtime.md § Rust](kernels-runtime.md#rust-notebooks-rust-via-evcxr).
 
 ## 1. Ce que ce gabarit établit
 
@@ -158,6 +158,48 @@ de conformité différentielle (`scripts/notebook_tools/rust_conformance.d/<slug
   qui a la toolchain Rust épinglée
 ```
 
+## 3 bis. L'aide partagée ne se recopie pas — la crate `myia_nb`
+
+Les carnets Rust affichent leurs résultats comme le ferait Python (`True`/`False`, `[1, 2, 3]`, `['a', 'b']`, `(1, 2)`) et mesurent leurs durées. Ces deux gestes étaient recopiés dans chaque carnet, et les copies ont dérivé : la même fonction d'affichage de booléen s'écrit avec deux types de retour différents selon le carnet, ce qui fait diverger la sortie visible d'un carnet à l'autre.
+
+La crate [`MyIA.AI.Notebooks/Config/rust/myia_nb/`](../../MyIA.AI.Notebooks/Config/rust/myia_nb/README.md) porte cette aide une seule fois, versionnée et testée. Elle vit dans le dossier de support partagé des carnets, `Config/`, aux côtés des aides C# `Utils.cs` / `SkiaUtils.cs` / `PythonNetLoader.cs` : un dossier de support ne crée pas de premier niveau dans l'arbre des carnets et ne demande donc pas le GO écrit de #27092. Elle n'a aucune dépendance : elle se construit avec la toolchain épinglée du pli 0, sans réseau.
+
+| Fonction | Sortie |
+|---|---|
+| `py_bool(b)` | `True` / `False`, en `&'static str` |
+| `py_bool_string(b)` | même texte, en `String` |
+| `py_bool_list(v)` | `[True, False]` |
+| `py_list(v)` | `[1, 2, 3]` |
+| `py_str_list(v)` | `['a', 'b']` |
+| `py_tup(v)` | `(1, 2)`, `(1,)` pour un singleton, `()` pour le vide |
+| `time_it(f)` | le résultat du calcul et sa `Duration` ; le calcul est exécuté une fois |
+| `ms(d)` | trois décimales, format fixe d'un carnet à l'autre |
+
+**Règle pour un carnet neuf** : il ne redéfinit aucune de ces fonctions. Il importe celle dont il a besoin, et une variante dont la sortie diffère est un **écart assumé**, écrit dans la page de spec (§ Tolérances), pas une copie locale de plus.
+
+### Le `:dep`, et la profondeur du chemin
+
+```rust
+:dep myia_nb = { path = "../Config/rust/myia_nb" }
+```
+
+**Le chemin est relatif au dossier du carnet**, pas à la racine du dépôt : le noyau résout un `path` de dépendance contre son répertoire de travail, qui est celui du carnet. Un carnet un niveau sous `MyIA.AI.Notebooks/` (comme `Sudoku/`) porte donc `../Config/rust/myia_nb`, deux niveaux `../../Config/rust/myia_nb`. Le chemin ne se recopie pas d'un carnet à l'autre : `scripts/notebook_tools/wire_myia_nb.py` le calcule depuis la position du carnet.
+
+La ligne se pose **en tête du premier bloc de code**, une seule fois — un `:dep` tardif recompile la session et efface les variables typées (§ Interdits, et le validateur `check_rust_notebook_contract.py`).
+
+### Ce que la migration remplace, et ce qu'elle ne remplace pas
+
+| Définition locale | Remplacée par |
+|---|---|
+| `fn py_bool(x: bool) -> &'static str` dont le corps est `if x { "True" } else { "False" }` | `use myia_nb::py_bool;` |
+| même corps avec `.to_string()` sur les deux branches, type de retour `String` | `use myia_nb::py_bool_string as py_bool;` — le nom appelé est conservé, aucun site d'appel ne bouge |
+
+**Rien d'autre ne se migre à l'aveugle.** Les variantes de `py_list` / `py_tup` mesurées sur `main` diffèrent par le type d'argument (`&[String]`, `&BTreeSet<String>`, `&[&str]`, `&[i64]`) et parfois par la sémantique (une fonction homonyme affiche un masque de bits : ce n'est pas un formateur de tranche). Les réécrire fabriquerait un écart d'affichage silencieux : le fixer les **signale**, il ne les touche pas. L'adoption se fait au fil des grains — un carnet existant reçoit la crate quand un autre grain le rouvre, et ce câblage est alors relu et ré-exécuté — et non par fournée de carnets.
+
+### Ce que la crate achète, et ce qu'elle n'achète pas
+
+Elle achète **une seule version** de chaque aide, testée, et des sorties qui restent comparables d'un carnet à l'autre. Elle n'achète pas de la latence : mesuré en A/B sur le carnet pilote le 2026-11-27 (deux paires, cache cargo chaud), le `:dep` **coûte** quelques secondes de chargement par exécution — il n'en fait pas gagner. Ce que la crate supprime est la dérive d'une définition de `py_bool` recopiée de carnet en carnet, avec deux types de retour selon la copie ; ce n'est pas un temps de démarrage. Les chiffres bruts de la mesure sont dans la PR de livraison de l'organe 3.
+
 ## 4. Remplir avant d'implémenter
 
 1. **La page précède le carnet.** Une page remplie après coup n'est pas une spécification : elle devient un compte-rendu, donc un récit de correction — ce que le dépôt refuse dans les carnets.
@@ -172,6 +214,7 @@ de conformité différentielle (`scripts/notebook_tools/rust_conformance.d/<slug
 | Contrôle | Où il vit | Ce qu'il refuse |
 |---|---|---|
 | `:dep` en tête de carnet | validateur du pli 3 (point 5) | un `:dep` hors de la tête, ou plusieurs `:dep` de tête |
+| Aide partagée importée, pas recopiée | `python scripts/notebook_tools/wire_myia_nb.py --check <carnet>` (§ 3 bis ; hors CI — organe d'adoption, joué sur chaque carnet câblé) | une définition locale de `py_bool` identique à la version de la crate |
 | Pas d'erreur volontaire (C.1) | validateur du pli 3 (point 5) | `panic!`, `unimplemented!()`, `todo!()`, `unreachable!()` dans un stub |
 | Exécution complète committée (C.2) | validateur du pli 3 (point 5) | un `execution_count` null, une sortie non exécutée |
 | Conformité différentielle | registre `scripts/notebook_tools/rust_conformance.d/` (point 2 du pli) | une sortie Rust qui s'écarte du Python/C# au-delà de la tolérance déclarée |
@@ -186,6 +229,7 @@ de conformité différentielle (`scripts/notebook_tools/rust_conformance.d/<slug
 ## Voir aussi
 
 - [rust-ecosystem-map.md](rust-ecosystem-map.md) — correspondance bibliothèques → crates (pli 1)
+- [MyIA.AI.Notebooks/Config/rust/myia_nb](../../MyIA.AI.Notebooks/Config/rust/myia_nb/README.md) — la crate d'aide partagée : API, `:dep`, migration (§ 3 bis)
 - [kernels-runtime.md § Rust](kernels-runtime.md#rust-notebooks-rust-via-evcxr) — toolchain, exécution, papermill, CI, suffixe et kernelspec (pli 0)
 - [scripts-reference.md](scripts-reference.md) — les organes de conformité différentielle et de parité
 - Epic [Parité Rust #26510](https://github.com/jsboige/CoursIA/issues/26510) · Pli 3 [#27098](https://github.com/jsboige/CoursIA/issues/27098)
