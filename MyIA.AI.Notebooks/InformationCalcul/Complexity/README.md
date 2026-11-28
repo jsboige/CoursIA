@@ -232,6 +232,8 @@ lancé : la preuve vit chez les auteurs, le carnet lit l'énoncé.
 
 [Complexity-03e : barrières d'exposants et word RAM (C#)](Complexity-03e-Barrieres-Exposants-WordRAM-CSharp.ipynb) accompagne la [version Python](Complexity-03e-Barrieres-Exposants-WordRAM-Python.ipynb). L'interpréteur utilise BigInteger pour les mots modulaires ; les générateurs et les chronomètres diffèrent.
 
+[Complexity-03g : les trois barrières (C#)](Complexity-03g-Trois-Barrieres-CSharp.ipynb) accompagne la [version Python](Complexity-03g-Trois-Barrieres-Python.ipynb). Les 65 536 tables de vérité, l'inversion de Möbius et les degrés par corps sont recalculés en BCL, et le carnet se termine par une **cellule de parité** qui rejoue les grandeurs reproductibles du jumeau Python : densités de la population complète et de la famille pseudo-aléatoire, degrés par corps, nombre de portes, et le contrôle du seuil MAJORITY sur les 128 affectations. La loi de référence des écarts est tirée par SplitMix64 — dont les 64 bits se reproduisent à l'identique dans les deux langages — pour que la parité porte aussi sur cette mesure. Les chronomètres et les générateurs diffèrent, donc les temps ; les grandeurs, elles, coïncident.
+
 Les notebooks 07 et 07b ouvrent le **miroir descriptif** : 07 demande quelles
 séquences une mémoire bornée peut écrire court ; 07b retourne la question sur les
 nombres — du googol au nombre de Rayo, chaque étage de la hiérarchie à croissance

@@ -40,6 +40,17 @@ Le manifeste complet (URL, horodatage, taille, empreinte) est `MANIFEST.md` dans
 
 **Ce que le relevé autorise à dire.** Le flux `feed.atom` archivé contient 30 entrées : 13 `lemma_proposed`, 13 `lemma_checked`, 4 `lemma_refuted`. C'est un **comptage**, il ne dit rien de la vérité mathématique des lemmes.
 
+**Les deux entrées de la fenêtre qui mentionnent le plan de Fano** (verbatim, `feed.atom`, empreinte `4f316027`) :
+
+| Entrée | Identifiant |
+|---|---|
+| « Conjecture: seat-intake-1 proposed L-meta-11463: A step toward: Fano plane: a circuit of at most 27 AND/OR gates of fan-in two (distinct earlier wires) computes incidence and has a double… (step 2 of 2) » | `L-meta-11463` |
+| « Conjecture: seat-intake-1 proposed L-meta-11461: A step toward: Fano plane: a circuit of at most 27 AND/OR gates of fan-in two (distinct earlier wires) computes incidence and has a double… (step 1 of 2) » | `L-meta-11461` |
+
+Les deux sont des `lemma_proposed`, et le nombre **27** y apparaît — comme dans la borne `|E| + τ − 1 = 27` du carnet `Complexity-03g` (§4). Les deux énoncés n'en sont pas le même : c'est cette coïncidence de nombre que le §5 du carnet C# met côte à côte, chacun avec sa source, **pour ne pas les confondre**. Le flux tronque lui-même ses titres (202 caractères, points de suspension dans le texte) : la forme relevée est donc celle du flux, pas une reformulation.
+
+**Ce que le carnet lit.** La note est la source **versionnée dans le dépôt** que lit le §5 du carnet `Complexity-03g-Trois-Barrieres-CSharp.ipynb` : le carnet lit le dépôt, pas le gisement partagé, et sa sortie ne dépend donc pas du poste. L'archive complète du registre (flux Atom, manifeste, empreintes) reste au gisement partagé et n'est **jamais commitée** — la note en cite les formes, elle ne recopie pas la publication.
+
 **Ce qu'il n'autorise pas.** `robots.txt` ne porte aucune ligne `Content-Signal` : ni autorisation ni restriction selon sa clause (c). Le site ne publie **ni dépôt ni licence**. Rien de ce qui suit n'est donc réutilisable comme source de code ; c'est une donnée, consultée et citée.
 
 ## 3. Le protocole du registre, six règles mesurées
