@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Construit un export Turtle du cursus depuis le catalogue généré.
 
-Le catalogue reste la source de vérité. Les champs absents (prérequis,
-qualifications dédiées) ne sont pas déduits ni inventés. La hiérarchie de
+Le catalogue reste la source de vérité. Les champs absents (prérequis) ne
+sont pas déduits ni inventés. Les qualifications du cursus -- difficulté et
+dimension de recherche -- sont reprises telles quelles du catalogue, un
+prédicat par axe (#29007). La hiérarchie de
 concepts, elle, vit dans les taxonomies SKOS de séries
 (`docs/curriculum/taxonomy/`) : leur couche concepts est fusionnée dans le
 graphe servi (#27635) par l'organe existant `curriculum_taxonomy.build_graph`.
@@ -141,11 +143,27 @@ def build_graph(entries: list[dict]) -> Graph:
         if deepest_uri is not None:
             graph.add((notebook, VOCAB.inSubseries, deepest_uri))
 
-        # Qualifications seulement si explicitement présentes dans une
-        # évolution future du catalogue. Aucun champ de remplacement n'est
-        # supposé ici.
-        for field, predicate in (("qualification", VOCAB.qualification),
-                                 ("prerequisite", VOCAB.prerequisite),
+        # Qualifications du cursus (#29007) : deux axes, deux prédicats. Le
+        # catalogue les porte depuis le crochet du générateur (#24996) --
+        # `difficulte` (D1 à D4) et `recherche` (R0 à R3) sont deux échelles
+        # indépendantes, jamais fondues en une note unique. Un carnet non
+        # qualifié n'émet rien : aucun niveau n'est déduit du titre, de la
+        # maturité ou du chemin. Les niveaux admis sont fixés par les formes
+        # SHACL, qui restent leur seule source. La justification reste dans le
+        # manifeste et le catalogue : le graphe ne porte que les niveaux.
+        for field, predicate in (
+            ("difficulte", VOCAB.difficulte),
+            ("recherche", VOCAB.dimensionRecherche),
+        ):
+            value = entry.get(field)
+            if isinstance(value, str) and value.strip():
+                graph.add((notebook, predicate, Literal(value.strip())))
+            elif value is not None and not isinstance(value, str):
+                raise ValueError(f"{path}: {field} doit être une chaîne non vide")
+
+        # Champs libres que le catalogue ne produit pas aujourd'hui
+        # (`prerequisite`, `concept`) : émis seulement s'il les porte.
+        for field, predicate in (("prerequisite", VOCAB.prerequisite),
                                  ("concept", VOCAB.concept)):
             value = entry.get(field)
             if isinstance(value, str) and value.strip():

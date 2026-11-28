@@ -766,6 +766,16 @@ prérequis pédagogiques ne sont affichés que s'ils existent explicitement dans
 l'export ; l'absence de déclaration est rendue comme « non renseignée », pas
 comme un graphe complet sans prérequis.
 
+Les deux axes de qualification du cursus suivent la même règle (#29007) :
+`difficulte` (`D1` à `D4`) et `recherche` (`R0` à `R3`) sont deux échelles
+indépendantes, donc deux prédicats (`cursus:difficulte`,
+`cursus:dimensionRecherche`), jamais une note unique qui les fondrait. Un carnet
+non qualifié n'émet aucun des deux, et aucun niveau n'est déduit du titre, de la
+maturité ou du chemin ; un niveau hors échelle est refusé par les formes SHACL,
+qui portent l'énumération. Les valeurs et leur justification vivent dans
+[`docs/curriculum/qualification/`](../../docs/curriculum/qualification/README.md) ;
+le graphe ne porte que les niveaux, jamais le pourquoi.
+
 Installer la pile RDF utilisée par le générateur et les tests, puis générer
 l'export hors du dépôt :
 

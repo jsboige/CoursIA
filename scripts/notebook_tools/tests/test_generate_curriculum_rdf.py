@@ -1,11 +1,13 @@
 import sys
 from pathlib import Path
 
-from rdflib import DCTERMS, Literal, RDF, URIRef
+from rdflib import DCTERMS, Graph, Literal, RDF, URIRef
+from rdflib.namespace import SH
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from generate_curriculum_rdf import (
+    DEFAULT_SHAPES,
     VOCAB,
     build_graph,
     build_interfaces_graph,
@@ -23,7 +25,7 @@ def test_catalogue_fixture_builds_and_passes_shacl():
          "duree_estimee": "45 min", "status": "READY"},
         {"path": "SymbolicAI/SemanticWeb/SW-8-Python-SHACL.ipynb",
          "title": "SHACL", "serie": "SymbolicAI", "sous_serie": "SemanticWeb",
-         "concept": "SHACL", "qualification": "BETA", "requires_api": True,
+         "concept": "SHACL", "requires_api": True,
          "requires_gpu": False, "requires_cloud": False, "requires_wsl": False},
     ]
     graph = build_graph(entries)
@@ -248,3 +250,105 @@ def test_merged_graph_conforms_and_dangling_prerequisite_is_refused():
     conforms, report = validate_graph(graph)
     assert not conforms
     assert "requiresConcept" in report
+
+
+# --- Qualifications du cursus (#29007) ---------------------------------------
+# Deux axes déclarés dans le manifeste (docs/curriculum/qualification/), donc
+# deux prédicats : jamais une note unique qui fondrait la difficulté et la
+# dimension de recherche.
+
+
+def _notebook_of(graph: Graph, path: str) -> URIRef:
+    return next(graph.subjects(DCTERMS.identifier, Literal(path)))
+
+
+QUALIFIED = {"path": "NLP/A.ipynb", "title": "A", "serie": "NLP",
+             "difficulte": "D3", "recherche": "R2"}
+UNQUALIFIED = {"path": "NLP/B.ipynb", "title": "B", "serie": "NLP"}
+
+
+def test_qualifications_give_one_predicate_per_axis():
+    graph = build_graph([QUALIFIED, UNQUALIFIED])
+    qualified = _notebook_of(graph, QUALIFIED["path"])
+    assert (qualified, VOCAB.difficulte, Literal("D3")) in graph
+    assert (qualified, VOCAB.dimensionRecherche, Literal("R2")) in graph
+    assert not list(graph.triples((None, VOCAB.qualification, None)))
+
+
+def test_unqualified_notebook_receives_no_qualification():
+    """Témoin négatif : un carnet non qualifié ne reçoit rien, sur aucun axe."""
+    graph = build_graph([QUALIFIED, UNQUALIFIED])
+    unqualified = _notebook_of(graph, UNQUALIFIED["path"])
+    assert not list(graph.objects(unqualified, VOCAB.difficulte))
+    assert not list(graph.objects(unqualified, VOCAB.dimensionRecherche))
+    # Un champ présent mais vide vaut une absence : rien n'est inventé.
+    blank = build_graph([{**UNQUALIFIED, "path": "NLP/C.ipynb",
+                          "difficulte": None, "recherche": "  "}])
+    assert not list(blank.triples((None, VOCAB.difficulte, None)))
+    assert not list(blank.triples((None, VOCAB.dimensionRecherche, None)))
+
+
+def test_one_qualified_axis_does_not_invent_the_other():
+    graph = build_graph([{**QUALIFIED, "difficulte": None}])
+    assert list(graph.objects(None, VOCAB.dimensionRecherche)) == [Literal("R2")]
+    assert not list(graph.triples((None, VOCAB.difficulte, None)))
+
+
+def test_qualification_with_wrong_type_is_refused():
+    for field in ("difficulte", "recherche"):
+        try:
+            build_graph([{**QUALIFIED, field: 3}])
+        except ValueError as error:
+            assert field in str(error)
+        else:
+            raise AssertionError(f"{field} non textuel doit être refusé")
+
+
+def test_shacl_refuses_a_level_outside_the_scale():
+    """Le contrat des échelles : D1 à D4 pour la difficulté, R0 à R3 pour la recherche."""
+    graph = build_graph([UNQUALIFIED])
+    notebook = _notebook_of(graph, UNQUALIFIED["path"])
+    graph.add((notebook, VOCAB.difficulte, Literal("D9")))
+    graph.add((notebook, VOCAB.dimensionRecherche, Literal("R9")))
+    conforms, report = validate_graph(graph)
+    assert not conforms
+    assert "difficulte" in report
+    assert "dimensionRecherche" in report
+
+
+def test_shacl_refuses_two_levels_on_one_axis():
+    graph = build_graph([QUALIFIED])
+    notebook = _notebook_of(graph, QUALIFIED["path"])
+    graph.add((notebook, VOCAB.difficulte, Literal("D2")))
+    conforms, report = validate_graph(graph)
+    assert not conforms
+    assert "difficulte" in report
+
+
+def test_shapes_enumerate_the_levels_of_the_qualification_organ():
+    """Les formes et l'organe du manifeste disent la même échelle, axe par axe."""
+    import curriculum_qualification
+
+    shapes = Graph().parse(DEFAULT_SHAPES, format="turtle")
+    for path, levels in ((VOCAB.difficulte, curriculum_qualification.DIFFICULTY_LEVELS),
+                         (VOCAB.dimensionRecherche, curriculum_qualification.RESEARCH_LEVELS)):
+        shape = next(shapes.subjects(SH.path, path))
+        # `sh:in` : attribute access is impossible, `in` is a Python keyword.
+        enumerated = tuple(str(item) for item in shapes.items(shapes.value(shape, SH["in"])))
+        assert enumerated == tuple(levels), path
+
+
+def test_real_catalogue_qualifications_reach_the_graph():
+    """Témoin sur données réelles : chaque niveau qualifié du catalogue arrive, une fois."""
+    import json
+
+    catalog = json.loads((REPO_ROOT / "COURSE_CATALOG.generated.json").read_text(encoding="utf-8"))
+    graph = build_graph(catalog)
+    for field, predicate in (("difficulte", VOCAB.difficulte),
+                             ("recherche", VOCAB.dimensionRecherche)):
+        expected = sorted(entry[field].strip() for entry in catalog
+                          if isinstance(entry.get(field), str) and entry[field].strip())
+        emitted = sorted(str(value) for value in graph.objects(None, predicate))
+        assert emitted == expected, field
+        assert expected, f"le catalogue réel ne porte plus de {field}"
+    assert not list(graph.triples((None, VOCAB.qualification, None)))
