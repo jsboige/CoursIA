@@ -1,6 +1,6 @@
 # Cluster CoursIA — machines, lanes, capacités
 
-> REFERENCE — vivante — dernière révision 2026-11-24
+> REFERENCE — vivante — dernière révision 2026-11-28
 
 Référence durable sur la structure du cluster qui porte les grains CoursIA : les machines, les lanes et leurs rôles, les GPU, et les barrières de capacité qui contraignent un dispatch. Les **règles de coordination** vivent dans [CLAUDE.md](../../CLAUDE.md) §A et dans [tricephale-circulation.md](tricephale-circulation.md) ; le **calendrier d'enseignement** dans [teaching-context.md](teaching-context.md).
 
@@ -17,6 +17,7 @@ Ce document décrit ce qui change peu. **Il ne porte pas l'état vivant** : qui 
 | Quel modèle sert réellement le vLLM d'ai-01 | `docker inspect myia_vllm-medium-swift15-27b` (argument `--model`), jamais `/v1/models` |
 | Ports, sous-domaines et réveil des services GenAI | [genai-services.md](../genai/genai-services.md) |
 | Moteur d'une lane, et donc ce qu'elle voit | la lane elle-même : voir la section « Vision » ci-dessous |
+| Où en est le harnais `nb-coder` (PRs produites, mesure du pilote, montée en charge) | l'EPIC [#26534](https://github.com/jsboige/CoursIA/issues/26534), point de rendez-vous des quatre volets |
 
 ## Machines
 
@@ -45,6 +46,7 @@ Une lane est un couple `machine:workspace`, animé par un seul agent actif à la
 | `myia-po-2028:CoursIA-3` | secrétariat (siège de `myia-po-2026:CoursIA-3` jusqu'au 2026-10-20) : attestations tierces, circulation (DM nominatifs, alertes). Il refuse par contrat les dossiers des PRs `DEEP`, qui reviennent au titulaire |
 | `myia-ai-01:CoursIA-2` | worker sur la machine du coordinateur ; régisseur des GPU de la flotte depuis le 2026-10-05. Ne merge ni ne ferme |
 | `myia-po-2024:CoursIA-3` | lane QuantConnect isolée : déploiement des portefeuilles et maintenance de la partie QC, hors du tapis des workers. Elle partage le dashboard `workspace-CoursIA-3` avec le secrétariat : lire l'auteur (`machineId`) avant d'attribuer un message |
+| `myia-ai-01:nb-coder` | lane à harnais : des PR de carnets produites par un programme qui tient les gestes git et GitHub et exécute le carnet sur le noyau de sa série, sur la marge de génération du vLLM de la flotte. Sa file est composée par le coordinateur, et ses PR passent par le circuit de review ordinaire (voir « Une lane à harnais » ci-dessous) |
 | autres `*:CoursIA` et `*:CoursIA-2` | workers |
 
 Le trio coordinateur, titulaire et secrétaire est décrit, avec la circulation entre ses têtes, dans [tricephale-circulation.md](tricephale-circulation.md).
@@ -85,6 +87,20 @@ Le grain d'une lane vient du **tapis** (`python scripts/coordination/tapis_rapid
 - **jetons de service** : QuantConnect MCP (`po-2024`, `po-2026`), services GenAI de `po-2023`.
 
 Un jeton de service est une capacité **en plus**, jamais un périmètre exclusif : une lane qui le détient prend aussi n'importe quel autre grain.
+
+### Une lane à harnais : `myia-ai-01:nb-coder`
+
+Cette lane est animée par un **harnais** : un programme tient les gestes git, GitHub et noyau, et un modèle propose le contenu du carnet. Elle a pour rôle de produire des PR de carnets sur la marge de génération du vLLM de la flotte, et s'arrête d'elle-même quand le moteur sature. Sa définition, son pilote et ses critères de fin sont dans l'EPIC [#26534](https://github.com/jsboige/CoursIA/issues/26534) ; cette page ne décrit que sa place dans le cluster.
+
+- **Son grain vient d'une file, pas du tapis.** Le coordinateur compose sa file avec `scripts/coordination/belt_queues.py`, comme pour toute lane ; le harnais la lit et ne tire pas le tapis lui-même. Sont éligibles les issues qui visent **un seul carnet**, portent un critère d'acceptation **objectif** et demandent un geste **additif** (exemple résolu, interprétation manquante, exercice et sa correction) ou **correctif** (erreur citée, valeur périmée, lien mort dans le carnet). En sont exclus Lean, QuantConnect, le GPU lourd, les renommages, le catalogue et les fichiers de harnais (`.claude/`, `CLAUDE.md`, `.github/`).
+- **Le modèle propose, il ne se vérifie jamais lui-même et ne touche jamais GitHub.** Le harnais est déterministe ; le contenu du carnet passe par un vérificateur indépendant, et le body de la PR en porte le verdict, avec le `model_used` et le `conversation_id` sk-agent.
+- **Le gate de capacité.** Chaque passe ne démarre que si la sonde du moteur vLLM trouve de la bande passante ; le harnais s'arrête de lui-même quand le moteur sature.
+- **Identité.** Le harnais reçoit une GitHub App qui lui est propre, donc son propre seau d'API ; il forge un jeton d'une heure à chaque passe par `scripts/secrets/github_app_token.py`, et le modèle ne le voit jamais. Ses droits se limitent aux contenus (branches seulement, `main` est protégée), aux pull requests et aux commentaires d'issues.
+- **Le claim et les conventions s'appliquent comme ailleurs.** Avant toute édition, le harnais lance `check_lane_claim.py N` puis pose `[CLAIMED] lane myia-ai-01:nb-coder` sur l'issue ; à la livraison il pose `[DELIVERED]`. Les PR qu'il produit portent le tag `Grain: … — lane myia-ai-01:nb-coder — prev: …` et respectent C.1, C.2 (sorties d'une **exécution réelle**, sur le noyau canonique de la série et à sa version) et C.3 ; aucune sortie n'y est éditée à la main, la prose y est en français et n'y raconte aucune correction.
+- **La review est celle de toute lane.** B.0, porte de pile, puis approbation `myia-ai-01` après lecture réelle, avant tout merge. Le coordinateur lit en entier les dix premières PR ; l'adjoint les pré-lit ensuite.
+- **La mesure du pilote est postée sur l'EPIC** : PR ouvertes, PR mergées sans demande de changements, demandes de changements par cause, durée par carnet, tokens par modèle, refus du gate. La décision de montée en charge (cadence du cron, nombre de grains par passe) s'y consigne.
+
+Les autres volets du dispositif — driver du harnais, agent sk-agent `notebook-coder`, routage des modèles par claudish — vivent dans leurs dépôts respectifs ; l'EPIC [#26534](https://github.com/jsboige/CoursIA/issues/26534) en fait le point de rendez-vous et y résume l'état de chacun.
 
 ## Vision
 
