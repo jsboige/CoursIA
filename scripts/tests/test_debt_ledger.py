@@ -3481,3 +3481,39 @@ def test_spool_non_draine_si_l_observation_manque_au_commit_pousse(
     assert _publish(state_dir, work, "myia-ai-01", emit=True) == 0
     assert _spool_pending_count(state_dir) == 0
     assert obs_id in _remote_ids(remote, "myia-ai-01")
+def test_publish_never_runs_the_host_repository_pre_push_hook(tmp_path, capsys):
+    """Le push du registre ne doit PAS declencher le hook ``pre-push`` du depot.
+
+    Sur le depot hote (``jsboige/CoursIA``), le hook installe par git-lfs
+    appelle ``git show-ref`` : quand le depot porte ~35 000 refs, ce
+    ``show-ref`` prend ~30 s, la publication du registre sortait du budget de
+    300 s de la garde ``run_guarded.py``, et la fenetre GPU etait refusee en
+    fail-closed -- avec un hold que la flotte lisait encore comme une
+    reservation. Un commit de registre ne peut pas porter d'objet LFS : le
+    hook n'a rien a y faire, et son cout est le seul effet de bord mesure.
+    """
+    remote, work = _git_sandbox(tmp_path)
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0
+
+    marker = tmp_path / "pre-push-ran"
+    hooks = work / ".git" / "hooks"
+    hooks.mkdir(parents=True, exist_ok=True)
+    hook = hooks / "pre-push"
+    hook.write_text(
+        "#!/bin/sh" + chr(10) + 'printf ran > "' + marker.as_posix() + '"' + chr(10) + "exit 0" + chr(10),
+        encoding="utf-8", newline=chr(10),
+    )
+    # Le bit executable est ce qui fait du hook un temoin : git IGNORE un
+    # `pre-push` en 0o644 (umask 022, le cas de la CI Linux) et le test
+    # passerait alors sans le correctif -- mesure du rejeu d'audit du
+    # 28/11 sur cette PR (rapport Hermes, revue 08:23Z).
+    hook.chmod(0o755)
+
+    capsys.readouterr()
+    assert _publish(state_dir, work, "myia-ai-01", emit=True) == 0
+    assert not marker.exists(), (
+        "le hook pre-push du depot a ete execute par la publication du "
+        "registre ; le push doit le contourner (--no-verify)"
+    )
+
