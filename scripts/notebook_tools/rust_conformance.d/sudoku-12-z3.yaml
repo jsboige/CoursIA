@@ -88,26 +88,20 @@
             le dossier `Puzzles/`.
     - id: corpus_listing_current
       description: >-
-        Listing courant du dossier `Puzzles/`. Le cote Rust publie la liste
-        d'aujourd'hui (six fichiers) ; la sortie committée du jumeau Python
-        date d'une execution anterieure a l'ajout de trois fichiers generes
-        (`Sudoku_gen_facile.txt`, `Sudoku_gen_moyen.txt`,
-        `Sudoku_gen_difficile.txt`) : c'est un instantane perime du meme
-        dossier, pas une divergence de portage. La grandeur — le listing
-        courant — n'est donc declaree que du cote Rust ; les trois ancres
-        ci-dessus prouvent l'accord sur les fichiers canoniques.
+        Listing courant du dossier `Puzzles/` (six fichiers), mesure
+        bilaterale depuis la re-execution du jumeau Python (#28544) : la
+        sortie committée de la cellule 6 publie desormais le meme listing que
+        le cote Rust et que le dossier reel. La declaration `absent` du cote
+        Python (instantane perime listant trois fichiers sur six) est levee ;
+        les trois ancres ci-dessus continuent de prouver l'accord sur les
+        fichiers canoniques.
       tolerance: 0
-      reference: rust
+      reference: python
       sides:
         python:
-          absent: >-
-            La sortie committée du jumeau Python (cellule 6) date d'avant
-            l'ajout de `Sudoku_gen_facile.txt`, `Sudoku_gen_moyen.txt` et
-            `Sudoku_gen_difficile.txt` dans `MyIA.AI.Notebooks/Sudoku/Puzzles/`
-            : elle liste trois fichiers la ou le dossier en contient six
-            aujourd'hui. La grandeur — le listing courant — n'est pas publiee
-            par ce cote. Declare ABSENT, pas mesure (le listing stale est
-            nomme ici pour qu'aucune information ne soit dissimulee).
+          cell: 6
+          pattern: '(Fichiers disponibles: \[.*\])'
+          transform: text
         rust:
           cell: 6
           pattern: '(Fichiers disponibles: \[.*\])'
