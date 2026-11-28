@@ -10,7 +10,7 @@ import pathlib
 import subprocess
 import sys
 
-HERE = pathlib.Path(__file__).resolve().parent
+HERE = pathlib.Path(__file__).resolve().parent.parent
 SCRIPT = HERE / "classify_infra_leg.py"
 
 sys.path.insert(0, str(HERE))
