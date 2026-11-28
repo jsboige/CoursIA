@@ -5,3 +5,4 @@
   parity_level: native-both
   known_differences:
     - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de Complexity-08b-CombinateursSKI-TagDePost-Python.ipynb. Execution reelle sur kernel .net-csharp : 12 cellules, 0 erreur. Verification independente : approve. Premiere attestation ecrite par l'integration de livraison (check_twin_parity --update), en DERNIERE operation (cf #8957)."
+    - "28/11 (lane myia-po-2028:claudish, #28897) : le jumeau Python recoit un chronometrage de la reduction OMEGA bornee a 200 pas (section 2), qui porte la ligne mesuree « Ce que Rust apporte » du jumeau Rust ; le jumeau C# ne recoit pas ce chronometrage, sa cellule 11 reste celle du portage d'origine."
