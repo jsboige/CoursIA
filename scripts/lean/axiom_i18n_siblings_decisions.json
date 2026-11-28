@@ -219,7 +219,7 @@
       "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
       "mode": "WILDCARD",
       "i18n-modules": 2,
-      "i18n-declarations": 6
+      "i18n-declarations": 8
     },
     {
       "lake": "combinators",

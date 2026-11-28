@@ -19,8 +19,31 @@ variable {K : Type*} [Field K]
 /-- Hilbert function of `K[X]` (standard grading by `ℕ`): dimension of the
 vector space of polynomials of total degree at most `n`. In one variable, the
 monomials of degree at most `n` are `1, X, …, X^n`: there are `n + 1` of
-them. -/
+them.
+
+This is no longer a sequence picked by hand: `hilbert_poly1_space_equiv`
+identifies the space `K[X]_{< n + 1}` with `Fin (n+1) → K`, and
+`hilbert_poly1_eq_finrank` proves that `hilbert_poly1 n` is the finrank of that
+space. The definition stays **computable** — Mathlib's finrank is not — which
+lets the notebook evaluate the sequence on the first degrees. -/
 def hilbert_poly1 (n : ℕ) : ℕ := n + 1
+
+/-- The space `K[X]_{< n + 1}` of polynomials of degree strictly less than
+`n + 1` — that is, of degree at most `n` — is `K`-isomorphic to `Fin (n+1) → K`:
+this is Mathlib's `Polynomial.degreeLTEquiv`, which reads the coefficients. -/
+noncomputable def hilbert_poly1_space_equiv (n : ℕ) :
+    Polynomial.degreeLT K (n + 1) ≃ₗ[K] Fin (n + 1) → K :=
+  Polynomial.degreeLTEquiv K (n + 1)
+
+/-- The Hilbert function is the finrank of the space `K[X]_{< n + 1}`: through
+the isomorphism above and `Module.finrank_fin_fun`, that rank is `n + 1`, that
+is `hilbert_poly1 n`. This is the formal link that was missing between the
+sequence and the vector space it claims to measure. -/
+theorem hilbert_poly1_eq_finrank (n : ℕ) :
+    Module.finrank K (Polynomial.degreeLT K (n + 1)) = hilbert_poly1 n := by
+  rw [LinearEquiv.finrank_eq (Polynomial.degreeLTEquiv K (n + 1))]
+  rw [Module.finrank_fin_fun K]
+  rfl
 
 /-- A sequence `G : ℕ → ℕ` has polynomial growth of degree **at most** `d` if
 there exist a constant `C` and a threshold `n₀` such that `G n ≤ C * n ^ d`

@@ -18,8 +18,32 @@ variable {K : Type*} [Field K]
 
 /-- Fonction de Hilbert de `K[X]` (gradation standard par `ℕ`) : dimension du
 sous-espace vectoriel des polynômes de degré total au plus `n`. En une variable,
-les monômes de degré au plus `n` sont `1, X, …, X^n` : il y en a `n + 1`. -/
+les monômes de degré au plus `n` sont `1, X, …, X^n` : il y en a `n + 1`.
+
+Ce n'est plus une suite choisie à la main : `hilbert_poly1_space_equiv` identifie
+l'espace `K[X]_{< n + 1}` à `Fin (n+1) → K`, et `hilbert_poly1_eq_finrank` prouve
+que `hilbert_poly1 n` est le rang fini de cet espace. La définition reste
+**calculable** — le rang de Mathlib ne l'est pas — ce qui permet au carnet
+d'évaluer la suite sur les premiers degrés. -/
 def hilbert_poly1 (n : ℕ) : ℕ := n + 1
+
+/-- L'espace `K[X]_{< n + 1}` des polynômes de degré strictement inférieur à
+`n + 1` — c'est-à-dire de degré au plus `n` — est `K`-isomorphe à `Fin (n+1) → K` :
+c'est l'identification `Polynomial.degreeLTEquiv` de Mathlib, qui lit les
+coefficients. -/
+noncomputable def hilbert_poly1_space_equiv (n : ℕ) :
+    Polynomial.degreeLT K (n + 1) ≃ₗ[K] Fin (n + 1) → K :=
+  Polynomial.degreeLTEquiv K (n + 1)
+
+/-- La fonction de Hilbert est le rang fini de l'espace `K[X]_{< n + 1}` : par
+l'isomorphisme ci-dessus et `Module.finrank_fin_fun`, ce rang vaut `n + 1`,
+c'est-à-dire `hilbert_poly1 n`. C'est le lien formel qui manquait entre la suite
+et l'espace vectoriel qu'elle annonce mesurer. -/
+theorem hilbert_poly1_eq_finrank (n : ℕ) :
+    Module.finrank K (Polynomial.degreeLT K (n + 1)) = hilbert_poly1 n := by
+  rw [LinearEquiv.finrank_eq (Polynomial.degreeLTEquiv K (n + 1))]
+  rw [Module.finrank_fin_fun K]
+  rfl
 
 /-- Une suite `G : ℕ → ℕ` est de croissance polynomiale de degré **au plus**
 `d` s'il existe une constante `C` et un seuil `n₀` tels que `G n ≤ C * n ^ d`

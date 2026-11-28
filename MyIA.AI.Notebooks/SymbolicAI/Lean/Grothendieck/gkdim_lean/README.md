@@ -18,13 +18,16 @@ frontière, et le dit dans le carnet qui l'accompagne.
 
 Les racines `GKdim.lean` et `GKdim_en.lean` sont les agrégateurs FR et EN
 (convention i18n EPIC #4980) : la racine FR n'importe **que** le module FR, les
-siblings `_en` restant découverts par les `globs := #[\`GKdim.*]` du `lakefile.lean`.
+siblings `_en` restant découverts par les
+`globs := #[.submodules \`GKdim, \`GKdim, \`GKdim_en]` du `lakefile.lean`.
 
 ## Déclarations
 
 | Déclaration | Énoncé |
 |---|---|
 | `hilbert_poly1` | fonction de Hilbert de `K[X]` : `n + 1` monômes de degré au plus `n` |
+| `hilbert_poly1_space_equiv` | l'espace `K[X]_{< n + 1}` est `K`-isomorphe à `Fin (n+1) → K` (identification de Mathlib) |
+| `hilbert_poly1_eq_finrank` | `hilbert_poly1 n` est le rang fini de `K[X]_{< n + 1}` — le lien formel entre la suite et l'espace qu'elle mesure |
 | `growthAtMost G d` | ∃ `C`, `n₀` : `G n ≤ C * n ^ d` pour tout `n ≥ n₀` |
 | `growthAtLeast G d` | ∃ `c > 0`, `n₀` : `G n ≥ c * n ^ d` pour tout `n ≥ n₀` |
 | `poly1_growthAtMost` | la croissance de `K[X]` est majorée par un multiple de `n` |
@@ -50,9 +53,14 @@ lake build   # depuis ce dossier (lean-toolchain v4.33.0)
 Ce lac est servi par la matrice `lean-ci-matrix.yml` (entrée `gkdim` de
 `scripts/lean/ci_lakes.json`) : build (baseline `sorry = 0`, mode `real`) et gate
 `proof-integrity` (`fail-on-sorry: true`, `target-modules: "*"`). Aucun `sorry`, aucun
-`native_decide.*`, aucun `Classical.choice` : les trois lemmes sont des consequences
-d'arithmétique sur les naturels (`omega`), et leurs certificats `#print axioms` se
-réduisent à `propext` et `Quot.sound`.
+`native_decide.*`. Les **trois lemmes de croissance** sont des consequences
+d'arithmétique sur les naturels (`omega`) : leurs certificats `#print axioms` se
+réduisent à `propext` et `Quot.sound`, sans `Classical.choice`. Les **deux declarations
+de lien** (`hilbert_poly1_space_equiv`, `hilbert_poly1_eq_finrank`) mobilisent en
+revanche `Classical.choice` — c'est inherent : `Module.finrank` est `noncomputable`.
+`Classical.choice` fait partie de l'allow-list par defaut de la porte d'axiomes, la
+gate reste donc verte ; le carnet `GROTH-07-Capacity-Lean.ipynb` ne cite que les trois
+lemmes de croissance, dont les certificats restent inchanges.
 
 ## Conventions
 
