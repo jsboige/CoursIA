@@ -8,7 +8,7 @@ guards:
     name: "Harness autoloaded weight ratchet (base vs PR, bloquant)"
     argv: ["python", "scripts/audit/measure_autoloaded_harness.py", "--json"]
     source: "native"
-    paths: ["CLAUDE.md", ".claude/rules/**", "scripts/audit/measure_autoloaded_harness.py", "scripts/ci/check_harness_weight_delta.py", "scripts/tests/test_check_harness_weight_delta.py", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py"]
+    paths: ["CLAUDE.md", ".claude/rules/**", "docs/reference/claude-code-config.md", "scripts/audit/measure_autoloaded_harness.py", "scripts/ci/check_harness_weight_delta.py", "scripts/tests/test_check_harness_weight_delta.py", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py"]
     blocking: true
     needs_base: true
     diff_bounded: true
