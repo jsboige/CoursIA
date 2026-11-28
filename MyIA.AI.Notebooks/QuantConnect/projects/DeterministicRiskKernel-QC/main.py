@@ -151,8 +151,16 @@ class DeterministicRiskKernelAlgorithm(QCAlgorithm):
         # Trace journaliere `shadow` (contrat #18923) : valeur du portefeuille a l'ouverture
         # de chaque seance de SPY, repartie sur e0..e4, plus les series `fees` et
         # `turnover` a chaque seance (contrat #27482).
+        # Regle 2 du contrat : le point n'est trace que si `on_data` a recu cette
+        # cloture publiee, pour SPY et pour chaque ligne detenue. Une barre recopiee
+        # vers l'avant (seance pas encore publiee en fin de fenetre) saute le point.
+        # `_stale` vaut la liste des barres recopiees de la derniere cloture recue,
+        # `None` tant qu'aucune n'est arrivee depuis le point precedent ; la liste
+        # vide du depart laisse passer le premier point.
         self._trace_count = 0
         self.traded = 0.0
+        self._stale = []
+        self._shadow_skips = 0
         self.schedule.on(self.date_rules.every_day(self._spy),
                          self.time_rules.after_market_open(self._spy, 0),
                          self._trace)
@@ -160,6 +168,8 @@ class DeterministicRiskKernelAlgorithm(QCAlgorithm):
     # ------------------------------------------------------------------ donnees
 
     def on_data(self, slice):
+        if slice.bars.contains_key(self._spy):
+            self._stale = self._fill_forward(slice)
         if not self.is_warming_up:
             self._seen_dates.add(self.time.date())
         for symbol in self._symbols:
@@ -368,7 +378,22 @@ class DeterministicRiskKernelAlgorithm(QCAlgorithm):
 
     # ------------------------------------------------------------------ traces
 
+    def _fill_forward(self, slice):
+        """SPY et lignes detenues dont la barre de la seance est recopiee vers l'avant."""
+        symbols = [self._spy] + [holding.symbol for holding in self.portfolio.values()
+                                 if holding.invested and holding.symbol != self._spy]
+        return sorted(symbol.value for symbol in symbols
+                      if slice.bars.contains_key(symbol)
+                      and slice.bars[symbol].is_fill_forward)
+
     def _trace(self):
+        stale, self._stale = self._stale, None
+        if stale is None or stale:
+            self._shadow_skips += 1
+            cause = ", ".join(stale) if stale else "aucune barre de SPY recue"
+            self.log(f"{self.time:%Y-%m-%d} shadow: point saute, cloture de la veille "
+                     f"non publiee ({cause})")
+            return
         self.plot("shadow", f"e{self._trace_count % 5}", self.portfolio.total_portfolio_value)
         self.plot("shadow", "fees", self.portfolio.total_fees / self.start_value)
         self.plot("shadow", "turnover", self.traded)
@@ -390,3 +415,4 @@ class DeterministicRiskKernelAlgorithm(QCAlgorithm):
         self.set_runtime_statistic("Poids de groupe max", f"{self._group_max:.4f}")
         self.set_runtime_statistic("Dates vues par on_data", str(len(self._seen_dates)))
         self.set_runtime_statistic("Seances a plat", str(self._n_flat))
+        self.set_runtime_statistic("Shadow skips FF", str(self._shadow_skips))
