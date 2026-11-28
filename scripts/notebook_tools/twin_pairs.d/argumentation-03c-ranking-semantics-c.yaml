@@ -1,0 +1,7 @@
+- name: "Argumentation-03c-Ranking-Semantics C#"
+  family: SymbolicAI/ArgumentAnalysis
+  python: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03c-Ranking-Semantics-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03c-Ranking-Semantics-CSharp.ipynb
+  parity_level: native-both
+  known_differences:
+    - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de Argumentation-03c-Ranking-Semantics-Python.ipynb. Execution reelle sur kernel .net-csharp (releve du harnais, corps de la PR) : 10 cellules, 0 erreur. Verification par l'agent critic-sol (cible configuree gpt-6.1-sol ; alias distinct du producteur notebook-coder-minimax) : approve, 2 constats. Premiere attestation ecrite par l'integration de livraison (check_twin_parity --update), en DERNIERE operation (cf #8957)."

@@ -1,8 +1,8 @@
 # Taxonomie pédagogique
 
-Cette tranche pilote matérialise le nœud de série et les sept carnets racine de Compression recensés dans `COURSE_CATALOG.generated.md` (le carnet compagnon Lean reste dans sa sous-série distincte). Ces carnets n'ont pas de sous-série dans le catalogue. Elle part des concepts nommés dans les cellules de titre et d'exposé ; chaque rattachement pointe vers le chemin du carnet et son identifiant de cellule. Les UUID des concepts sont opaques et ne changent pas lorsque leurs chemins taxonomiques évoluent.
+Cette taxonomie matérialise le nœud de série et les carnets de Compression, jumeaux C# compris (le carnet compagnon Lean reste dans sa sous-série distincte). Les carnets Python et leurs jumeaux C# n'ont pas de sous-série dans le catalogue. Elle part des concepts nommés dans les cellules de titre et d'exposé ; chaque rattachement pointe vers le chemin du carnet et son identifiant de cellule. Les UUID des concepts sont opaques et ne changent pas lorsque leurs chemins taxonomiques évoluent. La tranche pilote en déclarait sept ; la couverture de la série entière est décrite dans « Série Compression — tranche 4 ».
 
-Le format conserve les trois colonnes de repérage d'Argumentum : `path`, `decimal_path` et `depth`. La hiérarchie pédagogique réserve aussi les niveaux `example` et `exercise` sous le carnet ; ils ne sont pas peuplés dans cette première tranche. Les prérequis reprennent les prérequis déclarés dans les introductions des carnets. Le validateur vérifie les références, les cellules, la couverture des sept carnets, les prérequis inconnus et les cycles.
+Le format conserve les trois colonnes de repérage d'Argumentum : `path`, `decimal_path` et `depth`. La hiérarchie pédagogique réserve aussi les niveaux `example` et `exercise` sous le carnet ; ils ne sont pas peuplés à ce jour. Les prérequis relient chaque concept aux notions qu'il suppose, dans la série. Le validateur vérifie les références, les cellules, la couverture de chaque carnet déclaré, les prérequis inconnus et les cycles.
 
 `compression.json` contient les données éditoriales, et `schema.json` décrit leur structure. Pour régénérer les exports SKOS/Turtle et OWL/RDF/XML dans un répertoire temporaire :
 
@@ -15,6 +15,22 @@ python scripts/notebook_tools/curriculum_taxonomy.py \
 Les sources des concepts sont exportées en liens GitHub vers les vrais carnets. Chaque relation `cursus:hasCellCitation` regroupe le lien du carnet et son `cursus:cellId`, contrôlé contre le notebook local.
 
 L'export des concepts reste un graphe à part de l'export catalogue afin que chaque forme garde sa validation dédiée. Un consommateur peut les unir dans un même graphe RDF en chargeant les deux Turtle, par exemple `graph.parse("catalogue.ttl", format="turtle")` puis `graph.parse("compression.ttl", format="turtle")`.
+
+## Série Compression — tranche 4 (la série entière : 13 carnets Python, 7 jumeaux C#, 1 carnet Lean)
+
+`compression.json` couvre les **21 carnets** de la série : les treize carnets Python, leurs sept **jumeaux C#** et le carnet Lean `Compression-01b`, sous la sous-série `Compression_lean` — **136 concepts** et **216 citations de cellule**, contre 18 concepts sur 7 carnets pour le pilote. Le même `schema.json` et le même validateur `curriculum_taxonomy.py` s'appliquent. Les **prérequis** relient les carnets entre eux : l'inégalité de Kraft après les codes préfixes, le codage de Huffman avant sa forme canonique puis sa table de décodage, les codes préfixes avant la fenêtre glissante de LZ77, l'état ANS avant ses variantes rANS et tANS.
+
+Mesurée par `curriculum_taxonomy.py --density`, la densité va de **7 à 12 concepts par carnet, médiane 10**, et aucun carnet déclaré n'est sans concept. Six groupes nouveaux complètent l'arbre du pilote : **Banc de compression** (7), **Taux d'entropie** (8), **Recette de reconstruction** (9), **Triage par le LLM** (10), **Assemblage de documents** (11) et son enfant **Assemblage par le LLM** (11.1). Les 66 concepts créés qui en relèvent citent onze carnets que le pilote ne citait pas et deux qu'il citait déjà : `Compression-02-HuffmanCanonique-Python` (de 2 à 8 concepts) et `Compression-04b-CodecsSOTA-Pareto-Python` (de 1 à 11). Les 46 autres concepts créés rejoignent des nœuds existants, sous-groupes compris : `codes-prefixes` en reçoit 14, `lz77` 9, `ans` 8, `modeles-neuronaux` 7, `mdl` 6 et `huffman-canonique` 2.
+
+Trois règles ont guidé la densification. **Les 18 concepts du pilote sont intacts** : identifiant, `decimal_path`, libellés, définitions et profondeur inchangés ; la tranche ne fait que leur ajouter des citations, 23 sur 10 d'entre eux. **Une notion enseignée dans deux carnets reste un seul concept, porteur de deux citations** : 58 concepts sont cités par au moins deux carnets, et `query_curriculum.py concepts --notebook` les rend carnet par carnet. **Une citation d'un carnet Python n'est mise en miroir vers son jumeau C# que si les deux cellules, Python et C#, sont des cellules markdown d'au moins 80 caractères dont la prose atteint la similarité 0,85** (mesure `difflib` sur le texte débarrassé de ses blancs superflus, les couples dont la longueur diffère de plus de 35 % étant écartés d'office) : 35 citations sont mises en miroir sur les jumeaux `01`, `06`, `07` et `08` ; aucune cellule des jumeaux `02`, `03` et `04` n'atteint ce seuil avec la prose de son jumeau Python (une cellule Python de `02` et deux de `03` y trouvent un voisin entre 0,5 et 0,85, aucune de `04` ne dépasse 0,5), leurs concepts sont donc extraits de leurs propres cellules.
+
+```bash
+python scripts/notebook_tools/curriculum_taxonomy.py --density --json
+python scripts/notebook_tools/query_curriculum.py --graph /tmp/taxonomies.ttl \
+  concepts --notebook MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-CSharp.ipynb
+```
+
+Les notions qu'un carnet nomme sans les définir ni les démontrer restent hors taxonomie : la description de la PR de la tranche en tient la liste. Les ponts **inter-séries** relèvent de la tranche 3 de #26646 : à ce jour `--bridges` ne relève aucune paire candidate impliquant Compression.
 
 ## Série Probas — tranche 1 (sous-série Infer)
 
@@ -102,6 +118,25 @@ python scripts/notebook_tools/curriculum_taxonomy.py \
   --data docs/curriculum/taxonomy/tweety.json \
   --skos-output /tmp/tweety.ttl \
   --owl-output /tmp/tweety.owl
+```
+
+## Série BioMédecine — tranche 1 (sous-série Dynamiques : trois modèles, trois contrôles indépendants)
+
+[`biomedecine.json`](biomedecine.json) ouvre la série **BioMedecine** (`MyIA.AI.Notebooks/BioMedecine/`), sous la sous-série `Dynamiques`. Elle ne compte aujourd'hui **qu'un carnet**, `Dynamiques-01-Populations-et-Epidemies-Python` : la tranche déclare donc un arbre à trois nœuds (série, sous-série, carnet) et **17 concepts**, porteurs de **40 citations de cellule**. Le même `schema.json` et le même validateur `curriculum_taxonomy.py` s'appliquent.
+
+Le carnet applique aux trois dynamiques le contrat de méthode de la série — modèle, calcul, contrôle indépendant, contre-témoin, statut — et la taxonomie suit ce contrat plutôt que l'ordre des sections. Le concept racine `controle-independant` reçoit ses deux enfants `contre-temoin` et `statut-du-resultat` : un contrôle ne vaut que s'il sait échouer, et ce qu'il établit se déclare. Les trois modèles portent chacun leur chaîne : `croissance-logistique` avant `capacite-de-charge` et `solution-analytique` (la forme fermée est le juge) ; `schema-euler-explicite` avant `ordre-de-convergence` (l'erreur doit décroître comme $h^p$, ce qui rattache l'écart à la discrétisation et non à une faute de calcul) ; `lotka-volterra` avant son `point-fixe` puis son `integrale-premiere`, qui est précisément le contrôle de la section ; `modele-sir` avant `nombre-de-reproduction-base`, puis `taille-finale` (l'équation transcendante résolue par dichotomie, sans intégrer le système), `immunite-de-groupe` (le seuil $S/N < 1/R_0$ est la condition d'arrêt réelle) et `approximation-de-branchement` (valable sous le seuil seulement). `integrateur-adaptatif` reste un concept racine : il est la voie de calcul de référence, pas un modèle.
+
+**Aucun chapitre AIMA n'est indiqué** : le carnet enseigne trois modèles classiques et la manière de les contrôler, sans rattacher son propos à un chapitre du livre. **Aucun champ `matches` n'est non plus déclaré** : la recherche d'une correspondance réelle avec les neuf autres taxonomies du dossier (sur `euler`, `runge`, `integration`, `logistique`, `epidemie`, `SIR`, `volterra`, `population`) ne rend que des faux positifs — « codes préfixes » pour Compression, « modèle STRIPS » pour Planners — et une correspondance inventée vaudrait moins que son absence. Un pont vers la série Physique, qui pratique le même contrat de méthode, reste à établir sur ses propres concepts quand cette taxonomie existera.
+
+Deux trous sont assumés et documentés plutôt que comblés par des concepts adossés à rien. Les **notions réservées aux exercices** — l'ordre 2 du schéma du point milieu, l'ordre auquel Euler conserve l'invariant, la position du pic infectieux — ne sont pas des concepts : le niveau `exercise` de la hiérarchie est réservé et non peuplé à ce jour. Le **réseau de contacts**, modèle à agents annoncé en fin de carnet comme objet des feuilles suivantes, est du travail à venir : il n'apparaît pas ici tant qu'aucune cellule ne l'enseigne.
+
+Mesurée par `curriculum_taxonomy.py --density`, la densité vaut **17 concepts pour le seul carnet déclaré**, et aucun carnet n'est sans concept. Deux concepts ne sont cités qu'une fois ; les quinze autres le sont au moins deux fois, chaque modèle portant ses propres cellules de lecture.
+
+```bash
+python scripts/notebook_tools/curriculum_taxonomy.py \
+  --data docs/curriculum/taxonomy/biomedecine.json \
+  --skos-output /tmp/biomedecine.ttl \
+  --owl-output /tmp/biomedecine.owl
 ```
 
 ## Valider toutes les taxonomies d'un coup

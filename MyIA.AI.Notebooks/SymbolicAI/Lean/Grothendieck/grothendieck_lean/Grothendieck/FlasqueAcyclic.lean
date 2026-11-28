@@ -2,8 +2,12 @@
 Copyright (c) 2026 CoursIA. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 
-Grothendieck hommage — Partie 94 : l'acyclicité des faisceaux flasques —
+Grothendieck hommage — Partie 102 : l'acyclicité des faisceaux flasques —
 degré 1 inconditionnel, décalage, et la frontière `injectif => flasque`.
+(Numéro de tranche assigné par extension du tableau des Parties du README :
+cet en-tête portait 94, numéro déjà tenu par la tranche 94 — la flascuité de
+la tour canonique, `Grothendieck.FlasqueAcyclic` n'ayant alors aucune ligne
+dans le tableau. Voir #28721.)
 
 Alexandre Grothendieck (1928-2014).
 
@@ -302,5 +306,56 @@ theorem subsingleton_H_succ_of_flasque_all
     exact subsingleton_H_succ_of_flasque_decalage hS (ih (cokernel P.f))
 
 end Capstone
+
+/-!
+## 5. Correspondance Stacks (groupe #13 de #28537, relevé du 26/11)
+
+Stacks atteint l'acyclicité des flasques par la route **Čech**
+(`Topology/Sheaves/Cohomology/CechToCohomology/DegreeOneFlasqueVanishing.lean`),
+nous la prenons par la route **Ext** (`Sheaf.H`, suite exacte longue
+covariante). Les énoncés ne sont donc pas les mêmes, et l'écart est écrit.
+
+| Énoncé | Classe | Référent Stacks | Ce que notre version ajoute / ce qui diverge |
+|---|---|---|---|
+| `shortExact_of_injectivePresentation` | **absent** | aucun | Constructeur d'algèbre homologique (`CategoryTheory.ShortComplex.exact_cokernel`) : hors du champ de Stacks, qui ne pose pas de présentation injective de cette forme. |
+| `subsingleton_H_one_of_flasque` | **partiel** | `CechToCohomology/DegreeOneFlasqueVanishing.lean:230` (`cls_eq_zero_of_isFlasque`) et `:167` (`exists_cechD_eq_of_isFlasque`), tag 09SZ | Même contenu mathématique — le degré 1 d'un faisceau flasque s'annule — mais **route différente** : Čech chez Stacks, Ext/`Sheaf.H` ici. Notre version est de plus **conditionnelle** à l'injectivité de `X₂`, hypothèse que l'énoncé de Stacks ne porte pas. |
+| `subsingleton_H_one_of_flasque_presentation` | **absent** | aucun | Corollaire de présentation injective : aucun énoncé correspondant chez Stacks. |
+| `subsingleton_H_succ_of_flasque_decalage` | **absent** | aucun | Le décalage est un pas de la route Ext — un degré se paie en un degré du quotient ; Stacks ne l'énonce pas, sa route Čech étant globale. |
+| `subsingleton_H_succ_of_flasque_all` | **partiel** | tag **09SZ** (annulation de la cohomologie Čech de degré strictement positif d'un faisceau flasque) | **Écart notable** : Stacks établit l'acyclicité **inconditionnelle** d'un faisceau flasque, par la route Čech ; nous l'établissons **sous l'hypothèse `hInjFlasque`** (Godement II.4), par la route Ext. |
+
+### La frontière `injectif ⇒ flasque` : Stacks franchit exactement le même obstacle
+
+Ce module nomme `injectif ⇒ flasque` ([God58] II.4) comme le seul maillon
+manquant, et en donne la raison : la preuve classique exige l'extension par
+zéro `j_!` des faisceaux ouverts, absente de Mathlib à ce jour.
+
+Stacks franchit cette frontière — et **par le même moyen** :
+
+- `CechToCohomology/DegreeOneFlasqueVanishing.lean:211`, `isFlasque_of_injective`
+  (« *An injective sheaf of abelian groups is flasque* », SGA 4 V 4.6) ;
+- sa preuve passe par `CechAcyclicity/InjectiveSheavesRestrictOnto.lean:21`,
+  qui dit que `supportedSubmodule M U` est « *the realisation, inside sheaves of
+  modules, of the extension by zero `j_!(M|_U)`* » (tag **01EA**).
+
+**Ce que cela change pour nous** : l'obstacle que nous nommons n'est pas une
+particularité de notre formalisation. Stacks a dû construire la même extension
+par zéro, et il l'a faite **dans** les faisceaux de modules
+(`supportedSubmodule`) — c'est-à-dire hors de Mathlib, exactement comme nous
+l'écrivons. La frontière est donc **celle que ce module décrit**, et elle est
+désormais **localisée** (`fichier:ligne`) au lieu d'être seulement énoncée.
+
+**Ce qui reste de notre côté** : la version **site** de la flasquité
+(`IsFlasqueSieves`) et le capstone inconditionnel en route Ext. Stacks n'a ni
+l'une ni l'autre : il ne formalise la flasquité qu'au niveau topologique.
+
+**Portée de la lecture.** Fichiers Stacks consultés : `.../CechToCohomology/DegreeOneFlasqueVanishing.lean`
+(tags 09SZ, 01EP, 01EQ), `.../CechAcyclicity/InjectiveSheavesRestrictOnto.lean`
+(tag 01EA), `.../GodementResolution/Basic.lean` (tag 0FKS : `godementComplex`,
+`godementAugmentation`, `isFlasque_godementComplex`, `isFlasque_iterate_modulePullbackPushforward`),
+`.../GodementResolution/StalkHomotopy.lean` (tag 0FKS clause 3 :
+`quasiIso_godementAugmentation`, `homotopyEquivalences_stalk_godementAugmentation`).
+Un verdict « absent » signifie *aucun énoncé de ce nom dans les fichiers lus*,
+jamais « cette notion n'existe pas chez Stacks ».
+-/
 
 end Grothendieck

@@ -1,0 +1,9 @@
+- name: "Integrales-04-Sunrise-Courbe-Elliptique C#"
+  family: Physique/Integrales
+  python: MyIA.AI.Notebooks/Physique/Integrales/Integrales-04-Sunrise-Courbe-Elliptique-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Physique/Integrales/Integrales-04-Sunrise-Courbe-Elliptique-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "2026-11-25 (myia-po-2028:claudish) : parity_level corrige de native-both a semantic -- le niveau natif des deux cotes exige de nommer un moteur externe par cote (_schema.yaml) ; ici cote Python : mpmath (ellipk, quad, clsin) pour l'evaluation ; cote C# : K(m) calcule par AGM en double precision, valeurs mpmath citees comme reference affichee. Machinerie asymetrique, a voir lors d'un pont (tranche annoncee dans la fiche Integrales-01). Aucun verdict de pont n'est porte : il se juge sur le travail, pas sur l'inventaire des imports."
+    - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de Integrales-04-Sunrise-Courbe-Elliptique-Python.ipynb. Execution reelle sur kernel .net-csharp : 9 cellules, 0 erreur. Verification independente : approve. Premiere attestation ecrite par l'integration de livraison (check_twin_parity --update), en DERNIERE operation (cf #8957)."
+    - "Parite semantique, PAS native-both (test par cote, 2026-11-25, myia-po-2027:CoursIA-2, #28616) : cote Python natif sur mpmath (quad + ellipk produisent l'integrale elliptique), cote C# reimplante le calcul a la main sur BCL (System.Math, 0 lib tierce) ; un cote qui reimplemente le sujet a la main n'est pas natif (cf _schema.yaml), donc la paire n'est pas native-both."
