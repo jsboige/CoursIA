@@ -17,7 +17,7 @@ Chaque jour, le modèle alpha émet pour chaque action un insight UP valable un 
 lean backtest --project .
 ```
 
-**QC Cloud :** créer un projet, y copier `main.py` et `alpha_models.py`, attacher le projet `SharedPCM` en bibliothèque (geste « Add Library », cf. README de `SharedPCM`), puis lancer le backtest. Le projet cloud 28885488 porte un autre code que celui du dépôt ([#22654](https://github.com/jsboige/CoursIA/issues/22654)) : ses résultats ne décrivent pas cette version.
+**QC Cloud :** le projet cloud 28885488 porte le code du dépôt (`main.py`, `alpha_models.py`) et la bibliothèque `SharedPCM` attachée (déploiement du 2026-11-25, [#28076](https://github.com/jsboige/CoursIA/issues/28076)) ; l'attachement se fait par l'API (`POST /projects/update`, champ `libraries`) comme par le geste « Add Library » de l'interface. Avant ce déploiement, le projet 28885488 portait un autre code que celui du dépôt ([#22654](https://github.com/jsboige/CoursIA/issues/22654)) : les résultats de la section suivante, mesurés le 2026-10-26, ne décrivent pas cette version.
 
 ## Backtest Metrics (2015-2024)
 
