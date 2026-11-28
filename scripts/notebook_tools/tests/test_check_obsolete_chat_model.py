@@ -54,6 +54,7 @@ def _analyze(notebook):
     scanner.scan(notebook["cells"])
     return {"findings": scanner.findings,
             "param_findings": scanner.param_findings,
+            "constructor_sites": scanner.constructor_sites,
             "doc_mentions": scanner.doc_mentions,
             "doc_marked_cells": scanner.doc_marked_cells,
             "unresolved": scanner.unresolved,
@@ -1321,3 +1322,182 @@ def test_analyze_python_module_unstatable_degrades_to_skip(
     assert report["findings"] == []
     assert report["stats"]["skipped"] == 1
     assert "injoignable" in capsys.readouterr().err
+
+
+# ---------------------------------------------------------------------------
+# CONSTRUCTION d'un service de chat (semantic_kernel OpenAIChatCompletion,
+# #28955 forme 1) : le site est RAPPORTE (constructor_sites, advisory),
+# jamais accuse -- la requete est emise par le noyau, plus tard. L'epinca-
+# ge de classe A (sonde « sans appel LLM ») est exempt d'avance.
+# ---------------------------------------------------------------------------
+
+def test_sk_constructor_obsolete_model_advisory_only():
+    """#28955 forme 1 : un constructeur OpenAIChatCompletion avec un modele
+    obsolete configure est VU (chat_sites) et RAPPORTE (obsolete), mais
+    n'est PAS un finding -- un constructeur n'est pas une execution."""
+    report = _analyze(nb(code(
+        'from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion\n'
+        'service = OpenAIChatCompletion(ai_model_id="gpt-4o-mini")')))
+    assert report["findings"] == []
+    assert report["param_findings"] == []
+    assert report["stats"]["chat_sites"] == 1
+    assert len(report["constructor_sites"]) == 1
+    site = report["constructor_sites"][0]
+    assert site["site"] == "sk.OpenAIChatCompletion"
+    assert site["model"] == "gpt-4o-mini"
+    assert site["obsolete"] is True
+
+
+def test_sk_constructor_current_model_silent():
+    """#28955 forme 1 (temoin negatif) : un constructeur avec un modele
+    courant est vu et rapporte, sans rien d'obsolete."""
+    report = _analyze(nb(code(
+        'service = OpenAIChatCompletion(ai_model_id="gpt-5.6-luna")')))
+    assert report["findings"] == []
+    assert report["stats"]["chat_sites"] == 1
+    site = report["constructor_sites"][0]
+    assert site["model"] == "gpt-5.6-luna"
+    assert "obsolete" not in site
+
+
+def test_sk_constructor_unresolved_model_visible_not_accused():
+    """#28955 forme 1 : un modele non resolu dans un constructeur reste
+    visible (model: None), jamais accuse."""
+    report = _analyze(nb(code(
+        'def make(model):\n'
+        '    return OpenAIChatCompletion(ai_model_id=model)')))
+    assert report["findings"] == []
+    assert report["stats"]["chat_sites"] == 1
+    assert report["constructor_sites"][0]["model"] is None
+
+
+def test_sk_constructor_param_constraint_flagged():
+    """#28955 forme 1 : seule la contrainte de PARAMETRE de la generation
+    5.6 peut rougeir un constructeur (max_tokens configure = HTTP 400 a
+    l'usage), comme pour un appel."""
+    report = _analyze(nb(code(
+        'service = OpenAIChatCompletion(\n'
+        '    ai_model_id="gpt-5.6-luna", max_tokens=500)')))
+    assert report["findings"] == []
+    assert len(report["param_findings"]) == 1
+    assert report["param_findings"][0]["param"] == "max_tokens"
+
+
+def test_sk_constructor_class_a_pin_exempt():
+    """#28955 forme 1 : une sonde de construction epinglee en classe A
+    (docs/genai/model-mapping-openai.md, « sans appel LLM ») est exempte
+    d'avance : ni site, ni rapport."""
+    import check_obsolete_chat_model as mod
+    scanner = mod.NotebookScanner(
+        "MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/"
+        "current_api_probe.py")
+    scanner.scan(nb(code(
+        'service = OpenAIChatCompletion(ai_model_id="gpt-4o-mini")'))
+        ["cells"])
+    assert scanner.findings == []
+    assert scanner.constructor_sites == []
+    assert scanner.stats["chat_sites"] == 0
+
+
+# ---------------------------------------------------------------------------
+# URL de Request assignee en BRANCHES (#28955 forme 2) : le slot URL d'un
+# Request construit a part est un nom affecte dans un if/else -- le site
+# chat existe des que l'une des branches cible la route.
+# ---------------------------------------------------------------------------
+
+def test_http_request_branch_urls_site_unresolved():
+    """#28955 forme 2 (forme exacte d'oversight_llm_cachegen) : le slot URL
+    du Request est un nom affecte en deux branches, toutes deux chat -- 1
+    site vu, le modele (spec['id']) reste non resolu, 0 finding."""
+    report = _analyze(nb(code(
+        'import json\n'
+        'import urllib.request\n'
+        'def call_model(spec):\n'
+        '    if spec["route"] == "openrouter":\n'
+        '        url = "https://openrouter.ai/api/v1/chat/completions"\n'
+        '    else:\n'
+        '        url = "http://192.168.0.47:5002/v1/chat/completions"\n'
+        '    payload = {"model": spec["id"], "messages": []}\n'
+        '    req = urllib.request.Request(url,\n'
+        '        data=json.dumps(payload).encode("utf-8"),\n'
+        '        method="POST")\n'
+        '    with urllib.request.urlopen(req, timeout=60) as resp:\n'
+        '        return json.loads(resp.read().decode("utf-8"))')))
+    assert report["findings"] == []
+    assert report["stats"]["chat_sites"] == 1
+    assert len(report["unresolved"]) >= 1
+
+
+def test_http_direct_branch_urls_one_chat_branch_enough():
+    """#28955 forme 2 : une URL directement affectee en deux branches dont
+    UNE seule cible la route chat suffit a classifier le site (la route
+    retenue a l'execution ne se laisse pas deviner, le site existe)."""
+    report = _analyze(nb(code(
+        'import urllib.request\n'
+        'def fetch(route):\n'
+        '    if route == "a":\n'
+        '        url = "https://api.openai.com/v1/chat/completions"\n'
+        '    else:\n'
+        '        url = "https://example.com/v1/embeddings"\n'
+        '    req = urllib.request.Request(url, data=b"x")\n'
+        '    with urllib.request.urlopen(req) as resp:\n'
+        '        return resp.read()')))
+    assert report["findings"] == []
+    assert report["stats"]["chat_sites"] == 1
+
+
+def test_http_branch_url_local_shadow_no_fp():
+    """#28955 forme 2 (temoin negatif) : une locale de fonction MASQUE la
+    globale homonyme -- l'URL chat de module n'est jamais candidate a
+    l'interieur de la fonction (pas de faux positif)."""
+    report = _analyze(nb(code(
+        'import urllib.request\n'
+        'url = "https://api.openai.com/v1/chat/completions"\n'
+        'def fetch():\n'
+        '    url = "https://example.com/v1/embeddings"\n'
+        '    req = urllib.request.Request(url, data=b"x")\n'
+        '    urllib.request.urlopen(req)')))
+    assert report["findings"] == []
+    assert report["stats"]["chat_sites"] == 0
+
+
+def test_http_url_reassigned_last_wins():
+    """#28955 forme 2 : hors branches, la DERNIERE affectation l'emporte --
+    une URL chat ecrasee avant l'appel n'est plus la route vivante."""
+    report = _analyze(nb(code(
+        'import urllib.request\n'
+        'def fetch():\n'
+        '    url = "https://api.openai.com/v1/chat/completions"\n'
+        '    url = "https://example.com/v1/embeddings"\n'
+        '    req = urllib.request.Request(url, data=b"x")\n'
+        '    urllib.request.urlopen(req)')))
+    assert report["findings"] == []
+    assert report["stats"]["chat_sites"] == 0
+
+
+def test_http_branch_url_keeps_value_before_if():
+    """#28955 forme 2 : la valeur d'URL d'AVANT le if reste atteignable --
+    l'union des branches ne l'efface pas (le if peut ne pas s'executer)."""
+    report = _analyze(nb(code(
+        'import urllib.request\n'
+        'def fetch(flag):\n'
+        '    url = "https://api.openai.com/v1/chat/completions"\n'
+        '    if flag:\n'
+        '        url = "https://example.com/v1/embeddings"\n'
+        '    req = urllib.request.Request(url, data=b"x")\n'
+        '    urllib.request.urlopen(req)')))
+    assert report["findings"] == []
+    assert report["stats"]["chat_sites"] == 1
+
+
+def test_http_fstring_url_by_name_flagged():
+    """#28955 forme 2 : une URL en f-string affectee a un nom puis transmise
+    au Request est un site chat (la partie litterale suffit)."""
+    report = _analyze(nb(code(
+        'import urllib.request\n'
+        'def post(base_url):\n'
+        '    url = f"{base_url}/chat/completions"\n'
+        '    request = urllib.request.Request(url, data=b"x")\n'
+        '    urllib.request.urlopen(request)')))
+    assert report["findings"] == []
+    assert report["stats"]["chat_sites"] == 1
