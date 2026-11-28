@@ -4,7 +4,7 @@
 
 Un schéma numérique pour une loi de conservation peut être juste sur le papier et mal programmé, ou l'inverse. Cette sous-série mesure ce qu'un solveur fait réellement : la vitesse d'un choc, un taux de convergence, la conservation d'une masse. Chaque mesure est comparée à une solution exacte. Les carnets disent ensuite, lacune par lacune, ce qui relève de la mesure et ce qui demanderait une preuve formelle. Aucun n'écrit « vérifié de bout en bout ».
 
-Le premier carnet s'adresse à un étudiant de licence qui connaît Python, les dérivées partielles et l'intégration. Le second sort de Python : il compile du C et suppose quelques notions sur les équations hyperboliques linéaires. Le pilote C y est fourni et commenté.
+Le premier carnet s'adresse à un étudiant de licence qui connaît Python, les dérivées partielles et l'intégration. Le carnet `01b` l'approfondit avec des schémas d'ordre deux, et suppose le premier lu. Le second sort de Python : il compile du C et suppose quelques notions sur les équations hyperboliques linéaires. Le pilote C y est fourni et commenté.
 
 ## Comment lire ce README — Découverte
 
@@ -19,11 +19,12 @@ Le principe [« Choisir sa vitesse de lecture »](https://github.com/jsboige/Cou
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|---|---|---|---|
 | 01 | [Numérique-01 — Équation de Burgers : volumes finis, solveur de Riemann, et ce qu'une preuve prouve](Numerique-01-Burgers-Volumes-Finis-Python.ipynb) · [version C#](Numerique-01-Burgers-Volumes-Finis-CSharp.ipynb) | Les caractéristiques et la formation d'un choc. La condition de Rankine-Hugoniot, dérivée de la forme intégrale : vitesse `0.5` pour les états $u_L = 1$ et $u_R = 0$. Les schémas de Godunov et de Rusanov sous condition CFL, comparés à la solution exacte du problème de Riemann. Le taux de convergence en norme L1, mesuré par régression : ordre `0.99` sur le choc, entre `0.75` et `0.79` sur la raréfaction. Le temps de formation du choc, $t^* = 1/\pi$, retrouvé sur les caractéristiques avec un écart relatif de `1.64e-06`. | Licence : Python, dérivées partielles, intégration. Outils : numpy, matplotlib. | La table des lacunes du carnet, puis ses exercices (voir « Autour de 01 »). |
+| 01b | [Numérique-01b — Schémas d'ordre deux : ce que l'ordre ajoute, et où il disparaît](Numerique-01b-Schemas-Ordre-Deux-MUSCL-Richtmyer-Python.ipynb) | La même équation, trois schémas : Godunov, MUSCL-Hancock à limiteur `minmod` et Richtmyer. L'ordre de convergence est mesuré contre des moyennes de cellule exactes. Sur un choc il vaut 1 pour les trois, et c'est la variation totale qui les sépare. Sur la raréfaction, aucun des trois n'atteint l'ordre 2, pas même dans l'intérieur de l'éventail où la solution exacte est linéaire. Sur une solution lisse, avant le temps de formation du choc, les schémas d'ordre deux le sont. | Licence avancée : lire Numérique-01 d'abord. Outils : numpy, matplotlib. | La réfutation de la prémisse du carnet 01, et le contre-témoin qui l'établit (voir « Autour de 01b »). |
 | 02 | [Numérique-02 — Maxwell en relativité : les noyaux C vérifiés d'un dépôt amont, mesurés](Numerique-02-Maxwell-Relativiste-Volumes-Finis-C.ipynb) | Un fichier C du dépôt amont `lanyonai/GeneralRelativisticMaxwell`, téléchargé à une empreinte SHA-256 épinglée et compilé tel quel. Le carnet écrit le pilote, qui n'ajoute aucune formule physique. Sur une tranche plate, la masse est conservée, l'état propre $D_y = cB_z$ est préservé exactement, et la vitesse de propagation mesurée vaut `1.000000000000` pour l'onde droite, `-1.000000000000` pour l'onde gauche. La convergence est d'ordre 1 : ordres locaux de `0.745` à `0.948`, pente ajustée `0.8611`. La diffusion numérique se lit dans le maximum de $D_y$, tombé à `0.659254` pour $N = 64$. | Licence avancée : équations hyperboliques linéaires ; lire du C aide. Outils : compilateur C, numpy, matplotlib. | L'origine de la diffusion et la limite de l'instrument de mesure (voir « Autour de 02 »). |
 
 ## Approfondissements — Licence avancée et Master
 
-La sous-série n'a pas de palier lettré. Ses approfondissements sont des parties des carnets.
+La sous-série a un seul palier lettré, `01b` : la lettre déclare qu'il approfondit le carnet 01 et qu'il n'ouvre pas d'étage nouveau. Les autres approfondissements sont des parties des carnets.
 
 ### Autour de 01 : ce qu'une preuve formelle établirait
 
@@ -32,6 +33,24 @@ La dernière partie de Numérique-01 dresse une table des lacunes. Une preuve fo
 Les exercices prolongent les mesures : un schéma d'ordre deux sur l'advection linéaire, un solveur de Riemann pour le flux $f(u) = u^3/3$, la largeur du choc de Godunov, la décroissance de l'entropie discrète.
 
 La [version C#](Numerique-01-Burgers-Volumes-Finis-CSharp.ipynb) du carnet rejoue les mêmes mesures avec la seule bibliothèque de base .NET : mêmes nombres d'entrée et de sortie, figures remplacées par des sorties texte, et chaque valeur citée portée par une assertion exécutable — le carnet s'arrête si une exécution s'écarte du jumeau Python.
+
+### Autour de 01b : ce que l'ordre deux ajoute, et où il disparaît
+
+Ce palier exécute le prolongement que ce README annonçait pour le carnet 01 — passer aux schémas d'ordre deux et mesurer ce que l'ordre ajoute — et il corrige la prédiction : la raréfaction, présentée ici comme « le bon terrain d'essai », n'en est pas un.
+
+Trois schémas sont mis en regard : Godunov, MUSCL-Hancock à limiteur `minmod` et Richtmyer. Trois précautions rendent la mesure lisible.
+
+- **Comparer des moyennes de cellule, jamais des valeurs ponctuelles.** Une seule cellule coupée par le saut fabriquerait une erreur d'ordre 1 qui n'appartient pas au schéma mais à la comparaison.
+- **Valider les instruments avant de mesurer.** Le bilan de masse avec les flux de bord, les bornes de la solution et la continuité de la primitive sont confrontés à des valeurs fermées, calculables à la main. Un contre-témoin — une primitive volontairement fausse, dont le défaut de masse vaut exactement `-u_L^2 t / 2` — vérifie que le contrôle sait échouer.
+- **Étalonner sur un cas à ordre connu.** L'advection linéaire, dont l'ordre théorique est 1 pour l'amont et 2 pour les deux autres, établit que l'instrument sait produire un ordre avant qu'on lui demande de juger un schéma.
+
+Les trois situations donnent trois verdicts différents.
+
+- **Le choc.** L'ordre `L1` vaut 1 pour les trois schémas : une discontinuité ne laisse rien à gagner. C'est la variation totale qui sépare les schémas — constante pour MUSCL, croissante pour Richtmyer — avec un dépassement du maximum exact que seul le schéma non limité produit.
+- **La raréfaction.** Aucun des trois ne dépasse l'ordre 1, y compris dans l'intérieur de l'éventail où la solution exacte est linéaire. Le terrain d'essai annoncé ne convient pas.
+- **Une solution lisse de Burgers**, avant le temps de formation du choc. Là, les schémas d'ordre deux le sont. La référence a elle aussi une date de péremption : le point fixe qui la calcule converge sous la condition `t < t*`, et le carnet mesure le résidu de ce point fixe plutôt que de le supposer nul, puis constate qu'il refuse de servir au-delà.
+
+Les exercices demandent un limiteur plus raide que `minmod`, la variation totale de Richtmyer en fonction du CFL, et le coût du point fixe quand on approche du temps de formation du choc.
 
 ### Autour de 02 : « vérifié » ne veut pas dire « relié »
 
@@ -63,7 +82,7 @@ L'environnement commun aux sous-séries est décrit dans la section « Installat
 
 **Cadre de méthode.** Le document [gorard-lanyonai-etape3.md](../../../docs/reference/gorard-lanyonai-etape3.md) explique ce que les preuves du dépôt amont établissent, et pourquoi elles ne portent pas sur le C.
 
-**Prolongement numérique.** Après le premier exercice de Numérique-01, on peut passer aux schémas d'ordre 2 et mesurer ce que l'ordre ajoute près du choc. La raréfaction, où l'ordre mesuré reste voisin de `0.75`, est le bon terrain d'essai.
+**Prolongement numérique.** Le carnet [Numérique-01b](Numerique-01b-Schemas-Ordre-Deux-MUSCL-Richtmyer-Python.ipynb) exécute ce prolongement — schémas d'ordre deux, mesure de ce que l'ordre ajoute — et corrige la prédiction qui l'annonçait. La raréfaction n'est pas le bon terrain d'essai : aucun schéma n'y dépasse l'ordre 1, y compris là où la solution exacte est linéaire. L'ordre deux se mesure sur une solution lisse avant le temps de formation du choc, et il disparaît sur un choc.
 
 **Ponts.** [Jauge-01](../Jauge/Jauge-01-Theoreme-Noether-Python.ipynb) traite la conservation du côté des symétries. [Intégrales](../Integrales/README.md) applique la même discipline de contrôle à des intégrales de haute précision.
 

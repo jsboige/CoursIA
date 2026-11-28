@@ -32,6 +32,13 @@ generalisation du X-Wing en base lignes OU colonnes (le ``x_wing`` du volet 3
 reste base lignes uniquement, non modifie ; noms geles). Meme discipline :
 definition mathematique, aucune copie de code des depots sources.
 
+Lot 4 (#27533) : wings -- ``xy_wing`` (portage de la cellule 52 du carnet 08,
+meme semantique : pivot bi-valeur, chaque pince bi-valeur partage exactement
+une valeur distincte du pivot, elimination sur l'intersection des visees des
+deux pinces) et ``xyz_wing`` (pivot tri-valeur, elimination sur l'intersection
+des visees des trois cases). Meme discipline : definition mathematique,
+aucune copie de code des depots sources, noms geles.
+
 Verifiabilite : le corpus #26426 livre des grilles a solution UNIQUE (statut
 ``exhausted``, ``solutions_found == 1``). Une elimination ``(cell, value)`` est
 donc valide si et seulement si la solution unique ne place PAS ``value`` en
@@ -157,7 +164,7 @@ class InferenceSolver:
     RULE_ORDER = ("naked_single", "hidden_single", "naked_pair", "naked_triple",
                   "naked_quad", "hidden_pair", "hidden_triple", "hidden_quad",
                   "pointing_pair", "locked_claiming", "x_wing", "swordfish",
-                  "jellyfish")
+                  "jellyfish", "xy_wing", "xyz_wing")
 
     def __init__(self, puzzle: str):
         self.grid = parse_grid(puzzle)
@@ -516,6 +523,100 @@ class InferenceSolver:
     def _jellyfish(self) -> Optional[Step]:
         return self._fish(4, "jellyfish")
 
+    # -- lot 4 (#27533) : wings ----------------------------------------------
+
+    def _xy_wing(self) -> Optional[Step]:
+        """XY-Wing : pivot bi-valeur {x, y} dont deux pinces bi-valeur
+        {x, z} et {y, z} lui sont visibles (meme ligne, colonne ou bloc).
+        Dans chaque cas possible pour le pivot, l'une des pinces vaut z,
+        donc z est elimine de toute case vide visible des DEUX pinces
+        (hors les trois cases de l'aile).
+
+        Portage de la cellule 52 du carnet 08 (meme semantique) : chaque
+        pince partage EXACTEMENT une valeur avec le pivot, et les deux
+        ancres sont distinctes (sinon ce n'est pas une aile).
+
+        Couplage d'ordre (invariant) : ``naked_single`` precede dans
+        ``RULE_ORDER`` et chaque pas reprend au sommet, donc une case a
+        candidat unique est placee avant ce scan ; les filtres
+        ``len == 2`` excluent en outre structurellement les cases
+        mono-valeur des pivots et pinces, et la regle reste correcte
+        appelee hors ordre.
+        """
+        bivalue = [(r, c) for r in range(9) for c in range(9)
+                   if self.grid[r][c] == 0 and len(self.cands[r][c]) == 2]
+        for (pr, pc) in bivalue:
+            pivot_cands = self.cands[pr][pc]
+            wings = [(r, c) for (r, c) in bivalue
+                     if (r, c) in _peers(pr, pc)]
+            for (r1, c1), (r2, c2) in itertools.combinations(wings, 2):
+                w1, w2 = self.cands[r1][c1], self.cands[r2][c2]
+                anchor1 = w1 & pivot_cands
+                anchor2 = w2 & pivot_cands
+                if (len(anchor1) != 1 or len(anchor2) != 1
+                        or anchor1 == anchor2):
+                    continue
+                z = next(iter(w1 - anchor1))
+                if w2 - anchor2 != {z}:
+                    continue
+                seen = set(_peers(r1, c1)) & set(_peers(r2, c2))
+                elims: List[Tuple[int, int, int]] = []
+                for (r, c) in sorted(seen - {(pr, pc), (r1, c1), (r2, c2)}):
+                    if self.grid[r][c] == 0 and z in self.cands[r][c]:
+                        self.cands[r][c].discard(z)
+                        elims.append((r, c, z))
+                if elims:
+                    return Step(0, "xy_wing",
+                                f"pivot ({pr},{pc}) {sorted(pivot_cands)}, "
+                                f"pinces ({r1},{c1}) {sorted(w1)} et "
+                                f"({r2},{c2}) {sorted(w2)} : {z} elimine "
+                                f"des cases visibles des deux pinces",
+                                eliminations=elims,
+                                grid_after=grid_to_string(self.grid))
+        return None
+
+    def _xyz_wing(self) -> Optional[Step]:
+        """XYZ-Wing : pivot tri-valeur {x, y, z} avec deux pinces
+        bi-valeur {x, z} et {y, z} visibles du pivot -- quel que soit le
+        cas possible pour le pivot, z sort (pivot = z, ou pince = z),
+        donc z est elimine des cases vides visibles des TROIS cases
+        (pivot et pinces).
+
+        Couplage d'ordre (invariant) : comme ``_xy_wing`` -- les filtres
+        ``len == 3`` (pivot) et ``len == 2`` (pinces) excluent
+        structurellement les cases mono-valeur, la regle reste correcte
+        appelee hors ordre.
+        """
+        trivalue = [(r, c) for r in range(9) for c in range(9)
+                    if self.grid[r][c] == 0 and len(self.cands[r][c]) == 3]
+        bivalue = [(r, c) for r in range(9) for c in range(9)
+                   if self.grid[r][c] == 0 and len(self.cands[r][c]) == 2]
+        for (pr, pc) in trivalue:
+            xyz = self.cands[pr][pc]
+            wings = [(r, c) for (r, c) in bivalue
+                     if (r, c) in _peers(pr, pc) and self.cands[r][c] < xyz]
+            for (r1, c1), (r2, c2) in itertools.combinations(wings, 2):
+                w1, w2 = self.cands[r1][c1], self.cands[r2][c2]
+                if w1 | w2 != xyz or len(w1 & w2) != 1:
+                    continue
+                z = next(iter(w1 & w2))
+                seen = (set(_peers(pr, pc)) & set(_peers(r1, c1))
+                        & set(_peers(r2, c2)))
+                elims: List[Tuple[int, int, int]] = []
+                for (r, c) in sorted(seen - {(pr, pc), (r1, c1), (r2, c2)}):
+                    if self.grid[r][c] == 0 and z in self.cands[r][c]:
+                        self.cands[r][c].discard(z)
+                        elims.append((r, c, z))
+                if elims:
+                    return Step(0, "xyz_wing",
+                                f"pivot ({pr},{pc}) {sorted(xyz)}, pinces "
+                                f"({r1},{c1}) {sorted(w1)} et ({r2},{c2}) "
+                                f"{sorted(w2)} : {z} elimine des cases "
+                                f"visibles des trois cases",
+                                eliminations=elims,
+                                grid_after=grid_to_string(self.grid))
+        return None
+
     # -- boucle de resolution ----------------------------------------------
 
     def solve(self, max_steps: int = 10000) -> Trace:
@@ -535,6 +636,8 @@ class InferenceSolver:
             "x_wing": self._x_wing,
             "swordfish": self._swordfish,
             "jellyfish": self._jellyfish,
+            "xy_wing": self._xy_wing,
+            "xyz_wing": self._xyz_wing,
         }
         while not self.is_solved() and len(trace.steps) < max_steps:
             progress = False

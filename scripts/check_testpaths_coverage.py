@@ -198,6 +198,11 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # bloc pytest littéral de ce workflow, ce dict — plutôt que déclaré en
         # dette tolérée : un test ajouté pour prouver un plafond doit tourner.
         "MyIA.AI.Notebooks/QuantConnect/projects/Option-Wheel/tests",
+        # BitcoinRegimeGate-QC/tests (#27482) : marqueur CI-EXCLUDED leve. Le
+        # tri T1 l'avait range en « classe hypothesis » ; son fichier unique
+        # n'importe pas hypothesis (maquette AlgorithmImports, stdlib + pytest)
+        # et passe depuis la racine sous PYTHONNOUSERSITE=1 (36 tests, 0,2 s).
+        "MyIA.AI.Notebooks/QuantConnect/projects/BitcoinRegimeGate-QC/tests",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests",
@@ -394,7 +399,6 @@ CI_EXCLUDED_PLAN: dict[str, str] = {
     # dossier cable dans scripts-tests.yml et pytest.ini (#25366).
     "MyIA.AI.Notebooks/Probas/DecisionTheory/voi/tests": "quotidien",
     "MyIA.AI.Notebooks/QuantConnect/projects/AdaptiveAssetAllocation/tests": "quotidien",
-    "MyIA.AI.Notebooks/QuantConnect/projects/BitcoinRegimeGate-QC/tests": "quotidien",
     "MyIA.AI.Notebooks/QuantConnect/projects/Crypto-MultiCanal/tests": "quotidien",
     "MyIA.AI.Notebooks/QuantConnect/projects/Filing-Language-Stability/tests": "quotidien",
     "MyIA.AI.Notebooks/QuantConnect/projects/FuturesTrend/tests": "quotidien",
@@ -429,7 +433,9 @@ CI_EXCLUDED_PLAN: dict[str, str] = {
 # mort n'excluait plus rien depuis le rename #26392) : 25 marqueurs. Les
 # fichiers et items ne bougent pas (67 / 1110) : l'orphelin ne comptait
 # pour aucun fichier, le dossier Causalite n'a jamais ete dans la population.
-CI_EXCLUDED_BASELINE = {"marqueurs": 25, "fichiers": 67, "items": 1110}
+# #27482 : BitcoinRegimeGate-QC/tests quitte la population (marqueur leve,
+# dossier cable des trois cotes) : 24 marqueurs, 66 fichiers, 1083 items.
+CI_EXCLUDED_BASELINE = {"marqueurs": 24, "fichiers": 66, "items": 1083}
 
 # Une suite de tests de la famille `scripts/**/tests/` : le repertoire doit
 # porter au moins un `test_*.py` pour compter comme suite (#22735).
