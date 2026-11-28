@@ -1,4 +1,4 @@
-> RAPPORT — 2026-05-17 — Audit Reassessment Findings (NanoClaw #488), liste vivante d'items reclassés — figé
+> REFERENCE — vivante — dernière révision 2026-11-24
 
 # Audit Reassessment Findings (NanoClaw #488)
 

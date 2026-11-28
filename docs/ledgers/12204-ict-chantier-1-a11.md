@@ -102,7 +102,7 @@ La table numérotée du premier jet (§2 du body) est complète **et entièremen
 
 ## Ce que cette tranche ne fait pas
 
-- Elle ne modifie **ni** le ledger A10 **ni** les ledgers A2-A9 ni la table maîtresse labellisée ([audit-froid](../transients/2026-08-24-12204-ict-chantier-1-audit-froid.md)) : les promotions vivent dans ce ledger, le body de l'EPIC en rend compte.
+- Elle ne modifie **ni** le ledger A10 **ni** les ledgers A2-A9 ni la table maîtresse labellisée ([audit-froid](12204-ict-chantier-1-audit-froid.md)) : les promotions vivent dans ce ledger, le body de l'EPIC en rend compte.
 - Elle **ne statue pas** sur `institutionnaliser` ni `inhiber` (aucune attestation nouvelle mesurée ce cycle) ni sur la **Loi I** de la section 3 du body, dont le décompte d'attestations (de Finetti + lecture Brown-Sandholm requalifiée en Tombée 3) serait à reprendre séparément si le corps des lois doit être resynchronisé — la marche de méidentification de Search-03f y est un **témoin exploitable supplémentaire**, cité par la livraison #19112, mais cette resynchronisation n'est pas un effet automatique de la statuation op 5.
 - Elle n'étend pas les conditions de rétrogradation aux 13 entrées existantes : celles d'[A8](12204-ict-chantier-1-a8.md) restent la référence ; les conditions ci-dessus équipent **les deux entrées nouvelles**.
 - Elle ne compte pas le carnet Probas `Quotients-Fibres-Recollement` comme attestation (motif mesuré ci-dessus).
