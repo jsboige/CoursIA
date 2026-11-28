@@ -25,7 +25,8 @@ le pilote, et ne changent plus ensuite :
 - a2 -- ``support_last`` d'une regle dont les premisses ne nomment pas les
   cases : les cases portant la valeur sont recomptees sur l'etat qui precede le
   pas, dans les unites que citent les premisses (le bloc de ``pointing_pair``,
-  la ligne ou la colonne de ``locked_claiming``, les lignes de ``x_wing``).
+  la ligne ou la colonne de ``locked_claiming``, les lignes de ``x_wing``,
+  les lignes ou colonnes de base de ``swordfish`` et ``jellyfish``).
 - a3 -- ``tangle`` : nombre cyclomatique du graphe d'exclusion (protocole
   §4.3, revision v2), sur un graphe simple -- deux candidats partagent au
   plus un lien ; un etat sans candidat n'en a pas et rend ``None``.
@@ -175,10 +176,19 @@ _POINTING_RE = re.compile(r"^valeur (\d) alignee dans le bloc \((\d),(\d)\)$")
 _CLAIMING_RE = re.compile(r"^valeur (\d) de la (ligne|colonne) (\d) confinee au bloc "
                           r"\((\d),(\d)\)$")
 _FISH_RE = re.compile(r"^valeur (\d) : lignes ([\d,]+) partagent colonnes \[([\d,\s]+)\]$")
+# Poissons generalises de ``inference_trace._fish`` (n = 3, 4), base lignes ou
+# colonnes : « valeur 5 : lignes (0, 4, 5, 6) couvrent les colonnes [0, 1, 4, 8] ».
+_GFISH_RE = re.compile(r"^valeur (\d) : (lignes|colonnes) \(([\d,\s]+)\) "
+                       r"couvrent les (lignes|colonnes) \[([\d,\s]+)\]$")
+_GFISH_RULES = frozenset({"swordfish", "jellyfish"})
 
+# Regles dont les premisses citent les cases du pas, sans recomptage d'unite.
+# Les ailes du lot 4 (#27533) en relevent : pivot et deux pinces y sont nommes,
+# au format ``(ligne,colonne)``.
 _PREMISE_CELLS = frozenset({
     "naked_single", "hidden_single", "naked_pair", "naked_triple", "naked_quad",
     "hidden_pair", "hidden_triple", "hidden_quad",
+    "xy_wing", "xyz_wing",
 })
 
 
@@ -215,6 +225,16 @@ def support(rule: str, premises: str, before: State) -> Optional[int]:
         v = int(m.group(1))
         rows = [int(t) for t in m.group(2).split(",")]
         return _measured(sum(1 for r in rows for c in range(9)
+                             if v in before[r * 9 + c]))
+
+    m = _GFISH_RE.match(premises)
+    if m and rule in _GFISH_RULES and m.group(2) != m.group(4):
+        v = int(m.group(1))
+        bases = [int(t) for t in m.group(3).split(",")]
+        if m.group(2) == "lignes":
+            return _measured(sum(1 for r in bases for c in range(9)
+                                 if v in before[r * 9 + c]))
+        return _measured(sum(1 for c in bases for r in range(9)
                              if v in before[r * 9 + c]))
 
     return None

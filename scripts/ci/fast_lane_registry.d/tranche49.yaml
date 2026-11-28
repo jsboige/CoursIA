@@ -1,0 +1,32 @@
+# TRANCHE49 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE49
+guards:
+  # #26979 : le SVG IMPRIME EN TEXTE (sortie `stream`) au lieu d'etre
+  # rendu. Meme famille que le garde du dessus -- un ratchet base-vs-PR
+  # natif de la voie rapide, advisory d'abord, self-test en pre-argv.
+  # On ajoute le garde AU TRANCHE 49 plutot que dans une tranche 52
+  # neuve : les tranches s'ajoutent toutes au meme endroit du registre et
+  # de l'agregat du moteur, et deux PRs qui en ajoutent chacune une se
+  # marchent dessus au merge (lecon mesuree le 16/11/2026). Ici, l'ajout
+  # est a plus de vingt lignes du point d'insertion des autres tranches :
+  # les fusions sortiront propres.
+  -
+    name: "SVG html-only ratchet (base vs PR, advisory)"
+    argv: ["python", "scripts/notebook_tools/detect_svg_html_only.py", "{base_ref}"]
+    source: "native"
+    paths: ["**.ipynb", "scripts/notebook_tools/detect_svg_html_only.py", "scripts/notebook_tools/tests/test_detect_svg_html_only.py", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py"]
+    blocking: false
+    needs_base: true
+    diff_bounded: true
+    absorbed: true
+    pre_argv: ["python", "scripts/notebook_tools/detect_svg_html_only.py", "--self-test"]
+  -
+    name: "Rich output as text ratchet (base vs PR, advisory)"
+    argv: ["python", "scripts/notebook_tools/check_rich_output_as_text.py", "{base_ref}"]
+    source: "native"
+    paths: ["**.ipynb", "scripts/notebook_tools/check_rich_output_as_text.py", "scripts/notebook_tools/tests/test_check_rich_output_as_text.py", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py"]
+    blocking: false
+    needs_base: true
+    diff_bounded: true
+    absorbed: true
+    pre_argv: ["python", "scripts/notebook_tools/check_rich_output_as_text.py", "--self-test"]

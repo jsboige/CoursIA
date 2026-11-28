@@ -306,7 +306,7 @@
           }
         },
         {
-          "path": "GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb",
+          "path": "GenAI/Audio/03-Orchestration/Audio-03-1-Multi-Model-Audio-Comparison-Python.ipynb",
           "title": "Comparaison Multi-Modèles Audio",
           "duration_minutes": 45,
           "kernel": "Python 3",
@@ -319,7 +319,7 @@
           }
         },
         {
-          "path": "GenAI/Audio/03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb",
+          "path": "GenAI/Audio/03-Orchestration/Audio-03-2-Audio-Pipeline-Orchestration-Python.ipynb",
           "title": "Orchestration de Pipelines Audio",
           "duration_minutes": 45,
           "kernel": "Python 3",
@@ -933,7 +933,7 @@
           }
         },
         {
-          "path": "GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb",
+          "path": "GenAI/Audio/02-Advanced/Audio-02-9-AceStep-Music-Generation-Python.ipynb",
           "title": "Ace-Step v1.5 - Generation Musicale avec Paroles",
           "duration_minutes": 45,
           "kernel": "Python 3",

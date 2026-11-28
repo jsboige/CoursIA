@@ -22,6 +22,15 @@
 # deux gardes ci-dessous refusent AVANT de deleguer au verbatim : l'agent
 # recoit un FUNC_ERROR diagnostiquable (identifiants connus listes), la
 # reponse n'est ni perdue sans trace ni ecrite sous une tache fantome.
+#
+# Extension #28671 (paramètre réservé) : Semantic Kernel injecte lui-même la
+# valeur de quatre noms de paramètres — `kernel`, `service`,
+# `execution_settings` et `arguments` — et une fonction kernel qui déclare
+# l'un d'eux ne reçoit jamais la valeur de la clé. Le verbatim amont nomme
+# `arguments` le paramètre de `add_identified_arguments` : l'outil de masse
+# enregistrait le snapshot d'état, puis la liste convertie en chaîne, et
+# répondait quand même « OK: 2 arguments ajoutés. » La surcharge garde le nom
+# de l'outil et donne au paramètre un nom qui n'est pas réservé.
 
 from __future__ import annotations
 
@@ -44,7 +53,12 @@ REFUSAL = (
 
 
 class GuardedStateManagerPlugin(StateManagerPlugin):
-    """`StateManagerPlugin` qui n'accepte que des verdicts de moteur."""
+    """`StateManagerPlugin` qui n'accepte que des verdicts de moteur.
+
+    Elle corrige aussi le paramètre réservé de l'outil de masse
+    `add_identified_arguments` (#28671) : même nom d'outil, paramètre
+    `descriptions`.
+    """
 
     def __init__(
         self,
@@ -140,3 +154,50 @@ class GuardedStateManagerPlugin(StateManagerPlugin):
             )
             return self._task_refusal(task_id, author_agent)
         return super().add_answer(task_id, author_agent, answer_text, source_ids)
+
+    # -- garde #28671 : paramètre réservé de Semantic Kernel ----------------
+    @kernel_function(
+        description=(
+            "Ajoute une liste d'arguments identifiés à l'état. `descriptions` "
+            "est la liste : chaque élément est la formulation d'un argument, "
+            "telle que reprise du texte analysé (sous-chaîne ou paraphrase "
+            "courte du texte) — jamais un nom de champ de l'état, jamais un "
+            "objet, jamais une liste."
+        ),
+        name="add_identified_arguments",
+    )
+    def add_identified_arguments(self, descriptions: List[str]) -> str:
+        """Ajoute une liste d'arguments — le paramètre ne s'appelle pas `arguments`.
+
+        Dans Semantic Kernel (`kernel_function_from_method.py`,
+        `gather_function_parameters`), un paramètre nommé `arguments` reçoit
+        l'objet `KernelArguments` entier, jamais la valeur de la clé. Le
+        verbatim amont nomme ainsi le sien : l'outil de masse enregistrait le
+        snapshot d'état, puis la liste convertie en chaîne. Même nom d'outil,
+        autre nom de paramètre.
+
+        La réponse compte les arguments réellement écrits : une formulation
+        refusée à l'écriture (une clé d'état, #18395) n'y figure pas.
+        """
+        self._logger.info(
+            "Appel add_identified_arguments (state id: %s) avec %s formulations...",
+            id(self._state),
+            len(descriptions),
+        )
+        try:
+            avant = len(self._state.identified_arguments)
+            self._state.add_identified_arguments(descriptions)
+            ecrits = len(self._state.identified_arguments) - avant
+        except Exception as e:
+            self._logger.error(
+                f"Erreur lors de l'ajout de la liste d'arguments: {e}", exc_info=True
+            )
+            return f"FUNC_ERROR: Erreur ajout liste d'arguments: {e}"
+        if ecrits == 0:
+            return (
+                "FUNC_ERROR: aucune formulation enregistrée. `descriptions` doit "
+                "être une liste de chaînes, une par argument, reprises du texte "
+                "analysé."
+            )
+        pluriel = "s" if ecrits > 1 else ""
+        return f"OK: {ecrits} argument{pluriel} ajouté{pluriel}."

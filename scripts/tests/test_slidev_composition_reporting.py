@@ -330,6 +330,34 @@ class TestEnvironnementPolices:
         assert "Segoe UI" in env and "Calibri" in env, "polices resolues nommees"
         assert "Arial" not in env, "une police NON resolue ne doit pas etre citee"
         assert "22.4px" in env, "la hauteur de ligne mesuree est nommee"
+        # sans pin, la phrase de non-comparabilite reste (elle est vraie)
+        assert "ne sont pas comparables" in env
+
+    def test_annotation_sous_pin_ne_dit_pas_incomparable(self):
+        """#24171 : sous --pin-fonts, la notice ne doit PAS dire « pas
+        comparables » — le pin achete precisement la comparabilite (largeurs de
+        glyphes a 0,06 % pres entre Windows et Linux, mesure). Sans glyphes
+        evades, [PIN-POLICES] est une notice ; avec, un warning qui les nomme."""
+        r = {
+            "slide": 2, "text_head": "propre",
+            "hors_canvas": [], "chevauchements": [],
+            "chevauchements_eteints": [], "recouvrements": [], "occupation": None,
+        }
+        rep = _report([r], font_env=FONT_ENV)
+        rep["font_pin"] = {"enabled": True, "applied": True, "verified": True,
+                           "signature": "61f4394a89e6406216", "escaped": []}
+        lines = ssc.github_annotations(rep, Path("slides.md"))
+        env = next(l for l in lines if "ENVIRONNEMENT-POLICES" in l)
+        assert "ne sont pas comparables" not in env
+        assert "sous le même pin" in env
+        pin = next(l for l in lines if "PIN-POLICES" in l)
+        assert "::notice" in pin and "61f4394a89e6" in pin and "aucun glyphe servi" in pin
+
+        rep["font_pin"] = {"enabled": True, "applied": True, "verified": False,
+                           "signature": "61f4394a89e6406216",
+                           "escaped": [{"slide": 3, "family": "Segoe UI Emoji", "glyphs": 2}]}
+        pin = next(l for l in ssc.github_annotations(rep, Path("slides.md")) if "PIN-POLICES" in l)
+        assert "::warning" in pin and "Segoe UI Emoji" in pin
 
     def test_sonde_absente_nome_l_absence_de_mesure(self):
         """Une ignorance nommee vaut mieux qu'un silence : sans sonde, la
