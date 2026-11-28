@@ -1142,7 +1142,7 @@ theorem godementCanonicalMap_comp_zero {S : ShortComplex (X.Presheaf AddCommGrpC
         godementCokernelMap_comp m (ih (m + 1) (Nat.lt_succ_self (m + 1))),
         godementMapHom_zero]
 
-/-- **Partie 101 — la tranche degré 0 de la cible hard** : la SES des étages au
+/-- **Partie 103 — la tranche degré 0 de la cible hard** : la SES des étages au
 cran `0`, dans la forme exacte de l'énoncé retiré.
 
 Au cran `0`, l'étage du complexe canonique est `C⁰` du terme
@@ -1163,7 +1163,7 @@ suivants —, et (b) la monicité des flèches de conoyaux, qui passe par
 `mono_cokernel_map_of_isPullback` : le carré des unités doit être un pullback.
 `hsep` ne porte que sur le terme **droit** ; la séparéité du terme gauche est
 une hypothèse à établir (ou à ajouter à l'énoncé) avant même le cran `1`.
-**Réfutée par la Partie 102 ci-dessous** : la séparéité du terme gauche n'est
+**Réfutée par la Partie 104 ci-dessous** : la séparéité du terme gauche n'est
 pas requise. -/
 theorem shortExact_godementCanonicalObj_zero
     {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})} (hS : S.ShortExact) :
@@ -1191,19 +1191,19 @@ consignée (instance `SnakeInput` sur les SES d'étages `n`/`n+1` — dix champs
 `h₀`/`h₃` par `kernel.isLimit`/`cokernel.isColimit` — puis annulation de
 `S.δ` par remontée le long de `im d^{n-1}` et lecture de `L₃_exact`).
 
-**Tranche livrée (Partie 101)** : le cran `n = 0` est PROUVÉ et COMPILÉ —
+**Tranche livrée (Partie 103)** : le cran `n = 0` est PROUVÉ et COMPILÉ —
 `shortExact_godementCanonicalObj_zero` : la SES des étages au degré `0`, dans
 la forme exacte de l'énoncé ci-dessous. Les crans `n ≥ 1` restent ouverts :
 ils exigent la SES des conoyaux, donc l'annulation du connecteur `δ` par le
 serpent **et** la monicité des flèches de conoyaux (pullback des carrés des
-unités) — le détail est dans la Partie 101.
+unités) — le détail est dans la Partie 103.
 
 **Énoncé retiré du code compilé** (arbitrage ai-01 du 2026-11-19 sur #25661) :
 l'acceptance des issues mères #25599/#25605 exige `distinct_code_sorry` 0 → 0 ;
 tant que la preuve n'est pas livrée, l'énoncé reste documenté ici, hors
 compilation, et la garde bloquante (`axiom-fail-on-sorry`) reste armée —
 `sorry-baseline` du lake inchangée à 0. **Le cran `n = 0` de cet énoncé est
-désormais compilé** (`shortExact_godementCanonicalObj_zero`, Partie 101) ; les
+désormais compilé** (`shortExact_godementCanonicalObj_zero`, Partie 103) ; les
 crans `n ≥ 1` restent à ressusciter verbatim lorsque la preuve sera prête
 (organe : lemme du serpent, instance `SnakeInput` des SES d'étages, `δ` annulé
 par `hsep`/`hres`, monicité des flèches de conoyaux) :
@@ -1220,12 +1220,12 @@ par `hsep`/`hres`, monicité des flèches de conoyaux) :
       -- SES des conoyaux puis itération du rang 0. -/
 
 /-!
-### Partie 102 — le carré des unités est un pullback : la séparéité du terme
+### Partie 104 — le carré des unités est un pullback : la séparéité du terme
 gauche n'est pas requise
 
-La Partie 101 a livré le cran `n = 0` de `shortExact_godementCanonicalObj` et
+La Partie 103 a livré le cran `n = 0` de `shortExact_godementCanonicalObj` et
 a nommé la frontière du cran `1` : la séparéité du terme **gauche** (`X₁`)
-y paraissait requise — le commentaire de la Partie 101 l'écrit : « `hsep` ne
+y paraissait requise — le commentaire de la Partie 103 l'écrit : « `hsep` ne
 porte que sur le terme **droit** ; la séparéité du terme gauche est une
 hypothèse à établir (ou à ajouter à l'énoncé) avant même le cran `1` ».
 
@@ -1265,7 +1265,7 @@ toute section de Godement `z` de `C⁰X₁` dont l'image par `C⁰f` est une uni
 de `C⁰X₂` provient d'une section de `X₁`.
 
 La séparéité du terme **gauche** n'est pas requise : c'est le contenu de la
-Partie 102. L'**unicité** de la section est le lemme
+Partie 104. L'**unicité** de la section est le lemme
 `godementUnits_pullback_unique` : elle ne demande que la monicité de `f`. -/
 theorem godementUnits_pullback {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
     (hS : S.ShortExact) (hsep : Mono (toGodement S.X₃)) (U : Opens X)
@@ -1361,9 +1361,9 @@ theorem godementUnits_pullback_unique {S : ShortComplex (X.Presheaf AddCommGrpCa
   exact hinjf (hx.trans hx'.symm)
 
 /-!
-### Partie 103 — la fibre du carré des unités est compatible avec la restriction
+### Partie 105 — la fibre du carré des unités est compatible avec la restriction
 
-La Partie 102 a établi que la fibre du carré des unités est **bijective** —
+La Partie 104 a établi que la fibre du carré des unités est **bijective** —
 existence par `godementUnits_pullback`, unicité par
 `godementUnits_pullback_unique`. Mais une bijection **point par point** n'est
 pas encore une construction **globale** : pour poser la forme `IsPullback` du
@@ -1372,7 +1372,7 @@ carré des unités — et tirer de là la monicité de la flèche de conoyaux
 fibres se **recollent** en un morphisme de préfaisceaux, c'est-à-dire que la
 bijection de fibre **respecte les restrictions**.
 
-C'est ce que prouve la Partie 103 :
+C'est ce que prouve la Partie 105 :
 
 1. **Préservation** (`godementUnits_pullback_res`) : si `x` est un élément de
    fibre au-dessus de `V` (c'est-à-dire `f(x) = y` et `unit(x) = z`), alors la
@@ -1383,20 +1383,20 @@ C'est ce que prouve la Partie 103 :
    restriction** (`TopCat.Presheaf.germ_res_apply`).
 2. **Unicité restreinte** (`godementUnits_pullback_res_unique`) : l'élément de
    fibre au-dessus de `U` n'est pas *un* élément de fibre, c'est **le**
-   restreint de celui au-dessus de `V` — l'unicité de la Partie 102 appliquée
+   restreint de celui au-dessus de `V` — l'unicité de la Partie 104 appliquée
    en `U` identifie toute section de `X₁` dont l'image par `f` vaut
    `S.X₂.map i.op y` à la restriction de `x`.
 
 Le premier lemme n'emploie **aucune hypothèse de short-exactitude** : c'est un
-fait de naturalité. Le second en employe une (l'unicité de la Partie 102 en
+fait de naturalité. Le second en employe une (l'unicité de la Partie 104 en
 dépend), mais **aucune** sur `X₁` : la séparéité du terme gauche reste
-inutilisée, comme en Partie 102.
+inutilisée, comme en Partie 104.
 
-Ce qui manque encore, et que la Partie 103 ne fait pas : la moitié **existence**
+Ce qui manque encore, et que la Partie 105 ne fait pas : la moitié **existence**
 du recollement — garantir que la donnée restreinte `(y', z')` relève bien, au
-niveau de `U`, de la forme que la Partie 102 consomme (une section de Godement
+niveau de `U`, de la forme que la Partie 104 consomme (une section de Godement
 de `C⁰X₁(U)`), de sorte que l'unicité restreinte puisse s'appliquer à un
-élément qui **existe**. La Partie 103 fournit la moitié **unicité** ; la
+élément qui **existe**. La Partie 105 fournit la moitié **unicité** ; la
 question laissée ouverte est une **descente sur les tiges**, non une
 difficulté d'algèbre.
 -/
@@ -1407,12 +1407,12 @@ un sous-ouvert `U ⊆ V`, et l'élément de fibre restreint est exactement
 l'élément de `X₁(U)` obtenu par restriction de `x`.
 
 C'est la **compatibilité par restriction** de la bijection de fibre de la
-Partie 102, et c'est l'une des deux briques qui manquent pour la
+Partie 104, et c'est l'une des deux briques qui manquent pour la
 **globaliser** : sans elle, la construction du pullback global du carré des
 unités ne peut pas passer du point (`godementUnits_pullback`) au global — les
 fibres ne se recollent pas en morphisme de préfaisceaux. Avec elle, la
 compatibilité des fibres est acquise ; il reste la moitié **existence** du
-recollement (la Partie 103 le dit en clair), et la forme `IsPullback` du même
+recollement (la Partie 105 le dit en clair), et la forme `IsPullback` du même
 carré, puis la monicité de la flèche de conoyaux `coker μ₁ → coker μ₂` par
 `mono_cokernel_map_of_isPullback`, **sans aucune hypothèse sur `X₁`**.
 
@@ -1447,12 +1447,12 @@ theorem godementUnits_pullback_res {S : ShortComplex (X.Presheaf AddCommGrpCat.{
     rfl
 
 /-- **L'élément de fibre sur `U` est la restriction de l'élément de fibre sur
-`V`** : l'unicité de la Partie 102 (`godementUnits_pullback_unique`),
+`V`** : l'unicité de la Partie 104 (`godementUnits_pullback_unique`),
 appliquée en `U`, identifie toute section de `X₁` dont l'image par `f` est
 `S.X₂.map i.op y` à la restriction de `x`.
 
 C'est la **compatibilité de la bijection de fibre avec la restriction** : la
-bijection `fibre ↦ section` de la Partie 102 respecte les restrictions, et
+bijection `fibre ↦ section` de la Partie 104 respecte les restrictions, et
 c'est la condition pour que les fibres se recollent point par point en un
 morphisme de préfheaux — le geste qui manque encore pour poser la forme
 `IsPullback` du carré des unités, et par là la monicité de la flèche de

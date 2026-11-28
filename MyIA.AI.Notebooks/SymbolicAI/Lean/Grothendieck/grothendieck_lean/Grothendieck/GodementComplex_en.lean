@@ -296,7 +296,7 @@ variable {X : TopCat.{u}}
 -- the **hard** target (mono/epi of the stages and annihilation of the
 -- connector `δ` by `hsep`/`hres`), not of the nullity of the composite.
 --
--- **Part 101 — the degree-0 tranche of the hard target is PROVED and
+-- **Part 103 — the degree-0 tranche of the hard target is PROVED and
 -- COMPILED**: `shortExact_godementCanonicalObj_zero` — the stage SES at step
 -- `0`, in the exact shape of the withdrawn statement. At step `0` the stage
 -- is `C⁰` of the term (`godementCanonicalObj_zero`) and the stage arrow is
@@ -318,16 +318,16 @@ variable {X : TopCat.{u}}
 -- which goes through `mono_cokernel_map_of_isPullback`: the unit square must
 -- be a pullback. `hsep` bears on the **right** term only; the separatedness
 -- of the left term is a hypothesis to be established (or added to the
--- statement) before even step `1`. **Part 102 below REFUTES that last
+-- statement) before even step `1`. **Part 104 below REFUTES that last
 -- sentence**: the separatedness of the left term is not required.
 
 /-!
-### Part 102 — the units square is a pullback: the separatedness of the LEFT
+### Part 104 — the units square is a pullback: the separatedness of the LEFT
 term is NOT required
 
-Part 101 delivered step `n = 0` of `shortExact_godementCanonicalObj` and named
+Part 103 delivered step `n = 0` of `shortExact_godementCanonicalObj` and named
 the frontier of step `1`: the separatedness of the **left** term (`X₁`) looked
-required — Part 101 writes it: "`hsep` bears on the **right** term only; the
+required — Part 103 writes it: "`hsep` bears on the **right** term only; the
 separatedness of the left term is a hypothesis to be established (or added to
 the statement) before even step `1`".
 
@@ -362,9 +362,9 @@ the stalk products (`C⁰F(U) = ∏_{x ∈ U} Fₓ`) suffices.
 -/
 
 /-!
-### Part 103 — the fibre of the units square is compatible with restriction
+### Part 105 — the fibre of the units square is compatible with restriction
 
-Part 102 established that the fibre of the units square is **bijective** —
+Part 104 established that the fibre of the units square is **bijective** —
 existence by `godementUnits_pullback`, uniqueness by
 `godementUnits_pullback_unique`. But a pointwise bijection is not yet a
 **global** construction: to state the `IsPullback` shape of the units square —
@@ -373,7 +373,7 @@ through `mono_cokernel_map_of_isPullback` — the fibres must **glue** into a
 morphism of presheaves, that is, the fibre bijection must **respect
 restriction**.
 
-This is what Part 103 proves:
+This is what Part 105 proves:
 
 1. **Preservation** (`godementUnits_pullback_res`): if `x` is a fibre element
    over `V` (that is, `f(x) = y` and `unit(x) = z`), then the restriction of
@@ -384,19 +384,19 @@ This is what Part 103 proves:
    (`TopCat.Presheaf.germ_res_apply`).
 2. **Restricted uniqueness** (`godementUnits_pullback_res_unique`): the fibre
    element over `U` is not *a* fibre element, it is **the** restriction of the
-   one over `V` — Part 102's uniqueness applied at `U` identifies any section
+   one over `V` — Part 104's uniqueness applied at `U` identifies any section
    of `X₁` whose image by `f` is `S.X₂.map i.op y` with the restriction of `x`.
 
 The first lemma uses **no short-exactness hypothesis** at all: it is a fact of
-naturality. The second uses one (Part 102's uniqueness depends on it), but
+naturality. The second uses one (Part 104's uniqueness depends on it), but
 **none** on `X₁`: the separatedness of the left term stays unused, as in Part
 102.
 
-What is still missing, and what Part 103 does not do: the **existence** half of
+What is still missing, and what Part 105 does not do: the **existence** half of
 the gluing — making sure that the restricted datum `(y', z')` does have, at the
-level of `U`, the shape Part 102 consumes (a Godement section of `C⁰X₁(U)`),
+level of `U`, the shape Part 104 consumes (a Godement section of `C⁰X₁(U)`),
 so that the restricted uniqueness can be applied to an element that
-**exists**. Part 103 supplies the **uniqueness** half; the open question is a
+**exists**. Part 105 supplies the **uniqueness** half; the open question is a
 **descent on stalks**, not an algebraic difficulty.
 -/
 
