@@ -197,12 +197,12 @@ NOTEBOOK_SERVICE_MAP = {
         "00-3-API-Endpoints-Configuration.ipynb",
         "00-4-Environment-Validation.ipynb",
         "00-5-ComfyUI-Local-Test.ipynb",
-        "01-1-OpenAI-DALL-E-3.ipynb",
+        "01-1-Generation-Image-Texte-API.ipynb",
         "01-2-Generation-Image-API.ipynb",
         "01-3-Basic-Image-Operations.ipynb",
     ],
     "forge": [
-        "01-4-Forge-SD-XL-Turbo.ipynb",
+        "01-4-Generation-Image-Locale-Forge.ipynb",
     ],
     "qwen": [
         "01-5-Edition-Image-Prompt.ipynb",
@@ -212,8 +212,8 @@ NOTEBOOK_SERVICE_MAP = {
         "02-4-Z-Image-Lumina2.ipynb",
     ],
     "multi": [
-        "02-2-FLUX-1-Advanced-Generation.ipynb",
-        "02-3-Stable-Diffusion-3-5.ipynb",
+        "02-2-Generation-Image-Haute-Qualite.ipynb",
+        "02-3-Generation-Image-MMDiT.ipynb",
         "03-1-Multi-Model-Comparison.ipynb",
         "03-2-Workflow-Orchestration.ipynb",
         "03-3-Performance-Optimization.ipynb",

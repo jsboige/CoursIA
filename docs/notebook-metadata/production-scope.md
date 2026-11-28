@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-24
+> REFERENCE — vivante — dernière révision 2026-11-27
 
 # Périmètre PRODUCTION — dérivation mécanique v1
 
@@ -41,7 +41,7 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 | Série | Cours | Tête de série | N proposés | Verdict |
 |-------|-------|---------------|------------|---------|
 | QuantConnect Python | ECE IA Finance Ing4 + Partner Algo Trading | `QC-Py-02-Platform-Fundamentals.ipynb` | 35 | |
-| GenAI Image — Foundation | EPF GenAI Bachelor 3A | `01-1-OpenAI-DALL-E-3.ipynb` | 5 | |
+| GenAI Image — Foundation | EPF GenAI Bachelor 3A | `01-1-Generation-Image-Texte-API.ipynb` | 5 | |
 | GenAI Audio — Foundation | EPF GenAI Bachelor 3A | `01-1-OpenAI-TTS-Intro.ipynb` | 5 | |
 | GenAI Video — Foundation | EPF GenAI Bachelor 3A | `01-1-Video-Operations-Basics.ipynb` | 5 | |
 | GenAI Texte (1-8) | EPF GenAI Bachelor 3A | `01_OpenAI_Intro.ipynb` | 8 | |
@@ -62,10 +62,10 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 
 <!-- MyIA.AI.Notebooks/GenAI/Image/01-Foundation -->
 
-- [ ] `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb`
 <!-- MyIA.AI.Notebooks/GenAI/Audio/01-Foundation -->
 
@@ -207,8 +207,8 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 <!-- MyIA.AI.Notebooks/GenAI/Image/02-Advanced -->
 
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-5-Bonsai-Image-Ternary.ipynb`
 <!-- MyIA.AI.Notebooks/GenAI/Audio/02-Advanced -->

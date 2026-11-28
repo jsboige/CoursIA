@@ -3247,8 +3247,8 @@
       "needs": {
         "gpu": true,
         "gpu_notebooks": [
-          "MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb",
           "MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-6-Few-Step-Generative-Models-IMM-TVM.ipynb"
         ],
         "api_key_count": 6,

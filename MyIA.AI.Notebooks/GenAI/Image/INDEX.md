@@ -93,7 +93,7 @@ print(f"✅ Image générée: {response.data[0].url}")
 ### Notebooks Recommandés pour Démarrer
 
 1. **00-1-Environment-Setup** : Configuration complète
-2. **01-1-OpenAI-DALL-E-3** : Premier modèle génération
+2. **01-1-Generation-Image-Texte-API** : Premier modèle génération
 3. **01-2-Generation-Image-API** : Analyse multimodale
 4. **04-1-Educational-Content-Generation** : Application pratique
 
@@ -117,17 +117,17 @@ MyIA.AI.Notebooks/GenAI/
 └── Image/                            # 🖼️ Écosystème Images — racine de ce document
     │
     ├── 01-Foundation/                # 🟢 Fondamentaux
-    │   ├── 01-1-OpenAI-DALL-E-3.ipynb
+    │   ├── 01-1-Generation-Image-Texte-API.ipynb
     │   ├── 01-2-Generation-Image-API.ipynb
     │   ├── 01-3-Basic-Image-Operations.ipynb
-    │   ├── 01-4-Forge-SD-XL-Turbo.ipynb
+    │   ├── 01-4-Generation-Image-Locale-Forge.ipynb
     │   ├── 01-5-Edition-Image-Prompt.ipynb
     │   ├── 01-5b-Edition-Image-Prompt-Iterations.ipynb
     │   └── 01-5c-Edition-Image-Prompt-Workflows.ipynb
     │
     ├── 02-Advanced/                  # 🟠 Avancé (Docker)
-    │   ├── 02-2-FLUX-1-Advanced-Generation.ipynb
-    │   ├── 02-3-Stable-Diffusion-3-5.ipynb
+    │   ├── 02-2-Generation-Image-Haute-Qualite.ipynb
+    │   ├── 02-3-Generation-Image-MMDiT.ipynb
     │   ├── 02-4-Z-Image-Lumina2.ipynb
     │   ├── 02-5-Bonsai-Image-Ternary.ipynb
     │   └── 02-6-Few-Step-Generative-Models-IMM-TVM.ipynb
@@ -190,10 +190,10 @@ Le guide indique aussi les [approfondissements](05-History/README.md#approfondis
 
 | Notebook | Modèle | Temps | Difficulté | Objectifs Clés |
 |----------|--------|-------|------------|----------------|
-| **01-1-OpenAI-DALL-E-3** | DALL-E 3 | 2h | ⭐ | Génération images haute qualité |
+| **01-1-Generation-Image-Texte-API** | DALL-E 3 | 2h | ⭐ | Génération images haute qualité |
 | **01-2-Generation-Image-API** | GPT-5 Vision | 2h | ⭐ | Analyse multimodale avancée |
 | **01-3-Basic-Image-Operations** | PIL/OpenCV | 1h30 | ⭐ | Manipulation images basique |
-| **01-4-Forge-SD-XL-Turbo** | SD XL Turbo (Forge) | — | ⭐ | Génération locale via Stable Diffusion Forge |
+| **01-4-Generation-Image-Locale-Forge** | SD XL Turbo (Forge) | — | ⭐ | Génération locale via Stable Diffusion Forge |
 | **01-5-Edition-Image-Prompt** | Qwen-Image-Edit 2.5 | — | ⭐ | Génération et édition via API ComfyUI |
 
 **Compétences Acquises** :
@@ -210,8 +210,8 @@ Le guide indique aussi les [approfondissements](05-History/README.md#approfondis
 |----------|--------|-------|------------|------------------|
 | **01-5b-Edition-Image-Prompt-Iterations** | Qwen 2.5 | 3h | ⭐⭐ | ✅ Requis |
 | **01-5c-Edition-Image-Prompt-Workflows** | Qwen-Image 2.1 | — | ⭐⭐ | ✅ Requis (instance comfyui-qwen) |
-| **02-2-FLUX-1-Advanced-Generation** | FLUX.1 | 3h | ⭐⭐ | ✅ Requis |
-| **02-3-Stable-Diffusion-3-5** | SD 3.5 | 3h | ⭐⭐ | ✅ Requis |
+| **02-2-Generation-Image-Haute-Qualite** | FLUX.1 | 3h | ⭐⭐ | ✅ Requis |
+| **02-3-Generation-Image-MMDiT** | SD 3.5 | 3h | ⭐⭐ | ✅ Requis |
 | **02-4-Z-Image-Lumina2** | Z-Image (Lumina-2) | — | ⭐⭐ | ✅ Requis (ComfyUI) |
 | **02-5-Bonsai-Image-Ternary** | Bonsai-Image (1.58-bit) | — | ⭐⭐ | ✅ Requis (quantization ternaire) |
 | **02-6-Few-Step-Generative-Models-IMM-TVM** | IMM (CIFAR-10), TVM (ImageNet-256) | — | ⭐⭐ | — (exécution locale, poids officiels) |
@@ -282,7 +282,7 @@ Le guide indique aussi les [approfondissements](05-History/README.md#approfondis
 - Code examples réutilisables
 
 **Notebooks Associés** :
-- `01-1-OpenAI-DALL-E-3.ipynb`
+- `01-1-Generation-Image-Texte-API.ipynb`
 - `04-1-Educational-Content-Generation.ipynb`
 
 ---
@@ -446,7 +446,7 @@ Le guide indique aussi les [approfondissements](05-History/README.md#approfondis
 1. `00-1-Environment-Setup` (30min)
 2. `00-3-API-Endpoints-Configuration` (15min)
 3. `00-4-Environment-Validation` (10min)
-4. `01-1-OpenAI-DALL-E-3` (2h)
+4. `01-1-Generation-Image-Texte-API` (2h)
 5. Tutorial : `dalle3-complete-guide.md` (30min)
 
 **Semaine 3-4 : Analyse Multimodale**
@@ -504,8 +504,8 @@ Le guide indique aussi les [approfondissements](05-History/README.md#approfondis
 **Phase 1 : Docker & Advanced Models (15h)**
 1. `00-2-Docker-Services-Management` (20min)
 2. `01-5b-Edition-Image-Prompt-Iterations` (3h)
-3. `02-2-FLUX-1-Advanced-Generation` (3h)
-4. `02-3-Stable-Diffusion-3-5` (3h)
+3. `02-2-Generation-Image-Haute-Qualite` (3h)
+4. `02-3-Generation-Image-MMDiT` (3h)
 5. Infrastructure Docker setup (5h40)
 
 **Phase 2 : Orchestration (12h)**
@@ -537,7 +537,7 @@ Le guide indique aussi les [approfondissements](05-History/README.md#approfondis
 **Focus Pédagogique**
 
 **Module 1 : Génération Contenu (5h)**
-1. `01-1-OpenAI-DALL-E-3` (focus prompts éducatifs)
+1. `01-1-Generation-Image-Texte-API` (focus prompts éducatifs)
 2. Tutorial : `educational-workflows.md`
 3. `04-1-Educational-Content-Generation`
 
@@ -801,7 +801,7 @@ HUGGINGFACE_TOKEN=hf_...
 from papermill import execute_notebook
 
 execute_notebook(
-    '01-1-OpenAI-DALL-E-3.ipynb',
+    '01-1-Generation-Image-Texte-API.ipynb',
     'output.ipynb',
     parameters={
         'prompt': 'Custom prompt',
@@ -961,7 +961,7 @@ img.save('optimized.png')
 ### Démarrage Immédiat
 
 1. **Configuration** : Suivre [Quick Start](#quick-start)
-2. **Premier Notebook** : `01-1-OpenAI-DALL-E-3.ipynb`
+2. **Premier Notebook** : `01-1-Generation-Image-Texte-API.ipynb`
 3. **Tutorial** : Lire [`dalle3-complete-guide.md`](../tutorials/dalle3-complete-guide.md)
 4. **Exemple** : Exécuter [`Image/examples/science-diagrams.ipynb`](examples/science-diagrams.ipynb)
 

@@ -95,7 +95,7 @@ Ces notebooks sont validés et opérationnels sur l'infrastructure stable v1.0.
 ### 🚧 Notebooks à Consolider (Forge)
 Ces notebooks nécessitent une attention particulière en attendant la finalisation du chantier Forge.
 
-*   `01-Images-Foundation/01-4-Forge-SD-XL-Turbo.ipynb` : Génération rapide avec SD XL Turbo (En attente de dockerisation Forge).
+*   `01-Images-Foundation/01-4-Generation-Image-Locale-Forge.ipynb` : Génération rapide avec SD XL Turbo (En attente de dockerisation Forge).
 
 ---
 

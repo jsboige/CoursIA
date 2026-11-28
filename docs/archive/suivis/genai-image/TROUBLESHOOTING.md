@@ -525,7 +525,7 @@ def check_bom(file_path):
     return has_bom
 
 # Tester notebook
-check_bom("01-1-OpenAI-DALL-E-3.ipynb")
+check_bom("01-1-Generation-Image-Texte-API.ipynb")
 ```
 
 #### Solution Automatique: Script PowerShell
@@ -561,7 +561,7 @@ def remove_bom(file_path):
     print(f"✅ BOM supprimé: {file_path}")
 
 # Usage
-remove_bom("01-1-OpenAI-DALL-E-3.ipynb")
+remove_bom("01-1-Generation-Image-Texte-API.ipynb")
 ```
 
 ---
@@ -578,7 +578,7 @@ papermill.exceptions.PapermillExecutionError: Execution timeout after 300s
 import papermill as pm
 
 pm.execute_notebook(
-    '01-1-OpenAI-DALL-E-3.ipynb',
+    '01-1-Generation-Image-Texte-API.ipynb',
     'output.ipynb',
     timeout=600,  # 10 minutes au lieu de 5
     kernel_name='python3'
@@ -591,7 +591,7 @@ pm.execute_notebook(
 # Tool: start_notebook_async
 
 {
-    "notebook_path": "01-1-OpenAI-DALL-E-3.ipynb",
+    "notebook_path": "01-1-Generation-Image-Texte-API.ipynb",
     "timeout_seconds": 1200,  # 20 minutes
     "output_path": "output.ipynb"
 }
@@ -1345,7 +1345,7 @@ python scripts/cost_calculator.py 20 1792x1024 hd
 **Environnement**
 - OS: [Windows 11 / macOS 13 / Ubuntu 22.04]
 - Python: [3.11.5]
-- Notebook: [01-1-OpenAI-DALL-E-3.ipynb]
+- Notebook: [01-1-Generation-Image-Texte-API.ipynb]
 
 **Problème**
 [Description détaillée du problème]

@@ -720,7 +720,7 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # la declaration l'enregistre dans la meme PR (rouge mesure a tete constante,
 # 1 failed / 34 passed, avant cet enregistrement). Total apres fusion : 10.
 # 2026-10-12 (#1650 tranche Image 01-Foundation PR1, serie Image axe E) : +2
-# paires T4 -- Image/01-Foundation/01-1-OpenAI-DALL-E-3_en + 01-2-GPT-5-
+# paires T4 -- Image/01-Foundation/01-1-Generation-Image-Texte-API_en + 01-2-GPT-5-
 # Image-Generation_en (37 cellules md traduites, rendu --require-translated
 # 0 fallback). Total apres resolution du merge origin/main : 10 + 2 = 12.
 # 2026-10-12 (PR #20453, #1650 tranche Fort-Boyard, T4): +1 paire T4 --

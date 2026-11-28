@@ -258,7 +258,7 @@ MyIA.AI.Notebooks/GenAI/
 
 **Notebooks Implémentés** :
 
-#### 1. `01-1-OpenAI-DALL-E-3.ipynb` ✅
+#### 1. `01-1-Generation-Image-Texte-API.ipynb` ✅
 **Fonctionnalités** :
 - Génération images simple & batch
 - Prompt engineering patterns

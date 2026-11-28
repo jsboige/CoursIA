@@ -6,8 +6,8 @@ import os
 import sys
 
 # Configuration
-input_path = "MyIA.AI.Notebooks/GenAI/01-Images-Foundation/01-4-Forge-SD-XL-Turbo.ipynb"
-output_path = "MyIA.AI.Notebooks/GenAI/01-Images-Foundation/01-4-Forge-SD-XL-Turbo_output.ipynb"
+input_path = "MyIA.AI.Notebooks/GenAI/01-Images-Foundation/01-4-Generation-Image-Locale-Forge.ipynb"
+output_path = "MyIA.AI.Notebooks/GenAI/01-Images-Foundation/01-4-Generation-Image-Locale-Forge_output.ipynb"
 
 # Set environment variable for local testing
 os.environ["FORGE_API_URL"] = "http://localhost:17861"

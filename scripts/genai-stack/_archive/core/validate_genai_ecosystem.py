@@ -147,7 +147,7 @@ class GenAIValidator:
             "00-GenAI-Environment/00-1-Environment-Setup.ipynb",
             "00-GenAI-Environment/00-3-API-Endpoints-Configuration.ipynb",
             "00-GenAI-Environment/00-4-Environment-Validation.ipynb",
-            "01-Images-Foundation/01-1-OpenAI-DALL-E-3.ipynb",
+            "01-Images-Foundation/01-1-Generation-Image-Texte-API.ipynb",
             "01-Images-Foundation/01-2-GPT-5-Image-Generation.ipynb",
             "01-Images-Foundation/01-3-Basic-Image-Operations.ipynb",
             "04-Images-Applications/04-1-Educational-Content-Generation.ipynb",

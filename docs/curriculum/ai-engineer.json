@@ -33,9 +33,9 @@
         "appel-et-controle"
       ],
       "notebooks": [
-        "GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb",
+        "GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb",
         "GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb",
-        "GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb",
+        "GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb",
         "GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb",
         "GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb",
         "GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb",
@@ -166,7 +166,7 @@
       "description": "Detour generation avancee : FLUX et Z-Image en image, clonage de voix et generation musicale en audio, LTX et SVD en video. Pour l'apprenant qui veut peser les modeles de pointe par lui-meme avant de choisir ceux de son application.",
       "branch": "generation-multimodale",
       "notebooks": [
-        "GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb",
+        "GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb",
         "GenAI/Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb",
         "GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb",
         "GenAI/Audio/02-Advanced/Audio-02-9-AceStep-Music-Generation-Python.ipynb",
