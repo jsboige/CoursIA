@@ -34,6 +34,11 @@ name: Lean derived pages gate
 #   - MyIA.AI.Notebooks/SymbolicAI/Lean/**/*.ipynb (les carnets de la serie :
 #                                  leurs cellules code et leurs headings
 #                                  d'exercice sont les mesures de la table)
+#   - MyIA.AI.Notebooks/SymbolicAI/Lean/*.ipynb (les carnets a la RACINE de la
+#                                  serie : `**` exige un repertoire entre `Lean/`
+#                                  et le fichier, donc `Lean-06-...ipynb` -- la
+#                                  majorite de la table de maturite -- declenchait
+#                                  la porte ; le module porte les deux motifs)
 #   - .github/workflows/**         (la carte du materiel lit la couverture CI)
 #   - scripts/lean/ci_lakes.json, scripts/lean/lean_births.json,
 #     scripts/lean/check_axiom_gate_coverage.py, scripts/lean/count_code_sorry.py
@@ -58,6 +63,7 @@ on:
       - 'docs/reference/lean-*.md'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/README.md'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/**/*.ipynb'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/*.ipynb'
       - '.github/workflows/**'
       - 'scripts/lean/ci_lakes.json'
       - 'scripts/lean/lean_births.json'

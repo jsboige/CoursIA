@@ -70,7 +70,13 @@ MOTIFS_ENTREE: tuple[str, ...] = (
     "scripts/lean/check_lean_derived_pages.py",
     "docs/reference/lean-*.md",
     "MyIA.AI.Notebooks/SymbolicAI/Lean/README.md",
+    # `Lean/**/*.ipynb` exige AU MOINS un repertoire entre `Lean/` et le
+    # fichier : les carnets a la racine de la serie (`Lean/Lean-06-...ipynb`),
+    # qui sont la majorite de la table de maturite, echappaient a l'entree.
+    # Une PR qui les ecrivait sans regenerer le README etait alors classee
+    # `heritee` au lieu de `causee`. Les deux motifs sont necessaires.
     "MyIA.AI.Notebooks/SymbolicAI/Lean/**/*.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/*.ipynb",
     "scripts/lean/ci_lakes.json",
     "scripts/lean/lean_births.json",
 )

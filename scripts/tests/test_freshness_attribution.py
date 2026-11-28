@@ -183,3 +183,34 @@ def test_une_pr_qui_ecrit_elle_meme_l_entree_reste_causee_malgre_la_fusion(depot
          "merge", "-q", "--no-ff", "-m", "fusion main", "main")
     verdict = attribuer(True, fichiers_propres(depot, "main"), MOTIFS)
     assert verdict["verdict"] == "causee"
+
+
+# --------------------------------------------------------------------------
+# La carte REELLE des entrees : la porte Lean doit voir la racine de la serie
+# --------------------------------------------------------------------------
+
+def test_les_carnets_racine_de_la_serie_lean_sont_des_entrees():
+    """Un motif qui ne couvre pas la racine de la serie est un trou muet.
+
+    `Lean/**/*.ipynb` exige AU MOINS un repertoire entre `Lean/` et le
+    fichier : les carnets `Lean/Lean-06-...ipynb` -- la majorite de la table
+    de maturite -- echappaient a l'entree, et une PR qui les ecrivait sans
+    regenerer le README etait classee `heritee` au lieu de `causee`.
+
+    Le test fige les DEUX listes -- le module et le `paths:` du workflow --
+    pour que le motif racine ne disparaisse pas en silence d'un seul cote.
+    """
+    sys.path.insert(0, os.path.join(RACINE, "scripts", "lean"))
+    from check_lean_derived_pages import MOTIFS_ENTREE
+
+    carnet_racine = ("MyIA.AI.Notebooks/SymbolicAI/Lean/"
+                     "Lean-06-Mathlib-Essentials-Lean.ipynb")
+    assert attribuer(True, [carnet_racine], MOTIFS_ENTREE)["verdict"] == "causee"
+    assert "MyIA.AI.Notebooks/SymbolicAI/Lean/*.ipynb" in MOTIFS_ENTREE
+
+    workflow = os.path.join(RACINE, ".github", "workflows",
+                            "lean-derived-pages-gate.yml")
+    with open(workflow, encoding="utf-8") as flux:
+        contenu = flux.read()
+    assert "'MyIA.AI.Notebooks/SymbolicAI/Lean/*.ipynb'" in contenu
+    assert "'MyIA.AI.Notebooks/SymbolicAI/Lean/**/*.ipynb'" in contenu
