@@ -1,0 +1,71 @@
+# TRANCHE4 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE4
+guards:
+  -
+    name: "No SVG broken-geometry (negative-dim) defect in changed notebooks"
+    argv: ["python", "scripts/notebook_tools/detect_svg_broken_geometry.py", "{changed_paths}", "--check"]
+    source: "svg-broken-geometry-gate.yml"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "scripts/notebook_tools/detect_svg_broken_geometry.py", ".github/workflows/svg-broken-geometry-gate.yml"]
+    blocking: true
+    iterates_paths: true
+    absorbed: true
+    warn_rc:
+      -
+        2
+    iterate_paths: ["MyIA.AI.Notebooks/**/*.ipynb"]
+  -
+    name: "No SVG decimal-comma defect in changed notebooks"
+    argv: ["python", "scripts/notebook_tools/detect_svg_decimal_commas.py", "{changed_paths}", "--check"]
+    source: "svg-decimal-comma-gate.yml"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "scripts/notebook_tools/detect_svg_decimal_commas.py", ".github/workflows/svg-decimal-comma-gate.yml"]
+    blocking: true
+    iterates_paths: true
+    absorbed: true
+    warn_rc:
+      -
+        2
+    iterate_paths: ["MyIA.AI.Notebooks/**/*.ipynb"]
+  -
+    name: "No SVG empty-display defect in changed notebooks"
+    argv: ["python", "scripts/notebook_tools/detect_svg_empty_display.py", "{changed_paths}", "--check"]
+    source: "svg-empty-display-gate.yml"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "scripts/notebook_tools/detect_svg_empty_display.py", ".github/workflows/svg-empty-display-gate.yml"]
+    blocking: true
+    iterates_paths: true
+    absorbed: true
+    warn_rc:
+      -
+        2
+    iterate_paths: ["MyIA.AI.Notebooks/**/*.ipynb"]
+  # Noyau du grain #12396 : le gate MARKDOWN a verdict check-run. Compare
+  # chaque notebook change a sa base git (--base {base_ref}) ; rc=1 perte de
+  # contenu, rc=2 illisible. Anti-auto-desarmement AGREGE portee par
+  # `fail_on_all_warn` (cf commentaire du champ et clause #8655/#8656 du
+  # workflow d'origine) : un detecteur casse ou une ref git manquante ne
+  # doit pas produire un quitus vert par silence.
+  -
+    name: "No offscreen-flat SVG in changed notebooks"
+    argv: ["python", "scripts/notebook_tools/detect_svg_offscreen_flat.py", "--check", "{changed_paths}"]
+    source: "svg-offscreen-flat-gate.yml"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "scripts/notebook_tools/detect_svg_offscreen_flat.py", ".github/workflows/svg-offscreen-flat-gate.yml"]
+    blocking: true
+    iterates_paths: true
+    absorbed: true
+    warn_rc:
+      -
+        2
+    iterate_paths: ["MyIA.AI.Notebooks/**/*.ipynb"]
+  -
+    name: "No markdown content loss in changed notebooks"
+    argv: ["python", "scripts/notebook_tools/detect_md_content_loss.py", "--base", "{base_ref}", "--check", "{changed_paths}"]
+    source: "md-content-loss-gate.yml"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "scripts/notebook_tools/detect_md_content_loss.py", ".github/workflows/md-content-loss-gate.yml"]
+    blocking: true
+    needs_base: true
+    iterates_paths: true
+    absorbed: true
+    warn_rc:
+      -
+        2
+    fail_on_all_warn: true
+    iterate_paths: ["MyIA.AI.Notebooks/**/*.ipynb"]

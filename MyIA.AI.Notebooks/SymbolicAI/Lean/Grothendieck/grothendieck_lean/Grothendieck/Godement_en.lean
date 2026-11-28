@@ -62,19 +62,35 @@ namespace Grothendieck.Godement_en
 variable {X : TopCat.{u}} (F : X.Presheaf AddCommGrpCat.{u})
 
 /-- A Godement section over `U`: a germ at each point of `U`.
-The `AddCommGroup` is pointwise (product of groups). -/
+The `AddCommGroup` is pointwise (product of groups).
+Stacks correspondence — **PARTIAL**: Stacks does not formalise the "product of
+stalks" presheaf on a topological space; its degree-0 term is `f_* f^*` on the
+modules of a ringed space
+(`Topology/Sheaves/Cohomology/GodementResolution/Basic.lean:416`,
+`godementComonad`, tag 0FKS). The gap of setting is explicit; the inequality is
+not.
+-/
 noncomputable def godementSection (U : Opens X) : Type u :=
   ∀ x : U, ↥(F.stalk (x : X))
 
 noncomputable instance (U : Opens X) : AddCommGroup (godementSection F U) :=
   Pi.addCommGroup
 
-/-- The Godement sheaf, objectwise: `AddCommGrp.of` the product. -/
+/-- The Godement sheaf, objectwise: `AddCommGrp.of` the product.
+Stacks correspondence — **PARTIAL**: the categorical object is, in Stacks, that of
+`f_* f^*` on `Mod(𝒪_X)` (`Basic.lean:416`); ours is an `AddCommGrpCat.of` of the
+product of stalks. Same gap of setting: abelian groups on a topological space on one
+side, modules on a ringed space on the other.
+-/
 noncomputable def godementObj (U : Opens X) : AddCommGrpCat.{u} :=
   AddCommGrpCat.of (godementSection F U)
 
 /-- Restriction of a Godement section along `i : V ⟶ U`:
-precomposition — the function restricts. -/
+precomposition — the function restricts.
+Stacks correspondence — **PARTIAL**: in Stacks the restriction is the one of
+`f_*` (`Basic.lean:416`); ours is the precomposition on germs. No named statement
+of Stacks describes this transport point by point.
+-/
 noncomputable def godementMap {V U : Opens X} (i : V ⟶ U) :
     godementObj F U ⟶ godementObj F V :=
   AddCommGrpCat.ofHom
@@ -82,7 +98,14 @@ noncomputable def godementMap {V U : Opens X} (i : V ⟶ U) :
       map_zero' := rfl
       map_add' := fun _ _ => rfl }
 
-/-- The Godement presheaf `C⁰F : U ↦ ∏_{x ∈ U} Fₓ`. -/
+/-- The Godement presheaf `C⁰F : U ↦ ∏_{x ∈ U} Fₓ`.
+Stacks correspondence — **PARTIAL**: the degree-0 term of the Stacks Godement
+complex is the iterate `(f_* f^*)^{n+1}` (`Basic.lean:466` `godementComplex`,
+`Basic.lean:482` `godementComplexEvalIso`); the equality between `f_* f^*` and the
+product of stalks is not established in Stacks. What our version adds: the
+construction of the product of stalks as a **presheaf** (Stacks builds a sheaf of
+modules).
+-/
 noncomputable def godementPresheaf : X.Presheaf AddCommGrpCat where
   obj U := godementObj F U.unop
   map f := godementMap F f.unop
@@ -97,7 +120,12 @@ noncomputable def godementPresheaf : X.Presheaf AddCommGrpCat where
 
 /-- Restricting a Godement section is evaluation at the transported
 point: given the definition of `godementMap`, this is a definitional
-reduction. This is the computation key of the whole module. -/
+reduction. This is the computation key of the whole module.
+Stacks correspondence — **ABSENT**: no named statement in the Stacks files read
+(`Basic.lean`, `Stalk.lean`, `StalkHomotopy.lean`, `Sheaf/Abelian.lean`) describes
+this transport; it is a definitional-reduction lemma proper to our definition of
+`godementMap`.
+-/
 theorem godementPresheaf_map_apply {V U : Opens X} (i : V ⟶ U)
     (s : godementSection F U) (x : V) :
     (godementPresheaf F).map i.op s x = s ⟨(x : X), leOfHom i x.2⟩ :=
@@ -106,7 +134,13 @@ theorem godementPresheaf_map_apply {V U : Opens X} (i : V ⟶ U)
 open scoped Classical in
 /-- Zero extension: a Godement section over `U` extends to any `V ⊇ U`
 by choosing the zero germ outside `U`. This is the flasqueness ingredient
-— the zero of stalks makes the extension always possible. -/
+— the zero of stalks makes the extension always possible.
+Stacks correspondence — **PARTIAL**: Stacks establishes the flasqueness of every
+term of the complex (`Basic.lean:499` `isFlasque_godementComplex`, tag 0FKS;
+`Basic.lean:276` `isFlasque_iterate_modulePullbackPushforward`) but does not name
+the extension by zero; what our version adds is to write it, and that is what makes
+the "no hypothesis on `F`" case readable.
+-/
 noncomputable def godementExtend {U V : Opens X}
     (s : godementSection F U) : godementSection F V :=
   fun x => if h : (x : X) ∈ U then s ⟨x, h⟩ else 0
@@ -114,7 +148,16 @@ noncomputable def godementExtend {U V : Opens X}
 /-- **The Godement sheaf is flasque**: every section over `U` extends to
 any `V ⊇ U` (by zero outside `U`) — the restriction is surjective, hence
 epimorphic. No hypothesis on `F`: the flasqueness of `C⁰F` is free, which
-is the whole point of the construction. [God58] Chap. II §4.1. -/
+is the whole point of the construction. [God58] Chap. II §4.1.
+Stacks correspondence — **COVERED**:
+`Topology/Sheaves/Cohomology/GodementResolution/Basic.lean:499`
+(`isFlasque_godementComplex`, tag 0FKS) and `Basic.lean:276`
+(`isFlasque_iterate_modulePullbackPushforward`) establish the flasqueness of the
+terms of the Godement complex. Gap of setting: Stacks works with sheaves of
+modules on a ringed space, we work with the **presheaf** `C⁰F` of a presheaf of
+abelian groups, without any sheaf hypothesis. What our version adds: the extension
+by zero as a construction.
+-/
 theorem isFlasque_godementPresheaf : godementPresheaf F |>.IsFlasque where
   epi i := by
     refine (AddCommGrpCat.epi_iff_surjective _).mpr fun s => ⟨?_, ?_⟩
@@ -124,7 +167,14 @@ theorem isFlasque_godementPresheaf : godementPresheaf F |>.IsFlasque where
 
 /-- The Godement unit: a section becomes the family of its germs.
 Natural by `Presheaf.germ_res` — taking germs commutes with
-restrictions. -/
+restrictions.
+Stacks correspondence — **PARTIAL**: Stacks has two distinct units — the unit of
+the adjunction at degree 0 (`Basic.lean:475` `godementAugmentation`) and the
+"Godement on opens"
+(`Cohomology/CechDerivedEffaceability/GodementResolution.lean:181` `godUnit`,
+whose sections `GodSections` l.99 are families of sections, not germs). Ours — the
+germ at every point — has no named statement.
+-/
 noncomputable def toGodement : F ⟶ godementPresheaf F where
   app U :=
     AddCommGrpCat.ofHom
@@ -145,7 +195,12 @@ the value at `z`. Uniqueness is likewise entirely punctual: two gluings
 agree on each `U i`, hence at every point of the union. The proof goes
 through the `isSheaf_iff_isSheafUniqueGluing` characterisation of the
 sheaf condition, available for `AddCommGrpCat` (concrete complete
-category). -/
+category).
+Stacks correspondence — **PARTIAL**: in Stacks, the sheaf property of the degree-0
+term comes from `f_*` (direct image of a sheaf); no named statement says that the
+product of stalks of a sheaf of abelian groups is a sheaf — that is Godement's
+theorem, which our statement proves.
+-/
 theorem isSheaf_godementPresheaf : TopCat.Presheaf.IsSheaf (godementPresheaf F) := by
   rw [TopCat.Presheaf.isSheaf_iff_isSheafUniqueGluing]
   intro ι U sf hcomp
@@ -171,7 +226,13 @@ neighbourhood `W z ⊆ U` where the restrictions coincide; the `W z` cover
 gluing (`isSheaf_iff_isSheafUniqueGluing`) identifies them. All equalities
 of morphisms of opens go through `Subsingleton`: two inclusions
 `V ⟶ U` are equal. This is the expected converse: the Godement sheaf
-contains `F` entirely as soon as `F` is a sheaf. [God58] Chap. II §4.1. -/
+contains `F` entirely as soon as `F` is a sheaf. [God58] Chap. II §4.1.
+Stacks correspondence — **COVERED**: `Topology/Sheaves/Sheaf/Abelian.lean:149`
+(`restrict_eq_zero_of_germ_eq_zero`) states that a section of a sheaf of abelian
+groups whose germs are all zero is zero — its contrapositive is exactly our
+converse of the unit. What our version adds: the phrasing "two sections with the
+same germs are equal" and the route through unique gluing.
+-/
 theorem injective_toGodement_of_isSheaf (hF : TopCat.Presheaf.IsSheaf F)
     (U : Opens X) : Function.Injective ((toGodement F).app (op U)) := by
   intro s t hst

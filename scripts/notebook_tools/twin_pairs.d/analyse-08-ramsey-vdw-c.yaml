@@ -1,0 +1,7 @@
+- name: "ANALYSE-08-Ramsey-VdW C#"
+  family: SymbolicAI/Lean/Analyse
+  python: MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/ANALYSE-08-Ramsey-VdW.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/ANALYSE-08-Ramsey-VdW-CSharp.ipynb
+  parity_level: native-both
+  known_differences:
+    - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de ANALYSE-08-Ramsey-VdW.ipynb. Execution reelle sur kernel .net-csharp : 11 cellules, 0 erreur. Verification independente : approve. Premiere attestation ecrite par l'integration de livraison (check_twin_parity --update), en DERNIERE operation (cf #8957)."
