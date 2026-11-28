@@ -3504,6 +3504,11 @@ def test_publish_never_runs_the_host_repository_pre_push_hook(tmp_path, capsys):
         "#!/bin/sh" + chr(10) + 'printf ran > "' + marker.as_posix() + '"' + chr(10) + "exit 0" + chr(10),
         encoding="utf-8", newline=chr(10),
     )
+    # Le bit executable est ce qui fait du hook un temoin : git IGNORE un
+    # `pre-push` en 0o644 (umask 022, le cas de la CI Linux) et le test
+    # passerait alors sans le correctif -- mesure du rejeu d'audit du
+    # 28/11 sur cette PR (rapport Hermes, revue 08:23Z).
+    hook.chmod(0o755)
 
     capsys.readouterr()
     assert _publish(state_dir, work, "myia-ai-01", emit=True) == 0
