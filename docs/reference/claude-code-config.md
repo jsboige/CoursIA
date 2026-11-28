@@ -1,6 +1,6 @@
 # Claude Code Extension Points
 
-> REFERENCE — vivante — dernière révision 2026-11-27
+> REFERENCE — vivante — dernière révision 2026-11-28
 
 ## Agents (`.claude/agents/`)
 
@@ -47,6 +47,8 @@ Agents are auto-discovered by Claude Code. Each has YAML frontmatter with model,
 
 **Auto-chargées à chaque session, sauf celles portant un frontmatter `paths:`** (voir [CLAUDE.md §Règles modulaires](../../CLAUDE.md)) — leur contenu est déjà en contexte pour un agent en cours de travail. Cet inventaire sert à qui lit le dépôt sans session active, ou cherche quelle règle porte quel sujet.
 
+Cet inventaire est **gardé** par `scripts/ci/check_rule_inventory.py` : toute règle présente sur disque doit figurer dans la table ci-dessous, toute règle path-gatée doit être annoncée dans le bloc « Règles modulaires » du `CLAUDE.md`, et aucune entrée ne doit pointer vers une règle absente du disque.
+
 | Règle | Ce qu'elle porte |
 |---|---|
 | `git-workflow` | branches, messages de commit, périmètre force-push, scan de branche orpheline |
@@ -61,6 +63,7 @@ Agents are auto-discovered by Claude Code. Each has YAML frontmatter with model,
 | `student-pr-reviews` | anti-fuite soutenance, review bienveillante |
 | `public-contribution-triage` | accueil, triage et escalade des issues/PRs publiques |
 | `lean-merge-discipline` | gates de merge propres au Lean |
+| `lean-lakes-doctrine` | lakes Lean : le site suit le consommateur, partage par jonction Mathlib et CI (gatée `**/*.lean`) |
 | `secrets-hygiene` | content-based, Stop & Repair, canal RooSync privé + quorum (fusion de `secrets-roosync-policy`, #12051) |
 | `audit-reassessment` · `audit-cross-source-distillation` | protocole 4 étapes, sortie = dashboard/issue jamais un fichier |
 | `verify-before-claiming` | G.1, firsthand avant tout claim |
