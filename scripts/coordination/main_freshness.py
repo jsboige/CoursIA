@@ -171,6 +171,7 @@ ORGANES = (
     "scripts/coordination/tapis_qualification.py",
     "scripts/coordination/tapis_qualification_fil.py",
     "scripts/coordination/tapis_rapide.py",
+    "scripts/coordination/tapis_recul.py",
     "scripts/coordination/tapis_relache.py",
     "scripts/coordination/tapis_relache_forme.py",
     "scripts/coordination/tapis_relache_motif.py",

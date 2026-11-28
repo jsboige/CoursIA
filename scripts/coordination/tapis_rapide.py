@@ -32,6 +32,7 @@ from coordination.tapis_marqueurs import (
     claims_ouverts, evenements, lane_de_pr)
 from coordination.tapis_hors_flotte import ecart_hors_flotte
 from coordination.tapis_labels import ecart_label
+from coordination.tapis_recul import RECULS, _palier_recul, servable
 from coordination.tapis_service import texte  # sortie texte, aussi lue par les tests
 from coordination.tapis_visites import evenements_info
 
@@ -214,12 +215,12 @@ def _reclamee(e: Etat, evts: list[Evt], lane: str, maintenant: datetime) -> None
         elif e.conteneur and ev.paths is not None:
             e.occupes.append((autre, ev.paths))  # servis en entier (#26926)
             e.notes.append(f"claim borne de {autre}")
-        elif e.ecart is None:
+        elif servable(e):  # un claim vivant verrouille aussi une issue en recul
             e.ecart, e.motif = "RECLAMEE", f"claim de {autre} du {_iso(ev.quand)[:16]}Z"
 
 
 def _decider(e: Etat, it: dict, evts: list[Evt], ancetres: list[int], ctx: dict) -> None:
-    """Le premier ecart qui s'applique gagne ; chacun est decide localement."""
+    """Le premier ecart dur gagne ; sans lui, le premier recul (RECULS)."""
     regles = [
         ("HORSFLOTTE", lambda: ecart_hors_flotte(it.get("body") or "")),
         # LABEL : les exclusions posees en DONNEES (un label) -- l'urne de
@@ -242,10 +243,16 @@ def _decider(e: Etat, it: dict, evts: list[Evt], ancetres: list[int], ctx: dict)
         ("PLAFOND", lambda: _plafond(e, evts, ctx["filles"].get(e.numero, []),
                                      ctx["lane"], ctx["maintenant"])),
     ]
+    recul = None
     for code, regle in regles:
         if motif := regle():
-            e.ecart, e.motif = code, motif
-            return
+            if code not in RECULS:  # un ecart dur l'emporte toujours sur un recul
+                e.ecart, e.motif = code, motif
+                return
+            recul = recul or (code, motif)
+    if recul:
+        e.ecart, e.motif = recul
+        e.notes.append(f"servie en recul ({recul[0]}) : {recul[1]}")
     _reclamee(e, evts, ctx["lane"], ctx["maintenant"])
 
 
@@ -306,7 +313,7 @@ def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
             depuis=depuis).etat
         e.derniere_visite, e.visites_total, e.visites = tapis_dernier_grain.compter_grains(evts, depuis)
         _decider(e, it, evts, ancetres, ctx)
-        if e.ecart is None and total > lus:
+        if servable(e) and total > lus:
             e.notes.append(f"fil partiel ({lus}/{total} commentaires lus)")
         resultat.append(e)
     return resultat
@@ -318,7 +325,7 @@ def _parquer(tous: list[Etat], parcs: dict[int, str]) -> None:
     Le parcage est applique **apres** les autres ecarts : celui qui gagne reste
     le plus informatif pour la lane."""
     for e in tous:
-        if e.numero in parcs and e.ecart is None:
+        if e.numero in parcs and servable(e):
             e.ecart, e.motif = "ORIGAMI", parcs[e.numero]
 
 
@@ -326,17 +333,6 @@ def graine_defaut(lane: str, maintenant: datetime) -> str:
     """Meme lane, meme tranche de 4 h : meme liste ; deux lanes : deux listes."""
     m = maintenant.astimezone(UTC)
     return f"{lane}|{m:%Y-%m-%d}|{m.hour // 4}"
-
-
-def _servable(e: Etat) -> bool:
-    """Une issue que le tapis peut servir.
-
-    Le #27059 elargit cette notion aux ecarts de recul (COUVERTE, RELACHEE,
-    MERGEE) : quand sa definition est presente, on la suit, sinon celle
-    d'avant (aucun ecart dur) -- sans quoi `ordonner` ecarterait du tour des
-    issues que le tirage du #27059 entend servir."""
-    f = globals().get("servable")
-    return f(e) if f is not None else e.ecart is None
 
 
 def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
@@ -348,7 +344,7 @@ def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
     le conteneur jamais visite que le quota ecarte passe en second temps.
     """
     graine = graine or graine_defaut(lane, maintenant)
-    servables = [e for e in etats_ if _servable(e)]
+    servables = [e for e in etats_ if e.ecart is None]  # le recul vient apres le tour (#27059)
     file = sorted((e for e in servables if e.mon_claim), key=lambda e: (e.cree_le, e.numero))
     pris = {e.numero for e in file}
     # Un marathon est hors equilibrage (harnais sk-agent) : il ne dispute pas la
@@ -372,6 +368,7 @@ def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
         quota -= e.conteneur
         file.append(e)
         pris.add(e.numero)
+    _palier_recul(etats_, file, pris, reportes, quota, grains, graine, maintenant)
     for e in reportes:  # second temps : les conteneurs jamais visités
         if len(file) >= grains:
             break
@@ -393,16 +390,18 @@ def rapport(lecture: gh_bulk.Lecture, etats_: list[Etat], file: list[Etat], lane
     conso, prs_par = tapis_equilibre.familles_consolidation(etats_), _prs_par_issue(lecture.prs)
     vos = sorted((pr for pr in lecture.prs if lane_de_pr(pr) == lane),
                  key=lambda pr: pr.get("created_at") or "")
-    ecartees: dict[str, list[dict]] = {code: [] for code in CODES}
+    ecartees: dict[str, list[dict]] = {code: [] for code in CODES if code not in RECULS}
+    en_recul: dict[str, list[dict]] = {code: [] for code in CODES if code in RECULS}
     for e in etats_:
         if e.ecart:
-            ecartees[e.ecart].append({"numero": e.numero, "motif": e.motif,
-                                       "feuille": not e.conteneur})
+            (en_recul if e.ecart in RECULS else ecartees)[e.ecart].append(
+                {"numero": e.numero, "motif": e.motif, "feuille": not e.conteneur})
     return {
         "lane": lane, "graine": graine, "maintenant": _iso(maintenant),
-        "lecture": {"issues": len(etats_), "servables": sum(e.ecart is None for e in etats_),
-                    "servables_feuilles": sum(e.ecart is None and not e.conteneur for e in etats_),
-                    "servables_conteneurs": sum(e.ecart is None and e.conteneur for e in etats_),
+        "lecture": {"issues": len(etats_), "servables": sum(servable(e) for e in etats_),
+                    "en_recul": sum(e.ecart in RECULS for e in etats_),
+                    "servables_feuilles": sum(servable(e) and not e.conteneur for e in etats_),
+                    "servables_conteneurs": sum(servable(e) and e.conteneur for e in etats_),
                     "familles": len({e.famille for e in etats_ if e.ecart is None}), "lu_a": lecture.lu_a, "appels": lecture.appels,
                     "secondes": lecture.secondes, "depuis_cache": lecture.depuis_cache,
                     "fetch_note": lecture.fetch_note,
@@ -413,6 +412,7 @@ def rapport(lecture: gh_bulk.Lecture, etats_: list[Etat], file: list[Etat], lane
         "grains": [tapis_service.grain_servi(
             i, e, lane, tapis_equilibre.raisons(e, conso, maintenant), prs_par) for i, e in enumerate(file, 1)],
         "ecartees": ecartees,
+        "en_recul": en_recul,
         # Les items ETEINTS (barrieres de fond) sont nommes pour l'urne.
         "eteints": tapis_sature.eteints(ecartees),
     }

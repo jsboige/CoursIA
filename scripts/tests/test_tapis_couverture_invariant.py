@@ -207,15 +207,30 @@ def test_l_organe_signale_l_equite_viollee(monkeypatch):
     assert r["equite"] == [1]
 
 
-def test_le_filtre_de_servabilite_suit_la_definition_du_module(monkeypatch):
-    """Compatibilite avec le #27059 (lane myia-ai-01:CoursIA, PR ouverte) : ce
-    tirage elargit la notion de servable aux ecarts de recul (COUVERTE,
-    RELACHEE, MERGEE). Sans le shim, le filtre de `ordonner` ecarterait du
-    tour des issues que ce tirage entend servir.
-    """
-    e = _etat(numero=1, ecart="COUVERTE")
-    assert tr._servable(e) is False   # avant le #27059 : un ecart dur n'est pas servi
-    monkeypatch.setattr(tr, "servable",
-                        lambda x: x.ecart is None or x.ecart in ("COUVERTE", "RELACHEE", "MERGEE"),
-                        raising=False)
-    assert tr._servable(e) is True
+def test_le_recul_est_servi_dans_son_palier_apres_le_tour():
+    """Raccord avec le #27059 : un ecart de recul (COUVERTE, RELACHEE, MERGEE)
+    est servable, mais dans un palier a lui, apres les issues libres -- il
+    n'entre pas dans le tour, ou il passerait devant elles."""
+    libre, recul = _etat(numero=1), _etat(numero=2, ecart="COUVERTE")
+    assert tr.servable(recul) and recul.ecart in tr.RECULS
+    assert [e.numero for e in tr.ordonner([recul, libre], LANE, NOW, 2)] == [1, 2]
+    assert [e.numero for e in tr.ordonner([recul, libre], LANE, NOW, 1)] == [1]
+
+
+def _conteneur(numero: int, visites: int = 0) -> tr.Etat:
+    e = _etat(numero=numero, visites=visites, titre=f"[EPIC] {numero}")
+    e.conteneur = True
+    return e
+
+
+def test_une_issue_en_recul_deja_visitee_ne_prend_pas_la_place_d_un_conteneur_jamais_visite():
+    """#27590 dans le palier de recul : le conteneur reporte hors quota, jamais
+    visite, passe devant une issue en recul deja visitee. Controle negatif :
+    jamais visitee, l'issue en recul passe devant lui (#26926, un grain avant
+    un conteneur)."""
+    a, b = _conteneur(10), _conteneur(11)
+    vue = _etat(numero=2, visites=2, ecart="COUVERTE")
+    assert sorted(e.numero for e in tr.ordonner([a, b, vue], LANE, NOW, 2)) == [10, 11]
+    neuve = _etat(numero=3, visites=0, ecart="COUVERTE")
+    servis = [e.numero for e in tr.ordonner([_conteneur(10), _conteneur(11), neuve], LANE, NOW, 2)]
+    assert 3 in servis and len(servis) == 2

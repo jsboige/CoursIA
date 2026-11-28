@@ -603,17 +603,14 @@ def test_cli_json_sur_un_dossier(tmp_path, capsysbinary):
     code = tr.main(["--lane", LANE, "--lecture", str(dossier), "--json"],
                    run=lambda argv, timeout: "")
     sortie = json.loads(capsysbinary.readouterr().out.decode("utf-8"))
-    assert code == 0 and len(sortie["grains"]) == 6
+    assert code == 0 and len(sortie["grains"]) == 7
     assert sortie["vos_prs"] == [{"numero": 900, "titre": "Ma PR", "age_j": 1.2}]
-    assert sortie["ecartees"]["COUVERTE"] == [{"numero": 1, "motif":
-                                               "votre PR #900 la cite : portez-la au merge",
-                                               "feuille": True}]
     assert sortie["lecture"]["issues"] == 7 and sortie["maintenant"] == tr._iso(NOW)
     # L'assiette (#25082) : le tirage dit combien de feuilles il sert.
     assert (sortie["lecture"]["servables_feuilles"] + sortie["lecture"]["servables_conteneurs"]
             == sortie["lecture"]["servables"])
     assert sortie["lecture"]["servables_conteneurs"] == 3  # les 3 familles de l'EPIC
-    assert set(sortie) >= {"grains", "vos_prs", "ecartees", "lecture"}
+    assert set(sortie) >= {"grains", "vos_prs", "ecartees", "en_recul", "lecture"}
 
 
 def test_cli_pool_vide_dit_en_clair(tmp_path, capsysbinary):
@@ -669,7 +666,7 @@ def _violations(source: str) -> list[str]:
 def test_tapis_rapide_ne_lance_aucun_processus():
     for nom in ("tapis_rapide.py", "tapis_marqueurs.py", "tapis_hors_flotte.py",
                 "gh_cache.py", "gh_cache_fichier.py", "tapis_service.py",
-                "tapis_reverif.py"):
+                "tapis_recul.py", "tapis_reverif.py"):
         assert _violations((COORD / nom).read_text(encoding="utf-8")) == [], nom
     temoin = "import subprocess\nfrom x import y as gh_bulk\ngh_bulk.run_defaut(['gh'], 9)\n"
     assert set(_violations(temoin)) == {"subprocess", "run_defaut()", "'gh'"}
@@ -737,9 +734,11 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # SORTIE TEXTE de la voie leger -- extraite de tapis_leger.py pour que la greffe
 # du cap de livraisons tienne le plafond, #21067, 22/11) ;
 # tapis_cap_livraisons.py la vingt-neuvieme (le CAP DE LIVRAISONS EPIC rebranche
-# sur la voie de tirage reelle, #21067, 22/11) ; tapis_labels.py la
-# trentieme (les EXCLUSIONS EN DONNEES : la table des labels qui ecartent un
-# grain -- l'urne de cloture et la pause, #28114, 23/11) ;
+# sur la voie de tirage reelle, #21067, 22/11) ; tapis_recul.py la trentieme
+# (le RECUL du tapis qui ne refuse jamais : COUVERTE, RELACHEE et MERGEE
+# servis en second temps -- extrait de tapis_rapide.py pour tenir le plafond,
+# #27059) ; tapis_labels.py la trentieme (les EXCLUSIONS EN DONNEES : la table
+# des labels qui ecartent un grain -- l'urne de cloture et la pause, #28114, 23/11) ;
 # tapis_occupation.py la trente-et-unieme (l'OCCUPATION d'un grain : l'urne de
 # cloture et la PR qui le tient, #28090, 22/11) ; tapis_leger_rapport.py la
 # trente-deuxieme (le RAPPORT du tirage leger -- extrait pour que le cumul des deux
@@ -754,6 +753,7 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("gh_cache.py", 130),
                                               ("gh_cache_fichier.py", 60),
                                               ("tapis_service.py", 140),
+                                              ("tapis_recul.py", 90),
                                               ("gh_selection.py", 140),
                                               ("tapis_avantages.py", 80),
                                               ("tapis_universel.py", 160),

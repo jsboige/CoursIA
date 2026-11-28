@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from coordination import gh_bulk, gh_cache_fichier, tapis_sature
+from coordination import gh_bulk, gh_cache_fichier, tapis_recul, tapis_sature
 
 VERIF = "python scripts/check_lane_claim.py {n} --lane {lane}"
 VERIF_CONTENEUR = VERIF + " --paths <vos chemins>"
@@ -118,8 +118,8 @@ def texte(r: dict, source: str) -> str:
     comptes = ", ".join(f"{code} {len(v)}" for code, v in r["ecartees"].items())
     total = sum(len(v) for v in r["ecartees"].values())
     lignes.append(f"\nEcartees sans sonde : {comptes} (total {total})")
-    eteints = r.get("eteints") or []
-    lignes += tapis_sature.lignes_urne(eteints)
+    lignes += tapis_recul.lignes_recul(r.get("en_recul"))
+    lignes += tapis_sature.lignes_urne(r.get("eteints") or [])
     rev = r.get("reverif_fils")
     if rev:
         jetes = ", ".join(f"{j['code']} #{j['numero']}" for j in rev["jetes"]) or "aucun"
