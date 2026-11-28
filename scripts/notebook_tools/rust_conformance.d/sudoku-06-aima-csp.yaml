@@ -1,0 +1,869 @@
+# Conformité différentielle de Sudoku-06-AIMA-CSP (portage Rust nb_coder).
+#
+# Écrite à la livraison par nb_coder_integrate depuis les sorties COMMITÉES
+# des carnets : correspondance par index de cellule (le portage garde la
+# structure de cellules du jumeau Python, scellée par twin-parity), une
+# mesure par cellule qui imprime côté Python, égalité stricte du texte ;
+# les lignes de durée murale sont des ancres en présence seule. Le côté
+# C# est comparé où sa cellule alignée imprime le même texte, sinon
+# déclaré absent avec l'écart mesuré. À corriger À LA MAIN si une
+# divergence est un écart d'API documenté : le fichier n'est jamais
+# réécrit par l'outil une fois présent.
+#
+# Cellules non mesurées (motif relevé à la génération) :
+#   - c3_text: valeur non comparée, déclarée par la spec (#28944, Tolerances, cellule 3) : **ecart declare** -- 4 morceaux mesurés
+#   - c33_text: valeur non comparée, déclarée par la spec (#28944, Tolerances, cellule 33) : **non comparee** -- 23 morceaux mesurés
+#   - c38_text: valeur non comparée, déclarée par la spec (#28944, Tolerances, cellule 38) : **non comparee** -- 12 morceaux mesurés
+#
+# Valeurs non comparées (lignes de tolérance de la spec, appliquées
+# comme un MASQUE : la mesure reste écrite, un morceau par jeton, la valeur
+# nommée seule est masquée) :
+#   - c3_text : valeur non comparée, déclarée par la spec (#28944, Tolerances, cellule 3) : **ecart declare**
+#   - c33_text : valeur non comparée, déclarée par la spec (#28944, Tolerances, cellule 33) : **non comparee**
+#   - c38_text : valeur non comparée, déclarée par la spec (#28944, Tolerances, cellule 38) : **non comparee**
+- name: "Sudoku-06-AIMA-CSP"
+  family: "Sudoku"
+  python: MyIA.AI.Notebooks/Sudoku/Sudoku-06-AIMA-CSP-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-06-AIMA-CSP-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/Sudoku/Sudoku-06-AIMA-CSP-Rust.ipynb
+  measures:
+    - id: c1_text
+      description: "Sortie de la cellule 1, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 1
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 1
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 1 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c3_text_l1p1
+      description: "Sortie de la cellule 3, ligne 1, partie 1 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **ecart declare** » (#28944, Tolerances, cellule 3))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "(?m:^(Dossier\\ Puzzles:\\ <repo>MyIA\\.AI\\.Notebooks)(?:(?:/|\\\\))Sudoku(?:(?:/|\\\\))Puzzles[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "(?m:^(Dossier\\ Puzzles:\\ <repo>MyIA\\.AI\\.Notebooks)(?:(?:/|\\\\))Sudoku(?:(?:/|\\\\))Puzzles[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 3 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c3_text_l1p2
+      description: "Sortie de la cellule 3, ligne 1, partie 2 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **ecart declare** » (#28944, Tolerances, cellule 3))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "(?m:^Dossier\\ Puzzles:\\ <repo>MyIA\\.AI\\.Notebooks(?:(?:/|\\\\))(Sudoku)(?:(?:/|\\\\))Puzzles[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "(?m:^Dossier\\ Puzzles:\\ <repo>MyIA\\.AI\\.Notebooks(?:(?:/|\\\\))(Sudoku)(?:(?:/|\\\\))Puzzles[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 3 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c3_text_l1p3
+      description: "Sortie de la cellule 3, ligne 1, partie 3 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **ecart declare** » (#28944, Tolerances, cellule 3))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "(?m:^Dossier\\ Puzzles:\\ <repo>MyIA\\.AI\\.Notebooks(?:(?:/|\\\\))Sudoku(?:(?:/|\\\\))(Puzzles)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "(?m:^Dossier\\ Puzzles:\\ <repo>MyIA\\.AI\\.Notebooks(?:(?:/|\\\\))Sudoku(?:(?:/|\\\\))(Puzzles)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 3 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c3_text_structure
+      description: "Sortie de la cellule 3 : ordre des lignes et des jetons identique au jumeau Python (tolérance « **ecart declare** » (#28944, Tolerances, cellule 3) : la valeur qu'elle nomme est masquée, jamais comparée)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "\\A\\s*\\s*(Dossier)[ \\t\\f\\v]+Puzzles:[ \\t\\f\\v]+<repo>MyIA\\.AI\\.Notebooks(?:(?:/|\\\\))Sudoku(?:(?:/|\\\\))Puzzles\\s*\\s*\\Z"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "\\A\\s*\\s*(Dossier)[ \\t\\f\\v]+Puzzles:[ \\t\\f\\v]+<repo>MyIA\\.AI\\.Notebooks(?:(?:/|\\\\))Sudoku(?:(?:/|\\\\))Puzzles\\s*\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 3 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c5_text
+      description: "Sortie de la cellule 5, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 5 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c8_text
+      description: "Sortie de la cellule 8, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 8 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c11_text
+      description: "Sortie de la cellule 11, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 11
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 11 diffère du texte Python (ligne 1 : « BacktrackingSimple defini. » contre « Classe CSP definie. » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c13_text
+      description: "Sortie de la cellule 13, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 13
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 13 diffère du texte Python (ligne 1 : « Heuristiques MRV et LCV definies. » contre « SudokuCSPBuilder defini. » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c15_text
+      description: "Sortie de la cellule 15, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 15
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 15 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c17_text
+      description: "Sortie de la cellule 17, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 17
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 17 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c19_text
+      description: "Sortie de la cellule 19, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 19
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 19 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c21_text
+      description: "Sortie de la cellule 21, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 21
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 21 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c23_text
+      description: "Sortie de la cellule 23, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 23
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 23 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c25_text
+      description: "Sortie de la cellule 25, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 25
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 25
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 25 diffère du texte Python (ligne 1 : « MAC defini. » contre « AC3 defini. » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c27_text
+      description: "Sortie de la cellule 27, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 27
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 27 diffère du texte Python (ligne 1 : « AIMASolver defini. » contre « Exercice a completer » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c29_text
+      description: "Sortie de la cellule 29, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 29
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 29
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 29 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c31_seg1
+      description: "Sortie de la cellule 31, texte identique au jumeau Python (segment 1/2 ; durées murales en présence seule, valeurs jamais comparées)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 31
+          pattern: "\\A\\s*(.*?)\\s*(?m:^Solution\\ \\(MAC\\):\\ \\d+(?:[.,]\\d+)?ms,\\ 81\\ assignations,\\ 0\\ backtracks\\r?$)"
+          transform: text
+        rust:
+          cell: 31
+          pattern: "\\A\\s*(.*?)\\s*(?m:^Solution\\ \\(MAC\\):\\ \\d+(?:[.,]\\d+)?ms,\\ 81\\ assignations,\\ 0\\ backtracks\\r?$)"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 31 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c31_seg2
+      description: "Sortie de la cellule 31, texte identique au jumeau Python (segment 2/2 ; durées murales en présence seule, valeurs jamais comparées)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 31
+          pattern: "\\A(?:.*?)(?m:^Solution\\ \\(MAC\\):\\ \\d+(?:[.,]\\d+)?ms,\\ 81\\ assignations,\\ 0\\ backtracks\\r?$)\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 31
+          pattern: "\\A(?:.*?)(?m:^Solution\\ \\(MAC\\):\\ \\d+(?:[.,]\\d+)?ms,\\ 81\\ assignations,\\ 0\\ backtracks\\r?$)\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 31 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_text_l1
+      description: "Sortie de la cellule 33, ligne 1 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 33))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(?m:^(===\\ Benchmark\\ sur\\ 2\\ puzzles\\ faciles\\ ===)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "(?m:^(===\\ Benchmark\\ sur\\ 2\\ puzzles\\ faciles\\ ===)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_text_l2
+      description: "Sortie de la cellule 33, ligne 2 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 33))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(?m:^(================================================================================)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "(?m:^(================================================================================)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_text_l3
+      description: "Sortie de la cellule 33, ligne 3 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 33))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(?m:^(Strategie\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ Assigns\\ \\ \\ Backtracks\\ \\ \\ \\ Temps\\(ms\\)\\ \\ \\ Succes)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "(?m:^(Strategie\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ Assigns\\ \\ \\ Backtracks\\ \\ \\ \\ Temps\\(ms\\)\\ \\ \\ Succes)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_text_l4
+      description: "Sortie de la cellule 33, ligne 4 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 33))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(?m:^(\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "(?m:^(\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_text_l5p1
+      description: "Sortie de la cellule 33, ligne 5, partie 1 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 33))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(?m:^(BACKTRACKING\\ SIMPLE\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 2889322\\ \\ \\ \\ \\ \\ \\ 499461)[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+2/2[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "(?m:^(BACKTRACKING\\ SIMPLE\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 2889322\\ \\ \\ \\ \\ \\ \\ 499461)[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+2/2[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_text_l5p2
+      description: "Sortie de la cellule 33, ligne 5, partie 2 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 33))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(?m:^BACKTRACKING\\ SIMPLE\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 2889322\\ \\ \\ \\ \\ \\ \\ 499461[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+(2/2)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "(?m:^BACKTRACKING\\ SIMPLE\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 2889322\\ \\ \\ \\ \\ \\ \\ 499461[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+(2/2)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_text_l6p1
+      description: "Sortie de la cellule 33, ligne 6, partie 1 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 33))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(?m:^(BACKTRACKING\\ MRV\\ LCV\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 255\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 0)[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+2/2[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "(?m:^(BACKTRACKING\\ MRV\\ LCV\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 255\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 0)[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+2/2[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_text_l6p2
+      description: "Sortie de la cellule 33, ligne 6, partie 2 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 33))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(?m:^BACKTRACKING\\ MRV\\ LCV\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 255\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 0[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+(2/2)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "(?m:^BACKTRACKING\\ MRV\\ LCV\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 255\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 0[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+(2/2)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_text_l7p1
+      description: "Sortie de la cellule 33, ligne 7, partie 1 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 33))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(?m:^(FORWARD\\ CHECKING\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 81\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 0)[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+2/2[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "(?m:^(FORWARD\\ CHECKING\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 81\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 0)[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+2/2[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_text_l7p2
+      description: "Sortie de la cellule 33, ligne 7, partie 2 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 33))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(?m:^FORWARD\\ CHECKING\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 81\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 0[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+(2/2)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "(?m:^FORWARD\\ CHECKING\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 81\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 0[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+(2/2)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_text_l8p1
+      description: "Sortie de la cellule 33, ligne 8, partie 1 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 33))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(?m:^(MAC\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 81\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 0)[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+2/2[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "(?m:^(MAC\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 81\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 0)[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+2/2[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_text_l8p2
+      description: "Sortie de la cellule 33, ligne 8, partie 2 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 33))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(?m:^MAC\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 81\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 0[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+(2/2)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "(?m:^MAC\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 81\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 0[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+(2/2)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_text_l9
+      description: "Sortie de la cellule 33, ligne 9 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 33))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(?m:^(================================================================================)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "(?m:^(================================================================================)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_text_l11
+      description: "Sortie de la cellule 33, ligne 11 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 33))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(?m:^(===\\ FC\\ vs\\ MAC\\ sur\\ 4\\ puzzles\\ difficiles\\ \\(top95\\)\\ ===)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "(?m:^(===\\ FC\\ vs\\ MAC\\ sur\\ 4\\ puzzles\\ difficiles\\ \\(top95\\)\\ ===)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_text_l12
+      description: "Sortie de la cellule 33, ligne 12 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 33))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(?m:^(======================================================================)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "(?m:^(======================================================================)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_text_l13
+      description: "Sortie de la cellule 33, ligne 13 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 33))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(?m:^(Strategie\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ Assigns\\ \\ \\ Backtracks\\ \\ \\ \\ Temps\\(ms\\)\\ \\ \\ Succes)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "(?m:^(Strategie\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ Assigns\\ \\ \\ Backtracks\\ \\ \\ \\ Temps\\(ms\\)\\ \\ \\ Succes)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_text_l14
+      description: "Sortie de la cellule 33, ligne 14 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 33))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(?m:^(\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "(?m:^(\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_text_l15p1
+      description: "Sortie de la cellule 33, ligne 15, partie 1 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 33))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(?m:^(FORWARD\\ CHECKING\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 2143\\ \\ \\ \\ \\ \\ \\ \\ \\ 2062)[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+4/4[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "(?m:^(FORWARD\\ CHECKING\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 2143\\ \\ \\ \\ \\ \\ \\ \\ \\ 2062)[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+4/4[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_text_l15p2
+      description: "Sortie de la cellule 33, ligne 15, partie 2 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 33))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(?m:^FORWARD\\ CHECKING\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 2143\\ \\ \\ \\ \\ \\ \\ \\ \\ 2062[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+(4/4)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "(?m:^FORWARD\\ CHECKING\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 2143\\ \\ \\ \\ \\ \\ \\ \\ \\ 2062[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+(4/4)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_text_l16p1
+      description: "Sortie de la cellule 33, ligne 16, partie 1 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 33))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(?m:^(MAC\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 1060\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 979)[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+4/4[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "(?m:^(MAC\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 1060\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 979)[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+4/4[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_text_l16p2
+      description: "Sortie de la cellule 33, ligne 16, partie 2 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 33))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(?m:^MAC\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 1060\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 979[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+(4/4)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "(?m:^MAC\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 1060\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 979[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+(4/4)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_text_l17
+      description: "Sortie de la cellule 33, ligne 17 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 33))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(?m:^(======================================================================)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "(?m:^(======================================================================)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_text_structure
+      description: "Sortie de la cellule 33 : ordre des lignes et des jetons identique au jumeau Python (tolérance « **non comparee** » (#28944, Tolerances, cellule 33) : la valeur qu'elle nomme est masquée, jamais comparée)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "\\A\\s*\\s*(===)[ \\t\\f\\v]+Benchmark[ \\t\\f\\v]+sur[ \\t\\f\\v]+2[ \\t\\f\\v]+puzzles[ \\t\\f\\v]+faciles[ \\t\\f\\v]+===[ \\t]*\\r?\\n[ \\t]*================================================================================[ \\t]*\\r?\\n[ \\t]*Strategie[ \\t\\f\\v]+Assigns[ \\t\\f\\v]+Backtracks[ \\t\\f\\v]+Temps\\(ms\\)[ \\t\\f\\v]+Succes[ \\t]*\\r?\\n[ \\t]*\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-[ \\t]*\\r?\\n[ \\t]*BACKTRACKING[ \\t\\f\\v]+SIMPLE[ \\t\\f\\v]+2889322[ \\t\\f\\v]+499461[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+2/2[ \\t]*\\r?\\n[ \\t]*BACKTRACKING[ \\t\\f\\v]+MRV[ \\t\\f\\v]+LCV[ \\t\\f\\v]+255[ \\t\\f\\v]+0[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+2/2[ \\t]*\\r?\\n[ \\t]*FORWARD[ \\t\\f\\v]+CHECKING[ \\t\\f\\v]+81[ \\t\\f\\v]+0[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+2/2[ \\t]*\\r?\\n[ \\t]*MAC[ \\t\\f\\v]+81[ \\t\\f\\v]+0[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+2/2[ \\t]*\\r?\\n[ \\t]*================================================================================[ \\t]*\\r?\\n[ \\t]*[ \\t]*\\r?\\n[ \\t]*===[ \\t\\f\\v]+FC[ \\t\\f\\v]+vs[ \\t\\f\\v]+MAC[ \\t\\f\\v]+sur[ \\t\\f\\v]+4[ \\t\\f\\v]+puzzles[ \\t\\f\\v]+difficiles[ \\t\\f\\v]+\\(top95\\)[ \\t\\f\\v]+===[ \\t]*\\r?\\n[ \\t]*======================================================================[ \\t]*\\r?\\n[ \\t]*Strategie[ \\t\\f\\v]+Assigns[ \\t\\f\\v]+Backtracks[ \\t\\f\\v]+Temps\\(ms\\)[ \\t\\f\\v]+Succes[ \\t]*\\r?\\n[ \\t]*\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-[ \\t]*\\r?\\n[ \\t]*FORWARD[ \\t\\f\\v]+CHECKING[ \\t\\f\\v]+2143[ \\t\\f\\v]+2062[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+4/4[ \\t]*\\r?\\n[ \\t]*MAC[ \\t\\f\\v]+1060[ \\t\\f\\v]+979[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+4/4[ \\t]*\\r?\\n[ \\t]*======================================================================\\s*\\s*\\Z"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "\\A\\s*\\s*(===)[ \\t\\f\\v]+Benchmark[ \\t\\f\\v]+sur[ \\t\\f\\v]+2[ \\t\\f\\v]+puzzles[ \\t\\f\\v]+faciles[ \\t\\f\\v]+===[ \\t]*\\r?\\n[ \\t]*================================================================================[ \\t]*\\r?\\n[ \\t]*Strategie[ \\t\\f\\v]+Assigns[ \\t\\f\\v]+Backtracks[ \\t\\f\\v]+Temps\\(ms\\)[ \\t\\f\\v]+Succes[ \\t]*\\r?\\n[ \\t]*\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-[ \\t]*\\r?\\n[ \\t]*BACKTRACKING[ \\t\\f\\v]+SIMPLE[ \\t\\f\\v]+2889322[ \\t\\f\\v]+499461[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+2/2[ \\t]*\\r?\\n[ \\t]*BACKTRACKING[ \\t\\f\\v]+MRV[ \\t\\f\\v]+LCV[ \\t\\f\\v]+255[ \\t\\f\\v]+0[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+2/2[ \\t]*\\r?\\n[ \\t]*FORWARD[ \\t\\f\\v]+CHECKING[ \\t\\f\\v]+81[ \\t\\f\\v]+0[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+2/2[ \\t]*\\r?\\n[ \\t]*MAC[ \\t\\f\\v]+81[ \\t\\f\\v]+0[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+2/2[ \\t]*\\r?\\n[ \\t]*================================================================================[ \\t]*\\r?\\n[ \\t]*[ \\t]*\\r?\\n[ \\t]*===[ \\t\\f\\v]+FC[ \\t\\f\\v]+vs[ \\t\\f\\v]+MAC[ \\t\\f\\v]+sur[ \\t\\f\\v]+4[ \\t\\f\\v]+puzzles[ \\t\\f\\v]+difficiles[ \\t\\f\\v]+\\(top95\\)[ \\t\\f\\v]+===[ \\t]*\\r?\\n[ \\t]*======================================================================[ \\t]*\\r?\\n[ \\t]*Strategie[ \\t\\f\\v]+Assigns[ \\t\\f\\v]+Backtracks[ \\t\\f\\v]+Temps\\(ms\\)[ \\t\\f\\v]+Succes[ \\t]*\\r?\\n[ \\t]*\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-[ \\t]*\\r?\\n[ \\t]*FORWARD[ \\t\\f\\v]+CHECKING[ \\t\\f\\v]+2143[ \\t\\f\\v]+2062[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+4/4[ \\t]*\\r?\\n[ \\t]*MAC[ \\t\\f\\v]+1060[ \\t\\f\\v]+979[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+4/4[ \\t]*\\r?\\n[ \\t]*======================================================================\\s*\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c36_text
+      description: "Sortie de la cellule 36, texte identique au jumeau Python (segment 1/1 ; durées murales en présence seule, valeurs jamais comparées)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 36
+          pattern: "\\A(?:.*?)(?m:^CBJ\\ \\(easy\\):\\ \\d+(?:[.,]\\d+)?ms,\\ 81\\ assigns,\\ 0\\ backtracks,\\ valide=True\\r?$)\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 36
+          pattern: "\\A(?:.*?)(?m:^CBJ\\ \\(easy\\):\\ \\d+(?:[.,]\\d+)?ms,\\ 81\\ assigns,\\ 0\\ backtracks,\\ valide=True\\r?$)\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 36 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c38_text_l1
+      description: "Sortie de la cellule 38, ligne 1 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 38))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 38
+          pattern: "(?m:^(===\\ Benchmark\\ CBJ\\ vs\\ heuristiques\\ sur\\ 3\\ puzzles\\ faciles\\ ===)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 38
+          pattern: "(?m:^(===\\ Benchmark\\ CBJ\\ vs\\ heuristiques\\ sur\\ 3\\ puzzles\\ faciles\\ ===)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 38 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c38_text_l2
+      description: "Sortie de la cellule 38, ligne 2 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 38))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 38
+          pattern: "(?m:^(================================================================================)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 38
+          pattern: "(?m:^(================================================================================)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 38 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c38_text_l3
+      description: "Sortie de la cellule 38, ligne 3 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 38))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 38
+          pattern: "(?m:^(Strategie\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ Assigns\\ \\ \\ Backtracks\\ \\ \\ \\ Temps\\(ms\\)\\ \\ \\ \\ \\ Succes)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 38
+          pattern: "(?m:^(Strategie\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ Assigns\\ \\ \\ Backtracks\\ \\ \\ \\ Temps\\(ms\\)\\ \\ \\ \\ \\ Succes)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 38 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c38_text_l4
+      description: "Sortie de la cellule 38, ligne 4 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 38))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 38
+          pattern: "(?m:^(\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 38
+          pattern: "(?m:^(\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 38 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c38_text_l5p1
+      description: "Sortie de la cellule 38, ligne 5, partie 1 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 38))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 38
+          pattern: "(?m:^(BACKTRACKING\\ MRV\\ LCV\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 366\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 10)[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+3/3[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 38
+          pattern: "(?m:^(BACKTRACKING\\ MRV\\ LCV\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 366\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 10)[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+3/3[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 38 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c38_text_l5p2
+      description: "Sortie de la cellule 38, ligne 5, partie 2 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 38))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 38
+          pattern: "(?m:^BACKTRACKING\\ MRV\\ LCV\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 366\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 10[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+(3/3)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 38
+          pattern: "(?m:^BACKTRACKING\\ MRV\\ LCV\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 366\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 10[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+(3/3)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 38 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c38_text_l6p1
+      description: "Sortie de la cellule 38, ligne 6, partie 1 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 38))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 38
+          pattern: "(?m:^(CONFLICT\\ BACK\\ JUMPING\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 82\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 1)[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+3/3[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 38
+          pattern: "(?m:^(CONFLICT\\ BACK\\ JUMPING\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 82\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 1)[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+3/3[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 38 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c38_text_l6p2
+      description: "Sortie de la cellule 38, ligne 6, partie 2 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 38))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 38
+          pattern: "(?m:^CONFLICT\\ BACK\\ JUMPING\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 82\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 1[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+(3/3)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 38
+          pattern: "(?m:^CONFLICT\\ BACK\\ JUMPING\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 82\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 1[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+(3/3)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 38 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c38_text_l7p1
+      description: "Sortie de la cellule 38, ligne 7, partie 1 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 38))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 38
+          pattern: "(?m:^(FORWARD\\ CHECKING\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 91\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 10)[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+3/3[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 38
+          pattern: "(?m:^(FORWARD\\ CHECKING\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 91\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 10)[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+3/3[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 38 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c38_text_l7p2
+      description: "Sortie de la cellule 38, ligne 7, partie 2 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 38))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 38
+          pattern: "(?m:^FORWARD\\ CHECKING\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 91\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 10[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+(3/3)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 38
+          pattern: "(?m:^FORWARD\\ CHECKING\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 91\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ 10[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+(3/3)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 38 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c38_text_l8
+      description: "Sortie de la cellule 38, ligne 8 : texte identique au jumeau Python hors de la valeur masquée (tolérance « **non comparee** » (#28944, Tolerances, cellule 38))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 38
+          pattern: "(?m:^(================================================================================)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 38
+          pattern: "(?m:^(================================================================================)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 38 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c38_text_structure
+      description: "Sortie de la cellule 38 : ordre des lignes et des jetons identique au jumeau Python (tolérance « **non comparee** » (#28944, Tolerances, cellule 38) : la valeur qu'elle nomme est masquée, jamais comparée)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 38
+          pattern: "\\A\\s*\\s*(===)[ \\t\\f\\v]+Benchmark[ \\t\\f\\v]+CBJ[ \\t\\f\\v]+vs[ \\t\\f\\v]+heuristiques[ \\t\\f\\v]+sur[ \\t\\f\\v]+3[ \\t\\f\\v]+puzzles[ \\t\\f\\v]+faciles[ \\t\\f\\v]+===[ \\t]*\\r?\\n[ \\t]*================================================================================[ \\t]*\\r?\\n[ \\t]*Strategie[ \\t\\f\\v]+Assigns[ \\t\\f\\v]+Backtracks[ \\t\\f\\v]+Temps\\(ms\\)[ \\t\\f\\v]+Succes[ \\t]*\\r?\\n[ \\t]*\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-[ \\t]*\\r?\\n[ \\t]*BACKTRACKING[ \\t\\f\\v]+MRV[ \\t\\f\\v]+LCV[ \\t\\f\\v]+366[ \\t\\f\\v]+10[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+3/3[ \\t]*\\r?\\n[ \\t]*CONFLICT[ \\t\\f\\v]+BACK[ \\t\\f\\v]+JUMPING[ \\t\\f\\v]+82[ \\t\\f\\v]+1[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+3/3[ \\t]*\\r?\\n[ \\t]*FORWARD[ \\t\\f\\v]+CHECKING[ \\t\\f\\v]+91[ \\t\\f\\v]+10[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+3/3[ \\t]*\\r?\\n[ \\t]*================================================================================\\s*\\s*\\Z"
+          transform: text
+        rust:
+          cell: 38
+          pattern: "\\A\\s*\\s*(===)[ \\t\\f\\v]+Benchmark[ \\t\\f\\v]+CBJ[ \\t\\f\\v]+vs[ \\t\\f\\v]+heuristiques[ \\t\\f\\v]+sur[ \\t\\f\\v]+3[ \\t\\f\\v]+puzzles[ \\t\\f\\v]+faciles[ \\t\\f\\v]+===[ \\t]*\\r?\\n[ \\t]*================================================================================[ \\t]*\\r?\\n[ \\t]*Strategie[ \\t\\f\\v]+Assigns[ \\t\\f\\v]+Backtracks[ \\t\\f\\v]+Temps\\(ms\\)[ \\t\\f\\v]+Succes[ \\t]*\\r?\\n[ \\t]*\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-[ \\t]*\\r?\\n[ \\t]*BACKTRACKING[ \\t\\f\\v]+MRV[ \\t\\f\\v]+LCV[ \\t\\f\\v]+366[ \\t\\f\\v]+10[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+3/3[ \\t]*\\r?\\n[ \\t]*CONFLICT[ \\t\\f\\v]+BACK[ \\t\\f\\v]+JUMPING[ \\t\\f\\v]+82[ \\t\\f\\v]+1[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+3/3[ \\t]*\\r?\\n[ \\t]*FORWARD[ \\t\\f\\v]+CHECKING[ \\t\\f\\v]+91[ \\t\\f\\v]+10[ \\t\\f\\v]+(?:[0-9]+(?:[.,][0-9]+)?)[ \\t\\f\\v]+3/3[ \\t]*\\r?\\n[ \\t]*================================================================================\\s*\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 38 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c41_text
+      description: "Sortie de la cellule 41, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 41
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 41
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 41 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
