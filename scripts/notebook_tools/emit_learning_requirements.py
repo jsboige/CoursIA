@@ -374,12 +374,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.write:
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_text(rendered, encoding="utf-8")
+        out_path.write_text(rendered, encoding="utf-8", newline="\n")
         print(f"ecrit : {out_path} ({len(plan['installs'])} paquets)")
     if args.uv_input:
         uv_path = Path(args.uv_input)
         uv_path.parent.mkdir(parents=True, exist_ok=True)
-        uv_path.write_text(render_uv_input(plan), encoding="utf-8")
+        uv_path.write_text(render_uv_input(plan), encoding="utf-8", newline="\n")
         print(f"ecrit : {uv_path}")
     if args.lock:
         return check_lock(Path(args.lock), manifest_path)
@@ -387,7 +387,9 @@ def main(argv: list[str] | None = None) -> int:
         report_path = Path(args.report)
         report_path.parent.mkdir(parents=True, exist_ok=True)
         report_path.write_text(
-            json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+            json.dumps(plan, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+            newline="\n",
         )
         print(f"ecrit : {report_path}")
     if args.print or not (args.write or args.check):

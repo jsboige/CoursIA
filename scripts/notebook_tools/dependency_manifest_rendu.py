@@ -177,10 +177,15 @@ def render_markdown(manifest: dict) -> str:
             )
             resolution = conflict["resolution"]
             version = resolution["version"] or "paquet ecarte"
+            detail = f"{resolution['policy']} -> {version}"
+            # Un arbitrage declare porte sa source : elle est affichee, pour
+            # qu'une resolution ecrite ne se lise pas comme un calcul.
+            if resolution.get("source"):
+                detail += f" (source : {resolution['source']})"
             lines.append(
                 f"| `{conflict['package']}` | {conflict['class']} | "
                 f"{', '.join(conflict['specifiers'])} | {sources} | "
-                f"{resolution['policy']} -> {version} |"
+                f"{detail} |"
             )
     lines.append("")
     lines.append("## 3. Manifeste consolide (source unique des paquets de l'image)")

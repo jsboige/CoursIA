@@ -94,6 +94,17 @@
       "z3": "z3-solver"
     }
   },
+  "conflict_resolutions": {
+    "origin": "declaration",
+    "source": "Arbitrages declares des conflits de versions que l'organe ne sait pas resoudre : lorsque les bornes declarees par le corpus n'ont AUCUNE version commune (intersection vide), le calcul s'arrete et la decision est ecrite ici, avec son motif et sa source. Un arbitrage declare ne s'applique qu'a ces conflits-la : il n'ecrase jamais une resolution que l'organe sait calculer, et il est trace comme tel dans le manifeste (resolution.origin = « declaration »).",
+    "entries": {
+      "numpy": {
+        "spec": ">=1.24,<2.0",
+        "motif": "Intersection vide entre `numpy>=1.21,<2.0` (serie IIT) et `numpy>=2.0` (carnets KNOTS-05 et KNOTS-07 de `SymbolicAI/Lean/Noeuds`). La borne `<2.0` de la serie IIT est DELIBEREE : le wheel `pyemd 0.5.1` (cp39) est compile contre numpy 1.x, et la serie le dit dans son requirements.txt (« numpy.dtype size changed » a l'import avec numpy 2.x). L'intervalle retenu est le plus strict qui satisfait toutes les autres bornes declarees du corpus (IIT `>=1.21,<2.0`, SymbolicLearning `>=1.24,<2.5`, et les `>=1.24` des autres series) : l'image reste sur numpy 1.26.4, avec scipy 1.17.1, matplotlib 3.10.9 et sympy 1.15.0rc3, combinaison resolue et installable. CET ARBITRAGE NE MASQUE RIEN : l'image d'apprentissage ne satisfait PAS `numpy>=2.0` pour KNOTS-05 et KNOTS-07, dont le carnet KNOTS-07 consigne son execution mesuree sous numpy 2.5.2. Le choix entre les trois voies (aligner la serie sur numpy 1.x, sortir la serie de l'image CPU, ou lever la borne IIT) appartient a la lane qui porte la serie.",
+        "source": "MyIA.AI.Notebooks/IIT/requirements.txt ; MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/KNOTS-05-Dynamique-Tresses-Python-requirements.txt ; MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/KNOTS-07-Feuilletages-Godbillon-Vey-Python-requirements.txt ; issue #29054 (decision de la serie Lean/Noeuds)"
+      }
+    }
+  },
   "local_ports": {
     "origin": "declaration",
     "source": "Ports des services containerises du depot, releves dans docker-configurations/services/*/docker-compose*.yml. Un carnet qui appelle localhost:<port> de cette liste appelle un service du depot : sa serie est un « service optionnel » et non un carnet qui tourne seul dans l'image.",

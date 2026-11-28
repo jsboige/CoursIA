@@ -45,6 +45,36 @@ def test_specifiers_compatible_detects_empty_intersection():
     assert not dm._specifiers_compatible(bornes, pin)
 
 
+def test_specifier_bounds_keeps_the_exclusivity_of_the_bounds():
+    """`>2.0` exclut 2.0 ; `<3.0` aussi. L'exclusivite se perdait (#27544)."""
+    bornes = dm._specifier_bounds(">2.0,<3.0")
+    assert bornes["lower"] == "2.0"
+    assert bornes["lower_inclusive"] is False
+    assert bornes["upper"] == "3.0"
+    assert bornes["upper_inclusive"] is False
+    inclusives = dm._specifier_bounds(">=2.0,<=3.0")
+    assert inclusives["lower_inclusive"] is True
+    assert inclusives["upper_inclusive"] is True
+
+
+def test_specifiers_compatible_detects_an_empty_interval_from_exclusive_bounds():
+    """`>=2.0` contre `<2.0` : aucune version ne satisfait les deux.
+
+    Les bornes egales sans exclusivite formaient un point ; des que l'une
+    des deux est exclusive, l'intervalle est VIDE (#27544).
+    """
+    assert not dm._specifiers_compatible(
+        dm._specifier_bounds(">=2.0"), dm._specifier_bounds("<2.0")
+    )
+    assert not dm._specifiers_compatible(
+        dm._specifier_bounds(">2.0"), dm._specifier_bounds("<=2.0")
+    )
+    # les memes bornes, inclusives des deux cotes : un point, pas un vide
+    assert dm._specifiers_compatible(
+        dm._specifier_bounds(">=2.0"), dm._specifier_bounds("<=2.0")
+    )
+
+
 def test_specifiers_compatible_accepts_overlapping_ranges():
     lower = dm._specifier_bounds(">=1.11,<1.19")
     pin = dm._specifier_bounds("==1.14.1")
@@ -205,3 +235,76 @@ def test_end_to_end_reads_notebook_prefixed_requirements(fake_repo: Path):
     assert "snappy" in search["packages"]
     consolidated = {record["package"] for record in manifest["consolidated_manifest"]}
     assert "snappy" in consolidated
+
+
+def _commit(repo: Path, message: str) -> None:
+    subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
+    subprocess.run(
+        ["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", message],
+        cwd=repo,
+        check=True,
+    )
+
+
+def test_an_empty_intersection_publishes_no_bound(fake_repo: Path):
+    """Sans arbitrage declare, l'intersection vide ne publie AUCUNE borne.
+
+    L'organe publiait `>=2.0,<2.0` : une borne insatisfiable, que le
+    resolveur du verrou ne peut pas satisfaire (#27544).
+    """
+    _write(
+        fake_repo / "MyIA.AI.Notebooks/Search/pandas-a-requirements.txt",
+        "pandas>=1.0,<2.0\n",
+    )
+    _write(
+        fake_repo / "MyIA.AI.Notebooks/Probas/pandas-b-requirements.txt",
+        "pandas>=2.0\n",
+    )
+    _commit(fake_repo, "pandas")
+
+    manifest = dm.build_manifest(fake_repo)
+    conflict = next(
+        conflict for conflict in manifest["conflicts"] if conflict["package"] == "pandas"
+    )
+    assert conflict["class"] == "incompatible"
+    resolution = conflict["resolution"]
+    assert resolution["version"] == ""
+    assert "<2.0" not in resolution["version"]
+    assert resolution.get("origin") != "declaration"
+
+
+def test_declared_arbitration_resolves_an_empty_intersection(fake_repo: Path):
+    """Une intersection vide se tranche par un arbitrage DECLARE et source.
+
+    La politique versionnee declare `numpy>=1.24,<2.0` pour numpy : c'est
+    l'intervalle le plus strict qui satisfait les series du corpus SAUF
+    celles qui demandent `numpy>=2.0` (issue #29054).
+    """
+    _write(
+        fake_repo / "MyIA.AI.Notebooks/Search/numpy2-requirements.txt",
+        "numpy>=2.0\n",
+    )
+    _commit(fake_repo, "numpy 2")
+
+    manifest = dm.build_manifest(fake_repo)
+    conflict = next(
+        conflict for conflict in manifest["conflicts"] if conflict["package"] == "numpy"
+    )
+    assert conflict["class"] == "incompatible"
+    resolution = conflict["resolution"]
+    assert resolution["origin"] == "declaration"
+    assert resolution["version"] == ">=1.24,<2.0"
+    assert resolution["note"], "un arbitrage declare porte son motif"
+    assert resolution["source"], "un arbitrage declare porte sa source"
+
+
+def test_declared_arbitration_never_overrides_a_computable_resolution(fake_repo: Path):
+    """L'arbitrage declare ne vaut que pour un conflit que l'organe ne sait
+    pas resoudre : il n'ecrase jamais une resolution calculable."""
+    manifest = dm.build_manifest(fake_repo)
+    conflict = next(
+        conflict for conflict in manifest["conflicts"] if conflict["package"] == "numpy"
+    )
+    assert conflict["class"] == "specifier_divergent"
+    assert conflict["resolution"]["version"]
+    assert conflict["resolution"].get("origin") != "declaration"
