@@ -180,6 +180,29 @@
       "params": {},
       "fee_model": "modèle de frais par défaut de Lean pour ce courtier (IBKR Margin)",
       "fingerprint": "cbde5f3e5b5743d5"
+    },
+    {
+      "id": "halloween-v3",
+      "kind": "qc",
+      "sha": "bb8e7e2d84bdd1de3abbf41388748c01cd027526",
+      "frozen_on": "2026-11-28",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/HalloweenIndicator-QC:40124236",
+      "params": {},
+      "fee_model": "modèle de frais par défaut de Lean pour le courtier déclaré, compte sur marge",
+      "fingerprint": "c77ef1c49dabe2e1"
+    },
+    {
+      "id": "btc-gate-settled",
+      "kind": "qc",
+      "sha": "bb8e7e2d84bdd1de3abbf41388748c01cd027526",
+      "frozen_on": "2026-11-28",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/BitcoinRegimeGate-QC:40124387",
+      "params": {
+        "mode": "gate",
+        "execution": "settled"
+      },
+      "fee_model": "modèle de frais de Lean du courtier déclaré (actions US), sans majoration pour Xetra",
+      "fingerprint": "36b61357f075b801"
     }
   ]
 }
