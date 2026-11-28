@@ -23,6 +23,14 @@ La série couvre les **fondements théoriques** (bandits, MDP, équation de Bell
 
 **Note de frontière — algorithmes online.** Deux carnets d'algorithmique online ont longtemps vécu dans cette série : ils relèvent de l'**analyse compétitive** (garanties de pire cas contre l'optimum offline, sans boucle d'apprentissage) plutôt que du RL stricto sensu. Ils sont désormais rangés dans la série [Complexity](../InformationCalcul/Complexity/README.md), comme lettres **04c** (k-server, work function) et **04d** (secrétaire matroïdal) de la marche 04, qui les présente dans son fil.
 
+## Comment lire ce README
+
+Cette série se lit à plusieurs vitesses ; le principe est exposé une fois pour tout le dépôt dans [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture).
+
+- **Vous découvrez le RL** : suivez la table du [socle du parcours principal](#socle-du-parcours-principal), du carnet 01 au carnet 19, sans ouvrir les approfondissements.
+- **Vous creusez un palier** : ouvrez les [approfondissements](#approfondissements) de la marche qui vous intéresse — `01b` et `01c` autour de 01, `06b` à `06f` autour de 06, `07b` autour de 07.
+- **Vous cherchez la recherche en cours** : la sous-série [PostTraining](PostTraining/README.md) a son propre README, et les ponts vers les autres séries sont en fin de page.
+
 ## Objectifs d'apprentissage
 
 À l'issue de la série, vous saurez :
@@ -43,7 +51,7 @@ Les kernels sont relevés dans les carnets eux-mêmes (`metadata.kernelspec.name
 
 Les numéros nus constituent le parcours principal. Les liens de la dernière colonne ouvrent les approfondissements facultatifs rattachés à leur marche.
 
-| # | Notebook | Kernel | Contenu | Durée | Approfondissements |
+| # | Notebook | Kernel | Ce qu'on y apprend | Durée | Approfondissements |
 |---|----------|--------|---------|-------|---------------------|
 | 01 | [RL-01-Premiers-Pas-Stable-Baselines3-Python](RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb) | python3 | Premier agent PPO sur CartPole avec Stable Baselines3 : boucle reset/step, évaluation avant/après, sauvegarde du modèle. L'usage avant la théorie | 25-30 min | [Autour de 01](#autour-de-01) |
 | 02 | [RL-02-Wrappers-Sauvegarde-Callbacks-Python](RL-02-Wrappers-Sauvegarde-Callbacks-Python.ipynb) | python3 | Outils de production : wrappers Gym, sauvegarde et chargement de modèles, multiprocessing, callbacks de suivi, environnement personnalisé | 35-40 min | |
@@ -55,12 +63,12 @@ Les numéros nus constituent le parcours principal. Les liens de la dernière co
 | 08 | [RL-08-Dyna-Q-Planification-Python](RL-08-Dyna-Q-Planification-Python.ipynb) · [C#](RL-08-Dyna-Q-Planification-CSharp.ipynb) | python3 / .net-csharp | Model-based : modèle tabulaire, Q-Learning, Dyna-Q/Dyna-Q+, Blocking Maze et rollouts ; jumeau C# BCL .NET 9 | 45-50 min | |
 | 09 | [RL-09-RL-Offline-Behavior-Cloning-Python](RL-09-RL-Offline-Behavior-Cloning-Python.ipynb) | python3 | RL offline : behavior cloning, erreur d'extrapolation du Q-learning naïf, contrainte de support (BCQ-lite), pont vers RLHF et DPO | 50-55 min | |
 | 10 | [RL-10-Reward-Shaping-Curriculum-Python](RL-10-Reward-Shaping-Curriculum-Python.ipynb) · [C#](RL-10-Reward-Shaping-Curriculum-CSharp.ipynb) | python3 / .net-csharp | Récompense sparse : shaping potential-based (Ng et al. 1999) contre shaping naïf, curriculum par phases, et ce que le shaping enseigne du reward model appris | 45-50 min | |
-| 11 | [RL-11-POMDP-Croyances-Python](RL-11-POMDP-Croyances-Python.ipynb) | python3 | Observabilité partielle : Tiger Problem, suivi de croyance par filtre bayésien, approximation Q-MDP, et les limites du tabulaire sur un état caché | 45-50 min | |
+| 11 | [RL-11-POMDP-Croyances-Python](RL-11-POMDP-Croyances-Python.ipynb) · [jumeau C#](RL-11-POMDP-Croyances-CSharp.ipynb) | python3 | Observabilité partielle : Tiger Problem, suivi de croyance par filtre bayésien, approximation Q-MDP, et les limites du tabulaire sur un état caché | 45-50 min | |
 | 12 | [RL-12-Distributional-RL-C51-Python](RL-12-Distributional-RL-C51-Python.ipynb) | python3 | RL distributionnel : C51 depuis zéro, distribution du retour sur support à atomes fixes, projection catégorielle de la cible de Bellman, politique sensible au risque (CVaR) | 50-55 min | |
 | 13 | [RL-13-Curiosite-RND-Python](RL-13-Curiosite-RND-Python.ipynb) | python3 | Exploration profonde par curiosité : Random Network Distillation, cible figée contre prédicteur, bonus de nouveauté, et le piège d'exploitation qu'elle fait sortir | 35-40 min | |
 | 14 | [RL-14-RL-Hierarchique-Options-Python](RL-14-RL-Hierarchique-Options-Python.ipynb) | python3 | Abstraction temporelle : options `(I, π, β)` de Sutton, Precup et Singh, gridworld à quatre pièces, crédit sur longue horizon, formalisme semi-MDP enseigné sur place | 50 min | |
 | 15 | [RL-15-GRPO-Comparatif-Multi-Graines-Python](RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb) | python3 | GRPO contre PPO sur CartPole-v1 : avantage relatif intra-groupe contre GAE bootstrappé, six graines appariées, verdict tri-conditionnel (seuil à deux écarts-types, Wilcoxon apparié, intervalle bootstrap des différences), rejoué sur deux cadrans du substrat (récompense dense, puis différée). **Deux verdicts du run committé** : dense → PPO devant GRPO (six graines sur six, p = 0,0312) ; différée → GRPO devant PPO (+5,50σ), GRPO identique graine par graine aux deux cadrans (invariance à la chronologie du signal) ; portée et limites documentées dans le carnet. Exige un GPU CUDA | 40-45 min | |
-| 16 | [RL-16-Dream-RSI-Python](RL-16-Dream-RSI-Python.ipynb) | python3 | Exploration explicite et programmable (la politique est du code), historique de découverte utilisé comme simulateur-replay, évaluation off-policy à coût nul, boucle d'auto-amélioration avec incumbent ; monde jouet circle-packing en bibliothèque standard, ablation replay brut contre guidance sémantique | 40-45 min | |
+| 16 | [RL-16-Dream-RSI-Python](RL-16-Dream-RSI-Python.ipynb) · [jumeau C#](RL-16-Dream-RSI-CSharp.ipynb) | python3 | Exploration explicite et programmable (la politique est du code), historique de découverte utilisé comme simulateur-replay, évaluation off-policy à coût nul, boucle d'auto-amélioration avec incumbent ; monde jouet circle-packing en bibliothèque standard, ablation replay brut contre guidance sémantique | 40-45 min | |
 | 17 | [RL-17-Reward-Tampering-Python](RL-17-Reward-Tampering-Python.ipynb) · [C#](RL-17-Reward-Tampering-CSharp.ipynb) | python3 / .net-csharp | Du specification gaming au reward tampering : *Rocks and Diamonds* à paramètre modifiable (Everitt et al. 2021), quatre agents résolus par induction arrière exacte, et la mesure qui compte — l'indifférence n'est pas la protection, le départage des égalités suffit à déclencher la manipulation | 35-40 min | |
 | 18 | [RL-18-Randomisation-Domaine-Sim-to-Real-Python](RL-18-Randomisation-Domaine-Sim-to-Real-Python.ipynb) | python3 | Du simulateur au réel : les paramètres physiques de `CartPole-v1` modifiés pour de vrai (`masscart`, `masspole`, `length`, `gravity`, `tau`), trois régimes de test — nominal, interpolation, extrapolation — et la question de transfert qu'ils posent | 40-45 min | |
 | 19 | [RL-19-Auto-Jeu-AlphaZero-Python](RL-19-Auto-Jeu-AlphaZero-Python.ipynb) | python3 | Auto-jeu à la AlphaZero sur CPU (Puissance 4 réduit) : MCTS guidé par réseau (PUCT, valeur du réseau au lieu de rollouts), cibles politiques prises sur les distributions de visites, deux têtes politique/valeur, tournoi round-robin à budget égal — la boucle fermée fonctionne, l'avantage du guidage demande des budgets plus élevés | 10 min | |
@@ -71,14 +79,14 @@ Les lettres restent des extensions facultatives de leur parent : leurs identifia
 
 #### Autour de 01
 
-| # | Notebook | Kernel | Contenu | Durée |
+| # | Notebook | Kernel | Ce qu'on y apprend | Durée |
 |---|----------|--------|---------|-------|
 | 01b | [RL-01b-Synthese-Logique-Bitwise-Python](RL-01b-Synthese-Logique-Bitwise-Python.ipynb) | python3 | Synthèse logique d'un contrôleur CartPole : lire le bit de signe IEEE-754 de l'observation, en tirer un contrôleur à quatre règles, le confronter au PPO appris (taux de désaccord), étude de rupture et ablation | 20-25 min |
 | 01c | [RL-01c-Distillation-Politique-Prolog-Python](RL-01c-Distillation-Politique-Prolog-Python.ipynb) | python3 | Distiller une politique PPO en programme Prolog exécuté par le vrai moteur SWI-Prolog (image Docker officielle, version journalisée dans la sortie) : enseignant PPO à graine fixe, recensement exhaustif de T-bar, induction gloutonne type FOIL, liste de décision avec cuts, one-pass contre DAgger | 45-60 min |
 
 #### Autour de 06
 
-| # | Notebook | Kernel | Contenu | Durée |
+| # | Notebook | Kernel | Ce qu'on y apprend | Durée |
 |---|----------|--------|---------|-------|
 | 06b | [RL-06b-Actor-Critic-Python](RL-06b-Actor-Critic-Python.ipynb) · [C#](RL-06b-Actor-Critic-CSharp.ipynb) | python3 / .net-csharp | A2C : critic, avantage, bonus d'entropie, réduction de variance par rapport à REINFORCE, et ouverture vers PPO | 45-50 min |
 | 06c | [RL-06c-PPO-Depuis-Zero-Python](RL-06c-PPO-Depuis-Zero-Python.ipynb) · [C#](RL-06c-PPO-Depuis-Zero-CSharp.ipynb) | python3 / .net-csharp | PPO depuis zéro : ratios d'échantillonnage d'importance, surrogate clippé, GAE, comparaison A2C contre PPO, et pont vers le RLHF | 45-50 min |
@@ -88,7 +96,7 @@ Les lettres restent des extensions facultatives de leur parent : leurs identifia
 
 #### Autour de 07
 
-| # | Notebook | Kernel | Contenu | Durée |
+| # | Notebook | Kernel | Ce qu'on y apprend | Durée |
 |---|----------|--------|---------|-------|
 | 07b | [RL-07b-Sur-Generalisation-Climbing-Game-Python](RL-07b-Sur-Generalisation-Climbing-Game-Python.ipynb) | python3 | Sur-généralisation relative dans le Climbing Game : même agent tabulaire, IQL contre Hysteretic Q-learning, protocole multi-graines, IQM et intervalle bootstrap, ablation du pessimisme | 40-45 min |
 

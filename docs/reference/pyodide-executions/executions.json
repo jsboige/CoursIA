@@ -549,8 +549,8 @@
    "url": "/lab/index.html?path=Argumentation-01-Toulmin-Model-Python.ipynb"
   },
   {
-   "capture": "06-3-AudioDiffusion-Comparison-A-vs-B.png",
-   "carnet": "06-3-AudioDiffusion-Comparison-A-vs-B.ipynb",
+   "capture": "Audio-06-3-AudioDiffusion-Comparison-A-vs-B-Python.png",
+   "carnet": "Audio-06-3-AudioDiffusion-Comparison-A-vs-B-Python.ipynb",
    "cellules": [
     {
      "erreur": false,
@@ -668,7 +668,7 @@
    "erreurs": [],
    "succes": true,
    "temps_premier_resultat_s": 7.0,
-   "url": "/lab/index.html?path=06-3-AudioDiffusion-Comparison-A-vs-B.ipynb"
+   "url": "/lab/index.html?path=Audio-06-3-AudioDiffusion-Comparison-A-vs-B-Python.ipynb"
   }
  ],
  "navigateur": "chromium (playwright, headless)",

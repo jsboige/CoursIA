@@ -15,7 +15,7 @@ Les deux notebooks seedés au seed 2026-07-16 étaient :
 
 **Schéma** : 21 colonnes ratifiées (#4957 §1). `src_lang=fr`, `src_hash` (sha256-16 sur texte normalisé) + `text_fr` remplies ; colonnes cibles (`text_en/es/ar/fa/zh/ru/pt`) vides en attendant le moteur T3 Argumentum (#1650 Phase 1 connecteur gated #1271).
 
-**Note C.2/C.3 / scope kernels** : les 2 notebooks seedés sont en kernel `python3` standard (research notebooks Jupyter classiques). Pas de QuantBook (`QuantBook()`), pas de QC Cloud requis, pas de re-exécution possible localement (= dette #3968/#4362 connue ; reproducible only via QC Cloud ou data cache locale). L'extraction T1 ne touche pas au contenu exécutable, seulement aux cellules textuelles (markdown + commentaires dans cellules code).
+**Note C.2/C.3 / scope kernels** : les notebooks seedés sont en kernel `python3` standard (research notebooks Jupyter classiques). Pas de QuantBook (`QuantBook()`), pas de QC Cloud requis, pas de re-exécution possible localement (= dette #3968/#4362 connue ; reproducible only via QC Cloud ou data cache locale). L'extraction T1 ne touche pas au contenu exécutable, seulement aux cellules textuelles (markdown + commentaires dans cellules code).
 
 ## Dette extraction — migration nbformat v4.5 requise (follow-up, snapshot au seed 2026-07-16)
 
@@ -75,4 +75,4 @@ Les notebooks recherche sont en Python 3 (research) + QuantConnect (templates) +
 - PR #6498 — precedent « enrich(nbformat,#6257): add v4.5 cell ids to QuantConnect research cluster » (12 ids / 3 nb, c.457)
 - PR #6765 — precedent « feat(translation,#4957): seed CSV for QuantConnect/Python QC-Py series (T1 Phase 0.5) » (sibling wave même dossier `translations/quantconnect/`)
 - Epic #1650 — traduction multilingue du dépôt (Phase 0.5 = ce backfill ; Phase 1+ = moteur Argumentum scripté gated #1271)
-- `translations/quantconnect/README.md` — note #6782 ai-01 « resync short d'1 ligne — le prochain toucher ajoute la ligne ml-datascience (~708 cells, 28e CSV) »
+- `translations/quantconnect/README.md` — note #6782 ai-01 : resync court ; le prochain toucher y ajoute la ligne ml-datascience.

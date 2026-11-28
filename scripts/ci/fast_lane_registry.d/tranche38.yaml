@@ -1,0 +1,12 @@
+# TRANCHE38 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE38
+guards:
+  -
+    name: "MD hierarchy HINT-AS-HEADING (base vs PR, bloquant)"
+    argv: ["python", "scripts/notebook_tools/scan_md_hierarchy.py", "MyIA.AI.Notebooks/", "--baseline", "--diff", "--fail-kinds", "HINT-AS-HEADING", "--base-ref", "{base_ref}"]
+    source: "scan-md-hierarchy-drift.yml"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "scripts/notebook_tools/scan_md_hierarchy.py", "scripts/notebook_tools/md_hierarchy_baseline.json"]
+    blocking: true
+    needs_base: true
+    absorbed: true
+    pre_argv: ["python", "-m", "pytest", "-q", "scripts/tests/test_scan_md_hierarchy_fail_kinds.py"]

@@ -45,6 +45,7 @@ Run : python -m pytest scripts/tests/test_lean_validate_lean_setup.py
 import importlib.util
 import io
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -132,8 +133,14 @@ def test_ascii_text_passes_through_unchanged(validator):
 # --- Defaut 2 : le cote valide -------------------------------------------
 
 
-def test_lean_toolchain_counts_the_windows_chain_when_present(validator, monkeypatch):
+def test_lean_toolchain_counts_the_windows_chain_when_present(validator, monkeypatch, tmp_path):
     """Controle POSITIF : chaine Windows complete -> 3 composants."""
+    # Linux : check_command() commence par `bash -c "source ~/.elan/env ... && <cmd> --version"`.
+    # HOME isole ferme ce chemin ; ici la reponse du sous-processus ne decide rien (le which
+    # patche repond, et une lecture de version ratee compte « trouve »). Un elan SYSTEME peut
+    # encore repondre par le sous-processus : c'est le controle NEGATIF, plus bas, qui doit
+    # etre hermeticite (#28622, #28639).
+    monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setattr(validator.shutil, "which", lambda cmd: f"/usr/bin/{cmd}")
     monkeypatch.setattr(validator, "_kernel_drives_wsl", lambda *a, **k: False)
     checks = validator.check_lean_toolchain()
@@ -149,8 +156,25 @@ def test_lean_toolchain_excludes_the_windows_chain_on_a_wsl_seat(validator, monk
     assert checks == []
 
 
-def test_lean_toolchain_reports_missing_when_not_a_wsl_seat(validator, monkeypatch):
-    """Hors WSL, une chaine Windows absente reste un verdict negatif."""
+def test_lean_toolchain_reports_missing_when_not_a_wsl_seat(validator, monkeypatch, tmp_path):
+    """Hors WSL, une chaine Windows absente reste un verdict negatif.
+
+    Deux barrieres, parce que la premiere seule n'a pas suffi (#28622) : un
+    HOME isole ferme ``~/.elan/env``, mais un ``elan`` installe SYSTEME repond
+    encore par le sous-processus ``bash -c ...`` du module, qui herite du PATH
+    du runner -- mesure sur le runner CoursIA : « elan 4.1.2 » dans la sortie
+    de ce controle negatif, qui « suivait la machine, pas la PR ».
+    Le sous-processus ne rend donc plus que ce que rend un shell ou la
+    commande n'existe pas, sur tout hote.
+    """
+    monkeypatch.setenv("HOME", str(tmp_path))
+
+    def _command_not_found(argv, **kwargs):
+        return subprocess.CompletedProcess(
+            argv, 127, stdout="", stderr=f"bash: {argv[-1]}: command not found"
+        )
+
+    monkeypatch.setattr(validator.subprocess, "run", _command_not_found)
     monkeypatch.setattr(validator.shutil, "which", lambda cmd: None)
     monkeypatch.setattr(validator, "_kernel_drives_wsl", lambda *a, **k: False)
     checks = validator.check_lean_toolchain()

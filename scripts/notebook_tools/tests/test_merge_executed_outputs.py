@@ -112,6 +112,54 @@ def test_layout_preserved_when_outputs_identical(tmp_path):
         assert path.read_bytes() == before
 
 
+def test_papermill_provenance_follows_executed_notebook(tmp_path):
+    # Le bloc du carnet de la branche decrivait le run precedent : laisse en
+    # place, il fait rendre STALE_BLOCK au ratchet Papermill sur des sorties
+    # pourtant fraiches. Il doit suivre le carnet qui a execute.
+    old = {"duration": 129.4, "end_time": "2026-11-21T00:55:00Z"}
+    new = {"duration": 134.488, "end_time": "2026-11-26T11:42:49Z", "exception": None}
+    tcell = _code("a = 1")
+    tcell["metadata"] = {"papermill": old, "tags": ["exercice"],
+                         "execution": {"iopub.status.busy": "ancien"}}
+    ecell = _code("a = 1", [_stream("ok\n")], 1)
+    ecell["metadata"] = {"papermill": new, "execution": {"iopub.status.busy": "nouveau"}}
+    tnb = _nb([tcell])
+    tnb["metadata"]["papermill"] = old
+    enb = _nb([ecell])
+    enb["metadata"]["papermill"] = new
+    target = _write(tmp_path / "t.ipynb", tnb)
+    executed = _write(tmp_path / "e.ipynb", enb)
+
+    assert main([target, executed]) == 0
+
+    nb = json.loads(Path(target).read_text(encoding="utf-8"))
+    assert nb["metadata"]["papermill"] == new
+    assert nb["cells"][0]["metadata"]["papermill"] == new
+    assert nb["cells"][0]["metadata"]["execution"] == {"iopub.status.busy": "nouveau"}
+    # les autres cles de metadata restent celles de la branche
+    assert nb["cells"][0]["metadata"]["tags"] == ["exercice"]
+    assert nb["metadata"]["kernelspec"] == {"name": "python3"}
+
+
+def test_stale_provenance_removed_when_executed_has_none(tmp_path):
+    # Carnet execute hors papermill : garder le bloc de la branche reviendrait a
+    # decrire un run qui n'a pas produit ces sorties.
+    stale = {"duration": 129.4}
+    tcell = _code("a = 1")
+    tcell["metadata"] = {"papermill": stale}
+    tnb = _nb([tcell])
+    tnb["metadata"]["papermill"] = stale
+    target = _write(tmp_path / "t.ipynb", tnb)
+    executed = _write(tmp_path / "e.ipynb",
+                      _nb([_code("a = 1", [_stream("ok\n")], 1)]))
+
+    assert main([target, executed]) == 0
+
+    nb = json.loads(Path(target).read_text(encoding="utf-8"))
+    assert "papermill" not in nb["metadata"]
+    assert "papermill" not in nb["cells"][0]["metadata"]
+
+
 def test_normalise_output_splits_text_mimes_only():
     out = normalise_output({"output_type": "display_data", "metadata": {},
                             "data": {"text/plain": "a\nb", "image/png": "iVBOR\nw0"}})

@@ -110,15 +110,6 @@ except ImportError:  # charge via importlib dans les tests (hors scripts/)
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
     import gh_identity
 
-# Lectures REST conditionnelles (ETag persiste, partage par machine) : meme
-# protocole que pr_gate #26260, etendu aux processus courts de B.0. Le module
-# porte les invariants ; `gh_json` ne fait que router les argv applicables.
-try:
-    import gh_etag
-except ImportError:  # meme shim que gh_identity (tests hors scripts/)
-    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
-    import gh_etag
-
 # #27881 — la grammaire des marqueurs (familles FORMELLE / PROSE, vocabulaire
 # des verdicts) et le predicate de signalement sont extraits dans
 # `scripts/ci/nit_markers.py` : l'organe ne doit pas grossir (cliquet de
@@ -137,6 +128,25 @@ try:
 except ImportError:  # meme shim que nit_markers (tests hors scripts/)
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
     import nit_rapport
+
+# #27012 point 3 — le funnel d'appel gh (routing ETag puis subprocess, avec
+# bascule UNIQUE vers le jeton App de la lane sur rate-limit 403/429) est
+# extrait dans `scripts/ci/gh_app_failover.py`.
+try:
+    import gh_app_failover
+except ImportError:  # meme shim que nit_markers (tests hors scripts/)
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
+    import gh_app_failover
+
+# #28924 -- le diagnostic « pourquoi une réserve survit » (nature de la
+# réserve, condition échouée par chaque réponse candidate) vit dans
+# `scripts/ci/nit_why_alive.py` : l'organe ne garde que le canal `_why` de
+# `_lift_eligible` et les accroches (cliquet de taille, cible T5).
+try:
+    import nit_why_alive
+except ImportError:  # meme shim que nit_markers (tests hors scripts/)
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
+    import nit_why_alive
 
 REPO = "jsboige/CoursIA"
 
@@ -3754,25 +3764,17 @@ def gh_json(args: list[str]) -> object:
             f"budget de passe nits de {NITS_PASS_BUDGET_S:.0f} s depasse -- "
             "PR rendue absente (non evaluee, #18829), #21882 Option C")
     _count_api_call(args)
-    # Lectures REST conditionnelles (#26260, extension cross-processus) : les
-    # chemins `api repos/...` sans drapeau passent par l'ETag persiste partage
-    # par machine. Un 304 est une PREUVE SERVEUR que le chemin est inchange
-    # depuis le corps cache -- B.0 est un organe de merge, aucun corps n'est
-    # jamais servi sans reponse du serveur, donc aucun faux vert possible.
-    # Tout echec non-304 leve les memes exceptions que le chemin d'origine
-    # (CalledProcessError / JSONDecodeError / TimeoutExpired).
-    etag_path = gh_etag.etag_applicable(args)
-    if etag_path is not None:
-        body, served_by_304 = gh_etag.conditional_get(
-            etag_path, timeout=GH_CALL_TIMEOUT_S)
-        if served_by_304:
-            API_USAGE["rest_304"] += 1
-        return _project_gh_payload(args, body)
-    out = subprocess.run(
-        ["gh", *args], capture_output=True, text=True, encoding="utf-8", check=True,
-        timeout=GH_CALL_TIMEOUT_S,
-    ).stdout
-    return _project_gh_payload(args, json.loads(out))
+    # Le routing d'appel vit dans gh_app_failover (#27012 point 3) : lectures
+    # REST conditionnelles par l'ETag persiste partage par machine (#26260 --
+    # un 304 est une PREUVE SERVEUR que le chemin est inchange, aucun corps
+    # n'est jamais servi sans reponse du serveur), sinon `gh` en subprocess ;
+    # sur rate-limit 403/429, bascule UNIQUE vers le jeton App de la lane.
+    return _project_gh_payload(args, gh_app_failover.call(
+        args, timeout=GH_CALL_TIMEOUT_S, on_304=_count_rest_304))
+
+
+def _count_rest_304() -> None:
+    API_USAGE["rest_304"] += 1
 
 
 def _project_added_symbol_patch(patch: str) -> str:
@@ -5141,6 +5143,11 @@ _pr_review_bundle = b0_funnel._pr_review_bundle
 improper_dismissals = b0_funnel.improper_dismissals
 ThreadsIncomplete = b0_funnel.ThreadsIncomplete
 
+# #28924 -- meme proxy LIVE, pour le diagnostic `nit_why_alive.explain` : ses
+# collaborateurs (can_lift, has_live_lift, classify, les patrons de role) se
+# lisent dans les globales de l'organe a chaque appel.
+_HOST = _FunnelHost(globals())
+
 
 def _names_author(body: str, author: str) -> bool:
     """``body`` mentionne-t-il ``author`` comme identite, pas par hasard ?
@@ -5495,8 +5502,23 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                 return True
         return False
 
+    # #28924 -- `_why` : canal de DIAGNOSTIC, jamais de verdict. Les sorties
+    # negociees de cette fonction etaient muettes (« BLOCKED -- 1 nit non
+    # leve » sans dire quelle condition avait echoue : mesure sur #28876,
+    # ou la lane a du lire le code pour comprendre que le prefixe `[ACTION]`
+    # de sa reponse etait lu comme un prefixe de role). Quand l'appelant
+    # fournit une liste, chaque refus y ajoute le couple `(tag, detail)` que
+    # `nit_why_alive.refusal` construit, et rend `False` comme avant ; sans
+    # liste, `_refuse` rend `False` et rien d'autre -- le libelle n'est meme
+    # pas evalue. Aucun booleen de cette fonction ne lit `_why`.
     def _lift_eligible(lift_author: str, nit_author: str,
-                       lift_body: str = "", nit_body: str = "") -> bool:
+                       lift_body: str = "", nit_body: str = "",
+                       _why: list | None = None) -> bool:
+        def _refuse(key: str, *args) -> bool:
+            if _why is not None:
+                _why.append(nit_why_alive.refusal(key, *args))
+            return False
+
         if lift_author == nit_author:
             # #14947 ET #14850 -- meme login n'est pas meme voix. `jsboige`
             # est A LA FOIS le compte du user, l'identite de poussee partagee
@@ -5575,7 +5597,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             if lift_has_persona and nit_has_persona:
                 return True
             if lift_has_persona and not nit_has_persona:
-                return False  # #14850 scope : lift persona ne leve pas user
+                # #14850 scope : lift persona ne leve pas user
+                return _refuse("PERSONA-SCOPE", nit_why_alive.shown_prefix(
+                    _PERSONA_MARKERS_RE.search(stripped_lift)))
             # Voie 1b -- lift ROLE leve la reserve du MEME role ; la
             # lane d'attache du role leve la reserve de ce role
             # (#18937). Cas fondateur PR #18849 : l'adjoint (lane
@@ -5615,7 +5639,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             if lift_has_lane and nit_has_lane:
                 return True
             if lift_has_lane and not nit_has_lane:
-                return False  # #14850 scope : lift lane tierce ne leve pas user
+                # #14850 scope : lift lane tierce ne leve pas user
+                return _refuse("LANE-SCOPE", nit_why_alive.shown_prefix(
+                    _CROSS_LANE_LIFT_RE.search(stripped_lift)))
             # Voie 3 -- self-lift voix nue par l'auteur de SA reserve voix nue.
             # L'auteur leve SA PROPRE reserve voix nue par une phrase de
             # levee NOMINATIVE (`EXPLICIT_LIFT_MARKERS` : « Je leve »,
@@ -5707,7 +5733,23 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             # reserve, sans signature distincte. C'est l'auto-reponse
             # de l'auteur de la reserve sur sa propre remarque -- le cas
             # fondateur #14850 LGTM voix nue de Hermes sur reserve user.
-            return False
+            # #28924 -- la chute nomme la premiere condition qui a echoue,
+            # dans l'ordre ou le `if` ci-dessus les evalue : prefixe de role,
+            # puis voix nue sous `jsboige` sur une reserve de persona, puis
+            # l'absence de phrase de levee. C'est le cas mesure sur #28876 :
+            # une reponse `[ACTION] …` est refusee par la premiere.
+            if lift_has_role:
+                if nit_role_m:
+                    return _refuse(
+                        "ROLE-DIFFERENT",
+                        nit_why_alive.shown_prefix(lift_role_m),
+                        nit_why_alive.shown_prefix(nit_role_m))
+                return _refuse("ROLE-SCOPE",
+                               nit_why_alive.shown_prefix(lift_role_m),
+                               nit_has_persona, nit_has_lane)
+            if lift_author == "jsboige" and nit_has_persona:
+                return _refuse("NU-SUR-PERSONA")
+            return _refuse("AUCUNE-LEVEE")
         # #13609 -- alias de persona Hermes/NanoClaw cross-login. La persona
         # parle sous clusterManager-Myia ET jsboige. Quand elle leve SA
         # propre reserve sous l'autre login, c'est sa levee. Le marqueur
@@ -5740,7 +5782,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             # Myia sur elle-meme, voie nue voie 3) ni l'override
             # coordinateur (#11639).
             if _lift_signed_by_pr_lane(lift_body or "", pr_data.get("body") or ""):
-                return False
+                return _refuse("PERSONA-LANE")
             return True
         # #13495 — la trappe coordinateur ci-dessous ne s'ouvre pas pour
         # l'auteur de la PR : sinon la voie 3 (report par issue nommee) serait
@@ -5748,7 +5790,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # forme d'auto-levee pour laquelle #13316 a deja retire jsboige des
         # comptes de levee.
         if lift_author == pr_author:
-            return False
+            return _refuse("AUTEUR-PR")
         # #11639 : l'override NOMME du coordinateur — l'arbitre tiers de B.0.
         # La restriction d'auteur reste la regle pour tout le monde (elle
         # bloque l'auto-levee d'un bystander, #11145) ; seule la trappe ecrite
@@ -5776,12 +5818,13 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             # (``_adjoint_liftable_reserve``) : reserve du coordinateur,
             # nit user, reserve d'une autre lane ou d'un humain ->
             # fail-closed, pas levee.
-            if m is None or not _adjoint_liftable_reserve(nit_author,
-                                                          nit_body):
-                return False
+            if m is None:
+                return _refuse("OVERRIDE-ADJOINT-TETE")
+            if not _adjoint_liftable_reserve(nit_author, nit_body):
+                return _refuse("OVERRIDE-ADJOINT-PERIMETRE", nit_author)
         elif not (lift_author in LIFT_OVERRIDE_LOGINS
                   and (m is not None or siege)):
-            return False
+            return _refuse("AUTEUR-TIERS", lift_author, nit_author)
         if siege and m is None:
             # Le scope #14216 est porte par la DECLARATION du nit
             # lui-meme : le reviewer designe son siege, le siege designe
@@ -5796,7 +5839,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # (garde ci-dessus) : le scope n'ouvre pas la porte d'auto-levee.
         # #27873 — le corps de la reserve est transmis : la discrimination
         # persona/user se fait sur sa NATURE, pas sur le seul login.
-        return _override_scopes_reserve(lift_body or "", nit_author, nit_body)
+        if _override_scopes_reserve(lift_body or "", nit_author, nit_body):
+            return True
+        return _refuse("OVERRIDE-SANS-NOM")
 
     # Fenetre 2026-08-16 (#11222) : les temps plats ne suffisent pas pour un
     # CHANGES_REQUESTED. Une PHRASE explicite de levee (LIFT_MARKER non
@@ -6066,6 +6111,17 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                             f"review:{state}"))
 
     blocking = []
+    # #28924 -- les surfaces que le diagnostic `nit_why_alive` relit, figees
+    # AVANT la boucle : ce sont exactement celles que les trois branches
+    # ci-dessous consultent (phrases de levee apres le crible SHA, re-reviews
+    # APPROVED, renvois a une issue de suivi).
+    _why_ctx = {
+        "cutoff": cutoff, "pr_author": pr_author, "pr_number": pr_number,
+        "pr_data": pr_data, "explicit_lifts": explicit_lifts,
+        "voided_lifts": voided_lifts, "followup_lifts": followup_lifts,
+        "approved_rereviews": approved_rereviews,
+        "lift_eligible": _lift_eligible,
+    }
     # #27873 — corps des réserves qui SURVIVENT (auteur -> corps). Sert à la
     # discrimination persona/user du scope d'override : la nature de la
     # réserve se lit dans son corps, pas dans son seul login.
@@ -6169,14 +6225,19 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # — seule une réponse écrite (ou un thread résolu) lève une remarque.
         pushed_after = last_commit is not None and last_commit > when
         surviving_reserve_bodies.setdefault(login, body)
-        blocking.append({
+        entry = {
             "kind": kind, "author": login, "src": src,
             "channel": "review" if src.startswith("review") else "comment",
             "at": when.isoformat(),
             "gap_hours": round((cutoff - when).total_seconds() / 3600.0, 1),
             "code_pushed_after": pushed_after,
             "excerpt": _excerpt(body),
-        })
+        }
+        # #28924 -- la CAUSE de survie : cles additives, posees APRES le
+        # verdict de cette branche. Aucun booleen de l'organe ne les lit.
+        entry.update(nit_why_alive.explain(_HOST, _why_ctx,
+                                           (when, kind, login, body, src)))
+        blocking.append(entry)
 
     for t in threads:
         if t["resolved"] or t["outdated"]:
@@ -6187,6 +6248,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             "at": t.get("createdAt") or "?",
             "where": f"{t.get('path')}:{t.get('line')}",
             "excerpt": _excerpt(t.get("body") or ""),
+            # #28924 -- memes cles additives qu'une reserve ; un thread ne se
+            # leve par aucune des trois surfaces, sa cause est son etat meme.
+            **nit_why_alive.explain_inline(),
         })
 
     # #13316 — un override ECARTE pour cause d'auteur doit etre NOMME. Avant,
@@ -6481,7 +6545,9 @@ def gate(pr: int, as_json: bool) -> int:
             where = b.get("where", "")
             gap = f" (+{b['gap_hours']}h avant merge)" if "gap_hours" in b else ""
             print(f"  [{b['kind']}] {b['author']} via {b['src']}{where}{gap}")
-            print(f"      {b['excerpt']}\n")
+            print(f"      {b['excerpt']}")
+            nit_why_alive.print_notes(b)
+            print()
         for o in result.get("ignored_overrides", ()):
             # #13316 : dire POURQUOI l'override visible n'a rien eteint — le
             # silence etait le mode d'echec couteux (#13030, #12096).

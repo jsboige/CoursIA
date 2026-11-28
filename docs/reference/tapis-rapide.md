@@ -1,6 +1,6 @@
 # Tapis rapide — la voie légère du tirage des grains
 
-> REFERENCE — vivante — dernière révision 2026-11-24
+> REFERENCE — vivante — dernière révision 2026-11-27
 
 Issue : [#22983](https://github.com/jsboige/CoursIA/issues/22983). Code : `scripts/coordination/tapis_rapide.py`
 (fonctions pures et CLI), `scripts/coordination/tapis_marqueurs.py` (lecture des marqueurs de fil, extraite
@@ -99,7 +99,7 @@ groupée, sans sonde par issue.
 | `MERGEE` | hors conteneur et hors consolidation : un commit de `origin/main` la **ferme** depuis moins de `--jours` jours (mot de fermeture devant `#N`, ou `#N` dans la portée du sujet `type(zone,#N):` ; un `See #N` ou `Part of #N` compte comme une visite, pas comme une livraison), et aucun `[NOT-DELIVERED]`, `[RELEASED]`, `[CLAIMED]`, `[CLAIMED-AMEND]` ou `[CLOSURE REVIEW] verdict: KEEP` postérieur ne la rouvre |
 | `COUVERTE` | hors conteneur : une PR ouverte (brouillons compris) cite `#N` ; si la PR porte `lane <votre lane>`, le motif dit « votre PR » |
 | `PAUSE` | le **dernier** marqueur du fil est un `[RELEASED]` qui porte une **condition** `attend: #N` (issue ou PR visée) ou `attend: Q<id>` (question user). L'écart ne porte **aucun délai** : il tient jusqu'à la levée de la condition — la cible visée fermée, ou un marqueur postérieur. Un `[RELEASED]` qui porte `attend:` n'est jamais un `RELACHEE` (voir [la pause explicite](#la-pause-explicite--attend-n-27726)) |
-| `RELACHEE` | le **dernier** marqueur du fil est un `[RELEASED]` de moins de 3 jours (`RELACHE_J`), quelle que soit la lane, la vôtre comprise. Son motif (barrière mesurée, siège trop petit) vaut encore : sans cet écart, chaque lane re-mesurait la même barrière (mesure po-2023 du 13/11 : 38 cycles sans grain servable, 23 issues concernées). Un `[CLAIMED]` ou un `[NOT-DELIVERED]` postérieur lève l'écart |
+| `RELACHEE` | le **dernier** marqueur du fil est un `[RELEASED]` de moins de 3 jours (`RELACHE_J`), quelle que soit la lane, la vôtre comprise. Son motif (barrière mesurée, siège trop petit) vaut encore : sans cet écart, chaque lane re-mesurait la même barrière (mesure po-2023 du 13/11 : 38 cycles sans grain servable, 23 issues concernées). Un `[CLAIMED]` ou un `[NOT-DELIVERED]` postérieur lève l'écart. **Servie avec `--paths`, la porte lit la remise à la portée qu'elle déclare** : en remontant le fil, le premier marqueur qui concerne **vos** chemins décide — un `[RELEASED] -- paths: A` ne refuse donc plus B, et un `[CLAIMED]` sur B n'efface plus la remise de A (#28899) |
 | `PLAFOND` | conteneur hors `consolidation` : une visite d'une **autre** lane de moins de 7 jours (`PLAFOND_EPIC_J`, même fenêtre que l'organe `check_lane_claim.py epic_visit_cap`, #22500) — un marqueur `[CLAIMED]`/`[CLAIMED-AMEND]`/`[DELIVERED]` dans son fil ou la création d'une de ses filles ouvertes. Le tapis ne sert pas un EPIC que le gate L898 refuserait ; les visites de **votre** lane n'arment rien (#25443) |
 | `RECLAMEE` | claim ouvert d'une autre lane de moins de 48 h ; sur un conteneur, un claim récent d'une autre lane écarte déjà via `PLAFOND` (une remise de main `[OVERRIDE]` bornée `paths:` reste une note) |
 | `ORIGAMI` | EPIC Origami dont **tous les plis matérialisés sont terminés** et dont le pli suivant n'est pas annoncé : le dépliage est réservé au coordinateur, aucune lane worker ne peut le lever. Le motif dit quel pli attend. Comme sur le tapis lourd, l'écart est appliqué **après** les autres : un EPIC déjà livré reste `LIVREE` |
@@ -126,6 +126,16 @@ tranche ; il ne passe donc jamais devant un grain (vos claims restent en tête).
   vérifier par `--paths`, poser `[CLAIMED] … -- paths: …`) ;
 - les **chemins occupés**, en entier, lane par lane (`chemins_occupes` en JSON), et les PRs ouvertes qui le
   citent (`prs_ouvertes`).
+
+**L'exception de couverture** (#27590, mandat du 16/11). Un conteneur **jamais visité** passe avant un grain
+**déjà visité** : « toute issue doit être visitée au moins une fois avant qu'une autre le soit deux fois »
+prime sur l'ordre de service des conteneurs, qui reste inchangé entre deux issues jamais visitées (le
+conteneur y passe après les grains). Mesure du 2026-11-25 sur le pool vivant : six issues en violation du
+mandat, toutes au dernier tour — le conteneur jamais visité était servi **après** des grains déjà visités.
+Après correction, l'organe `visit_coverage.py` rend `atteignable.equite = []`, à tours et débit constants
+(3 tours, 17 issues servies, 8 grains par tour). L'autre option mesurée — ne servir aucune issue déjà visitée
+dans un tour qui sert une issue jamais visitée — tient les deux règles mais rend 19 grains au lieu de 24 sur
+le même pool (−21 %) : elle est écartée, le débit du tapis primant.
 
 ## La pause explicite — `attend: #N` (#27726)
 
@@ -305,7 +315,8 @@ L'ordre des servables :
 | `FENETRE_J` | 7 | le tour sur lequel se compte le niveau |
 | `SEANCE_H` | 24 | deux marqueurs d'une lane plus proches que cela font une visite |
 | `BANDS_AGE_J` | (180, 120, 60, 30, 10) j | bonus d'âge : 0,1 visite par tranche franchie, plafonné à 0,5 |
-| `BONUS_CONSOLIDATION` | 0,4 visite | priorité de consolidation, à tout âge (label ou racine de famille) |
+| `BONUS_CONSOLIDATION` | 0,6 visite | priorité de consolidation, à tout âge (label ou racine de famille) — **posée en premier** : elle passe devant l'ancienneté (I7) |
+| `BONUS_AGE_MAX_CONSO` | 0,3 visite | part de l'âge qui reste sur une consolidation : l'âge ne mange pas le budget de la consolidation |
 | `BONUS_TOTAL_MAX` | 0,9 visite | borne du bonus total : une issue à 0 visite passe devant une issue à 1 visite |
 | `MARATHONS` | #26070, #26510 | racines des marathons de parité C# et Rust, hors équilibrage |
 | `TETE` | 24 | la tête de chaque niveau est décalée par lane (voie **lourde**) ; en voie légère, c'est la **fenêtre** qui est décalée — voir « La fenêtre qui avance » |
@@ -314,8 +325,12 @@ L'ordre des servables :
 **Les deux priorités légères du 18/11.** `coordination/tapis_avantages.py` porte deux contributions petites
 et distinctes, comptées en dixièmes de visite : le niveau reste ainsi un multiple de 0,1, et les issues se
 regroupent par niveau — c'est ce qui fait tourner la tête d'une lane à l'autre. La division par 3 des
-consolidations anciennes (`visites // 3`) disparaît : elle était plus forte qu'une priorité légère. Les
-marathons (familles #26070 et #26510, titres commençant par « Marathon ») passent après tout le pool équilibré :
+consolidations anciennes (`visites // 3`) disparaît : elle était plus forte qu'une priorité légère.
+**La consolidation passe devant l'ancienneté** (invariant I7 du contrat du picker, #28114) : les deux bonus
+ne s'additionnent plus, ils se composent **par priorité** — la consolidation prend 0,6 visite, l'âge ne garde
+que 0,3 visite sur une consolidation (le rapport nomme ce motif « plafonnée »). Avant, l'âge plein l'emportait
+et l'invariant était violé dans l'étage rapide.
+Les marathons (familles #26070 et #26510, titres commençant par « Marathon ») passent après tout le pool équilibré :
 c'est le harnais sk-agent qui les servira. Le rapport JSON dit pour chaque grain son nombre de visites du tour
 et au total, et nomme les contributions qui s'appliquent (champ `priorite`).
 
@@ -538,20 +553,65 @@ curseur passe par-dessus lui, faute de quoi il serait perdu pour la rotation ; e
 pas le curseur : une primaire étrangère déjà parquée ne fait pas avancer une tranche que le lot ne touche
 pas.
 
-**Le mur global** (`--budget-s`, 60 s par défaut) couvre la lecture de sélection ; son dépassement lève
-`LectureIncomplete` et l'appelant le dit (code de sortie 3) — jamais une liste à moitié. La qualification
-a son propre mur : dépassée, elle rend ce qu'elle a et le dit (`budget_epuise`).
+**Le mur global** (`--budget-s`, 30 s par défaut — `gh_selection.MUR_GLOBAL_S`) couvre la lecture de
+sélection ; son dépassement lève `LectureIncomplete` et l'appelant le dit (code de sortie 3) — jamais une
+liste à moitié. La qualification a son propre mur : dépassée, elle rend ce qu'elle a et le dit
+(`budget_epuise`).
+
+**L'échéance de commande** (invariant I6 de #28114). Le point d'entrée `tapis_rapide.main` pose **une
+seule** échéance, partagée par tous les étages : la garde de fraîcheur, la sélection, la qualification, le
+cap de livraisons et le repli. Aucun étage ne s'attribue un budget neuf : chacun reçoit le **temps
+restant**, et une lecture qui ignore son timeout est **abandonnée** au passage de l'échéance. La borne
+de la commande est le **contrat** lui-même : `tapis_borne.BUDGET_S` = **55 s**, strictement sous les 60 s
+d'I6 (marge 5 s). Les parts des étages — 30 s pour le tirage (`gh_selection.MUR_GLOBAL_S`) et 30 s pour
+la garde de fraîcheur (`tapis_borne.FRAICHEUR_S`, mesuré sur ce dépôt le 26/11 : `git fetch origin main`
+20,4 s + `git rev-list` ×2 2,2 s + `git diff --name-only origin/main` des organes 1,1 s, soit 23,7 s) —
+sont **volontairement supérieures à cette enveloppe** : elles ne s'additionnent pas, elles se **partagent**
+(chaque étage prend `min(échéance, maintenant + sa part)`). La commande ne peut donc pas dépasser
+l'enveloppe : elle est **coupée**, pas attendue. Le pire cas est assumé ainsi : l'étage **dégradable**
+(la garde de fraîcheur) encaisse la coupe, l'étage **décisionnel** (la sélection) garde son budget dans
+le cas normal — 23,7 s mesurées laissent 31,3 s pour un tirage qui en demande 30. Deux conséquences en
+découlent : une fraîcheur **coupée** par la borne est une **dégradation**
+(`FRAICHEUR_BORNEE` : le tirage rend sa file avec l'avertissement), pas un refus — seule une mesure
+impossible reste un refus ; et un **repli** lancé après l'échéance ne sert **rien** (fail-CLOSED), il
+rendrait la main hors contrat. Les primitives vivent dans `scripts/coordination/tapis_borne.py`, sans
+réseau.
+
+**Ce que l'enveloppe ne couvre pas.** La voie **lourde** (`--voie lourd`) et le rejeu `--lecture` sont des
+**diagnostics** : ils lisent le pool entier (ou rejouent une lecture) et gardent leurs budgets propres, ils
+ne sont pas sous l'enveloppe I6. Le contrat I6 borne le **tirage par défaut** — la voie légère, celle que
+la lane lance. Une lecture qui ignore son timeout est abandonnée au passage de l'échéance **dans la voie
+légère** ; dans la voie lourde, le même abandonment se fait au timeout de la lecture, pas à l'échéance.
+
+**La borne est vérifiée, pas seulement énoncée.** Les témoins sont dans
+`scripts/tests/test_tapis_borne_entree.py` : la borne du CLI par défaut est **strictement** sous les 60 s
+du contrat (mesure à l'instant, pas une constante citée) ; et le **pire cas** — chaque étage consomme
+toute sa part — est tenu à l'**horloge réelle** : le runner git dort tout le timeout qu'il reçoit, la
+sélection dort de même, et la commande rend un verdict **dans** l'enveloppe qu'on lui donne (l'échéance
+y est mise à l'échelle : ce qui est prouvé est la forme, la borne réelle est celle du contrat).
 
 **Les organes du chemin de tirage sont dans la garde de fraîcheur.** `main_freshness.ORGANES` porte
 désormais le chemin complet du tirage (sélection, lecture ciblée, snapshot, rotation, fenêtre, avantages,
-qualification légère, re-vérif, parcage) : un tirage refuse (sortie `4`) si l'un d'eux diffère
-d'`origin/main`. Un nouveau module du tirage entre dans cette liste **avec** sa première livraison.
+qualification légère, re-vérif, parcage) : sous `ORGANE_DIVERGENT` — un module qui diffère d'`origin/main` — le tirage **dégrade** (invariant I4 : sortie `0` et avertissement `TIRAGE DEGRADE` sur stderr) au lieu de refuser ; la sortie `4` ne reste que pour la **mesure impossible**. Le code exécuté n'est alors **pas** identique à `origin/main` : l'avertissement le dit. Un nouveau module du tirage entre dans cette liste **avec** sa première livraison.
+
+**Cette prescription est vérifiée, plus seulement énoncée.** La liste est contrôlée par
+`scripts/tests/test_main_freshness_organes.py`, sur deux sources : la **fermeture d'import statique** des
+points d'entrée du tirage (`tapis_rapide`, `tapis_leger`, `tapis_voie_leger`, `tapis_prise_en_charge`,
+`pick_idle_grain` — analysée par `ast`, jamais importée : `main_freshness` est lui-même dans la liste,
+l'import serait circulaire) et le **tableau « Les modules »** ci-dessous. Un module livré hors liste
+n'est donc pas un trou silencieux : la PR qui le livre porte **son propre rouge**, et le rouge se lève en
+déclarant le module — dans la PR, pas plus tard. Mesure du 24/11 : la liste ne portait qu'une **partie**
+du chemin du tirage ; l'écart était invisible, la garde refusait donc des tirages pour une raison que
+personne ne pouvait nommer, et laissait passer des modules du chemin qui ne l'étaient pas.
 
 ### Les modules
 
 | Module | Rôle |
 | --- | --- |
 | `scripts/coordination/tapis_leger.py` | la voie légère : rotation universelle sur les métadonnées, file de grains avec état et action |
+| `scripts/coordination/tapis_leger_rapport.py` | le **rapport** du tirage léger : l'état de chaque grain et l'action à faire — extrait de `tapis_leger.py` |
+| `scripts/coordination/tapis_leger_texte_occupation.py` | la section **occupation** de la sortie texte du tirage léger — extraite de `tapis_leger_texte.py` |
+| `scripts/coordination/tapis_occupation.py` | l'**occupation** d'un grain : l'urne de clôture (`candidate-delivered`) et la PR qui le tient — les deux marques, une seule décision, sur métadonnées seules (#28090) |
 | `scripts/coordination/tapis_public.py` | le **lot public** : la proposition comprise (la tranche, les ancres) — la voie que les tests rejouent |
 | `scripts/coordination/tapis_avance.py` | l'**avance** du curseur, bornée au lot : les trois états (décidé / parqué / sauté) |
 | `scripts/coordination/tapis_non_tente.py` | le grain **non tenté** : proposé, jamais qualifié — son code propre, et il ne fige pas le curseur |
@@ -561,6 +621,7 @@ d'`origin/main`. Un nouveau module du tirage entre dans cette liste **avec** sa 
 | `scripts/coordination/tapis_prise_en_charge.py` | le CLI de la **prise en charge** : qualifier un grain avant d'agir (le corps, le fil complet, les neuf règles) |
 | `scripts/coordination/tapis_qualification.py` | la qualification elle-même : le corps, la fenêtre, la re-décision des neuf règles |
 | `scripts/coordination/tapis_qualification_fil.py` | la qualification **côté consommateur** : le fil complet déjà lu, rejoué sans appel réseau (`tapis_rapide.etats`) — extrait de `check_lane_claim.py` (#27242) |
+| `scripts/coordination/tapis_reprise_livree.py` | la **reprise** d'un grain dont la livraison n'est pas prouvée : les règles sont rejouées avec `LIVREE` muet, puis l'occupation s'applique — un marqueur non prouvé ne rend pas le grain plus servable que son absence (#28114) |
 | `scripts/coordination/tapis_fil_complet.py` | le **fil complet** des seuls candidats retenus : lever le doute de la fenêtre (`gh_snapshot`, REST paginé) |
 | `scripts/coordination/gh_issues.py` | la lecture **ciblée** des issues nommées, aux champs demandés — une porte pour tous les lecteurs ciblés (`gh_selection.qualifier`) |
 | `scripts/coordination/gh_selection.py` | le classement sur métadonnées (pagination complète, budget global) |
@@ -663,7 +724,7 @@ le 19/11 (380 issues sur 440 atteintes en un tour, sans jamais fermer le tour). 
 
 **La consolidation est dans la clé, pas à côté** (revue ai-01 du 22/11). Le mandat du cycle veut « un picker
 rapide couvrant toutes les issues avec priorité consolidation et ancienneté » : l'ancienne voie donnait aux
-consolidations 0,4 visite à tout âge, et cet avantage a disparu avec la sélection par âge — les
+consolidations 0,6 visite à tout âge (0,4 avant le 23/11), et cet avantage a disparu avec la sélection par âge — les
 consolidations n'avaient plus aucun avantage dans la clé. Deux règles, celle de `tapis_avantages.est_consolidation`
 (le **label** `consolidation`, ou la **famille** dont la racine l'est) :
 
