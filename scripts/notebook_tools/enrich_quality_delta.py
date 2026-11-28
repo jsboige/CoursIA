@@ -85,7 +85,7 @@ def pushd(path: Path):
 
 def git(repo_root: Path, *args: str) -> subprocess.CompletedProcess:
     return subprocess.run(
-        ["git", "-C", str(repo_root), *args],
+        ["git", "-c", "core.quotePath=false", "-C", str(repo_root), *args],
         capture_output=True,
         text=True,
         encoding="utf-8",

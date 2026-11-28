@@ -1,0 +1,10 @@
+[package]
+name = "myia_nb"
+version = "0.1.0"
+edition = "2021"
+description = "Crate pedagogique partagee des carnets Rust : affichage a la Python et mesure du temps"
+license = "MIT"
+
+[lib]
+name = "myia_nb"
+path = "src/lib.rs"
