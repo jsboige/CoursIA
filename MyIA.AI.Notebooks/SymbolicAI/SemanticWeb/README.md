@@ -63,6 +63,7 @@ flowchart BT
 | SW-09 (C#) | [SW-09-JSONLD-CSharp](SW-09-JSONLD-CSharp.ipynb) | Le parsing / l'écriture JSON-LD avec dotNetRDF | 40 min | JUMEAU |
 | SW-10 | [SW-10-RDFStar-Python](SW-10-RDFStar-Python.ipynb) | RDF-Star : quoted triples, provenance, confiance — et la réification classique qui la remplace sous rdflib | 45 min | STANDARD |
 | SW-10 (C#) | [SW-10-RDFStar-CSharp](SW-10-RDFStar-CSharp.ipynb) | La réification, les annotations de confiance et les graphes nommés avec dotNetRDF | 40 min | JUMEAU |
+| SW-10 (Rust) | [SW-10-RDFStar-Rust](SW-10-RDFStar-Rust.ipynb) | La même matière avec la famille oxigraph (oxrdf, oxttl, oxrdfxml, oxjsonld) et un moteur SPARQL en mémoire (`oxigraph::Store`) — quoted triples derrière la feature `rdf-12`, réification et graphes nommés en attendant | 45 min | MIROIR |
 | SW-11 | [SW-11-Python-KnowledgeGraphs](SW-11-Python-KnowledgeGraphs.ipynb) | Construire un graphe de connaissances complet (import CSV/JSON, kglab, OWLReady2), le visualiser (NetworkX, pyvis) | 55 min | STANDARD |
 | SW-11 (C#) | [SW-11-CSharp-KnowledgeGraphs](SW-11-CSharp-KnowledgeGraphs.ipynb) | Le KG côté .NET : construction dotNetRDF, SPARQL, parcours BFS, qualité, centralité | 45 min | JUMEAU |
 | SW-12 | [SW-12-GraphRAG-Python](SW-12-GraphRAG-Python.ipynb) | GraphRAG : extraction d'entités par LLM, communautés, RAG structuré anti-hallucination | 50 min | STANDARD |

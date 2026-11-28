@@ -161,7 +161,7 @@ def transcribe_openai(audio_path: str, model: str = "whisper-1",
 
     Args:
         audio_path: Chemin vers le fichier audio
-        model: Modele STT (whisper-1, gpt-4o-transcribe)
+        model: Modele STT (whisper-1, gpt-transcribe)
         language: Code langue ISO 639-1 (None = auto-detection)
         response_format: Format de reponse (json, text, srt, vtt, verbose_json)
 

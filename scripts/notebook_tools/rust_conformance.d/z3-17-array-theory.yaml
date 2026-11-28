@@ -1,0 +1,293 @@
+# Conformité différentielle de Z3-17-Array-Theory (triplet Python + C# + Rust).
+#
+# Les trois carnets ont la MÊME structure de cellules — 20 cellules, dont 7
+# de code aux mêmes index 1, 4, 7, 10, 14, 16, 18. La correspondance est donc
+# directe par index ; elle n'a pas besoin d'être écrite à la main comme dans
+# les triplets dont les structures divergent (Sudoku, CSP).
+#
+# Écarts de rendu MESURÉS entre les trois côtés (aucun n'est supposé) — relevés
+# sur les sorties COMMITÉES des carnets existants, pas sur une exécution
+# locale :
+#   - cellules 4 et 10 : le jumeau C# rend le verdict « SATISFIABLE »
+#     (l'énumération `Status` de Microsoft.Z3) là où Python et Rust rendent
+#     « sat » (la même énumération côté pyz3 et côté crate `z3`). Les deux
+#     mesures de verdict déclarent donc le côté C# absent, avec leur motif ;
+#   - cellule 7 : le LIBELLÉ lui-même diffère, pas seulement le verdict — le
+#     jumeau Python écrit « Axiome 1 (negation doit etre UNSAT) : unsat », le
+#     jumeau C# « Axiome 1 (negation doit etre UNSATISFIABLE) : UNSATISFIABLE ».
+#     Les deux mesures d'axiome déclarent donc le côté C# absent ;
+#   - cellule 10 : la ligne du `Store` porte un accent côté C# (« Après
+#     Store(t, 2, 42) -> … ») là où Python et Rust écrivent « Apres … ». Le
+#     jumeau Rust suit le jumeau Python, côté de référence : la mesure déclare
+#     donc le côté C# absent, avec son motif ;
+#   - cellule 18 : le libellé de l'exercice 3 diffère — « … -> attendu UNSAT. »
+#     côté Python et Rust, « … -> attendu UNSATISFIABLE. » côté C#. La mesure
+#     déclare donc le côté C# absent ;
+#   - le jumeau C# écrit ses sorties avec des fins de ligne CRLF (\r\n) là où
+#     Python et Rust écrivent LF (\n). Les motifs des lignes uniques se
+#     terminent par `\r?$` ;
+#   - le jumeau C# ajoute deux lignes de vérification absentes du jumeau
+#     Python (« Verification : a[2] > a[0] = True ; … » en cellule 4,
+#     « Croissance stricte respectée : True ; … » en cellule 10). Le jumeau
+#     Rust suit le jumeau Python, côté de référence : il ne porte pas ces
+#     lignes, qui sont un contenu propre au jumeau C#.
+#
+# TÉMOINS ARBITRAIRES — pourquoi certaines mesures ne portent qu'un LIBELLÉ :
+# le solveur choisit librement la valeur d'une grandeur non fixée par les
+# contraintes (`a[2]` n'est borné que par `a[2] > a[0]`, la base du tableau
+# croissant n'est bornée que par `0 <= t[k] <= 100`). Les trois moteurs
+# (z3-solver 4.16.0, Microsoft.Z3 4.12.2, libz3 5.3.3) en donnent des
+# valeurs différentes — mesuré : `a[2] = 21240` côté Python, `a[2] = 40` côté
+# C#, et un témoin propre à l'exécution du jumeau Rust. Une mesure qui
+# comparerait ces VALEURS serait une divergence de témoin, pas de sémantique.
+# Ces mesures portent donc le LIBELLÉ de la ligne (le préfixe commun aux
+# trois côtés) : elles vérifient que la ligne existe, avec le même libellé,
+# sur les trois côtés — sans comparer le témoin.
+#
+# Fait relevé au passage, consigné mais NON exigé : sur l'exécution du
+# jumeau Rust, les témoins libres ont été **identiques à ceux du jumeau
+# Python** (`a[2] = 21240`, `a[3] = 21242`, tableau croissant `[92, 93,
+# 94, 95, 96]`) — les deux côtés branchent le même cœur Z3, avec les mêmes
+# heuristiques par défaut. Cette coïncidence n'est **pas** une exigence du
+# registre : une valeur libre peut changer d'une exécution à l'autre, et
+# l'exiger produirait un faux rouge au prochain run. Elle est donc consignée
+# comme un fait, pas transformée en mesure de valeur.
+#
+# Le jumeau Rust porte en outre une différence de moteur, DÉCLARÉE et non
+# comparable : la crate `z3` 0.23.0 lie la bibliothèque native Z3 5.3.3 du
+# poste, alors que le jumeau Python utilise le paquet PyPI `z3-solver` 4.16.0
+# et le jumeau C# le paquet NuGet `Microsoft.Z3` 4.12.2. La ligne de version
+# (cellule 1) n'est donc pas mesurée : aucun des trois côtés n'est comparable
+# aux deux autres.
+- name: "Z3-17-Array-Theory"
+  family: "SymbolicAI/SMT/Z3-API"
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-17-Array-Theory-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-17-Array-Theory-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-17-Array-Theory-Rust.ipynb
+  measures:
+    - id: c4_statut
+      description: "Cellule 4 — verdict du solveur sur les contraintes ponctuelles (ligne ancrée ; le jumeau C# rend « SATISFIABLE », il est donc déclaré absent)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "(?m:^(Statut : [^\\r\\n]*)\\r?$)"
+          transform: text
+        csharp:
+          absent: "le jumeau C# rend l'enumeration Microsoft.Z3 « SATISFIABLE » là où Python et Rust rendent « sat » — meme verdict, rendu different"
+        rust:
+          cell: 4
+          pattern: "(?m:^(Statut : [^\\r\\n]*)\\r?$)"
+          transform: text
+    - id: c4_a0
+      description: "Cellule 4 — a[0] = 1 (valeur FIXEE par la contrainte d'egalite ; identique sur les trois cotes)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "(?m:^(a\\[0\\] = 1)\\r?$)"
+          transform: text
+        csharp:
+          cell: 4
+          pattern: "(?m:^(a\\[0\\] = 1)\\r?$)"
+          transform: text
+        rust:
+          cell: 4
+          pattern: "(?m:^(a\\[0\\] = 1)\\r?$)"
+          transform: text
+    - id: c4_a1
+      description: "Cellule 4 — a[1] = 2 (valeur FIXEE par la contrainte d'egalite ; identique sur les trois cotes)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "(?m:^(a\\[1\\] = 2)\\r?$)"
+          transform: text
+        csharp:
+          cell: 4
+          pattern: "(?m:^(a\\[1\\] = 2)\\r?$)"
+          transform: text
+        rust:
+          cell: 4
+          pattern: "(?m:^(a\\[1\\] = 2)\\r?$)"
+          transform: text
+    - id: c4_a2_libelle
+      description: "Cellule 4 — libelle de la ligne a[2] (le TEMOIN est libre : la seule contrainte est a[2] > a[0], les trois moteurs en donnent des valeurs differentes)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "(?m:^(a\\[2\\] = ))"
+          transform: text
+        csharp:
+          cell: 4
+          pattern: "(?m:^(a\\[2\\] = ))"
+          transform: text
+        rust:
+          cell: 4
+          pattern: "(?m:^(a\\[2\\] = ))"
+          transform: text
+    - id: c4_a3_libelle
+      description: "Cellule 4 — libelle de la ligne a[3] (valeur DERIVEE de a[2], donc elle-meme temoin libre)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "(?m:^(a\\[3\\] = ))"
+          transform: text
+        csharp:
+          cell: 4
+          pattern: "(?m:^(a\\[3\\] = ))"
+          transform: text
+        rust:
+          cell: 4
+          pattern: "(?m:^(a\\[3\\] = ))"
+          transform: text
+    - id: c7_axiome1
+      description: "Cellule 7 — negation de l'axiome 1 de McCarthy, unsat (ligne ancrée ; le jumeau C# ecrit « Axiome 1 (negation doit etre UNSATISFIABLE) : UNSATISFIABLE », libelle ET verdict differents)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "(?m:^(Axiome 1 \\(negation doit etre UNSAT\\) : unsat)\\r?$)"
+          transform: text
+        csharp:
+          absent: "le libelle lui-meme differe (« UNSATISFIABLE » la où Python et Rust ecrivent « UNSAT ») — le verdict est le meme, le rendu ne l'est pas"
+        rust:
+          cell: 7
+          pattern: "(?m:^(Axiome 1 \\(negation doit etre UNSAT\\) : unsat)\\r?$)"
+          transform: text
+    - id: c7_axiome2
+      description: "Cellule 7 — negation de l'axiome 2 de McCarthy, unsat (ligne ancrée ; libelle C# different, voir la mesure precedente)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "(?m:^(Axiome 2 \\(negation doit etre UNSAT\\) : unsat)\\r?$)"
+          transform: text
+        csharp:
+          absent: "le libelle lui-meme differe (« UNSATISFIABLE » la où Python et Rust ecrivent « UNSAT ») — le verdict est le meme, le rendu ne l'est pas"
+        rust:
+          cell: 7
+          pattern: "(?m:^(Axiome 2 \\(negation doit etre UNSAT\\) : unsat)\\r?$)"
+          transform: text
+    - id: c10_statut
+      description: "Cellule 10 — verdict du solveur sur le tableau croissant (ligne ancrée ; le jumeau C# rend « SATISFIABLE », il est donc déclaré absent)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "(?m:^(Statut : [^\\r\\n]*)\\r?$)"
+          transform: text
+        csharp:
+          absent: "le jumeau C# rend l'enumeration Microsoft.Z3 « SATISFIABLE » là où Python et Rust rendent « sat » — meme verdict, rendu different"
+        rust:
+          cell: 10
+          pattern: "(?m:^(Statut : [^\\r\\n]*)\\r?$)"
+          transform: text
+    - id: c10_tableau_libelle
+      description: "Cellule 10 — libelle du tableau croissant synthetise (le TEMOIN est libre : seule la croissance stricte et le domaine 0..100 sont imposes)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "(?m:^(Tableau croissant synthétisé : \\[))"
+          transform: text
+        csharp:
+          cell: 10
+          pattern: "(?m:^(Tableau croissant synthétisé : \\[))"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "(?m:^(Tableau croissant synthétisé : \\[))"
+          transform: text
+    - id: c10_store
+      description: "Cellule 10 — lecture du tableau ecrit par Store (valeur IMPOSEE par le Store : 42 ; le jumeau C# ecrit « Apres » avec l'accent, il est donc declare absent)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "(?m:^(Apres Store\\(t, 2, 42\\) -> Select\\(t2, 2\\) = 42)\\r?$)"
+          transform: text
+        csharp:
+          absent: "le jumeau C# ecrit « Après Store(t, 2, 42) -> Select(t2, 2) = 42 » avec l'accent sur « Après » là où Python et Rust ecrivent « Apres » — la ligne n'est donc pas identique au caractere pres aux deux autres cotes"
+        rust:
+          cell: 10
+          pattern: "(?m:^(Apres Store\\(t, 2, 42\\) -> Select\\(t2, 2\\) = 42)\\r?$)"
+          transform: text
+    - id: c10_inchange_libelle
+      description: "Cellule 10 — libelle de la ligne « Select(t2, 0) inchange » (le TEMOIN est libre : l'axiome 2 dit que la valeur EGALE celle de t[0], pas laquelle)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "(?m:^(Select\\(t2, 0\\) inchangé = ))"
+          transform: text
+        csharp:
+          cell: 10
+          pattern: "(?m:^(Select\\(t2, 0\\) inchangé = ))"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "(?m:^(Select\\(t2, 0\\) inchangé = ))"
+          transform: text
+    - id: e14_message
+      description: "Cellule 14 — message de l'exercice 1 (stub C.1, libelle exact de la source)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "(?m:^(Exercice 1 a completer : [^\\r\\n]*)\\r?$)"
+          transform: text
+        csharp:
+          cell: 14
+          pattern: "(?m:^(Exercice 1 a completer : [^\\r\\n]*)\\r?$)"
+          transform: text
+        rust:
+          cell: 14
+          pattern: "(?m:^(Exercice 1 a completer : [^\\r\\n]*)\\r?$)"
+          transform: text
+    - id: e16_message
+      description: "Cellule 16 — message de l'exercice 2 (stub C.1, libelle exact de la source)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "(?m:^(Exercice 2 a completer : [^\\r\\n]*)\\r?$)"
+          transform: text
+        csharp:
+          cell: 16
+          pattern: "(?m:^(Exercice 2 a completer : [^\\r\\n]*)\\r?$)"
+          transform: text
+        rust:
+          cell: 16
+          pattern: "(?m:^(Exercice 2 a completer : [^\\r\\n]*)\\r?$)"
+          transform: text
+    - id: e18_message
+      description: "Cellule 18 — message de l'exercice 3 (stub C.1 ; le jumeau C# ecrit « attendu UNSATISFIABLE » la où Python et Rust ecrivent « attendu UNSAT. », il est donc declare absent)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "(?m:^(Exercice 3 a completer : [^\\r\\n]*)\\r?$)"
+          transform: text
+        csharp:
+          absent: "le libelle du stub differe (« attendu UNSATISFIABLE. » la où Python et Rust ecrivent « attendu UNSAT. »)"
+        rust:
+          cell: 18
+          pattern: "(?m:^(Exercice 3 a completer : [^\\r\\n]*)\\r?$)"
+          transform: text
