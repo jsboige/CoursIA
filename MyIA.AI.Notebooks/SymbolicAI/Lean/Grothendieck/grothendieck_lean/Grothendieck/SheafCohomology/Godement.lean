@@ -56,7 +56,7 @@ définition historique, antérieure à toute présentation par Ext).
 
 **Posé** : la définition complète `Hⁿ_God(U, F) = Hⁿ(Γ(U, C^●F))`, les
 recalages d'étages et de `d⁰`, le foncteur sections additif (brique
-réutilisable — le capstone « flasque ⇒ Γ-acyclique » (Partie 94 fusionnée
+réutilisable — le capstone « flasque ⇒ Γ-acyclique » (Partie 102 fusionnée
 #21072) s'y raccordera après retarget de la pile sur main), et **la brique
 2** : `H⁰_God(U, F) ≅ F(U)` pour `F` faisceau — le mur de faisheification
 identifié au plan P95 n'est pas requis ici : le mono de l'unité (Partie 90)

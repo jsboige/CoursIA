@@ -845,7 +845,9 @@ jobs:
             MyIA.AI.Notebooks/GameTheory/tests \
             MyIA.AI.Notebooks/IIT/ICT-Series/scripts/tests \
             MyIA.AI.Notebooks/QuantConnect/scripts/tests \
+            MyIA.AI.Notebooks/QuantConnect/projects/HalloweenIndicator-QC/tests \
             MyIA.AI.Notebooks/QuantConnect/projects/Option-Wheel/tests \
+            MyIA.AI.Notebooks/QuantConnect/projects/BitcoinRegimeGate-QC/tests \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_guards.py \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_lean_utils.py \
