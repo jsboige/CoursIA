@@ -435,7 +435,14 @@ CI_EXCLUDED_PLAN: dict[str, str] = {
 # pour aucun fichier, le dossier Causalite n'a jamais ete dans la population.
 # #27482 : BitcoinRegimeGate-QC/tests quitte la population (marqueur leve,
 # dossier cable des trois cotes) : 24 marqueurs, 66 fichiers, 1083 items.
-CI_EXCLUDED_BASELINE = {"marqueurs": 24, "fichiers": 66, "items": 1083}
+# #19694 : le marqueur de 04-Applications/v4/tests est au niveau du DOSSIER,
+# donc tout test ajoute dans ses limites compte dans la population meme
+# lorsqu'une jambe le joue. `test_p5_audiocpp_fish_route.py` (21 tests
+# hermetiques, monkeypatch et tmp_path seulement, 2,7 s en local) y entre et
+# est cable dans scripts-tests.yml comme ses cinq voisins : 67 fichiers,
+# 1104 items. L'exclusion du dossier n'est pas levee pour autant (les tests
+# restants du dossier ne sont toujours pas joues par la CI).
+CI_EXCLUDED_BASELINE = {"marqueurs": 24, "fichiers": 67, "items": 1104}
 
 # Une suite de tests de la famille `scripts/**/tests/` : le repertoire doit
 # porter au moins un `test_*.py` pour compter comme suite (#22735).
