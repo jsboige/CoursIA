@@ -697,7 +697,11 @@ def scan_diff(diff_range: str) -> tuple[list[AddedPassage], list[str], list[str]
     """
     try:
         proc_status = subprocess.run(
-            ["git", "diff", "--name-status", "--diff-filter=AMR", diff_range],
+            # `-c core.quotePath=false` : git cite les chemins non ASCII, et le
+            # chemin cite n'existe pas sur le disque -- le carnet etait ecarte
+            # en silence (faux vert). Precedent : `check_notebook_navlinks.py`.
+            ["git", "-c", "core.quotePath=false",
+             "diff", "--name-status", "--diff-filter=AMR", diff_range],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
             timeout=120, check=False,
         )
