@@ -4841,6 +4841,101 @@ theorem wall_sw_agreement
     congr 1
     ext <;> (try dsimp only) <;> omega
 
+/-! ## Tranche 28 — formation cœur–vaisseau : cœur périodique et vaisseau de périodes quelconques
+
+Le maillon 5 (`evolve_ship_union`, `hcap_of_spaceship_formation`) couvre l'union
+de deux vaisseaux **synchrones** — même période `p`, même déplacement `v` : leur
+union est elle-même un vaisseau, et la capture par la voie vaisseau
+(`hcap_of_spaceship`) s'applique alors à l'union entière. La tranche 26
+(`evolve_ship_join`, `hcap_of_spaceship_fleet`) étend cette clôture aux flottes
+synchrones n-aires. La classe laissée ouverte est la formation
+**cœur–vaisseau** : un cœur périodique (`evolve T g₁ = g₁`) et un vaisseau
+(`evolve p g₂ = shift v g₂`), de périodes a priori différentes.
+
+Un tel assemblage n'est pas un vaisseau — le cœur ne se translate pas — donc
+`evolve_ship_union` et `evolve_ship_join` ne s'y appliquent pas. Il réapparaît
+cependant après `Nat.lcm T p` étapes : le cœur est revenu à lui-même et le
+vaisseau s'est translaté du déplacement accumulé sur `Nat.lcm T p / p` cycles.
+C'est la moitié **algébrique** de la composition. La **capture** (`hcap`,
+`jumpCapturedF`) de cette classe reste le maillon suivant et n'est pas
+revendiquée ici. -/
+
+/-- **Déplacement accumulé du vaisseau d'une formation cœur–vaisseau.** Sur
+    `Nat.lcm T p` étapes, un vaisseau de période `p` et de déplacement `v`
+    effectue `Nat.lcm T p / p` cycles : son déplacement total vaut ce nombre de
+    cycles fois `v`. -/
+def coreShipDrift (T p : Nat) (v : Int × Int) : Int × Int :=
+  (((Nat.lcm T p / p : Nat) : Int) * v.1, ((Nat.lcm T p / p : Nat) : Int) * v.2)
+
+/-- **Itération d'un vaisseau.** Un motif `g` dont chaque cycle de `p` étapes
+    translate de `v` s'est translaté de `m` fois `v` après `m` cycles. Induction
+    sur `m` : `evolve_add` scinde `p + m·p`, `evolve_shift` fait commuter
+    évolution et translation d'un cycle, `shift_shift` compose les translations.
+    Le cas `m = 0` est `shift_zero`, qui exige la canonicité `hg` (`shift (0, 0)`
+    n'est l'identité que sur une grille canonique). Le vecteur est décomposé en
+    composantes dès l'entrée (`obtain`), pour donner à `shift_shift` — énoncée à
+    composantes explicites — la forme `shift (a₁, a₂) (shift (b₁, b₂) g)` qu'elle
+    réécrit. Aucune positivité de `p` n'est requise. -/
+theorem evolve_mul_shift_ship {p : Nat} (g : Grid) (hg : Canonical g)
+    (v : Int × Int) (hship : evolve p g = shift v g) (m : Nat) :
+    evolve (m * p) g = shift (((m : Nat) : Int) * v.1, ((m : Nat) : Int) * v.2) g := by
+  obtain ⟨v₁, v₂⟩ := v
+  induction m with
+  | zero =>
+    simp only [Nat.cast_zero, zero_mul, evolve_zero]
+    exact (shift_zero hg).symm
+  | succ m ih =>
+    have hsplit : p + m * p = (m + 1) * p := by ring
+    rw [← hsplit, evolve_add, ih, ← evolve_shift, hship, shift_shift]
+    congr 1
+    ext <;> push_cast <;> ring
+
+/-- **Loi de mouvement d'une formation cœur–vaisseau (forme ensembliste).** Un cœur
+    `T`-périodique et un vaisseau `(p, v)`, aux trajectoires 3-séparées : après
+    `Nat.lcm T p` étapes, l'état de l'union est, au sens de l'appartenance, le
+    cœur inchangé plus le vaisseau translaté de `coreShipDrift T p v`. Aucune
+    hypothèse de canonicité sur l'**assemblage**, ni de positivité de `T` ou de
+    `p`, n'est requise : seule la canonicité du vaisseau (`hg₂`, héritée du cas
+    `m = 0` de `evolve_mul_shift_ship`). Le cœur revient par
+    `evolve_mulF_of_period` appliqué au quotient `Nat.lcm T p / T`, le vaisseau
+    par `evolve_mul_shift_ship` appliqué au quotient `Nat.lcm T p / p`, et la
+    preuve ne manipule que `mem_shift` et la loi d'union `mem_evolve_union_sep`. -/
+theorem mem_evolve_lcm_core_ship {T p : Nat} (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ q ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist q r)
+    (hper : evolve T g₁ = g₁) (v : Int × Int) (hship : evolve p g₂ = shift v g₂)
+    (hg₂ : Canonical g₂) (q : Int × Int) :
+    q ∈ evolve (Nat.lcm T p) (g₁ ++ g₂)
+      ↔ q ∈ g₁ ∨ (q.1 - (coreShipDrift T p v).1, q.2 - (coreShipDrift T p v).2) ∈ g₂ := by
+  have hLT : T ∣ Nat.lcm T p := Nat.dvd_lcm_left T p
+  have hLp : p ∣ Nat.lcm T p := Nat.dvd_lcm_right T p
+  have hcore : evolve (Nat.lcm T p) g₁ = g₁ := by
+    rw [← Nat.div_mul_cancel hLT]
+    exact evolve_mulF_of_period g₁ hper (Nat.lcm T p / T)
+  have hshipL : evolve (Nat.lcm T p) g₂ = shift (coreShipDrift T p v) g₂ := by
+    rw [← Nat.div_mul_cancel hLp]
+    simpa only [coreShipDrift] using
+      evolve_mul_shift_ship g₂ hg₂ v hship (Nat.lcm T p / p)
+  rw [mem_evolve_union_sep g₁ g₂ hsep (Nat.lcm T p) q, hcore, hshipL, mem_shift]
+
+/-- **Loi de mouvement d'une formation cœur–vaisseau (forme listes).** Même
+    contenu que `mem_evolve_lcm_core_ship`, élevé à l'égalité de grilles par
+    `Canonical.ext` : le membre de gauche est canonique
+    (`canonical_evolve_of_pos`, d'où `hT0` et `hp0` : `Nat.lcm T p > 0`), le
+    membre de droite est supposé canonique (`hcan`). Chaque partie est
+    canonique (`canonical_evolve_of_pos`, `canonical_shift`), mais leur
+    concaténation ne l'est pas en général (ordre des deux parties) : la
+    canonicité de l'assemblage reste une hypothèse, comme le `hcan` de
+    `evolve_period_union`. -/
+theorem evolve_lcm_core_ship {T p : Nat} (hT0 : 0 < T) (hp0 : 0 < p) (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ q ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist q r)
+    (hper : evolve T g₁ = g₁) (v : Int × Int) (hship : evolve p g₂ = shift v g₂)
+    (hg₂ : Canonical g₂) (hcan : Canonical (g₁ ++ shift (coreShipDrift T p v) g₂)) :
+    evolve (Nat.lcm T p) (g₁ ++ g₂) = g₁ ++ shift (coreShipDrift T p v) g₂ := by
+  apply Canonical.ext (canonical_evolve_of_pos (Nat.lcm_pos hT0 hp0) _) hcan
+  intro q
+  rw [mem_evolve_lcm_core_ship g₁ g₂ hsep hper v hship hg₂ q]
+  simp only [List.mem_append, mem_shift]
+
 /-! ## Synthèse — le fragment est non vide et l'énoncé-cadre est honnête
 
 `supportInMargin` est décidable et témoigné sur le bestiaire (ci-dessus). L'énoncé-cadre

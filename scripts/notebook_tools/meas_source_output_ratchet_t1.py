@@ -48,7 +48,7 @@ def _base_for_window(branch, n_commits):
 def _changed_notebooks(base_ref, head_ref):
     """List .ipynb paths changed between base_ref and head_ref."""
     proc = _run(
-        ["git", "diff", "--name-only", "--diff-filter=ACMRT", f"{base_ref}..{head_ref}",
+        ["git", "-c", "core.quotePath=false", "diff", "--name-only", "--diff-filter=ACMRT", f"{base_ref}..{head_ref}",
          "--", "*.ipynb"],
         cwd=REPO_ROOT,
     )

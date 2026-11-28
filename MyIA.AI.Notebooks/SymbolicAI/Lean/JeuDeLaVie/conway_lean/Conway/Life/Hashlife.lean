@@ -381,11 +381,11 @@ def evolveHashlifeFast (n : Nat) (g : Grid) : Grid :=
 /-! ### N3 : tramage conscient de n pour `evolveHashlifeFast` (issue #3846)
 
 La refonte P5 introduit `gridToMacroCellWithOffsetN` (analogue conscient
-de n de `gridToMacroCellWithOffset`, voir `MacroCell.lean` L736) : il
+de n de `gridToMacroCellWithOffset`, dans `MacroCell.lean`) : il
 construit la `MacroCell` a partir de `gridFrameN n g` (rembourrage
 `max 2 n`) au lieu de `gridFrame` a rembourrage fixe (rembourrage `2`).
 Pour `n ≤ 2`, les deux constructeurs coincident
-(`gridToMacroCellWithOffsetN_le_two_eq`, L746), donc le tramage conscient
+(`gridToMacroCellWithOffsetN_le_two_eq`), donc le tramage conscient
 de n est **definitionnellement identique** au `evolveHashlifeFast`
 existant dans le regime des petits `n` (chaque temoin de correction
 existant dans `Computation.lean` utilise `n ∈ {2, 4, 8, 12, 16}`, tous
@@ -399,12 +399,11 @@ Cette section **ajoute** la variante consciente de n sans toucher a
   constructeur conscient de n `gridToMacroCellWithOffsetN` : l'appel
   recursif `evolveHashlifeFastAuxN fuel (n - js) g'` re-entre dans
   `gridToMacroCellWithOffsetN (n - js) g'` sur la grille sautee. (Le
-  commentaire de conception N1 a MacroCell L634 decrivait un tramage
-  "sans re-cadrer" ; le code, lui, re-cadre a chaque iteration — c'est
-  le code qui fait foi, la doc a ete alignee.)
+  commentaire de conception, section « Cadrage conscient de n » de
+  `MacroCell.lean`, decrit le meme re-cadrage a chaque iteration.)
 - `evolveHashlifeFastN_zero` — verification triviale : `n = 0` renvoie `g`.
 - `evolveHashlifeFastAuxN_eq_evolve` / `evolveHashlifeFastN_eq_evolve` —
-  **tranche (b2), #6724 : le garde de saut N3 est mort.** Le rembourrage
+  **#6724 : le garde de saut N3 est mort.** Le rembourrage
   `max 2 n` de `gridFrameN` force `2 ^ lvl ≥ side ≥ 2 * n + 1 > n`
   (`gridToMacroCellWithOffsetN_level_gt_n`, MacroCell), donc le garde
   `lvl ≥ 2 ∧ n ≥ jumpSize lvl` est insatisfait pour toute grille non
@@ -412,24 +411,24 @@ Cette section **ajoute** la variante consciente de n sans toucher a
   jamais et la variante N3 degénère en le `evolve` de reference.
 
 Le **pont** `evolveHashlifeFastN n g = evolve n g` est donc prouve pour
-TOUT n comme corollaire immediat du garde mort — plus fort que le pont
-`n ≤ 2` vers `evolveHashlifeFast` initialement reporte (la composante
-Hashlife est simplement inactive, au prix honnete de l'acceleration).
+TOUT n comme corollaire immediat du garde mort. Le pont vers
+`evolveHashlifeFast` est distinct et n'est pas etabli dans ce fichier :
+la composante Hashlife est simplement inactive, au prix honnete de
+l'acceleration.
 Le dejouement pour la refonte P5 : couvrir le cone des n generations
 restantes par le rembourrage est auto-sabotant — le cadre gonfle au-dela
 du horizon du saut qu'il conditionne. La sortie identifiee (amendement
-j/p>=3, tranche par le coordinateur sur #6724) est la decorrelation j de
-Gosper (`hashlifeResultAt j`, implementee dans la section suivante) : a
-j = lvl-2 sur la cellule paddede, le comptage centre de la bbox rend la
-capture consequence du seul invariant du cadre
-(`jumpAt_capture_centered`), avec un garde viable
+j/p>=3 sur #6724) est la decorrelation j de Gosper (`hashlifeResultAt j`,
+implementee dans la section suivante) : a j = lvl-2 sur la cellule paddede,
+le comptage centre de la bbox rend la capture consequence du seul invariant
+du cadre (`jumpAt_capture_centered`), avec un garde viable
 (`guardAt_viable_glider`). -/
 
 /-- Auxiliaire trame N3 pour `evolveHashlifeFastN` : meme recursion que
     `evolveHashlifeFastAux`, mais chaque iteration re-cadre via le
     constructeur conscient de n `gridToMacroCellWithOffsetN` — l'appel
     recursif sur `n - js` re-entre dans le cadrage conscient du n restant
-    sur la grille sautee. Attention (tranche (b2), #6724) : sous ce
+    sur la grille sautee. Attention (#6724) : sous ce
     cadrage, le garde de saut `lvl ≥ 2 ∧ n ≥ js` est structurellement
     mort — voir `evolveHashlifeFastAuxN_eq_evolve` ci-dessous. -/
 def evolveHashlifeFastAuxN : Nat → Nat → Grid → Grid
@@ -444,7 +443,7 @@ def evolveHashlifeFastAuxN : Nat → Nat → Grid → Grid
     if lvl >= 2 && n >= js then
       -- Saut en avant de `2^lvl` generations avec Hashlife rembourre,
       -- puis re-cadrage conscient du n restant sur la grille sautee.
-      -- NB (tranche (b2), #6724) : branche actuellement MORTE —
+      -- NB (#6724) : branche actuellement MORTE —
       -- `gridToMacroCellWithOffsetN_level_gt_n` (MacroCell) force
       -- `2^lvl > n = js`, le garde ne peut jamais tirer tant que le
       -- rembourrage `max 2 n` gouverne le niveau du cadre.
@@ -459,9 +458,8 @@ def evolveHashlifeFastAuxN : Nat → Nat → Grid → Grid
 /-- Variante tramee N3 de `evolveHashlifeFast` : la MacroCell initiale
     utilise le cadre conscient de n `gridToMacroCellWithOffsetN n g`, puis
     la recursion procede de maniere identique. API publique ; pour
-    `n ≤ 2` elle coincide avec `evolveHashlifeFast` (pont reporte a un
-    cycle ulterieur, jumele avec le deblocage P4 — voir la docstring de
-    section ci-dessus). -/
+    `n ≤ 2` elle coincide avec `evolveHashlifeFast` ; ce pont n'est pas
+    etabli dans ce fichier (voir la docstring de section ci-dessus). -/
 def evolveHashlifeFastN (n : Nat) (g : Grid) : Grid :=
   evolveHashlifeFastAuxN n n g
 
@@ -471,7 +469,7 @@ def evolveHashlifeFastN (n : Nat) (g : Grid) : Grid :=
 theorem evolveHashlifeFastN_zero (g : Grid) :
     evolveHashlifeFastN 0 g = g := rfl
 
-/-- **Tranche (b2), #6724 : le garde de saut N3 est mort.** Pour toute
+/-- **Le garde de saut N3 est mort (#6724).** Pour toute
     grille, le garde `lvl ≥ 2 ∧ n ≥ jumpSize lvl` de la branche de saut
     est insatisfait : grille vide → `lvl = 0 < 2` ; grille non vide →
     `gridToMacroCellWithOffsetN_level_gt_n` donne `2 ^ lvl > n` alors que
@@ -502,14 +500,14 @@ theorem evolveHashlifeFastAuxN_eq_evolve (fuel n : Nat) (g : Grid)
         omega
     · rfl
 
-/-- **Pont valable pour TOUT n (b3 anticipe)** : `evolveHashlifeFastN`
+/-- **Pont valable pour TOUT n** : `evolveHashlifeFastN`
     coincide avec le `evolve` de reference — corollaire direct du garde
     mort (`evolveHashlifeFastAuxN_eq_evolve`) : la variante N3 ne saute
-    jamais. Ce pont etait initialement prevu (reporte) pour `n ≤ 2`
-    seulement, vers `evolveHashlifeFast` ; il est en realite
-    inconditionnel vers `evolve`, au prix honnete de l'acceleration
-    Hashlife (inactive tant que le garde est mort — docstring de section
-    ci-dessus pour la sortie via la decorrelation j de Gosper). -/
+    jamais. Le pont etabli est inconditionnel vers `evolve`, et non vers
+    `evolveHashlifeFast` (non etabli ici), au prix honnete de
+    l'acceleration Hashlife (inactive tant que le garde est mort —
+    docstring de section ci-dessus pour la sortie via la decorrelation j
+    de Gosper). -/
 theorem evolveHashlifeFastN_eq_evolve (n : Nat) (g : Grid) :
     evolveHashlifeFastN n g = evolve n g := by
   cases n with
@@ -517,10 +515,10 @@ theorem evolveHashlifeFastN_eq_evolve (n : Nat) (g : Grid) :
   | succ m =>
     exact evolveHashlifeFastAuxN_eq_evolve (m + 1) (m + 1) g (by omega)
 
-/-! ## Saut a portee decorrelee : `hashlifeResultAt j` — porte (b2') de #6724
+/-! ## Saut a portee decorrelee : `hashlifeResultAt j` (#6724)
 
-**Arithmetique decidee AVANT l'implementation** (exigence coordinateur,
-cycle c.1044). Rappel (b2) : `hashlifeResult` sur une cellule de niveau
+**Arithmetique decidee AVANT l'implementation**. Rappel :
+`hashlifeResult` sur une cellule de niveau
 `M` avance `2^(M-2)` generations et rend la fenetre centrale `2^(M-1)` ;
 sa demi-largeur EGALE l'avancement — pour tout contenu de demi-largeur
 `b > 0`, le cone depasse la fenetre d'exactement `b`, quel que soit le
@@ -560,12 +558,13 @@ extraits de quadrant), pas en `r_i` entiers — l'assemblage initial par
 `r_i` entiers titait `r5` quatre fois (temoin falsifiant).
 
 **Honnetete du perimetre** : la correction de `hashlifeResultAt` contre
-`evolve` n'est pas ici formellement prouvee (terrain P4, comme pour le
-`hashlifeJump` existant) ; elle est verifiee computationnellement sur
-temoins (`evolveHashlifeFastAtN k g = evolve k g` sur glider/blinker/
-ligne, un saut et deux sauts). Les theoremes livres sont arithmetiques :
-viabilite du garde (temoin concret) et capture centree (chaine de
-marge). -/
+`evolve` n'est pas prouvee dans ce fichier. Elle est etablie dans le module
+`Conway.Life.HashlifeCorrectness` par `hashlifeResultAt_central_correct` ;
+`evolveHashlifeFastAtN_correct_uncond` donne la correction de l'API publique.
+Elle est aussi verifiee computationnellement sur temoins
+(`evolveHashlifeFastAtN k g = evolve k g` sur glider/blinker/ligne, un saut
+et deux sauts). Les theoremes de ce fichier sont arithmetiques : viabilite
+du garde (temoin concret) et capture centree (chaine de marge). -/
 
 /-- Accesseurs de quadrant pour l'assemblage mono-ronde : extraient le
     quadrant demande d'une cellule de niveau >= 1. Le cas feuille
@@ -666,7 +665,7 @@ def hashlifeJumpAt (j : Nat) (c : MacroCell) : MacroCell :=
   hashlifeResultAt j (padCenter2 c)
 
 /-- Taille du saut decorrele pour un cadre de niveau `lvl` (piste
-    Gosper validee par l'arithmetique (b2')) : `2^(lvl - 2)`. -/
+    Gosper validee par l'arithmetique) : `2^(lvl - 2)`. -/
 def jumpSizeAt (lvl : Nat) : Nat := 2 ^ (lvl - 2)
 
 /-- **Capture centree : l'invariant du cadre suffit.** Sous les
@@ -695,7 +694,7 @@ theorem jumpAt_capture_centered (lvl B pad : Nat)
   rw [h1, h2]
   omega
 
-/-- **Invariant de re-cadrage (grain 1, #11161).** Pour une grille non vide,
+/-- **Invariant de re-cadrage (#11161).** Pour une grille non vide,
     la bbox de `g` et le rembourrage conscient de `n` tiennent dans la cellule
     du cadre : `B + 2 * max 2 n ≤ 2 ^ lvl` avec
     `B = max (rMax-rMin+1).toNat (cMax-cMin+1).toNat` et
@@ -783,7 +782,7 @@ theorem gridFrameN_level_ge_two (n : Nat) (g : Grid) (hg : g ≠ []) :
     omega
 
 /-- **Re-cadrage : la capture du saut decorrele devient un corollaire du
-    cadre** (grain 1, #11161). Les deux marges de `jumpAt_capture_centered` —
+    cadre** (#11161). Les deux marges de `jumpAt_capture_centered` —
     gauche `2^(lvl-1) + pad` et droite `3*2^(lvl-1) - pad - B` — couvrent la
     portee `2^(lvl-2)` sous les seules hypotheses de construction du cadre
     `gridFrameN` (bbox de cote `B`, rembourrage `pad = max 2 n`, niveau
@@ -812,7 +811,7 @@ example :
 /-- Le garde decorrele est VIABLE : temoin concret (glider, n = 8) ou
     le niveau du cadre conscient de n est exactement `5`, donc
     `jumpSizeAt 5 = 2^3 = 8 <= 8 = n` — la branche de saut TIRE, contra
-    du garde (b2) mort pour toute grille. -/
+    du garde plein `2^lvl`, mort pour toute grille. -/
 theorem guardAt_viable_glider :
     (gridToMacroCellWithOffsetN 8 [(1,2),(2,3),(3,1),(3,2),(3,3)]).2.level = 5
     ∧ jumpSizeAt
@@ -821,11 +820,11 @@ theorem guardAt_viable_glider :
   decide
 
 /-- Variante N3 a portee decorrelee : chaque iteration re-cadre via
-    `gridToMacroCellWithOffsetN` (invariant auto-regenerant, (b2)), puis
+    `gridToMacroCellWithOffsetN` (invariant auto-regenerant), puis
     saute de `jumpSizeAt lvl = 2^(lvl-2)` generations via
     `hashlifeJumpAt` si le garde `lvl >= 2 ∧ n >= 2^(lvl-2)` tire —
     VIABLE cette fois (cf `guardAt_viable_glider`), contra du garde
-    plein `2^lvl` prouve mort en (b2). Decalage du resultat :
+    plein `2^lvl`, mort pour toute grille. Decalage du resultat :
     `jumpResultOff off lvl` (coin decale de `-2^(lvl-1)`, cf
     `hashlifeJumpAt`). Capture gardee par le seul invariant du cadre
     (`jumpAt_capture_centered`). Le reste de la recursion est identique

@@ -223,7 +223,11 @@ def pr_diff_files(base: str, head: str) -> list[Path]:
     `base...head` ne rend que l'apport de la PR (merge-base..head).
     """
     proc = subprocess.run(
-        ["git", "diff", "--name-only", f"{base}...{head}"],
+        # `-c core.quotePath=false` : git cite les chemins non ASCII, et le
+        # chemin cite n'existe pas sur le disque -- le carnet etait ecarte en
+        # silence (faux vert). Precedent : `check_notebook_navlinks.py`.
+        ["git", "-c", "core.quotePath=false",
+         "diff", "--name-only", f"{base}...{head}"],
         cwd=REPO_ROOT, capture_output=True, text=True, check=True,
         encoding="utf-8", errors="replace",
     )

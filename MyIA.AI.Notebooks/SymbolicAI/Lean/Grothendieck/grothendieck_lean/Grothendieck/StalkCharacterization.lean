@@ -40,6 +40,23 @@ Références :
   - Parties 74 (`Grothendieck.StalkSeparated`, la séparation) et 75
     (`Grothendieck.StalkGluing`, le recollement).
 
+Correspondance Stacks (groupe #15 de #28537 — « les points et les germes », mesure du 26/11)
+--------------------------------------------------------------------------
+Lecture de `AxiomMath/Stacks` sur l'**arborescence locale**
+`StacksFrontier/Topology/Sheaves/` (clone sparse du dossier entier, 1756
+fichiers couverts sur 1756). Le critère de classement est le **contenu**,
+jamais le seul nom : une recherche par identifiant qui ne renvoie rien
+n'établit pas une absence, elle établit qu'un énoncé n'est pas *nommé* ainsi.
+Un verdict « absent » signifie donc : aucun contenu équivalent dans
+l'ensemble de `Topology/Sheaves/`, à aucun endroit.
+
+| Énoncé | Classe | Référent Stacks | Ce que notre version ajoute |
+|---|---|---|---|
+| `GermSeparated` | **couvert** | `Stalk/Separated.lean:78` `TopCat.Presheaf.IsSeparated'` ; `:86` `isSeparated'_iff` (Stacks 007A) ; `Sheafify/Separated.lean:71` `IsSeparated` et `:88` `toSheafify_app_eq_iff_germ_eq` (la même condition par germes, sous la forme d'une équivalence avec la faisceautisation) | la forme pointwise sur le sous-type `{x // x ∈ U}` |
+| `GermGluing` | partiel | `Basis/Germs.lean:329` `germMap_range_eq_conditionStar` ; `:339` `germMap_bijection` (009M) | l'existence sur le site des ouverts, sans condition de base |
+| `germ_eq_of_isCompatible` | partiel | `Basis/Germs.lean:224` `germ_res` ; `:212` `germ_eq_iff_rel` | l'énoncé autonome, avec un prédicat `IsCompatible` de préfaisceau |
+| `isSheaf_iff_germSeparated_and_germGluing` | partiel | `Basis/Germs.lean:308` `germMap_injective` ; `:329` (009M) ; `Basis/Sheaf.lean:140` `main_theorem009J` (009J) ; `Basis/OnBasis.lean:74` `IsSheafOnBasis` (structure « séparé + recolle », EGA 0 3.2.2) ; `Sheaf/Basic.lean:35` (006T, recollement unique) | le sens inverse, où la condition de faisceau est **dérivée** des germes |
+
 Convention i18n (EPIC #4980 ratifiée 2026-07-04) : ce module est jumelé avec
 `StalkCharacterization_en.lean`. Les énoncés, preuves et noms Lean restent
 identiques ; seules les docstrings et les commentaires diffèrent.
@@ -64,7 +81,25 @@ variable (T : Type u) [TopologicalSpace T]
 /-- **Séparation par les germes** : deux sections d'un préfaisceau qui ont le
 même germe en tout point d'un ouvert sont égales. La Partie 74 établissait
 cette conclusion pour un faisceau ; on la promeut ici en propriété du
-préfaisceau lui-même, pour pouvoir la prendre comme hypothèse. -/
+préfaisceau lui-même, pour pouvoir la prendre comme hypothèse.
+
+Correspondance Stacks — **COUVERT** :
+`StacksFrontier/Topology/Sheaves/Stalk/Separated.lean:78`
+(`TopCat.Presheaf.IsSeparated'`, Stacks 007A) pose la même propriété — la
+carte « section ↦ famille de ses germes » est injective — et `:86`
+(`isSeparated'_iff`) en donne la forme pointwise identique à la nôtre : deux
+sections dont les germes coïncident en tout point de l'ouvert sont égales.
+Stacks note au passage (`:43`) que Mathlib a les tiges et les cartes de
+germe mais **pas** ce prédicat : c'est Stacks qui l'ajoute. La même condition
+par germes réapparaît sous une seconde forme, **après faisceautisation** :
+`Sheafify/Separated.lean:71` (`IsSeparated`) pose la séparation par
+restrictions, et `:88` (`toSheafify_app_eq_iff_germ_eq`) donne l'équivalence
+« deux sections ont la même image par `toSheafify` **si et seulement si**
+leurs germes coïncident en tout point de l'ouvert » — notre énoncé, sous la
+forme d'une équivalence avec l'égalité des images. Ce que notre
+version ajoute : la forme pointwise est la nôtre pour un préfaisceau de
+`Type u` quelconque, sans hypothèse de faisceau, mais avec la dépendance au
+sous-type `{x : T // x ∈ U}`. -/
 def GermSeparated (F : TopCat.Presheaf (Type u) (TopCat.of T)) : Prop :=
   ∀ (U : Opens T) (s t : F.obj (op U)),
     (∀ (x : T) (hx : x ∈ U), F.germ U x hx s = F.germ U x hx t) → s = t
@@ -73,7 +108,22 @@ def GermSeparated (F : TopCat.Presheaf (Type u) (TopCat.of T)) : Prop :=
 représentable (au sens de la Partie 75) provient d'une section. La Partie 75
 démontrait cette existence pour un faisceau **et** en donnait l'unicité ; on
 retient ici la seule existence, l'unicité étant exactement la séparation
-ci-dessus. -/
+ci-dessus.
+
+Correspondance Stacks — **PARTIEL** : Stacks 009M
+(`StacksFrontier/Topology/Sheaves/Basis/Germs.lean:329`,
+`germMap_range_eq_conditionStar`, et `:339`, `germMap_bijection`) prouve que
+l'image de la carte des germes est **exactement** l'ensemble des familles de
+germes vérifiant la condition (*), donc que toute famille de germes
+**localement représentable** provient d'une section. La condition (*) de
+Stacks est la même que notre `IsLocallyRepresentable` : pour chaque point,
+un représentant local dont le germe coïncide avec la famille. Deux écarts de
+cadre : Stacks travaille sur un **préfaisceau sur une base**
+(`PresheafOnBasisOpenSet`) et sa tige est le **quotient** par la relation
+d'équivalence des germes (`:132` `Stalk`), la nôtre une colimit filtrée ; et
+Stacks établit le sens direct sous l'hypothèse `hF : F.IsSheaf`, le nôtre le
+pose en hypothèse. Ce que notre version ajoute : l'existence dans le cadre
+du site des ouverts, sans condition de base. -/
 def GermGluing (F : TopCat.Presheaf (Type u) (TopCat.of T)) : Prop :=
   ∀ (U : Opens T) (a : GermFamily T F U),
     GermFamily.IsLocallyRepresentable T F U a →
@@ -83,7 +133,18 @@ def GermGluing (F : TopCat.Presheaf (Type u) (TopCat.of T)) : Prop :=
 compatible ont le même germe en tout point de leur intersection. C'est
 l'ingrédient qui rend bien définie la famille de germes construite sur une
 famille couvrante — deux représentants locaux d'un même point coïncident
-localement, et donc en germe. -/
+localement, et donc en germe.
+
+Correspondance Stacks — **PARTIEL** : l'ingrédient est chez Stacks :
+`Basis/Germs.lean:224` (`germ_res`) montre que le germe commute avec la
+restriction, et `:212` (`germ_eq_iff_rel`) que l'égalité des germes équivaut
+à la relation d'équivalence des germes. Stacks n'a cependant **pas**
+d'énoncé nommé « les germes de deux représentants locaux compatibles
+coïncident » : chez lui la compatibilité est exprimée par l'égalité des
+restrictions sur les éléments de base
+(`Basis/LocallyBijectiveBasisIso.lean:83`, `IsCompatibleOnBasisPresheaf`) et
+la conclusion s'en déduit. Ce que notre version ajoute : l'énoncé autonome,
+avec un prédicat `IsCompatible` de préfaisceau et le site des ouverts. -/
 theorem germ_eq_of_isCompatible
     (F : TopCat.Presheaf (Type u) (TopCat.of T)) {ι : Type*}
     (U : ι → Opens T) (sf : ∀ i, F.obj (op (U i)))
@@ -101,7 +162,26 @@ représentable provient d'une section (recollement).
 
 C'est le capstone de la veine ouverte par les Parties 72-75, et le seul
 endroit du lake où la condition de faisceau est dérivée de propriétés
-élémentaires plutôt que postulée. -/
+élémentaires plutôt que postulée.
+
+Correspondance Stacks — **PARTIEL** : les deux moitiés existent chez Stacks,
+mais **séparément** et dans un cadre différent. Sens direct (faisceau ⇒
+propriétés des germes) : Stacks 009M (`Basis/Germs.lean:308`
+`germMap_injective` et `:329` `germMap_range_eq_conditionStar`). Sens inverse
+(les propriétés des germes ⇒ faisceau) : Stacks ne l'a pas — sa condition de
+faisceau est **définie** par la séparation et le recollement de **sections**
+(`Basis/Germs.lean:95` `PresheafOnBasisOpenSet.IsSheaf` ; `Basis/Sheaf.lean:88`
+`IsSheafOnBasis`, EGA 0 3.2.2, et `:140` `main_theorem009J`, 009J, le critère
+de la base). La forme **« séparé + recolle »** — la plus proche de notre
+énoncé — est littéralement la structure `IsSheafOnBasis`
+(`Basis/OnBasis.lean:73-74`, EGA 0 3.2.2, champs `separated` `:77` et `glue`
+`:88`), mais sa séparation est **par restrictions** et non par germes ; et le
+sens inverse y est le recollement **unique** des sections
+(`Sheaf/Basic.lean:35`, 006T, `isSheaf_iff_isSheafUniqueGluing_types`).
+Ce que notre version ajoute : l'équivalence **dans le sens
+direct** sur le site des ouverts, sans condition de base, et le sens inverse
+où la condition de faisceau est **dérivée** des germes plutôt que
+postulée. -/
 theorem isSheaf_iff_germSeparated_and_germGluing
     (F : TopCat.Presheaf (Type u) (TopCat.of T)) :
     TopCat.Presheaf.IsSheaf F ↔ GermSeparated T F ∧ GermGluing T F := by

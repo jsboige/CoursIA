@@ -348,7 +348,7 @@ def _is_range_bound(line: str, match_start: int, match_end: int) -> bool:
         return True
     # Test 2 : borne '< N' ou '<= N' / borne '> N' ou '>= N' -- la borne en
     # fin de fenetre. La borne inferieure stricte est le symetrique oublie
-    # de #10162 (04-12-Compilation-Audio c22 : « narration longs (> 10
+    # de #10162 (Audio-04-12-Compilation-Audio-Python c22 : « narration longs (> 10
     # secondes) » = seuil de classification d'exercice, pas une mesure).
     # NB : un '>' en DEBUT de ligne est un BLOCKQUOTE markdown, pas une
     # borne mathematique -- « > 25 s, zero barre minute chargee »
