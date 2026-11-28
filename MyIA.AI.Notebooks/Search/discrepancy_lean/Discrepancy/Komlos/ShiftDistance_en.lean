@@ -13,16 +13,19 @@ Mathlib `db584cd6` :
   classical `simp`/`omega`/`ring`/`positivity`, more conservative on
   v4.33.0.
 
-**Scope of this commit** (k1.1 brick, `lake build SUCCESS` required to
+**Scope of this commit** (k1.8 brick, `lake build SUCCESS` required to
 pass the root module gate — anti-regression D convention, 0 `sorry`) :
 
-Closed bricks : `shiftDistance`, `shiftDistance_zero`, `shiftDistance_nonneg`.
+Closed bricks : `shiftDistance`, `shiftDistance_zero`, `shiftDistance_nonneg`,
+`shiftDistance_eq_zero_of_zero`, `shiftDistance_eq_zero_of_invariant`.
 
 **Deferred to c.886+** (progressive delivery, proof by proof, never
-`sorry`) : `shiftDistance_symm`, `shiftDistance_eq_zero_of_zero`,
-`shiftDistance_le_one` — three lemmas that depend on the operator
-`T_v` (Def 3.1) or real arithmetic that the pinned Mathlib does not
-resolve in v4.33.0.
+`sorry`) : `shiftDistance_symm`, `shiftDistance_le_one` — two lemmas that
+depend on the re-indexation of the sum by `−u`, that is on the
+`sum_translate_image` organ carried by `Split.lean` (k1.2) ; that module
+is **downstream** of the present one, so the dependency cannot be
+reversed — the brick will be delivered in a module downstream of
+`Split.lean`.
 
 The proof state lives in `FORMAL_STATUS.md` (« Karingula–Lovett
 distillation, bricks k1..k5 »). This delivery is the **first k1 brick** :
@@ -88,28 +91,63 @@ lemma shiftDistance_nonneg {d : ℕ} (S : Finset (Fin d → ℤ))
   · simp
   exact Finset.sum_nonneg fun x _ => abs_nonneg _
 
-/-! **Deferred to c.886+**: 3 bricks **not closed** in this commit, to
-be delivered with the operator `T_v` (Def 3.1) which posits the
-appropriate support hypotheses:
+/-- Δ(P, u) = 0 when `P` vanishes on `S` **and** on its translate `S + u`:
+every term `|P (x + u) − P x|` of the sum is then zero, the whole sum is
+zero, hence `½ · 0 = 0`.
 
-1. `shiftDistance_symm` — Δ(u) = Δ(−u) requires a support-invariance
-   hypothesis (`S = S.image (· + u)`). Without it, the lemma is false
-   in general: `|P (x + u) − P x| ≠ |P (x − u) − P x|` for asymmetric P.
+The obstacle announced at brick k1.1 (« the direct proof is delicate in
+Lean 4 v4.33.0 ») concerned a global rewriting of the sum; it lifts term
+by term: `Finset.sum_eq_zero` suffices, the sum is zero as soon as each
+term is. -/
+lemma shiftDistance_eq_zero_of_zero {d : ℕ} (S : Finset (Fin d → ℤ))
+    (P : (Fin d → ℤ) → ℝ) (u : Fin d → ℤ)
+    (hS : ∀ x ∈ S, P x = 0) (hSu : ∀ x ∈ S, P (x + u) = 0) :
+    shiftDistance S P u = 0 := by
+  unfold shiftDistance
+  have hsum : ∑ x ∈ S, |P (x + u) - P x| = 0 := by
+    apply Finset.sum_eq_zero
+    intro x hx
+    simp [hSu x hx, hS x hx]
+  rw [hsum, mul_zero]
 
-2. `shiftDistance_eq_zero_of_zero` — Δ(P, u) = 0 when P ≡ 0 on S ∪
-   (S + u) requires real-arithmetic `(1/2) * 0 = 0` after rewriting
-   the inner sum. The direct proof is delicate in Lean 4 v4.33.0
-   without extended `Mathlib`.
+/-- Δ(P, u) = 0 as soon as `P` is **invariant** under the shift `u` on
+`S`: the term `|P (x + u) − P x|` is then `|P x − P x| = 0`.
 
-3. `shiftDistance_le_one` — Δ(P, u) ≤ ½ · ‖P‖₁ by triangle inequality.
-   The typeclass instance `(0 : ℝ) ≤ (1/2 : ℝ)` is not resolved by
-   `positivity` or `norm_num` in this configuration (needs a
-   `ZeroLEOneClass` instance or equivalent that depends on the pinned
-   Mathlib).
+A sufficient condition distinct from `shiftDistance_eq_zero_of_zero`
+(which assumes `P` identically zero on `S ∪ (S + u)`): the two combine,
+neither is deduced from the other. -/
+lemma shiftDistance_eq_zero_of_invariant {d : ℕ} (S : Finset (Fin d → ℤ))
+    (P : (Fin d → ℤ) → ℝ) (u : Fin d → ℤ)
+    (h : ∀ x ∈ S, P (x + u) = P x) :
+    shiftDistance S P u = 0 := by
+  unfold shiftDistance
+  have hsum : ∑ x ∈ S, |P (x + u) - P x| = 0 := by
+    apply Finset.sum_eq_zero
+    intro x hx
+    simp [h x hx]
+  rw [hsum, mul_zero]
+
+/-! **Deferred to c.886+**: 2 bricks **not closed** in this commit, to
+be delivered in a module **downstream of `Split.lean`** (k1.2) — the
+`sum_translate_image` re-indexing organ is available there, whereas
+`Split.lean` depends on the present module (a circular dependency that
+cannot be reversed):
+
+1. `shiftDistance_symm` — Δ(u) = Δ(−u) requires the support-invariance
+   hypothesis (`S = S.image (· + u)`) **and** the re-indexation of the
+   sum by `−u`. Without the former, the lemma is false in general:
+   `|P (x + u) − P x| ≠ |P (x − u) − P x|` for asymmetric P.
+
+2. `shiftDistance_le_one` — Δ(P, u) ≤ ½ · ‖P‖₁ by triangle inequality,
+   hence Δ ≤ 1 under mass 1. Two distinct conditions: `|P (x + u) − P x| ≤
+   P (x + u) + P x` under positivity of `P`, and the transfer of the
+   mass `∑_{x ∈ S} P (x + u) = ∑_{x ∈ S} P x` — that is the
+   `sum_translate_image` organ of `Split.lean`.
 
 Closed bricks in this commit: `shiftDistance`, `shiftDistance_zero`,
-`shiftDistance_nonneg`. Module builds
-(`lake build Discrepancy.Komlos_en.ShiftDistance` SUCCESS expected), 0
+`shiftDistance_nonneg`, `shiftDistance_eq_zero_of_zero`,
+`shiftDistance_eq_zero_of_invariant`. Module builds
+(`lake build Discrepancy.Komlos.ShiftDistance_en` SUCCESS expected), 0
 `sorry` in code. -/
 
 end Discrepancy.Komlos_en
