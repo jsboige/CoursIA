@@ -22,6 +22,25 @@ Références :
   - Mathlib, `Mathlib.Topology.Sheaves.SheafCondition.UniqueGluing`.
   - Partie 74 (`Grothendieck.StalkSeparated`) : détection par les germes.
 
+Correspondance Stacks (groupe #14 de #28537 — « les tiges », mesure du 26/11)
+--------------------------------------------------------------------------
+Lecture de `AxiomMath/Stacks` sur l'**arborescence locale**
+`StacksFrontier/Topology/Sheaves/` (clone sparse du dossier entier) : la
+couverture est ici bien plus large que celle des relevés du 22/11 et du
+25/11, qui ne pouvaient lire que quelques fichiers par l'API `contents`
+(l'arbre récursif de GitHub est tronqué et `Topology/Sheaves` n'y apparaît
+pas). Un verdict « absent » signifie donc : **aucun énoncé de ce nom dans
+l'ensemble de `Topology/Sheaves/`**.
+
+| Énoncé | Classe | Référent Stacks | Ce que notre version ajoute |
+|---|---|---|---|
+| `GermFamily` | **couvert** | `Stalk/Separated.lean:65` `toStalkProduct` (EGA IV 21.9.1) | la dépendance au sous-type `{x // x ∈ U}` |
+| `GermFamily.IsLocallyRepresentable` | absent | aucun (`LocallyRepresentable`, `germFamily` : 0 résultat) ; plus proche : `Glueing/Sheaf.lean:232` `gluedPresheaf` (00AL) | le recollement d'une famille de **germes**, Stacks recollant des sections |
+| `germFamily_isLocallyRepresentable` | absent | aucun | la trivialité du cas « la famille vient d'une section » |
+| `existsUnique_gluing'_of_isSheaf` | partiel | `Glueing/Sheaf.lean:240` `gluedPresheaf_isSheaf` ; `:278` `glued` (00AL) | la variante à cible explicite, sans hypothèse de préservation des limites |
+| `existsUnique_section_of_isLocallyRepresentable` | absent | aucun | la **reconstruction** de la section à partir des germes (sens inverse du dictionnaire) |
+| `surjective_germ_family_to_locallyRepresentable` | absent | aucun | la formulation « section ↦ famille de germes » |
+
 Convention i18n (EPIC #4980 ratifiée 2026-07-04) : ce module est jumelé avec
 `StalkGluing_en.lean`. Les énoncés, preuves et noms Lean restent identiques ;
 seules les docstrings et les commentaires diffèrent.
@@ -42,7 +61,15 @@ section Contenu
 
 variable (T : Type u) [TopologicalSpace T]
 
-/-- La famille des germes d'un préfaisceau `F` aux points d'un ouvert `U`. -/
+/-- La famille des germes d'un préfaisceau `F` aux points d'un ouvert `U`.
+
+Correspondance Stacks — **COUVERT** :
+`StacksFrontier/Topology/Sheaves/Stalk/Separated.lean:65` (`toStalkProduct
+(U : Opens X) : F.obj (Opposite.op U) → ∀ x : U, F.stalk x.1`, EGA
+IV 21.9.1) est la même famille de germes — le type `∀ x : U` est la version
+non dépendante de notre `∀ p : {x // x ∈ U}`. Ce que notre version ajoute :
+la **dépendance** au sous-type `{x : T // x ∈ U}`, qui garde l'appartenance
+à `U` dans le type. -/
 abbrev GermFamily (F : TopCat.Presheaf (Type u) (TopCat.of T)) (U : Opens T) :=
   ∀ p : {x : T // x ∈ U}, F.stalk p.1
 
@@ -50,7 +77,16 @@ abbrev GermFamily (F : TopCat.Presheaf (Type u) (TopCat.of T)) (U : Opens T) :=
 point `p : U` possède un voisinage ouvert `V p ⟶ U` et une section sur `V p`
 dont le germe en tout point de `V p` est la valeur prescrite par la famille.
 Cette condition est entièrement locale : elle ne suppose aucune section sur
-`U`. -/
+`U`.
+
+Correspondance Stacks — **ABSENT** : aucun énoncé de ce nom dans
+`StacksFrontier/Topology/Sheaves/` (recherches `LocallyRepresentable` et
+`germFamily` : 0 résultat). Le pendant le plus proche est la donnée de
+recollement `Glueing/Sheaf.lean:232` (`gluedPresheaf (D : GlueData X U)`,
+Stacks 00AL), qui recolle des **isomorphismes de restriction** entre
+faisceaux sur un recouvrement — pas une famille de germes. L'écart est
+l'**objet** du recollement : chez nous des germes, chez Stacks des
+sections. -/
 def GermFamily.IsLocallyRepresentable
     (F : TopCat.Presheaf (Type u) (TopCat.of T)) (U : Opens T)
     (a : GermFamily T F U) : Prop :=
@@ -61,7 +97,14 @@ def GermFamily.IsLocallyRepresentable
       ∀ (p) (x : T) (hx : x ∈ V p),
         F.germ (V p) x hx (sf p) = a ⟨x, (iVU p).le hx⟩
 
-/-- La famille des germes d'une section est localement représentable. -/
+/-- La famille des germes d'une section est localement représentable.
+
+Correspondance Stacks — **ABSENT** : corollaire du précédent — la
+représentabilité locale d'une famille de germes n'a pas d'énoncé nommé chez
+Stacks (recherche `germFamily` sur toute l'arborescence
+`StacksFrontier/Topology/Sheaves/` : 0 résultat). Ce que notre version
+ajoute : la **trivialité** du cas « la famille vient d'une section » — le
+représentant local est la section elle-même, restreinte à `U`. -/
 theorem germFamily_isLocallyRepresentable
     (F : TopCat.Presheaf (Type u) (TopCat.of T)) (U : Opens T)
     (s : F.obj (op U)) :
@@ -74,7 +117,17 @@ theorem germFamily_isLocallyRepresentable
 /-- Variante sur un ouvert cible explicite du recollement unique pour les
 faisceaux de types. Contrairement à `TopCat.Sheaf.existsUnique_gluing'`, elle
 part directement d'un préfaisceau muni de sa propriété de faisceau et n'exige
-aucune hypothèse générale de préservation des limites. -/
+aucune hypothèse générale de préservation des limites.
+
+Correspondance Stacks — **PARTIEL** : Stacks 00AL construit le faisceau
+recollé d'une donnée de recollement (`Glueing/Sheaf.lean:232`
+`gluedPresheaf`, `:240` `gluedPresheaf_isSheaf`, `:278` `glued`). Même
+cœur — le recollement unique de données compatibles — mais deux cadres :
+Stacks recolle des **faisceaux** sur un **recouvrement** au moyen
+d'isomorphismes de restriction vérifiant la cocycle, nous recollons des
+**sections compatibles** d'un **préfaisceau** au sens de `IsCompatible`,
+sans hypothèse générale de préservation des limites. Ce que notre version
+ajoute : la variante à cible explicite et l'absence de ces hypothèses. -/
 theorem existsUnique_gluing'_of_isSheaf
     (F : TopCat.Presheaf (Type u) (TopCat.of T)) (hF : TopCat.Presheaf.IsSheaf F)
     {ι : Type*} (V : ι → Opens T) (U : Opens T) (iVU : ∀ i, V i ⟶ U)
@@ -97,7 +150,16 @@ theorem existsUnique_gluing'_of_isSheaf
 /-- **Recollement des germes** : toute famille de germes localement
 représentable d'un faisceau de types provient d'une unique section globale.
 L'existence utilise le recollement des représentants locaux ; l'unicité est
-exactement la détection des sections par leurs germes établie en Partie 74. -/
+exactement la détection des sections par leurs germes établie en Partie 74.
+
+Correspondance Stacks — **ABSENT** : le recollement d'une **famille de
+germes** localement représentable n'a pas d'énoncé nommé chez Stacks
+(recherche `germFamily` : 0 résultat ; `Glueing/Sheaf.lean` recolle des
+sections données sur un recouvrement, pas des germes reconstruisant une
+section). C'est le **sens inverse** du dictionnaire : Stacks part de la
+section locale vers le faisceau, nous partons des germes vers la section
+globale. Ce que notre version ajoute : la reconstruction elle-même, et
+l'unicité qui en découle par la détection de la Partie 74. -/
 theorem existsUnique_section_of_isLocallyRepresentable
     (F : TopCat.Presheaf (Type u) (TopCat.of T)) (hF : TopCat.Presheaf.IsSheaf F)
     (U : Opens T) (a : GermFamily T F U)
@@ -140,7 +202,14 @@ theorem existsUnique_section_of_isLocallyRepresentable
 
 /-- Reformulation en surjectivité : l'application « section ↦ famille de
 germes » est surjective sur le sous-type des familles localement
-représentables. -/
+représentables.
+
+Correspondance Stacks — **ABSENT** : reformulation en surjectivité du
+précédent ; aucun énoncé de ce nom chez Stacks (recherche `germFamily` sur
+toute l'arborescence `StacksFrontier/Topology/Sheaves/` : 0 résultat). Ce
+que notre version ajoute : la formulation « application section ↦ famille
+de germes », qui rend le dictionnaire faisceaux ↔ espaces étalés
+explicite. -/
 theorem surjective_germ_family_to_locallyRepresentable
     (F : TopCat.Presheaf (Type u) (TopCat.of T)) (hF : TopCat.Presheaf.IsSheaf F)
     (U : Opens T) :

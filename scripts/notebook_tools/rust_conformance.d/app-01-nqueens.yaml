@@ -1,0 +1,966 @@
+# Conformité différentielle de App-01-NQueens (portage Rust, issue #28086, lot 4 #27132).
+#
+# Écrite à la livraison depuis les sorties COMMITTÉES des deux carnets :
+# correspondance par index de cellule (le portage garde les 69 cellules du jumeau
+# Python), une mesure par grandeur comparable, tolérance 0 (dénombrements,
+# itérations, solutions, statuts CP-SAT). Les motifs sont généraux : aucune
+# valeur attendue n'est codée en dur, la comparaison porte le texte extrait de
+# chaque côté.
+#
+# Les temps ne sont JAMAIS comparés : chaque motif de tableau saute la colonne de
+# durée (écueil 8 de la spec et rust-porting-spec.md : l'hémisphère
+# algorithmique s'effondre en Rust, l'écart est déclaré dans le corps de PR).
+# Hors registre, et pour quoi :
+#   - cellules 6, 17, 24, 26, 38 : le côté Python n'imprime qu'une figure ;
+#     le jumeau Rust la remplace par un échiquier ou une table texte (leurs
+#     valeurs sont celles des cellules 15 et 22, mesurées ici) ;
+#   - cellule 36 : temps seuls, hors les deux marqueurs d'omission mesurés ;
+#   - cellules 49, 51, 53 : seuil de croisement, TIMEOUT et gagnants sont
+#     REMESURÉS (dépendants de la vitesse machine), documentés d'une ligne dans
+#     le carnet ; les nœuds des tailles interrompues (N = 110 à 200 en c53) sont
+#     des comptes partiels au timeout, non comparables -- seules les itérations
+#     de min-conflicts et les nœuds des tailles achevées des deux côtés le sont ;
+#   - cellule 60, colonnes « gain » : rapports de temps, machine-dépendants.
+# Le carnet C# n'est pas membre de ce registre : sa parité avec le Python est
+# tenue par twin_pairs.d/app-1-nqueens.yaml.
+- name: App-01-NQueens
+  family: Search/Part3-Cas-pratiques
+  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-01-NQueens-Python.ipynb
+  rust: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-01-NQueens-Rust.ipynb
+  measures:
+  - id: c9_text
+    description: 'Cellule 9 : solution du backtracking simple et noeuds explores, texte identique'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 9
+        pattern: \A\s*(.*?)\s*\Z
+        transform: text
+      rust:
+        cell: 9
+        pattern: \A\s*(.*?)\s*\Z
+        transform: text
+  - id: c20_text
+    description: 'Cellule 20 : min-conflicts N=8 : solution, iterations, conflits, texte identique'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 20
+        pattern: \A\s*(.*?)\s*\Z
+        transform: text
+      rust:
+        cell: 20
+        pattern: \A\s*(.*?)\s*\Z
+        transform: text
+  - id: c15_noeuds
+    description: 'Cellule 15 : tableau des noeuds explores (4 tailles x 3 variantes), bloc identique'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 15
+        pattern: (([^\S\n]*\d+[^\S\n]+\d+[^\S\n]+\d+[^\S\n]+\d+[^\S\n]*\n){3}[^\S\n]*\d+[^\S\n]+\d+[^\S\n]+\d+[^\S\n]+\d+)
+        transform: text
+      rust:
+        cell: 15
+        pattern: (([^\S\n]*\d+[^\S\n]+\d+[^\S\n]+\d+[^\S\n]+\d+[^\S\n]*\n){3}[^\S\n]*\d+[^\S\n]+\d+[^\S\n]+\d+[^\S\n]+\d+)
+        transform: text
+  - id: c29_texte
+    description: 'Cellule 29 : statut CP-SAT et solution N=8, texte identique'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 29
+        pattern: CP-SAT N=8\s*:\s*(OPTIMAL\s+Solution\s*:\s*\[[^\]]*\])
+        transform: text
+      rust:
+        cell: 29
+        pattern: CP-SAT N=8\s*:\s*(OPTIMAL\s+Solution\s*:\s*\[[^\]]*\])
+        transform: text
+  - id: c43_table
+    description: 'Cellule 43 : table N=1..8 (k_max, 2N-2, placements, 2^N), bloc identique'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 43
+        pattern: (N\s+k_max\s+2N-2\s+placements\s+2\^N\s*\n(?:[^\S\n]*\d+[^\S\n]+\d+[^\S\n]+\d+[^\S\n]+\d+[^\S\n]+\d+[^\S\n]*\n){7}[^\S\n]*\d+[^\S\n]+\d+[^\S\n]+\d+[^\S\n]+\d+[^\S\n]+\d+)
+        transform: text
+      rust:
+        cell: 43
+        pattern: (N\s+k_max\s+2N-2\s+placements\s+2\^N\s*\n(?:[^\S\n]*\d+[^\S\n]+\d+[^\S\n]+\d+[^\S\n]+\d+[^\S\n]+\d+[^\S\n]*\n){7}[^\S\n]*\d+[^\S\n]+\d+[^\S\n]+\d+[^\S\n]+\d+[^\S\n]+\d+)
+        transform: text
+  - id: c36_omis_50
+    description: 'Cellule 36 : mesures omises (--) de la ligne N=50, texte identique'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 36
+        pattern: (?m)^\s*(50[^\S\n]+--)
+        transform: text
+      rust:
+        cell: 36
+        pattern: (?m)^\s*(50[^\S\n]+--)
+        transform: text
+  - id: c36_omis_100
+    description: 'Cellule 36 : mesures omises (--) de la ligne N=100, texte identique'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 36
+        pattern: (?m)^\s*(100[^\S\n]+--[^\S\n]+--)
+        transform: text
+      rust:
+        cell: 36
+        pattern: (?m)^\s*(100[^\S\n]+--[^\S\n]+--)
+        transform: text
+  - id: c22_n8
+    description: 'Cellule 22, N=8 : iterations de min-conflicts et colonne Trouve'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 22
+        pattern: (?m)^\s*8[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+[^\S\n]+\w+)[^\S\n]*$
+        transform: text
+      rust:
+        cell: 22
+        pattern: (?m)^\s*8[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+[^\S\n]+\w+)[^\S\n]*$
+        transform: text
+  - id: c22_n50
+    description: 'Cellule 22, N=50 : iterations de min-conflicts et colonne Trouve'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 22
+        pattern: (?m)^\s*50[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+[^\S\n]+\w+)[^\S\n]*$
+        transform: text
+      rust:
+        cell: 22
+        pattern: (?m)^\s*50[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+[^\S\n]+\w+)[^\S\n]*$
+        transform: text
+  - id: c22_n100
+    description: 'Cellule 22, N=100 : iterations de min-conflicts et colonne Trouve'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 22
+        pattern: (?m)^\s*100[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+[^\S\n]+\w+)[^\S\n]*$
+        transform: text
+      rust:
+        cell: 22
+        pattern: (?m)^\s*100[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+[^\S\n]+\w+)[^\S\n]*$
+        transform: text
+  - id: c22_n500
+    description: 'Cellule 22, N=500 : iterations de min-conflicts et colonne Trouve'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 22
+        pattern: (?m)^\s*500[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+[^\S\n]+\w+)[^\S\n]*$
+        transform: text
+      rust:
+        cell: 22
+        pattern: (?m)^\s*500[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+[^\S\n]+\w+)[^\S\n]*$
+        transform: text
+  - id: c31_solutions
+    description: 'Cellule 31 : nombre de solutions N=8 enumerees par CP-SAT'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 31
+        pattern: N=8\s*:\s*(\d+)\s*solutions
+        transform: int
+      rust:
+        cell: 31
+        pattern: N=8\s*:\s*(\d+)\s*solutions
+        transform: int
+  - id: c31_statut
+    description: 'Cellule 31 : statut de l''eumeration'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 31
+        pattern: Status\s*:\s*(\w+)
+        transform: text
+      rust:
+        cell: 31
+        pattern: Status\s*:\s*(\w+)
+        transform: text
+  - id: c33_statut_8
+    description: 'Cellule 33, N=8 : statut CP-SAT (OPTIMAL ou UNKNOWN a la limite)'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 33
+        pattern: (?m)^\s*8[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\w+)[^\S\n]*$
+        transform: text
+      rust:
+        cell: 33
+        pattern: (?m)^\s*8[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\w+)[^\S\n]*$
+        transform: text
+  - id: c33_statut_50
+    description: 'Cellule 33, N=50 : statut CP-SAT (OPTIMAL ou UNKNOWN a la limite)'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 33
+        pattern: (?m)^\s*50[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\w+)[^\S\n]*$
+        transform: text
+      rust:
+        cell: 33
+        pattern: (?m)^\s*50[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\w+)[^\S\n]*$
+        transform: text
+  - id: c33_statut_100
+    description: 'Cellule 33, N=100 : statut CP-SAT (OPTIMAL ou UNKNOWN a la limite)'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 33
+        pattern: (?m)^\s*100[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\w+)[^\S\n]*$
+        transform: text
+      rust:
+        cell: 33
+        pattern: (?m)^\s*100[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\w+)[^\S\n]*$
+        transform: text
+  - id: c33_statut_500
+    description: 'Cellule 33, N=500 : statut CP-SAT (OPTIMAL ou UNKNOWN a la limite)'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 33
+        pattern: (?m)^\s*500[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\w+)[^\S\n]*$
+        transform: text
+      rust:
+        cell: 33
+        pattern: (?m)^\s*500[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\w+)[^\S\n]*$
+        transform: text
+  - id: c41_cpsat
+    description: 'Cellule 41 : solutions enumerees par CP-SAT (N-Tours)'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 41
+        pattern: Solutions CP-SAT\s*:\s*(\d+)
+        transform: int
+      rust:
+        cell: 41
+        pattern: Solutions CP-SAT\s*:\s*(\d+)
+        transform: int
+  - id: c41_formule
+    description: 'Cellule 41 : solutions de la formule N!'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 41
+        pattern: Solutions formule\s*:\s*(\d+)
+        transform: int
+      rust:
+        cell: 41
+        pattern: Solutions formule\s*:\s*(\d+)
+        transform: int
+  - id: c41_statut
+    description: 'Cellule 41 : statut du solveur'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 41
+        pattern: Status solveur:\s*(\w+)
+        transform: text
+      rust:
+        cell: 41
+        pattern: Statut global\s*:\s*(\w+)
+        transform: text
+  - id: c43_max
+    description: 'Cellule 43 : maximum de fous'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 43
+        pattern: Maximum de fous\s*:\s*(\d+)
+        transform: int
+      rust:
+        cell: 43
+        pattern: Maximum de fous\s*:\s*(\d+)
+        transform: int
+  - id: c43_placements
+    description: 'Cellule 43 : placements maximaux de fous'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 43
+        pattern: Placements maximaux\s*:\s*(\d+)
+        transform: int
+      rust:
+        cell: 43
+        pattern: Placements maximaux\s*:\s*(\d+)
+        transform: int
+  - id: c44_max
+    description: 'Cellule 44 : maximum de fous par programmation dynamique'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 44
+        pattern: maximum de fous\s*:\s*(\d+)
+        transform: int
+      rust:
+        cell: 44
+        pattern: maximum de fous\s*:\s*(\d+)
+        transform: int
+  - id: c44_p14
+    description: 'Cellule 44 : placements de 14 fous'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 44
+        pattern: placements de 14 fous\s*:\s*(\d+)
+        transform: int
+      rust:
+        cell: 44
+        pattern: placements de 14 fous\s*:\s*(\d+)
+        transform: int
+  - id: c44_p8
+    description: 'Cellule 44 : placements de 8 fous'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 44
+        pattern: (?m)placements de 8 fous\s*:\s*([\d\s]+?)\s*$
+        transform: digits
+      rust:
+        cell: 44
+        pattern: (?m)placements de 8 fous\s*:\s*([\d\s]+?)\s*$
+        transform: digits
+  - id: c58_totales
+    description: 'Cellule 58 : solutions totales'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 58
+        pattern: Solutions\ totales\s*:\s*(\d+)
+        transform: int
+      rust:
+        cell: 58
+        pattern: Solutions\ totales\s*:\s*(\d+)
+        transform: int
+  - id: c58_simples
+    description: 'Cellule 58 : avec contraintes simples'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 58
+        pattern: Avec\ contraintes\ simples\s*:\s*(\d+)
+        transform: int
+      rust:
+        cell: 58
+        pattern: Avec\ contraintes\ simples\s*:\s*(\d+)
+        transform: int
+  - id: c58_fondamentales
+    description: 'Cellule 58 : solutions fondamentales'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 58
+        pattern: Solutions\ fondamentales\s*:\s*(\d+)
+        transform: int
+      rust:
+        cell: 58
+        pattern: Solutions\ fondamentales\s*:\s*(\d+)
+        transform: int
+  - id: c51_noeuds_20
+    description: 'Cellule 51, N=20 : noeuds du backtracking FC+MRV'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 51
+        pattern: (?m)^\s*20[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+)[^\S\n]+OK[^\S\n]
+        transform: int
+      rust:
+        cell: 51
+        pattern: (?m)^20[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*(\d+)[^\S\n]+\|
+        transform: int
+  - id: c51_iter_20
+    description: 'Cellule 51, N=20 : iterations moyennes de min-conflicts (reussis 5/5)'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 51
+        pattern: (?m)^\s*20[^\S\n]+\d+(?:\.\d+)?[^\S\n]+\d+[^\S\n]+OK[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+\.\d+)[^\S\n]+5/5
+        transform: float
+      rust:
+        cell: 51
+        pattern: (?m)^20[^\S\n]+\|[^|\n]*\|[^|\n]*\|[^|\n]*\|[^|\n]*\|[^\S\n]*(\d+\.\d+)[^\S\n]+\|[^\S\n]*5/5[^\S\n]+\|
+        transform: float
+  - id: c51_noeuds_25
+    description: 'Cellule 51, N=25 : noeuds du backtracking FC+MRV'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 51
+        pattern: (?m)^\s*25[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+)[^\S\n]+OK[^\S\n]
+        transform: int
+      rust:
+        cell: 51
+        pattern: (?m)^25[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*(\d+)[^\S\n]+\|
+        transform: int
+  - id: c51_iter_25
+    description: 'Cellule 51, N=25 : iterations moyennes de min-conflicts (reussis 5/5)'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 51
+        pattern: (?m)^\s*25[^\S\n]+\d+(?:\.\d+)?[^\S\n]+\d+[^\S\n]+OK[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+\.\d+)[^\S\n]+5/5
+        transform: float
+      rust:
+        cell: 51
+        pattern: (?m)^25[^\S\n]+\|[^|\n]*\|[^|\n]*\|[^|\n]*\|[^|\n]*\|[^\S\n]*(\d+\.\d+)[^\S\n]+\|[^\S\n]*5/5[^\S\n]+\|
+        transform: float
+  - id: c51_noeuds_30
+    description: 'Cellule 51, N=30 : noeuds du backtracking FC+MRV'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 51
+        pattern: (?m)^\s*30[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+)[^\S\n]+OK[^\S\n]
+        transform: int
+      rust:
+        cell: 51
+        pattern: (?m)^30[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*(\d+)[^\S\n]+\|
+        transform: int
+  - id: c51_iter_30
+    description: 'Cellule 51, N=30 : iterations moyennes de min-conflicts (reussis 5/5)'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 51
+        pattern: (?m)^\s*30[^\S\n]+\d+(?:\.\d+)?[^\S\n]+\d+[^\S\n]+OK[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+\.\d+)[^\S\n]+5/5
+        transform: float
+      rust:
+        cell: 51
+        pattern: (?m)^30[^\S\n]+\|[^|\n]*\|[^|\n]*\|[^|\n]*\|[^|\n]*\|[^\S\n]*(\d+\.\d+)[^\S\n]+\|[^\S\n]*5/5[^\S\n]+\|
+        transform: float
+  - id: c51_noeuds_35
+    description: 'Cellule 51, N=35 : noeuds du backtracking FC+MRV'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 51
+        pattern: (?m)^\s*35[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+)[^\S\n]+OK[^\S\n]
+        transform: int
+      rust:
+        cell: 51
+        pattern: (?m)^35[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*(\d+)[^\S\n]+\|
+        transform: int
+  - id: c51_iter_35
+    description: 'Cellule 51, N=35 : iterations moyennes de min-conflicts (reussis 5/5)'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 51
+        pattern: (?m)^\s*35[^\S\n]+\d+(?:\.\d+)?[^\S\n]+\d+[^\S\n]+OK[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+\.\d+)[^\S\n]+5/5
+        transform: float
+      rust:
+        cell: 51
+        pattern: (?m)^35[^\S\n]+\|[^|\n]*\|[^|\n]*\|[^|\n]*\|[^|\n]*\|[^\S\n]*(\d+\.\d+)[^\S\n]+\|[^\S\n]*5/5[^\S\n]+\|
+        transform: float
+  - id: c51_noeuds_40
+    description: 'Cellule 51, N=40 : noeuds du backtracking FC+MRV'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 51
+        pattern: (?m)^\s*40[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+)[^\S\n]+OK[^\S\n]
+        transform: int
+      rust:
+        cell: 51
+        pattern: (?m)^40[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*(\d+)[^\S\n]+\|
+        transform: int
+  - id: c51_iter_40
+    description: 'Cellule 51, N=40 : iterations moyennes de min-conflicts (reussis 5/5)'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 51
+        pattern: (?m)^\s*40[^\S\n]+\d+(?:\.\d+)?[^\S\n]+\d+[^\S\n]+OK[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+\.\d+)[^\S\n]+5/5
+        transform: float
+      rust:
+        cell: 51
+        pattern: (?m)^40[^\S\n]+\|[^|\n]*\|[^|\n]*\|[^|\n]*\|[^|\n]*\|[^\S\n]*(\d+\.\d+)[^\S\n]+\|[^\S\n]*5/5[^\S\n]+\|
+        transform: float
+  - id: c51_noeuds_45
+    description: 'Cellule 51, N=45 : noeuds du backtracking FC+MRV'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 51
+        pattern: (?m)^\s*45[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+)[^\S\n]+OK[^\S\n]
+        transform: int
+      rust:
+        cell: 51
+        pattern: (?m)^45[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*(\d+)[^\S\n]+\|
+        transform: int
+  - id: c51_iter_45
+    description: 'Cellule 51, N=45 : iterations moyennes de min-conflicts (reussis 5/5)'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 51
+        pattern: (?m)^\s*45[^\S\n]+\d+(?:\.\d+)?[^\S\n]+\d+[^\S\n]+OK[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+\.\d+)[^\S\n]+5/5
+        transform: float
+      rust:
+        cell: 51
+        pattern: (?m)^45[^\S\n]+\|[^|\n]*\|[^|\n]*\|[^|\n]*\|[^|\n]*\|[^\S\n]*(\d+\.\d+)[^\S\n]+\|[^\S\n]*5/5[^\S\n]+\|
+        transform: float
+  - id: c51_noeuds_50
+    description: 'Cellule 51, N=50 : noeuds du backtracking FC+MRV'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 51
+        pattern: (?m)^\s*50[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+)[^\S\n]+OK[^\S\n]
+        transform: int
+      rust:
+        cell: 51
+        pattern: (?m)^50[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*(\d+)[^\S\n]+\|
+        transform: int
+  - id: c51_iter_50
+    description: 'Cellule 51, N=50 : iterations moyennes de min-conflicts (reussis 5/5)'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 51
+        pattern: (?m)^\s*50[^\S\n]+\d+(?:\.\d+)?[^\S\n]+\d+[^\S\n]+OK[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+\.\d+)[^\S\n]+5/5
+        transform: float
+      rust:
+        cell: 51
+        pattern: (?m)^50[^\S\n]+\|[^|\n]*\|[^|\n]*\|[^|\n]*\|[^|\n]*\|[^\S\n]*(\d+\.\d+)[^\S\n]+\|[^\S\n]*5/5[^\S\n]+\|
+        transform: float
+  - id: c53_iter_60
+    description: 'Cellule 53, N=60 : iterations moyennes de min-conflicts'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 53
+        pattern: (?m)^\s*60[^\S\n]+\d+(?:\.\d+)?[^\S\n]+\d+[^\S\n]+\w+[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+\.\d+)[^\S\n]+\w+[^\S\n]*$
+        transform: float
+      rust:
+        cell: 53
+        pattern: (?m)^\s*60[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*\d+[^\S\n]+\|[^\S\n]*\w+[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*(\d+\.\d+)[^\S\n]+\|
+        transform: float
+  - id: c53_iter_80
+    description: 'Cellule 53, N=80 : iterations moyennes de min-conflicts'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 53
+        pattern: (?m)^\s*80[^\S\n]+\d+(?:\.\d+)?[^\S\n]+\d+[^\S\n]+\w+[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+\.\d+)[^\S\n]+\w+[^\S\n]*$
+        transform: float
+      rust:
+        cell: 53
+        pattern: (?m)^\s*80[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*\d+[^\S\n]+\|[^\S\n]*\w+[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*(\d+\.\d+)[^\S\n]+\|
+        transform: float
+  - id: c53_iter_100
+    description: 'Cellule 53, N=100 : iterations moyennes de min-conflicts'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 53
+        pattern: (?m)^\s*100[^\S\n]+\d+(?:\.\d+)?[^\S\n]+\d+[^\S\n]+\w+[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+\.\d+)[^\S\n]+\w+[^\S\n]*$
+        transform: float
+      rust:
+        cell: 53
+        pattern: (?m)^\s*100[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*\d+[^\S\n]+\|[^\S\n]*\w+[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*(\d+\.\d+)[^\S\n]+\|
+        transform: float
+  - id: c53_iter_110
+    description: 'Cellule 53, N=110 : iterations moyennes de min-conflicts'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 53
+        pattern: (?m)^\s*110[^\S\n]+\d+(?:\.\d+)?[^\S\n]+\d+[^\S\n]+\w+[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+\.\d+)[^\S\n]+\w+[^\S\n]*$
+        transform: float
+      rust:
+        cell: 53
+        pattern: (?m)^\s*110[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*\d+[^\S\n]+\|[^\S\n]*\w+[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*(\d+\.\d+)[^\S\n]+\|
+        transform: float
+  - id: c53_iter_120
+    description: 'Cellule 53, N=120 : iterations moyennes de min-conflicts'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 53
+        pattern: (?m)^\s*120[^\S\n]+\d+(?:\.\d+)?[^\S\n]+\d+[^\S\n]+\w+[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+\.\d+)[^\S\n]+\w+[^\S\n]*$
+        transform: float
+      rust:
+        cell: 53
+        pattern: (?m)^\s*120[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*\d+[^\S\n]+\|[^\S\n]*\w+[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*(\d+\.\d+)[^\S\n]+\|
+        transform: float
+  - id: c53_iter_150
+    description: 'Cellule 53, N=150 : iterations moyennes de min-conflicts'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 53
+        pattern: (?m)^\s*150[^\S\n]+\d+(?:\.\d+)?[^\S\n]+\d+[^\S\n]+\w+[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+\.\d+)[^\S\n]+\w+[^\S\n]*$
+        transform: float
+      rust:
+        cell: 53
+        pattern: (?m)^\s*150[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*\d+[^\S\n]+\|[^\S\n]*\w+[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*(\d+\.\d+)[^\S\n]+\|
+        transform: float
+  - id: c53_iter_160
+    description: 'Cellule 53, N=160 : iterations moyennes de min-conflicts'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 53
+        pattern: (?m)^\s*160[^\S\n]+\d+(?:\.\d+)?[^\S\n]+\d+[^\S\n]+\w+[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+\.\d+)[^\S\n]+\w+[^\S\n]*$
+        transform: float
+      rust:
+        cell: 53
+        pattern: (?m)^\s*160[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*\d+[^\S\n]+\|[^\S\n]*\w+[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*(\d+\.\d+)[^\S\n]+\|
+        transform: float
+  - id: c53_iter_200
+    description: 'Cellule 53, N=200 : iterations moyennes de min-conflicts'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 53
+        pattern: (?m)^\s*200[^\S\n]+\d+(?:\.\d+)?[^\S\n]+\d+[^\S\n]+\w+[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+\.\d+)[^\S\n]+\w+[^\S\n]*$
+        transform: float
+      rust:
+        cell: 53
+        pattern: (?m)^\s*200[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*\d+[^\S\n]+\|[^\S\n]*\w+[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*(\d+\.\d+)[^\S\n]+\|
+        transform: float
+  - id: c53_noeuds_60
+    description: 'Cellule 53, N=60 : noeuds du backtracking, taille achevee des deux cotes'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 53
+        pattern: (?m)^\s*60[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+)[^\S\n]+OK[^\S\n]
+        transform: int
+      rust:
+        cell: 53
+        pattern: (?m)^\s*60[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*(\d+)[^\S\n]+\|[^\S\n]*OK[^\S\n]+\|
+        transform: int
+  - id: c53_noeuds_80
+    description: 'Cellule 53, N=80 : noeuds du backtracking, taille achevee des deux cotes'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 53
+        pattern: (?m)^\s*80[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+)[^\S\n]+OK[^\S\n]
+        transform: int
+      rust:
+        cell: 53
+        pattern: (?m)^\s*80[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*(\d+)[^\S\n]+\|[^\S\n]*OK[^\S\n]+\|
+        transform: int
+  - id: c53_noeuds_100
+    description: 'Cellule 53, N=100 : noeuds du backtracking, taille achevee des deux cotes'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 53
+        pattern: (?m)^\s*100[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+)[^\S\n]+OK[^\S\n]
+        transform: int
+      rust:
+        cell: 53
+        pattern: (?m)^\s*100[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*(\d+)[^\S\n]+\|[^\S\n]*OK[^\S\n]+\|
+        transform: int
+  - id: c53_noeuds_160
+    description: 'Cellule 53, N=160 : noeuds du backtracking, taille achevee des deux cotes'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 53
+        pattern: (?m)^\s*160[^\S\n]+\d+(?:\.\d+)?[^\S\n]+(\d+)[^\S\n]+OK[^\S\n]
+        transform: int
+      rust:
+        cell: 53
+        pattern: (?m)^\s*160[^\S\n]+\|[^\S\n]*\d+(?:\.\d+)?[^\S\n]+\|[^\S\n]*(\d+)[^\S\n]+\|[^\S\n]*OK[^\S\n]+\|
+        transform: int
+  - id: c60_sans
+    description: 'Cellule 60, N=8 : sans brisure'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 60
+        pattern: Sans\ brisure\s*:\s*(\d+)\s*solutions
+        transform: int
+      rust:
+        cell: 60
+        pattern: Sans\ brisure\s*:\s*(\d+)\s*solutions
+        transform: int
+  - id: c60_simples
+    description: 'Cellule 60, N=8 : contraintes de l''enonce'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 60
+        pattern: Contraintes\ de\ l'enonce\s*:\s*(\d+)\s*solutions
+        transform: int
+      rust:
+        cell: 60
+        pattern: Contraintes\ de\ l'enonce\s*:\s*(\d+)\s*solutions
+        transform: int
+  - id: c60_lex
+    description: 'Cellule 60, N=8 : lex-leader d4'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 60
+        pattern: Lex\-leader\ D4\s*:\s*(\d+)\s*solutions
+        transform: int
+      rust:
+        cell: 60
+        pattern: Lex\-leader\ D4\s*:\s*(\d+)\s*solutions
+        transform: int
+  - id: c60_total_8
+    description: 'Cellule 60, N=8 : solutions sans brisure'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 60
+        pattern: (?m)^\s*8[^\S\n]+(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+      rust:
+        cell: 60
+        pattern: (?m)^\s*8[^\S\n]*\|[^\S\n]*(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+  - id: c60_simple_8
+    description: 'Cellule 60, N=8 : solutions avec les contraintes simples'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 60
+        pattern: (?m)^\s*8[^\S\n]+\d+[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|[^\S\n]*(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+      rust:
+        cell: 60
+        pattern: (?m)^\s*8[^\S\n]*\|[^|\n]*\|[^\S\n]*(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+  - id: c60_lex_8
+    description: 'Cellule 60, N=8 : solutions lex-leader'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 60
+        pattern: (?m)^\s*8[^\S\n]+\d+[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|[^\S\n]*\d+[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|[^\S\n]*(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+      rust:
+        cell: 60
+        pattern: (?m)^\s*8[^\S\n]*\|[^|\n]*\|[^|\n]*\|[^\S\n]*(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+  - id: c60_total_9
+    description: 'Cellule 60, N=9 : solutions sans brisure'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 60
+        pattern: (?m)^\s*9[^\S\n]+(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+      rust:
+        cell: 60
+        pattern: (?m)^\s*9[^\S\n]*\|[^\S\n]*(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+  - id: c60_simple_9
+    description: 'Cellule 60, N=9 : solutions avec les contraintes simples'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 60
+        pattern: (?m)^\s*9[^\S\n]+\d+[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|[^\S\n]*(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+      rust:
+        cell: 60
+        pattern: (?m)^\s*9[^\S\n]*\|[^|\n]*\|[^\S\n]*(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+  - id: c60_lex_9
+    description: 'Cellule 60, N=9 : solutions lex-leader'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 60
+        pattern: (?m)^\s*9[^\S\n]+\d+[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|[^\S\n]*\d+[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|[^\S\n]*(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+      rust:
+        cell: 60
+        pattern: (?m)^\s*9[^\S\n]*\|[^|\n]*\|[^|\n]*\|[^\S\n]*(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+  - id: c60_total_10
+    description: 'Cellule 60, N=10 : solutions sans brisure'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 60
+        pattern: (?m)^\s*10[^\S\n]+(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+      rust:
+        cell: 60
+        pattern: (?m)^\s*10[^\S\n]*\|[^\S\n]*(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+  - id: c60_simple_10
+    description: 'Cellule 60, N=10 : solutions avec les contraintes simples'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 60
+        pattern: (?m)^\s*10[^\S\n]+\d+[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|[^\S\n]*(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+      rust:
+        cell: 60
+        pattern: (?m)^\s*10[^\S\n]*\|[^|\n]*\|[^\S\n]*(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+  - id: c60_lex_10
+    description: 'Cellule 60, N=10 : solutions lex-leader'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 60
+        pattern: (?m)^\s*10[^\S\n]+\d+[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|[^\S\n]*\d+[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|[^\S\n]*(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+      rust:
+        cell: 60
+        pattern: (?m)^\s*10[^\S\n]*\|[^|\n]*\|[^|\n]*\|[^\S\n]*(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+  - id: c60_total_11
+    description: 'Cellule 60, N=11 : solutions sans brisure'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 60
+        pattern: (?m)^\s*11[^\S\n]+(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+      rust:
+        cell: 60
+        pattern: (?m)^\s*11[^\S\n]*\|[^\S\n]*(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+  - id: c60_simple_11
+    description: 'Cellule 60, N=11 : solutions avec les contraintes simples'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 60
+        pattern: (?m)^\s*11[^\S\n]+\d+[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|[^\S\n]*(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+      rust:
+        cell: 60
+        pattern: (?m)^\s*11[^\S\n]*\|[^|\n]*\|[^\S\n]*(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+  - id: c60_lex_11
+    description: 'Cellule 60, N=11 : solutions lex-leader'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 60
+        pattern: (?m)^\s*11[^\S\n]+\d+[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|[^\S\n]*\d+[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|[^\S\n]*(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+      rust:
+        cell: 60
+        pattern: (?m)^\s*11[^\S\n]*\|[^|\n]*\|[^|\n]*\|[^\S\n]*(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+  - id: c60_total_12
+    description: 'Cellule 60, N=12 : solutions sans brisure'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 60
+        pattern: (?m)^\s*12[^\S\n]+(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+      rust:
+        cell: 60
+        pattern: (?m)^\s*12[^\S\n]*\|[^\S\n]*(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+  - id: c60_simple_12
+    description: 'Cellule 60, N=12 : solutions avec les contraintes simples'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 60
+        pattern: (?m)^\s*12[^\S\n]+\d+[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|[^\S\n]*(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+      rust:
+        cell: 60
+        pattern: (?m)^\s*12[^\S\n]*\|[^|\n]*\|[^\S\n]*(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+  - id: c60_lex_12
+    description: 'Cellule 60, N=12 : solutions lex-leader'
+    tolerance: 0
+    reference: python
+    sides:
+      python:
+        cell: 60
+        pattern: (?m)^\s*12[^\S\n]+\d+[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|[^\S\n]*\d+[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|[^\S\n]*(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int
+      rust:
+        cell: 60
+        pattern: (?m)^\s*12[^\S\n]*\|[^|\n]*\|[^|\n]*\|[^\S\n]*(\d+)[^\S\n]+\d+(?:\.\d+)?[^\S\n]*\|
+        transform: int

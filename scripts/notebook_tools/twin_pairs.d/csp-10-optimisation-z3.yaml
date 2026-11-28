@@ -1,6 +1,6 @@
 - name: CSP-10 Optimisation Z3
   family: Search/Part2-CSP
-  python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb
+  python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Python.ipynb
   csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK

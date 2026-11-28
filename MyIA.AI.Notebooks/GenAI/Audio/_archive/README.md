@@ -9,7 +9,7 @@ réexécuté — il est préservé comme provenance historique.
 
 | Notebook | Verdict | Superseded by | Verdict recorded in |
 |---|---|---|---|
-| `04-14-VoiceLeading-RenduGenAI.ipynb` | OBSOLETE (consolidation **#13741**) — sibling pédagogique minimal (51 520 octets), archivé pour éliminer le doublon de slot 04-14 ; le contenu reste préservé | [`../04-Applications/04-14-VoiceLeading-Rendu-GenAI.ipynb`](../04-Applications/04-14-VoiceLeading-Rendu-GenAI.ipynb) (notebook canonique, version complète) | Note de consolidation #13741 en tête du [README de `04-Applications/`](../04-Applications/README.md) ; ce registre |
+| `04-14-VoiceLeading-RenduGenAI.ipynb` | OBSOLETE (consolidation **#13741**) — sibling pédagogique minimal (51 520 octets), archivé pour éliminer le doublon de slot 04-14 ; le contenu reste préservé | [`../04-Applications/Audio-04-14-VoiceLeading-Rendu-GenAI-Python.ipynb`](../04-Applications/Audio-04-14-VoiceLeading-Rendu-GenAI-Python.ipynb) (notebook canonique, version complète ; renommé `04-14-VoiceLeading-Rendu-GenAI.ipynb` jusqu'à #16231 T1a) | Note de consolidation #13741 en tête du [README de `04-Applications/`](../04-Applications/README.md) ; ce registre |
 
 ## Disposition par section
 
@@ -26,9 +26,12 @@ relié à son devenir.
 
 ## Vérifications faites à la mise au standard (2026-09-25)
 
-- **Successeur nommé et présent** — `04-Applications/04-14-VoiceLeading-Rendu-GenAI.ipynb`
+- **Successeur nommé et présent** — `04-Applications/Audio-04-14-VoiceLeading-Rendu-GenAI-Python.ipynb`
   existe sur `main`, avec `execution_count` renseigné sur toutes ses cellules
   de code (les deux versions sont exécutées : aucune n'est un brouillon).
+  Le chemin cité ici est celui d'après le renommage de série #16231 T1a ; la
+  vérification du 2026-09-25 portait sur son nom d'alors,
+  `04-14-VoiceLeading-Rendu-GenAI.ipynb`.
 - **Référence entrante assumée** — le notebook archivé est cité **une fois**,
   par la note de consolidation #13741 du [README de `04-Applications/`](../04-Applications/README.md),
   qui documente précisément son archivage. Ce n'est pas un consommateur (aucun

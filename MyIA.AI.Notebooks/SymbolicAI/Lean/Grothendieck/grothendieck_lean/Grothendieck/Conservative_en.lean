@@ -1,44 +1,44 @@
 /-
-Grothendieck Part 19 — Les familles conservatives de points
+Grothendieck Part 19 — Conservative families of points
 
-La Partie 18 (ConstantSheaf.lean) a introduit le foncteur faisceau constant et son
-adjonction avec les sections globales.
+Part 18 (ConstantSheaf.lean) introduced the constant sheaf functor and its
+adjunction with global sections.
 
-Ce module introduit les **familles conservatives de points** (SGA 4 IV 6.5) :
-une famille P de points d'un site (C, J) est conservative si les foncteurs
-fibres correspondants Sheaf J (Type w) ⥤ Type w réfléchissent conjointement les
-isomorphismes. C'est la formulation abstraite du principe selon lequel « suffisamment
-de points détectent tout » — la généralisation catégorique de « suffisamment de
-stalks détectent les isomorphismes/monos/epis ».
+This module introduces the **conservative families of points** (SGA 4 IV 6.5):
+a family P of points of a site (C, J) is conservative if the corresponding
+fiber functors Sheaf J (Type w) ⥤ Type w jointly reflect isomorphisms. This is
+the abstract formulation of the principle that "enough points detect
+everything" — the categorical generalization of "enough stalks detect
+isomorphisms/monos/epis".
 
-Constructions clés pontées depuis Mathlib (`CategoryTheory.Sites.Point.Conservative`) :
+Key constructions bridged from Mathlib (`CategoryTheory.Sites.Point.Conservative`):
 
-  - `ObjectProperty.IsConservativeFamilyOfPoints` : la structure centrale
-  - `jointlyReflectIsomorphisms` : les foncteurs fibres réfléchissent les isos (A général)
-  - `jointlyReflectMonomorphisms` : les foncteurs fibres réfléchissent les monos
-  - `jointlyReflectEpimorphisms` : les foncteurs fibres réfléchissent les epis
-  - `jointlyFaithful` : les foncteurs fibres sont conjointement fidèles
-  - `mk'` : constructeur via condition de tamis couvrant (SGA 4 IV 6.5 (a))
-  - `jointly_reflect_ofArrows_mem` : détection des tamis couvrants via points
-  - `GrothendieckTopology.HasEnoughPoints` : le site a suffisamment de points
+  - `ObjectProperty.IsConservativeFamilyOfPoints` : the central structure
+  - `jointlyReflectIsomorphisms` : the fiber functors reflect isos (general A)
+  - `jointlyReflectMonomorphisms` : the fiber functors reflect monos
+  - `jointlyReflectEpimorphisms` : the fiber functors reflect epis
+  - `jointlyFaithful` : the fiber functors are jointly faithful
+  - `mk'` : constructor via the covering sieve condition (SGA 4 IV 6.5 (a))
+  - `jointly_reflect_ofArrows_mem` : detection of covering sieves via points
+  - `GrothendieckTopology.HasEnoughPoints` : the site has enough points
 
-Plus les faisceaux gratte-ciel depuis `CategoryTheory.Sites.Point.Skyscraper` :
-  - `skyscraperPresheaf` / `skyscraperSheaf` : constructions gratte-ciel
-  - `skyscraperSheafAdjunction` : fibre ⊣ adjonction gratte-ciel
-  - `presheafToSheafCompSheafFiberIso` : fibre comme localisation
+Plus the skyscraper sheaves from `CategoryTheory.Sites.Point.Skyscraper`:
+  - `skyscraperPresheaf` / `skyscraperSheaf` : skyscraper constructions
+  - `skyscraperSheafAdjunction` : fiber ⊣ skyscraper adjunction
+  - `presheafToSheafCompSheafFiberIso` : fiber as a localization
 
-C'est un ingrédient clé pour comprendre quand un topos a « suffisamment de points »
-et pour la théorie de la détection stalk-à-stalk des propriétés de morphismes.
+It is a key ingredient to understand when a topos has "enough points" and for
+the theory of stalk-by-stalk detection of properties of morphisms.
 
-Epic #1646, See #2159. Tous les `sorry` éliminés à la création.
+Epic #1646, See #2159. All `sorry` eliminated at creation.
 -/
 
 /-
   English mirror of `Conservative.lean` (EN canonical, header mono-lingual EN).
   Convention EPIC #4980 (decision ratified 2026-07-04, cf `code-style.md` §Lean i18n) :
   distinct FR + EN sibling files — no inline bilingual block in a single file
-  (Option B rejected). The module docstring above is the FR translation of the
-  EN canonical docstring; the body signatures, def signatures, theorem docstrings,
+  (Option B rejected). The module docstring above is the EN translation of the
+  FR canonical docstring; the body signatures, def signatures, theorem docstrings,
   and sorries remain byte-identical between the two files (anti-§D byte-identity invariant).
 -/
 
