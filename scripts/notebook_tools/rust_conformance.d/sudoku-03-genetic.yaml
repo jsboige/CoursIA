@@ -36,6 +36,16 @@
 # cellule 21. Ils sont portés par les mesures c8_cellules_non_resolu,
 # c16_cellules_non_resolu et c21_puzzle1_resolu.
 #
+# Rejeu local (2026-11-28, myia-po-2024:CoursIA, PyGAD 3.5.0 comme le bloc
+# committé, deux executions independantes A et B du carnet Python, sorties
+# hors depot) : le bloc committé et les deux rejeus donnent les memes
+# verdicts — cellule 8 non resolu (18, 18 et 19 erreurs finales) ; cellule 16
+# non resolu pour les cellules (19, 15 et 18 erreurs) et resolu pour les
+# permutations ; cellule 21 « Puzzle 1: OK » et 1/3 resolu ; cellules 13 et 25
+# resolues. Les trajectoires changent a chaque execution : 70, 19 et 39
+# generations en cellule 13 ; 21, 42 et 33 en cellule 25 ; 39, 38 et 21 pour
+# le puzzle 1 de la cellule 21.
+#
 # La grille solution (81 chiffres) est comparable aux TROIS côtés : le puzzle
 # Easy n'a qu'une solution (recherche exhaustive bornée à 2, 1 trouvée).
 #
