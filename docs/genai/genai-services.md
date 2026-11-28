@@ -293,7 +293,7 @@ BATCH_MODE=false
 | GPU | Model | VRAM | Services |
 |-----|-------|------|----------|
 | GPU0 | RTX 3080Ti | 16 GB | comfyui-qwen, tts-api, serveur d'embeddings vLLM du workspace `vllm` (hors dépôt) |
-| GPU1 | RTX 3090 | 24 GB | comfyui-video, whisper-webui, whisper-api, demucs-api, vllm-zimage, sd-forge-main, forge-turbo, tts-fishaudio, tts-kokoro, tts-qwen, tts-tada, musicgen-api, qwen-asr-api |
+| GPU1 | RTX 3090 | 24 GB | comfyui-video, whisper-webui, whisper-api, demucs-api, vllm-zimage, sd-forge-main, forge-turbo, tts-fishaudio, tts-kokoro, tts-qwen, tts-tada, tts-zonos3, musicgen-api, qwen-asr-api |
 
 **Convention d'index (#28423)** : les composes du banc fixent `CUDA_DEVICE_ORDER=PCI_BUS_ID`, donc l'index de `CUDA_VISIBLE_DEVICES` est celui de `nvidia-smi` — GPU0 = RTX 3080 Ti (`0000:01:00.0`), GPU1 = RTX 3090 (`0000:06:00.0`). Sans cette variable, l'ordre CUDA par défaut est l'inverse et un masque `0` désigne la 3090. Mesuré sur ce banc (WSL2, 2026-11-24) : `device_ids` et `NVIDIA_VISIBLE_DEVICES` n'isolent pas ; seul `CUDA_VISIBLE_DEVICES` isole. Les trois champs désignent néanmoins la même carte, sous une seule variable `GPU_PCI_INDEX`, pour que le conteneur ne voie jamais l'autre carte par accident d'ordre.
 
@@ -312,6 +312,7 @@ BATCH_MODE=false
 | tts-fishaudio | po-2023 | FishAudio S2-Pro | fp16 (`--half`) — 20,3 Go de VRAM mesurés ; NF4 : 5,00 Go de **fichiers** via le fork, VRAM non mesurée (voir README du service) | ~20 GB |
 | tts-api | po-2023 | Kokoro (`DEFAULT_TTS_MODEL=kokoro`) | fp32/fp16 par défaut, chargé à la demande (`PRELOAD_MODEL=false`) | 0 au repos |
 | tts-kokoro | po-2023 | Kokoro TTS | fp32/fp16 default | ~1-2 GB |
+| tts-zonos3 | po-2023 | ZONOS3-Mini | Q4_0 (4 bits par poids) pour 85,2 % des éléments du backbone `backbone-ptq.gguf` — unique quant publié par l'éditeur pour ce runtime ; décodeur audio F16/F32 (README du service) | +1,9 Go au chargement, +2,5 Go en charge, et +3,3 Go après deux heures de trafic (VRAM non rendue, 2026-11-27) ; résidente tant que le conteneur tourne, 0 une fois arrêté |
 | musicgen-api | po-2023 | MusicGen-medium | fp16 | ~10 GB |
 | qwen-asr-api | po-2023 | Qwen3-ASR-1.7B | bfloat16 | ~3-4 GB |
 | comfyui-video | po-2023 | HunyuanVideoWrapper | fp16 | varies |
@@ -422,6 +423,7 @@ wake chosen over reverse-proxy / always-on / native-sleep).
 
 **No idle handling (low VRAM or always-on):**
 - `tts-kokoro` (~1-2 GB), `forge-turbo` (~6-10 GB), `whisper-webui` (varies)
+- `tts-zonos3` — aucun sommeil dans le runtime (ggml) : le modèle reste résident tant que le conteneur tourne. Pas de sidecar `service_idle_monitor.py` non plus : son activité se lit au seul corps de la réponse de santé (`check_service_activity`), qui est constant ici (`{"status":"ok"}`), donc il arrêterait le conteneur au milieu d'une synthèse. Arrêt à la main (`docker compose stop`), démarrage à la demande par l'appelant (`service_wake.ensure_service_up`). Détail : [`docker-configurations/services/tts-zonos3/README.md`](../../docker-configurations/services/tts-zonos3/README.md).
 
 ## Configuration generale
 
