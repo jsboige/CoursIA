@@ -378,6 +378,24 @@
       "axiom-include-i18n-siblings": "true"
     },
     {
+      "lake": "gkdim",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/gkdim_lean",
+      "display-name": "gkdim_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "axiom-fail-on-sorry": "true",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/gkdim_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/gkdim_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/gkdim_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/gkdim_lean/lake-manifest.json",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
+      ],
+      "axiom-include-i18n-siblings": "true"
+    },
+    {
       "lake": "combinators",
       "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean",
       "display-name": "combinators_lean",
