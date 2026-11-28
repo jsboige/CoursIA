@@ -37,6 +37,7 @@ ROOT = Path(__file__).resolve().parents[2]
 WORKFLOWS = (
     "always-on-commenters.yml",
     "always-on-guards.yml",
+    "always-on-guards-edited.yml",
     "always-on-guards-body.yml",
     "always-on-metadata-guards.yml",
 )

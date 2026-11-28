@@ -217,7 +217,7 @@ DECLARED_STATUSES: dict[str, tuple[str, int | None]] = {
     # demonstration status OR added tasks. The approved decoupage retains the
     # declared status (adding tasks is separate content work, not counter
     # policy).
-    "TV-03-Internalisation-CoT": ("declared-demo", 0),
+    "TV-03-Internalisation-CoT-Python": ("declared-demo", 0),
 }
 
 

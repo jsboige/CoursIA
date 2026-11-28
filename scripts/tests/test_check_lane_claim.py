@@ -6724,6 +6724,93 @@ def _collision_pr(number, lane, files, title="t"):
             "body": body, "files": [{"path": p} for p in files]}
 
 
+def _catalogue_pr(files=("MyIA.AI.Notebooks/GenAI/README.md",),
+                  depot="jsboige/CoursIA"):
+    """La PR du catalogue au long cours (#27771), regeneree par le workflow.
+
+    `depot` est la PROVENANCE de la tete (`headRepository`) : l'exemption
+    identifie la branche du depot amont, pas seulement son nom (#28347).
+    `depot=None` simule une PR dont la provenance n'a pas ete lue.
+    """
+    pr = {"number": 27771, "title": "chore(catalog): scheduled auto-regenerate",
+          "headRefName": "chore/catalog-refresh-pending",
+          "body": "Grain: MED/refactor -- lane myia-ai-01:CoursIA",
+          "files": [{"path": p} for p in files]}
+    if depot is not None:
+        pr["headRepository"] = depot
+    return pr
+
+
+def test_la_pr_du_catalogue_n_occupe_aucun_chemin():
+    """#27771 -- la PR du catalogue au long cours n'occupe aucun chemin.
+
+    Elle est regeneree par `catalog-cron.yml` et touche les README de
+    TOUTES les series : comptee comme occupant, elle bloque le claim de
+    chaque serie. Le CONTROLE POSITIF (une PR de travail reel sur le meme
+    chemin) reste entier.
+    """
+    chemin = "MyIA.AI.Notebooks/GenAI/README.md"
+    prs = [_catalogue_pr([chemin]),
+           _collision_pr(42, "other:CoursIA", [chemin])]
+    cols, own = clc._compute_open_pr_collisions([chemin], "me:CoursIA", prs=prs)
+    assert [c.number for c in cols] == [42], "seule la PR de travail reel occupe"
+    assert own == [], "la PR du catalogue n'est pas meme un chevauchement"
+
+
+def test_le_mode_paths_ignore_la_pr_du_catalogue():
+    """Le mode `--paths` rend 0 quand le seul occupant est la PR catalogue."""
+    rc = clc._run_check_paths(["MyIA.AI.Notebooks/GenAI/README.md"],
+                               "me:CoursIA", prs=[_catalogue_pr()])
+    assert rc == 0, "la PR du catalogue ne bloque pas le chemin"
+
+
+def test_une_branche_homonyme_dans_un_fork_occupe_le_chemin():
+    """#28347 -- une branche homonyme venue d'un fork est du TRAVAIL REEL.
+
+    L'exemption porte sur la branche **du depot amont** : comparee au seul
+    nom de la branche, elle ecarterait une PR de travail qui occupe les
+    README de toutes les series.
+    """
+    chemin = "MyIA.AI.Notebooks/GenAI/README.md"
+    prs = [_catalogue_pr([chemin], depot="un-fork/CoursIA")]
+    cols, own = clc._compute_open_pr_collisions([chemin], "me:CoursIA", prs=prs)
+    assert [c.number for c in cols] == [27771], (
+        "la branche homonyme d'un fork occupe le chemin")
+    assert own == [], "elle n'est pas un chevauchement de ma propre lane"
+
+
+def test_une_pr_sans_provenance_n_est_pas_exemptee():
+    """#28347 -- sans provenance lue, rien ne prouve l'origine du workflow.
+
+    Fail-CLOSED : l'absence de depot de tete vaut collision, pas exemption.
+    """
+    chemin = "MyIA.AI.Notebooks/GenAI/README.md"
+    prs = [_catalogue_pr([chemin], depot=None)]
+    cols, _own = clc._compute_open_pr_collisions([chemin], "me:CoursIA", prs=prs)
+    assert [c.number for c in cols] == [27771], (
+        "une PR sans provenance n'est pas exemptee")
+
+
+def test_le_cache_qui_neporte_pas_la_provenance_est_ignore(tmp_path, monkeypatch):
+    """#28347 -- un cache ecrit avant la provenance est traite comme absent.
+
+    Sans `headRepository`, l'exemption s'appuierait sur le seul nom de la
+    branche : le cache ancien est donc ecarte, et le fetch complet le
+    reecrit au format courant.
+    """
+    cache = tmp_path / "open-prs.json"
+    cache.write_text(json.dumps({
+        "format": "open-prs-v3",
+        "complete": True,
+        "count": 1,
+        "prs": [{"number": 1, "headRefName": "chore/catalog-refresh-pending",
+                 "files": [{"path": "MyIA.AI.Notebooks/GenAI/README.md"}]}],
+    }), encoding="utf-8")
+    monkeypatch.setattr(clc, "_OPEN_PRS_CACHE_PATH", str(cache))
+    assert clc._read_open_prs_cache() is None, (
+        "un cache sans provenance ne vaut pas preuve")
+
+
 def test_issue_mode_blocks_on_other_lane_open_pr(monkeypatch, tmp_path, capsys):
     """CONTROLE POSITIF #16570 -- le cas de l'incident.
 
@@ -7867,20 +7954,40 @@ def test_implicit_absent_when_no_pr_references(monkeypatch, capsys):
     assert "CLEAR" in captured.out
 
 
-def test_implicit_undatable_pr_does_not_flip_the_caller_verdict(monkeypatch, capsys):
-    # #26751 -- la jambe IMPLICIT tourne DESORMAIS pour la lane appelante
-    # (elle ne tournait que si `mine is None`). L'invariant de la review
-    # 5429946072 est preserve par le FILTRE CHRONOLOGIQUE : une PR
-    # ANTERIEURE au claim signale que le claim a recouvre une livraison
-    # (verdict IMPLICIT), une PR POSTERIEURE reste subsumee par le claim
-    # (verdict CLEAR) -- les deux cas sont pintest dans
-    # scripts/tests/test_check_lane_claim_implicit.py.
+def test_implicit_undatable_tagged_pr_still_occupies(monkeypatch, capsys):
+    # #28787 -- la date de creation n'est demandee que pour une PR SANS tag de
+    # lane lisible. Ici la lane tierce est LISIBLE (`myia-po-2026:CoursIA`,
+    # distincte de l'appelante) : elle occupe le grain meme sans date, puisque
+    # `_find_open_prs_referencing_issue` exclut deja les PR de l'appelante.
     #
-    # Ici la PR n'a pas de date de creation : l'ORDRE ne peut pas etre
-    # etabli, donc la jambe ne fabrique pas de verdict (fail-open + WARN,
-    # meme posture que sur un `gh` mort). Le verdict de la lane reste
-    # CLEAR -- c'est le comportement d'avant #26751, preserve.
+    # Avant #28787 ce cas rendait CLEAR avec un WARN (l'ORDRE ne pouvait pas
+    # etre etabli) -- la meme classe de faux CLEAR que la mesure du 25/11 sur
+    # #28250, ou la date seule suffisait a blanchir une occupation tierce.
     monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [_PR_14293])
+    p = payload(comment("[CLAIMED] lane myia-po-2024:CoursIA -- supervise",
+                        "2026-09-02T10:00:00Z"),
+                number=14259)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        check_open_pr_paths=True)
+    assert rc == 3
+    captured = capsys.readouterr()
+    assert "IMPLICIT:" in captured.out
+    assert "#14293" in captured.out
+    brace = captured.out.find("{")
+    data, _ = json.JSONDecoder().raw_decode(captured.out[brace:])
+    assert data["my_active_claim"] is True
+    assert [f["number"] for f in data["implicit_occupation"]] == [14293]
+
+
+def test_implicit_undatable_untagged_pr_does_not_flip_the_caller_verdict(
+        monkeypatch, capsys):
+    # #26751 / #28787 -- une PR SANS tag de lane lisible ET sans date reste la
+    # seule ou l'ordre ne peut pas etre etabli : elle peut etre la livraison de
+    # l'appelante elle-meme, donc la jambe ne fabrique pas de verdict
+    # (fail-open + WARN, meme posture que sur un `gh` mort). Le verdict de la
+    # lane reste CLEAR -- comportement d'avant #26751, preserve.
+    untagged = dict(_PR_14293, body="See #14259")
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [untagged])
     p = payload(comment("[CLAIMED] lane myia-po-2024:CoursIA -- supervise",
                         "2026-09-02T10:00:00Z"),
                 number=14259)
@@ -8427,6 +8534,10 @@ def test_gh_open_prs_cache_path_via_env(monkeypatch, tmp_path):
     """
     cached_prs = [{"number": 1, "title": "cached", "body": "",
                    "headRefName": "x", "files": [], "renames": [],
+                   # #28347 -- la provenance de la tete : sans elle, le cache
+                   # est traite comme absent (l'exemption de la PR du
+                   # catalogue s'appuierait sur le seul nom de la branche).
+                   "headRepository": "jsboige/CoursIA",
                    # #26751 -- la date de creation serveur de la PR : sans
                    # elle, le cache est traite comme absent (le filtre
                    # chronologique de la jambe IMPLICIT ne doit pas fonder un
@@ -8857,6 +8968,10 @@ def test_open_prs_cache_accepte_les_deux_graphies_de_date(monkeypatch,
             "count": 1,
             "prs": [{"number": 1, "title": "cache-courant", "headRefName": "b",
                      "body": "", "files": [], "renames": [],
+                     # #28347 -- la provenance de la tete fait partie du
+                     # format courant (elle est ce qui distingue la branche
+                     # du workflow d'une branche homonyme d'un fork).
+                     "headRepository": "jsboige/CoursIA",
                      key: "2026-11-14T10:00:00Z"}],
         }), encoding="utf-8")
         monkeypatch.setattr(clc, "_OPEN_PRS_CACHE_PATH", str(cache))
@@ -8987,6 +9102,9 @@ def test_open_prs_v2_complete_cache_is_trusted(monkeypatch, tmp_path,
     conservee)."""
     cached = [{"number": 5, "title": "cached-v2", "headRefName": "b",
                "body": "", "files": [], "renames": [],
+               # #28347 -- provenance de la tete : un cache du format
+               # courant la porte.
+               "headRepository": "jsboige/CoursIA",
                # #26751 -- date de creation serveur : un cache qui ne la
                # porte pas est traite comme absent (le fetch complet la
                # reecrit).

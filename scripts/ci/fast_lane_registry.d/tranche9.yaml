@@ -1,0 +1,10 @@
+# TRANCHE9 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE9
+guards:
+  -
+    name: "interval-kind-consistency-guard"
+    argv: ["python", "scripts/notebook_tools/check_interval_kind_consistency.py"]
+    source: "native"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "scripts/notebook_tools/check_interval_kind_consistency.py", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py"]
+    blocking: true
+    absorbed: true

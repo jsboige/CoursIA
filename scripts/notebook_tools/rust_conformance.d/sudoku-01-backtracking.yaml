@@ -1,0 +1,248 @@
+- name: "Sudoku-01 Backtracking"
+  family: Sudoku
+  python: MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-Rust.ipynb
+  measures:
+    - id: vides_puzzle_test
+      description: "Nombre de cases vides de la grille temoin (81 caracteres, 902005403...)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: 'Cases vides: (\d+)'
+          transform: int
+        rust:
+          cell: 5
+          pattern: 'Cases vides: (\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# ne charge pas la meme instance : il prend ses puzzles
+            dans `SudokuHelper.GetSudokus(SudokuDifficulty.*)` (importe de
+            `Sudoku-00-Environment-CSharp.ipynb`) et n'affiche pas de grille
+            temoin de 81 caracteres. Cote declare ABSENT, pas mesure.
+    - id: appels_puzzle_test
+      description: "Appels recursifs du backtracking simple sur la grille temoin"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: 'Appels r[ée]cursifs: (\d+)'
+          transform: int
+        rust:
+          cell: 7
+          pattern: 'Appels r[ée]cursifs: (\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# mesure des « search calls » sur ses propres instances
+            (122 / 490304 / 12625368), pas sur la grille temoin : les nombres ne
+            portent pas sur la meme grandeur. Cote declare ABSENT, pas mesure.
+    - id: grille_resolue
+      description: "Grille resolue de la grille temoin (81 chiffres, ordre de lecture)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: 'Solution:\s*\n((?:[^\n]*\n){9})'
+          transform: digits
+        rust:
+          cell: 7
+          pattern: 'Solution:\s*\n((?:[^\n]*\n){9})'
+          transform: digits
+        csharp:
+          absent: >-
+            Le jumeau C# resout d'autres instances et n'imprime pas la grille
+            resolue en 81 chiffres. Cote declare ABSENT, pas mesure.
+    - id: puzzles_faciles_charges
+      description: "Nombre de puzzles faciles charges (Sudoku_Easy51.txt, plafond 10)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: 'Puzzles faciles charg[ée]s: (\d+)'
+          transform: int
+        rust:
+          cell: 12
+          pattern: 'Puzzles faciles charg[ée]s: (\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# ne charge pas de fichier : il lit ses puzzles depuis
+            `SudokuHelper`, sans compter de lignes de fichier. Cote declare
+            ABSENT, pas mesure.
+    - id: puzzles_difficiles_charges
+      description: "Nombre de puzzles difficiles charges (Sudoku_hardest.txt, fichier entier)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: 'Puzzles difficiles charg[ée]s: (\d+)'
+          transform: int
+        rust:
+          cell: 12
+          pattern: 'Puzzles difficiles charg[ée]s: (\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Meme raison que `puzzles_faciles_charges` : aucun fichier texte
+            n'est lu cote C#. Cote declare ABSENT, pas mesure.
+    - id: appels_totaux_faciles
+      description: "Appels recursifs totaux du backtracking simple sur les 10 puzzles faciles"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: '=== Benchmark: Puzzles Faciles.*?Appels totaux: (\d+)'
+          transform: int
+        rust:
+          cell: 15
+          pattern: '=== Benchmark: Puzzles Faciles.*?Appels totaux: (\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Le benchmark C# ne porte pas sur les dix lignes de
+            `Sudoku_Easy51.txt` : ses trois instances (Easy/Medium/Hard) sont
+            celles de `SudokuHelper`. Cote declare ABSENT, pas mesure.
+    - id: appels_moyens_faciles
+      description: "Appels recursifs moyens du backtracking simple sur les puzzles faciles"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: '=== Benchmark: Puzzles Faciles.*?Appels moyens: (\d+)'
+          transform: int
+        rust:
+          cell: 15
+          pattern: '=== Benchmark: Puzzles Faciles.*?Appels moyens: (\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Meme raison que `appels_totaux_faciles`. Cote declare ABSENT.
+    - id: resolus_difficiles
+      description: "Nombre de puzzles difficiles resolus sur les 11 du fichier"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: '=== Benchmark: Puzzles Difficiles.*?R[ée]solus: (\d+)/'
+          transform: int
+        rust:
+          cell: 15
+          pattern: '=== Benchmark: Puzzles Difficiles.*?R[ée]solus: (\d+)/'
+          transform: int
+        csharp:
+          absent: >-
+            Meme raison que `appels_totaux_faciles` : le benchmark C# n'a pas
+            de collection de onze puzzles difficiles. Cote declare ABSENT.
+    - id: appels_totaux_difficiles
+      description: "Appels recursifs totaux du backtracking simple sur les 11 puzzles difficiles"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: '=== Benchmark: Puzzles Difficiles.*?Appels totaux: (\d+)'
+          transform: int
+        rust:
+          cell: 15
+          pattern: '=== Benchmark: Puzzles Difficiles.*?Appels totaux: (\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Meme raison que `appels_totaux_faciles`. Cote declare ABSENT.
+    - id: appels_moyens_difficiles
+      description: "Appels recursifs moyens du backtracking simple sur les puzzles difficiles"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: '=== Benchmark: Puzzles Difficiles.*?Appels moyens: (\d+)'
+          transform: int
+        rust:
+          cell: 15
+          pattern: '=== Benchmark: Puzzles Difficiles.*?Appels moyens: (\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Meme raison que `appels_totaux_faciles`. Cote declare ABSENT.
+    - id: appels_simple_puzzle3
+      description: "Appels du backtracking simple sur le 3e puzzle difficile (comparaison MRV)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: 'Puzzle difficile 3:.*?Simple: (\d+) appels'
+          transform: int
+        rust:
+          cell: 20
+          pattern: 'Puzzle difficile 3:.*?Simple: (\d+) appels'
+          transform: int
+        csharp:
+          absent: >-
+            Le cote C# ne compare pas les deux solveurs : `CompareSolvers` est
+            un exercice non complete (cellule 15) et `BacktrackingMRVSolver`
+            un TODO (cellule 17). Aucun compteur MRV n'est publie.
+    - id: appels_mrv_puzzle3
+      description: "Appels du solveur MRV sur le 3e puzzle difficile (comparaison MRV)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: 'Puzzle difficile 3:.*?MRV:\s+(\d+) appels'
+          transform: int
+        rust:
+          cell: 20
+          pattern: 'Puzzle difficile 3:.*?MRV:\s+(\d+) appels'
+          transform: int
+        csharp:
+          absent: >-
+            Meme raison que `appels_simple_puzzle3` : le solveur MRV est un
+            exercice non complete cote C#. Cote declare ABSENT.
+    - id: speedup_puzzle3
+      description: "Rapport d'appels simple/MRV sur le 3e puzzle difficile, arrondi a {:.1}"
+      tolerance: 0.05
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: 'Puzzle difficile 3:.*?Speedup: ([\d.]+)x'
+          transform: float
+        rust:
+          cell: 20
+          pattern: 'Puzzle difficile 3:.*?Speedup: ([\d.]+)x'
+          transform: float
+        csharp:
+          absent: >-
+            Meme raison que `appels_simple_puzzle3`. Cote declare ABSENT.
+    - id: cases_ajoutees_solveur
+      description: "Cases remplies par le solveur MRV sur le premier puzzle facile (rendu texte)"
+      tolerance: 0
+      reference: rust
+      sides:
+        rust:
+          cell: 23
+          pattern: 'Cases ajoutees par le solveur : (\d+)'
+          transform: int
+        python:
+          absent: >-
+            Le cote Python publie cette information en figure matplotlib (deux
+            PNG), pas en texte : la grandeur n'existe pas dans ses sorties.
+            Cote declare ABSENT, pas mesure -- c'est la divergence declaree de
+            la spec (matplotlib -> rendu texte, aucune crate dans ce lot).
+        csharp:
+          absent: >-
+            Le jumeau C# n'affiche ni figure ni decompte des cases ajoutees.
+            Cote declare ABSENT.

@@ -25,6 +25,10 @@ projets plus ambitieux (`calibration_lean`, `JeuDeLaVie/conway_lean`, `sensitivi
 |---------|-------|-------|-------------|
 | `MathLibExamples/Basic.lean` | `MathLibExamples/Basic_en.lean` | 0 | Patterns et exemples d'utilisation basique de Mathlib |
 | [`MathLibExamples/ProofBridge.lean`](MathLibExamples/ProofBridge.lean) | [`MathLibExamples/ProofBridge_en.lean`](MathLibExamples/ProofBridge_en.lean) | 0 | Produits, sommes et preuves paramétriques après le jeu |
+| [`MathLibExamples/WallpaperP4m.lean`](MathLibExamples/WallpaperP4m.lean) | [`MathLibExamples/WallpaperP4m_en.lean`](MathLibExamples/WallpaperP4m_en.lean) | 0 | Groupe ponctuel du pavage p4m — matrices des générateurs du moteur `scripts/symmetry/wallpaper.py` |
+| [`MathLibExamples/LinearAlgebra.lean`](MathLibExamples/LinearAlgebra.lean) | [`MathLibExamples/LinearAlgebra_en.lean`](MathLibExamples/LinearAlgebra_en.lean) | 0 | La marche Axler — algèbre linéaire exécutable, paliers successifs |
+| [`MathLibExamples/CartierMiller.lean`](MathLibExamples/CartierMiller.lean) | [`MathLibExamples/CartierMiller_en.lean`](MathLibExamples/CartierMiller_en.lean) | 0 | Certificat de télescopage, identité préfixe et identité du point de quart sous une récurrence locale ; base `j = 1728` via `WeierstrassCurve` |
+| [`MathLibExamples/CartierMillerCoefficients.lean`](MathLibExamples/CartierMillerCoefficients.lean) | [`MathLibExamples/CartierMillerCoefficients_en.lean`](MathLibExamples/CartierMillerCoefficients_en.lean) | 0 | La suite binomiale du point de quart et sa récurrence à tout indice ; congruence en `ZMod p` pour tout premier `p ≡ 1 (mod 4)` |
 
 ## Après le jeu : un premier module
 
@@ -45,6 +49,35 @@ lake build MathLibExamples.ProofBridge MathLibExamples.ProofBridge_en
 Ces cibles utilisent `Std` et ne demandent pas la compilation de tout Mathlib.
 Elles constituent une étape vers un projet personnel, sans installer de nouveau
 lake ni remplacer le parcours d'installation du jeu.
+
+## La couche Cartier–Miller
+
+Une paire de modules prolonge la série sur un même objet, le point de quart
+d'une courbe elliptique. Ils se lisent dans cet ordre.
+
+[`CartierMiller.lean`](MathLibExamples/CartierMiller.lean) déduit l'identité
+préfixe et l'identité du point de quart d'une récurrence locale reçue en
+hypothèse, puis construit la base `j = 1728` : courbe de Weierstrass et invariant
+`j` établi formellement par `c₄^3 / Δ`.
+[`CartierMillerCoefficients.lean`](MathLibExamples/CartierMillerCoefficients.lean)
+construit ensuite la suite binomiale elle-même et prouve sa récurrence à tout
+indice, dans un corps où `8` est inversible. Les identités deviennent alors des
+théorèmes sur cette suite explicite, et la congruence du point de quart vaut en
+`ZMod p` pour tout premier `p ≡ 1 (mod 4)`.
+
+Ce que la couche **ne** prouve pas, et qu'il ne faut pas y lire : l'identification
+de la somme des coefficients à l'évaluation de Cartier–Miller, l'égalité de `a_n`
+avec la trace de Frobenius de la courbe, et tout énoncé sur les courbes
+elliptiques au-delà de la base de Weierstrass. Les énoncés sont transcrits des
+transcriptions du dépôt d'un manuscrit de travail non révisé par les pairs ;
+l'oracle numérique de `scripts/cartier_miller/` corrobore les calculs par
+l'exécution, il ne les prouve pas.
+
+```sh
+lake build MathLibExamples.CartierMillerCoefficients MathLibExamples.CartierMillerCoefficients_en
+```
+
+Les deux cibles importent Mathlib, comme `Basic.lean`.
 
 ## Résultats clés
 

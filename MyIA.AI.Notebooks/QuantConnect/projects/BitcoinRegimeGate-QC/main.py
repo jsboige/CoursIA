@@ -111,6 +111,7 @@ class BitcoinRegimeGate(QCAlgorithm):
         # Etat des compteurs (graphique shadow #18923 + statistiques d'execution)
         self.start_value = 100000.0
         self.closes = 0
+        self.held_ff_skips = 0
         self.traded = 0.0
         self.order_counts = {}
         self.gross_sum = 0.0
@@ -135,12 +136,17 @@ class BitcoinRegimeGate(QCAlgorithm):
             for ticker in REFERENCE_WEIGHTS[self.mode]:
                 self.ref_symbols[ticker] = self.add_equity(ticker, Resolution.DAILY).symbol
             self.shadow_symbol = self.ref_symbols["SPY"]
+            self.set_benchmark(self.shadow_symbol)
             self.set_warm_up(timedelta(60))
             return
 
         self.qqq = self.add_equity("QQQ", Resolution.DAILY).symbol
         self.shy = self.add_equity("SHY", Resolution.DAILY).symbol
         self.shadow_symbol = self.qqq
+        # Temoin de publication des seances : sans benchmark explicite, le graphique
+        # Benchmark de ce projet trace 0.0 partout, et ingest-qc lirait chaque seance
+        # comme figee (#27482, garde #28570).
+        self.set_benchmark(self.shadow_symbol)
 
         # Bitcoin trades 24/7: the regime source never sleeps through an equity crash.
         self.btc = self.add_crypto("BTCUSD", Resolution.DAILY, market=Market.BITFINEX).symbol
@@ -289,6 +295,26 @@ class BitcoinRegimeGate(QCAlgorithm):
                      f"decision={decision_time:%Y-%m-%d %H:%M} "
                      f"delai decision->soumission={delay / 86400:.1f}j")
 
+    def _held_fill_forward(self, data):
+        """Titres detenus dont la barre de la seance est recopiee vers l'avant."""
+        return sorted(
+            holding.symbol.value for holding in self.portfolio.values()
+            if holding.invested and data.bars.contains_key(holding.symbol)
+            and data.bars[holding.symbol].is_fill_forward)
+
+    def _trace_close(self):
+        """Point de cloture du graphique shadow (contrat d'ombre, regles 2 et 3)."""
+        value = self.portfolio.total_portfolio_value
+        self.plot("shadow", f"e{self.closes % 5}", value)
+        self.plot("shadow", "fees", self.portfolio.total_fees / self.start_value)
+        self.plot("shadow", "turnover", self.traded)
+        gross = sum(abs(holding.holdings_value) for holding in self.portfolio.values())
+        self.gross_sum += gross / value if value > 0 else 0.0
+        self.closes += 1
+        if gross == 0.0:
+            # Seance cloturee sans aucune position (audit #20006).
+            self.cash_closes += 1
+
     def on_data(self, data):
         if self.is_warming_up:
             return
@@ -300,17 +326,22 @@ class BitcoinRegimeGate(QCAlgorithm):
             self._ref_month = self.time.month
             for ticker, weight in REFERENCE_WEIGHTS[self.mode].items():
                 self.set_holdings(self.ref_symbols[ticker], weight)
-        if data.bars.contains_key(self.shadow_symbol):
-            value = self.portfolio.total_portfolio_value
-            self.plot("shadow", f"e{self.closes % 5}", value)
-            self.plot("shadow", "fees", self.portfolio.total_fees / self.start_value)
-            self.plot("shadow", "turnover", self.traded)
-            gross = sum(abs(holding.holdings_value) for holding in self.portfolio.values())
-            self.gross_sum += gross / value if value > 0 else 0.0
-            self.closes += 1
-            if gross == 0.0:
-                # Seance cloturee sans aucune position (audit #20006).
-                self.cash_closes += 1
+        # Une cloture par seance, a sa date : la barre journaliere du symbole
+        # d'ombre. Une barre recopiee vers l'avant (seance pas encore publiee en
+        # fin de fenetre) ne compte pas : la tracer figerait une seance plate
+        # (#27482, regle 2 etendue aux actions).
+        # La garde lit aussi la barre de chaque titre detenu : en liquidites
+        # (SHY), une barre SHY recopiee figerait l'equite meme quand celle du
+        # symbole d'ombre est publiee.
+        if (data.bars.contains_key(self.shadow_symbol)
+                and not data.bars[self.shadow_symbol].is_fill_forward):
+            stale = self._held_fill_forward(data)
+            if stale:
+                self.held_ff_skips += 1
+                self.log(f"{self.time:%Y-%m-%d} shadow: point saute, barre recopiee "
+                         f"du titre detenu {', '.join(stale)}")
+            else:
+                self._trace_close()
 
         # Bras "settled" (#20006) : acquisition differee depuis on_data, a une
         # barre posterieure a la decision (voir _try_acquire).
@@ -337,6 +368,7 @@ class BitcoinRegimeGate(QCAlgorithm):
             self.set_runtime_statistic(f"Orders {ticker}", str(self.order_counts.get(ticker, 0)))
         gross = self.gross_sum / self.closes if self.closes else 0.0
         self.set_runtime_statistic("Gross exposure", f"{gross:.3f}")
+        self.set_runtime_statistic("Shadow skips held FF", str(self.held_ff_skips))
         self.set_runtime_statistic("Target switches", str(self.n_switches))
         self.set_runtime_statistic("Switches QQQ", str(self.n_to_qqq))
         self.set_runtime_statistic("Switches SHY", str(self.n_to_shy))

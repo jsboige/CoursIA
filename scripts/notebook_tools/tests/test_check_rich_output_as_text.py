@@ -187,13 +187,15 @@ def test_le_ratchet_signale_un_ajout_et_ignore_le_stock(tmp_path):
 
 
 def test_le_garde_est_declenche_dans_le_registre_de_la_voie_rapide():
-    """L'organe est cable, en mode ADVISORY (blocking=False) d'abord."""
+    """Le chargeur sert le garde, registre YAML ou monolithe (#28117)."""
     racine = Path(__file__).resolve().parents[3]
-    source = (racine / "scripts" / "ci" / "fast_lane_registry.py").read_text(
-        encoding="utf-8", errors="replace")
-    assert "check_rich_output_as_text.py" in source
-    # Le garde de la famille SVG est advisory : `blocking=False`.
-    idx = source.find("check_rich_output_as_text.py")
-    fenetre = source[max(0, idx - 2000):idx + 2000]
-    assert "blocking=False" in fenetre
-    assert "needs_base=True" in fenetre
+    sys.path.insert(0, str(racine / "scripts" / "ci"))
+    from fast_lane_registry import TRANCHE49
+
+    matches = [
+        guard for guard in TRANCHE49
+        if "scripts/notebook_tools/check_rich_output_as_text.py" in guard.argv
+    ]
+    assert len(matches) == 1
+    assert matches[0].blocking is False
+    assert matches[0].needs_base is True
