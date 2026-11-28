@@ -138,6 +138,26 @@ def test_absence_d_organe_rend_un_action_nomme(preflight, monkeypatch):
     assert element["remede"], "un ACTION doit toujours porter un remede"
 
 
+def test_sans_semantic_kernel_l_etat_de_cle_est_tout_de_meme_rendu(
+    preflight, faux_organe, monkeypatch
+):
+    """SDK absent : l'installation est un `ACTION`, et la cle est quand meme verifiee.
+
+    Mesure fondatrice : le workflow `genai-helpers-tests.yml` tourne sur
+    `ubuntu-latest` avec `numpy requests python-dotenv pillow librosa pytest`
+    seulement -- pas `semantic-kernel`. Un retour premature apres le constat
+    d'installation cachait l'element de cle, et les deux tests de cle
+    echouaient la-bas alors qu'ils passent sur un poste ou le SDK est installe.
+    """
+    monkeypatch.setitem(sys.modules, "semantic_kernel", None)
+    elements = preflight.check_semantic_kernel()
+    installation = [e for e in elements if e["element"] == "sk / installation"][0]
+    assert installation["etat"] == preflight.ACTION
+    element_cle = [e for e in elements if e["element"].endswith("/ cle")]
+    assert len(element_cle) == 1
+    assert element_cle[0]["etat"] == preflight.OK
+
+
 # --- Garantie 2 : aucun appel de modele --------------------------------------
 
 def test_le_module_n_importe_aucun_sdk_de_modele(preflight):

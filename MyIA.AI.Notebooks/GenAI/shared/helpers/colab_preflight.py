@@ -239,26 +239,33 @@ def check_semantic_kernel() -> List[Dict[str, Any]]:
             "semantic_kernel non importable (%s)" % type(exc).__name__,
             "!pip install semantic-kernel   # carnet SK-01 : aucune cellule d'installation",
         ))
-        return elements
 
-    try:
-        from semantic_kernel import Kernel  # type: ignore
-        from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion  # type: ignore
+    # Le cablage depend de l'installation, la cle et les plugins non : un retour
+    # ici cacherait l'etat de la cle a l'eleve qui n'a pas encore installe le
+    # SDK, precisement celui qui doit savoir, avant d'installer, si sa cle est
+    # en place. Mesure fondatrice : sur le runner `ubuntu-latest` du workflow
+    # `genai-helpers-tests.yml`, le SDK n'est pas installe, et le retour
+    # premature faisait echouer les deux tests de cle qui passent sur un poste
+    # ou il l'est.
+    if any(e["element"] == "sk / installation" and e["etat"] == OK for e in elements):
+        try:
+            from semantic_kernel import Kernel  # type: ignore
+            from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion  # type: ignore
 
-        kernel = Kernel()
-        kernel.add_service(OpenAIChatCompletion(service_id="default"))
-        elements.append(_element(
-            "sk / cablage",
-            OK,
-            "Kernel() cree et service OpenAIChatCompletion enregistre",
-        ))
-    except Exception as exc:
-        elements.append(_element(
-            "sk / cablage",
-            ACTION,
-            "cableage impossible : %s: %s" % (type(exc).__name__, exc),
-            "relire la version installee : !pip show semantic-kernel",
-        ))
+            kernel = Kernel()
+            kernel.add_service(OpenAIChatCompletion(service_id="default"))
+            elements.append(_element(
+                "sk / cablage",
+                OK,
+                "Kernel() cree et service OpenAIChatCompletion enregistre",
+            ))
+        except Exception as exc:
+            elements.append(_element(
+                "sk / cablage",
+                ACTION,
+                "cableage impossible : %s: %s" % (type(exc).__name__, exc),
+                "relire la version installee : !pip show semantic-kernel",
+            ))
 
     elements.append(_element_cle("sk"))
     elements.append(_element(
