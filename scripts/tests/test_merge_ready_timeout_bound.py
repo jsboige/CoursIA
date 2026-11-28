@@ -238,11 +238,16 @@ def test_le_delai_par_pr_est_pose_et_leve_autour_de_chaque_pr(tmp_path):
     rc, _lines, _journal = run_organ(tmp_path, runner, extra=("--apply",))
 
     assert rc == 0
-    assert runner.budgets[0] == mr.PR_DEADLINE_S == 600.0
-    assert runner.budgets[1] is None, "l'echeance doit etre levee apres l'evaluation"
+    # La lecture GROUPEE des approbations (#28009) ouvre la passe sous sa
+    # propre borne, levee avant la boucle : la premiere echeance de PR vient
+    # apres cette trame.
+    assert runner.budgets[:2] == [mr.PRIORITE_BUDGET_S, None]
+    budgets = runner.budgets[2:]
+    assert budgets[0] == mr.PR_DEADLINE_S == 600.0
+    assert budgets[1] is None, "l'echeance doit etre levee apres l'evaluation"
     # Une echeance posee et levee par PR evaluee.
-    poses = [b for b in runner.budgets if b is not None]
-    assert len(poses) == len([b for b in runner.budgets if b is None])
+    poses = [b for b in budgets if b is not None]
+    assert len(poses) == len([b for b in budgets if b is None])
 
 
 def test_le_delai_par_pr_est_surchargeable_en_ligne_de_commande():

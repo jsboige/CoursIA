@@ -493,3 +493,104 @@ def test_lot3_corpus_all_accepted_and_fish_fired():
     medium = measure_coverage(_load("Sudoku_gen_moyen.txt", 10))
     assert sum(r.solved_by_inference for r in medium) >= 5, (
         "couverture moyenne : >= 5/10 (garde du lot 2 preservee)")
+
+
+# -- lot 4 (#27533) : wings -------------------------------------------------
+
+
+def test_xy_wing_eliminates_z_from_targets_seeing_both_wings():
+    solver = _blank_solver()
+    # pivot (0,0) {1,2} ; pinces (0,1) {1,3} (ligne 0) et (1,0) {2,3}
+    # (colonne 0) ; z = 3. La cible (2,2) voit les DEUX pinces (bloc 0) :
+    # 3 doit etre elimine. Les keep_only confinent 1/2/3 a l'aile pour
+    # qu'aucune autre case ne porte z (ni ne forme un motif concurrent).
+    _keep_only(solver, 1, [(0, 0), (0, 1)])
+    _keep_only(solver, 2, [(0, 0), (1, 0)])
+    _keep_only(solver, 3, [(0, 1), (1, 0), (2, 2)])
+    solver.cands[0][0] = {1, 2}          # pivot bi-valeur exact
+    solver.cands[0][1] = {1, 3}          # pince 1
+    solver.cands[1][0] = {2, 3}          # pince 2
+    step = solver._xy_wing()
+    assert step is not None and step.rule == "xy_wing"
+    assert step.eliminations == [(2, 2, 3)]
+    # les candidats des ailes survivent
+    assert solver.cands[0][1] == {1, 3}
+    assert solver.cands[1][0] == {2, 3}
+
+
+def test_xy_wing_silent_when_pincers_share_the_same_pivot_value():
+    solver = _blank_solver()
+    # les deux pinces {1,3} s'ancrent sur la MEME valeur 1 du pivot {1,2} :
+    # ce n'est pas une aile (aucune pince ne couvre le cas pivot=2)
+    _keep_only(solver, 1, [(0, 0), (0, 1), (1, 0)])
+    _keep_only(solver, 2, [(0, 0)])
+    _keep_only(solver, 3, [(0, 1), (1, 0), (2, 2)])
+    solver.cands[0][0] = {1, 2}
+    solver.cands[0][1] = {1, 3}
+    solver.cands[1][0] = {1, 3}
+    assert solver._xy_wing() is None
+    assert 3 in solver.cands[2][2], "aucune elimination ne doit survenir"
+
+
+def test_xy_wing_target_must_see_both_wings():
+    solver = _blank_solver()
+    # le motif existe mais la seule case qui porte 3 hors de l'aile,
+    # (5,5), ne voit AUCUNE des deux pinces : rien ne doit etre elimine
+    _keep_only(solver, 1, [(0, 0), (0, 1)])
+    _keep_only(solver, 2, [(0, 0), (1, 0)])
+    _keep_only(solver, 3, [(0, 1), (1, 0), (5, 5)])
+    solver.cands[0][0] = {1, 2}
+    solver.cands[0][1] = {1, 3}
+    solver.cands[1][0] = {2, 3}
+    assert solver._xy_wing() is None
+    assert 3 in solver.cands[5][5], "aucune elimination ne doit survenir"
+
+
+def test_xyz_wing_eliminates_z_from_targets_seeing_all_three():
+    solver = _blank_solver()
+    # pivot (0,0) tri-valeur {1,2,3} ; pinces (0,1) {1,3} et (1,0) {2,3} ;
+    # z = 3, elimine des cases vides visibles des TROIS (ici le bloc 0)
+    _keep_only(solver, 3, [(0, 0), (0, 1), (1, 0), (2, 2)])
+    solver.cands[0][0] = {1, 2, 3}       # pivot tri-valeur exact
+    solver.cands[0][1] = {1, 3}          # pince 1
+    solver.cands[1][0] = {2, 3}          # pince 2
+    step = solver._xyz_wing()
+    assert step is not None and step.rule == "xyz_wing"
+    assert step.eliminations == [(2, 2, 3)]
+
+
+def test_xyz_wing_silent_when_wing_carries_value_outside_pivot():
+    solver = _blank_solver()
+    # pince 2 = {2,4} : 4 n'est pas dans le pivot {1,2,3} -- elle ne peut
+    # pas etre contreforcee par le pivot, ce n'est pas une pince valide
+    solver.cands[0][0] = {1, 2, 3}
+    solver.cands[0][1] = {1, 3}
+    solver.cands[1][0] = {2, 4}
+    solver.cands[2][2] = {3, 4}
+    assert solver._xyz_wing() is None
+    assert 3 in solver.cands[2][2], "aucune elimination ne doit survenir"
+
+
+def test_lot4_corpus_all_accepted_and_wings_fired():
+    """Garde d'integration du lot 4 : toutes les traces du corpus restent
+    acceptees par l'oracle (30/30), les DEUX wings tirent, et la couverture
+    PROGRESSE par rapport au lot 3 (mesure #27533 lot 4) : moyen 5/10 -> 6/10
+    (grille 7 resolue par xy_wing), difficile 1/10 -> 2/10 (grille 3)."""
+    fired: set = set()
+    for name in ("Sudoku_gen_facile.txt", "Sudoku_gen_moyen.txt",
+                 "Sudoku_gen_difficile.txt"):
+        rows = measure_coverage(_load(name, 10))
+        assert all(r.trace_accepted for r in rows), (
+            f"{name} : etape(s) invalide(s) apres le lot 4")
+        for r in rows:
+            fired |= set(r.rules_used)
+    assert {"xy_wing", "xyz_wing"} <= fired, (
+        "les deux wings du lot 4 doivent tirer sur le corpus")
+    easy = measure_coverage(_load("Sudoku_gen_facile.txt", 10))
+    assert all(r.solved_by_inference for r in easy), "facile : 10/10 attendues"
+    medium = measure_coverage(_load("Sudoku_gen_moyen.txt", 10))
+    assert sum(r.solved_by_inference for r in medium) >= 6, (
+        "couverture moyenne : >= 6/10 (progression xy_wing, garde lot 4)")
+    hard = measure_coverage(_load("Sudoku_gen_difficile.txt", 10))
+    assert sum(r.solved_by_inference for r in hard) >= 2, (
+        "couverture difficile : >= 2/10 (progression wings, garde lot 4)")
