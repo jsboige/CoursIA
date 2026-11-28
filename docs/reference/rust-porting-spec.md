@@ -1,6 +1,6 @@
 # Gabarit de spécification de portage Rust — un seul format, deux producteurs
 
-> REFERENCE — vivante — dernière révision 2026-11-21
+> REFERENCE — vivante — dernière révision 2026-11-27
 >
 > **Provenance** : [Epic #26510](https://github.com/jsboige/CoursIA/issues/26510) (Parité Rust), **Pli 3** [#27098](https://github.com/jsboige/CoursIA/issues/27098), point 4 (« le gabarit de spécification de portage »). Le pli 1 a livré la table de correspondance : [rust-ecosystem-map.md](rust-ecosystem-map.md). Le pli 0 a livré la chaîne d'outils : [kernels-runtime.md § Rust](kernels-runtime.md#rust-notebooks-rust-via-evcxr).
 
@@ -9,6 +9,20 @@
 Une **page de spécification par carnet** : un carnet Rust ne s'écrit pas avant que sa page soit remplie. La page décrit ce que le portage doit produire, à partir de quelles crates, avec quelles tolérances, et dans quel temps — de sorte qu'un agent simple puisse implémenter le carnet depuis la page seule, et qu'un vérificateur puisse décider si le carnet livré est conforme à la page.
 
 **Un seul format, deux producteurs.** Le harnais `nb_coder` produit déjà des pages de spécification pour la parité Python/C# (la vague du 17/11 : [#27103](https://github.com/jsboige/CoursIA/issues/27103), [#27112](https://github.com/jsboige/CoursIA/issues/27112), …). Le portage Rust produit les siennes. **Les deux remplissent la même forme** — un gabarit ne se fork pas : une divergence de forme se justifie dans la page elle-même, elle ne se crée pas en silence.
+
+### Les deux implémentations existantes — la lecture croisée par défaut
+
+**À l'avenir, les ports bénéficient des 2 implémentations existantes.** Règle permanente, arbitrée par le user le 2026-11-27 (voie `myia-ai-01:vllm`). Quand un carnet existe en Python **et** en C#, la page se remplit en lisant **les deux** : le premier port a déjà fait le travail d'adaptation — choix de bibliothèque, écarts d'API, valeurs de référence — et un portage Rust qui l'ignore repaie ce travail pour le refaire autrement.
+
+Lire une seule implémentation est une **exception**, jamais un défaut : elle se justifie par l'**absence mesurée** de l'autre, pas par une supposition, et la page porte la mesure.
+
+| Situation | Ce que la page de spécification fait |
+|---|---|
+| Les deux jumeaux existent | les **deux** chemins sont cités dans `Objet`, et les **écarts** entre eux sont nommés — le registre de parité les porte déjà dans `known_differences` de `scripts/notebook_tools/twin_pairs.d/` (une entrée par paire, `python:` + `csharp:` ; un triplet ajoute `rust:`) |
+| Le jumeau C# est absent | la ligne `jumeau C# : aucun` **cite la mesure qui l'établit** et son motif : le glob du dépôt qui ne rend aucun `-CSharp.ipynb` pour la série (ou l'absence d'entrée `csharp:` correspondante dans `twin_pairs.d/`), puis la raison — série hors marathon C# |
+| Le jumeau Python est absent | de même : le Rust ne se déclare pas jumeau d'une implémentation qu'on n'a pas localisée |
+
+Une ligne `jumeau C# : aucun` sans mesure est une **supposition déguisée** : elle ne vaut pas la référence qu'elle prétend remplacer. La forme attendue existe déjà dans les entrées de `scripts/notebook_tools/rust_conformance.d/` — par exemple « aucun fichier `GameTheory-21-*-CSharp.ipynb` ; consigne spec #27965 : jumeau C# aucun » (`gametheory-21-capstone-choix-social.yaml`) : le constat nomme le glob, puis le motif.
 
 La forme de référence est donc **celle des specs C# en production**, lue sur `#27103` :
 
@@ -28,7 +42,7 @@ La forme de référence est donc **celle des specs C# en production**, lue sur `
 | # | Section | Ce qu'elle porte | Ce que la version Rust ajoute | Source de vérité |
 |---|---|---|---|---|
 | 1 | En-tête | `Grain:`, `Parent :`, `Voir` | le lot d'origine (`#27129`…) et la page de spec | l'Epic #26510, ses plis et lots |
-| 2 | Objet | source, cible, noyau, périmètre | noyau canonique `rust` (evcxr), suffixe `-Rust`, `rust-wsl` **jamais commité** | [kernels-runtime.md](kernels-runtime.md#rust-notebooks-rust-via-evcxr) |
+| 2 | Objet | source, cible, noyau, périmètre | les **deux** implémentations existantes citées (ou `jumeau C# : aucun` **mesuré**), noyau canonique `rust` (evcxr), suffixe `-Rust`, `rust-wsl` **jamais commité** | [kernels-runtime.md](kernels-runtime.md#rust-notebooks-rust-via-evcxr) · §1 du présent gabarit |
 | 3 | Plan des cellules | tableau index / verbatim / équivalent | l'équivalent est **Rust** ; chaque cellule est **autonome** (les fonctions ne persistent pas d'une cellule à l suivante) | kernels-runtime.md, § « Deux pièges de persistance mesurés » |
 | 4 | Exercices | ≥ 3 exercices, stubs C.1 | les stubs Rust ne lèvent pas d'erreur ; la valeur neutre est explicite | CLAUDE.md §C.1 |
 | 5 | Attendus testables | valeurs et verdicts | **une tolérance par cellule numérique** (absolue ou relative) | registre `scripts/notebook_tools/rust_conformance.d/` (point 2 du pli) |
@@ -48,6 +62,10 @@ Voir : #<page de spec du carnet jumeau> , #27098 , #26510
 ## Objet
 
 - Source : `<chemin du carnet Python>` (<n> cellules, <n> code, exécution complète sur `<python3>`)
+- Implémentations lues : `<chemin Python>` **et** `<chemin C#>` ; écarts entre les deux nommés
+  (repris de `known_differences` du registre `twin_pairs.d/`, ou « aucun écart déclaré »)
+  — **ou** : `jumeau C# : aucun` — mesuré par `<glob qui ne rend rien>` / `<aucune entrée csharp: pour la série>`,
+  motif `<série hors marathon C#>`
 - Cible : `<chemin du carnet Rust>` (à créer) — suffixe `-Rust`, kernelspec canonique `rust` (evcxr)
 - Noyau : `rust` — `:dep` **en tête de carnet**, une seule fois ; aucun `:dep` plus bas
   (un `:dep` tardif recompile tout et efface les variables typées)
@@ -147,6 +165,7 @@ de conformité différentielle (`scripts/notebook_tools/rust_conformance.d/<slug
 3. **Les temps viennent des blocs committés**, pas d'une mesure murale : le carnet Rust n'a pas de traducteur papermill, et la durée de compilation d'evcxr dépend du cache cargo.
 4. **Les écueils sont les arguments de la page.** Ils n'expliquent pas une décision, ils la bornent : si la page n'explique pas pourquoi la cellule 7 est réécrite plutôt que traduite, la cellule 7 est une invention.
 5. **Le lot, pas le carnet.** Une page est fille d'un carnet du lot ; c'est le lot qui donne son périmètre à la PR.
+6. **L'absence d'un jumeau se mesure, elle ne se suppose pas.** `jumeau C# : aucun` est une référence au même titre qu'un chemin : elle cite l'instrument qui l'établit (glob du dépôt, registre `twin_pairs.d/`) et son motif. Une page qui écrit `aucun` sur une impression trompe l'agent qui la lira seule — c'est précisément le cas que le gabarit existe pour empêcher.
 
 ## 5. Ce qui est vérifié après coup — les validateurs
 

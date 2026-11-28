@@ -141,7 +141,9 @@ def test_la_commande_rend_sous_la_borne(monkeypatch, capsys):
     timeouts: list[int] = []
     monkeypatch.setattr(main_freshness, "run_defaut", _runner_git({}, timeouts))
     pool = [_meta(5000 + k) for k in range(6)]
-    echeance = time.monotonic() + 8.0
+    # Le cap cede sa part au repli (5 s) et a la qualification (10 s) : une
+    # commande de 18 s lui laisse 3 s, une de 8 s ne le mesure plus (#28884).
+    echeance = time.monotonic() + 18.0
     debut = time.monotonic()
     code = tapis_rapide.main(["--lane", LANE, "--grains", "3", "--json"],
                               run=_run(pool), echeance=echeance)
@@ -152,7 +154,7 @@ def test_la_commande_rend_sous_la_borne(monkeypatch, capsys):
     assert rapport["grains"], "la file doit etre rendue"
     assert rapport["cap_livraisons"]["mesure"] is True, \
         "le cap doit etre mesure au point d'entree"
-    assert ecoule < 8.0 + 3.0, f"la commande a depasse la borne ({ecoule:.1f} s)"
+    assert ecoule < 18.0 + 3.0, f"la commande a depasse la borne ({ecoule:.1f} s)"
 
 
 def test_une_selection_lente_est_coupee_sans_depasser(monkeypatch, capsys):
