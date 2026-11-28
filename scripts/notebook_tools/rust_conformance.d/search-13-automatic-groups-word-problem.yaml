@@ -1,0 +1,124 @@
+# Conformité différentielle de Search-13-AutomaticGroups-WordProblem (portage Rust, lot Search).
+#
+# Le carnet source n'a aucun tirage, aucune horloge murale et aucune dépendance
+# hors de `collections` : les sorties sont déterministes, et la comparaison est
+# une **égalité stricte du texte**, cellule par cellule — la correspondance est
+# par INDEX DE CELLULE (le portage conserve la structure de cellules du jumeau
+# Python), et la tolérance est 0.
+#
+# Le jumeau Rust porte une section markdown « Ce que Rust apporte (mesure) »
+# insérée APRÈS la cellule 14 : elle ne touche aucune cellule de code, ne
+# modifie aucune sortie, et laisse les index des cellules mesurées (3, 6, 9,
+# 11, 14) inchangés.
+#
+# Le côté C# n'est PAS COUVERT par cette entrée — et c'est une **mesure**, pas
+# une absence. Le jumeau C# existe sur `main` depuis #28702 (livré par
+# myia-po-2028:claudish, attesté par le registre `twin_pairs.d`, niveau de
+# parité `semantic`). Re-mesuré le 2026-11-28 sur les sorties committées : les
+# cinq cellules de calcul ne sont PAS identiques au caractère près au jumeau
+# Python — la cellule 6 s'intitule « Accepteur des mots librement réduits » côté
+# C# contre « Accepteur Z^2 » côté Python, la cellule 11 titled « accepteur
+# passages » contre « accepteur etats », et la cellule 14 compte treize lignes
+# côté Python contre vingt côté C#. L'écart est d'**étiquette et de
+# présentation**, pas de valeur : c'est exactement ce que l'attestation
+# `twin_pairs.d` déclare (`parity_level: semantic` — la comparaison porte sur
+# les nombres et la liste d'états, jamais sur l'étiquette). Une égalité de
+# texte à tolérance 0 ne peut donc pas certifier le côté C# : l'entrée certifie
+# la paire Python↔Rust, et le côté C# est déclaré non couvert avec son motif —
+# l'organe signale un côté explicitement absent sans le faire échouer.
+#
+# Les cellules d'exercice (19, 20, 21) ne produisent AUCUNE sortie des deux
+# côtés : elles ne sont pas déclarées en mesures, l'organe traitant une
+# cellule sans sortie comme une extraction échouée. Leur absence de sortie
+# est attestée par la comparaison intégrale des deux carnets (sorties vides
+# des deux côtés, zéro octet).
+- name: "Search-13-AutomaticGroups-WordProblem"
+  family: "Search/Part1-Foundations"
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13-AutomaticGroups-WordProblem.ipynb
+  rust: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13-AutomaticGroups-WordProblem-Rust.ipynb
+  measures:
+    - id: c3_repr
+      description: "Cellule 3 — image de Z^2 (couple au format Python) et réduction libre dans F_2 (liste au format Python) : texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: >-
+            Cote C# non couvert par cette entree : il existe sur origin/main
+            depuis #28702, et sa parite avec le jumeau Python est SEMANTIQUE
+            (etiquette et presentation differentes, valeurs identiques) --
+            attestee par twin_pairs.d, ou parite_level: semantic. Une egalite
+            de texte a tolerance 0 ne peut pas le certifier ; l'entree certifie
+            la paire Python<->Rust.
+    - id: c6_accepteur
+      description: "Cellule 6 — l'accepteur Z^2 (6 états, 5 acceptants) et le verdict des assertions de propriétés : texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: >-
+            Cote C# non couvert par cette entree (voir c3_repr).
+    - id: c9_table_transitions
+      description: "Cellule 9 — table de transition finie de l'accepteur (alignements et marqueurs compris) : texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: >-
+            Cote C# non couvert par cette entree (voir c3_repr).
+    - id: c11_rapport_bfs
+      description: "Cellule 11 — rapport BFS/accepteur sur les rayons croissants (largeurs de colonnes, arrondi à la décimale) : texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 11
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: >-
+            Cote C# non couvert par cette entree (voir c3_repr).
+    - id: c14_croissance
+      description: "Cellule 14 — croissance comparée Z^2 (sphères et boules) contre F_2 (sphères et boules) : texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 14
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: >-
+            Cote C# non couvert par cette entree (voir c3_repr).
