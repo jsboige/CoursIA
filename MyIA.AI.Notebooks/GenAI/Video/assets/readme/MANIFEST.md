@@ -56,7 +56,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## video-svd.png
 
-- **Source** : notebook `02-Advanced/02-4-SVD-Image-to-Video.ipynb` (cellule 11, output 1 — display_data `image/png`)
+- **Source** : notebook `02-Advanced/02-4-Image-to-Video-Diffusion.ipynb` (cellule 11, output 1 — display_data `image/png`)
 - **Description visuelle** : Figure **3 vignettes côte-à-côte** (250×1200) avec **titre gras central** `Images de test pour SVD`. Les 3 vignettes servent d'**inputs** (images statiques) pour Stable Video Diffusion : **gauche** `Paysage avec montagnes` — ciel bleu, sol vert, montagne grise, soleil jaune (cercle) en haut à droite ; **centre** `Silhouette portrait` — silhouette beige (tête) sur fond violet, torse bleu, forme humanoïde stylisée ; **droite** `Coucher de soleil sur l'eau` — dégradé rose-orange en haut, eau bleue en bas, soleil jaune (cercle) au centre. **Ce sont les données d'entrée fournies à SVD, PAS une sortie SVD générée.** Cohérence stylistique : les 3 vignettes adoptent un **style minimaliste plat** (3-5 couleurs par vignette, formes géométriques simples) cohérent avec un dataset de test synthétique. Tell structurel = **3 inputs juxtaposes pour démo image-to-video**.
 - **Alt-text (FR)** : « Images de test pour SVD » — 3 vignettes côte-à-côte servant d'inputs pour Stable Video Diffusion (Paysage avec montagnes / Silhouette portrait / Coucher de soleil sur l'eau), pas une sortie SVD.
 - **Dimensions effectives (vérifiées `PIL.Image.open` 2026-07-22)** : 250×1200 (3 vignettes côte-à-côte, ratio d'aspect 4.8:1) — embeddings inline au README narratif.

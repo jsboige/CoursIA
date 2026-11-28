@@ -887,7 +887,7 @@ class TestGateWorkflowContract:
 #
 # Le detecteur global (dimensions / bytes / distinct colors) rate les grandes
 # images globalement riches qui cachent des regions vides (cf issue #10319,
-# cas fondateur cellule 12 de 02-7-CogVideoX-Text-to-Video.ipynb, PR #10305 :
+# cas fondateur cellule 12 de 02-7-Text-to-Video-Poids-Ouverts.ipynb, PR #10305 :
 # grille 4x4 1440x960 OU les rangées 1-2 sont des cadres vides et les
 # rangées 3-4 des pommes rendues — 955 KB / 134k couleurs globales).
 #

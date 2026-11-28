@@ -155,7 +155,7 @@
         },
         {
           "path": "GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb",
-          "title": "GPT-5 Multimodal - Analyse et Génération d'Images",
+          "title": "Génération et analyse d'images par API multimodale",
           "duration_minutes": 45,
           "kernel": "Python 3",
           "execution_constraints": {
@@ -959,7 +959,7 @@
           }
         },
         {
-          "path": "GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb",
+          "path": "GenAI/Video/02-Advanced/02-4-Image-to-Video-Diffusion.ipynb",
           "title": "SVD - Stable Video Diffusion (Image-to-Video)",
           "duration_minutes": 45,
           "kernel": "Python 3",

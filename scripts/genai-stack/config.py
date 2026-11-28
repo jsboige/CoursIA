@@ -275,11 +275,11 @@ NOTEBOOK_SERVICE_MAP = {
     "video_diffusion_light": [
         "02-2-Generation-Video-Legere.ipynb",
         "02-3-Wan-Video-Generation.ipynb",
-        "02-4-SVD-Image-to-Video.ipynb",
+        "02-4-Image-to-Video-Diffusion.ipynb",
     ],
     "video_diffusion_heavy": [
         "01-5-Generation-Text-to-Video-Intro.ipynb",
-        "02-1-HunyuanVideo-Generation.ipynb",
+        "02-1-Generation-Video-Locale.ipynb",
     ],
     "video_orchestration": [
         "03-1-Multi-Model-Video-Comparison.ipynb",
