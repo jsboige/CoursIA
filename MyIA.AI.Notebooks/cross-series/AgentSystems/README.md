@@ -11,7 +11,7 @@ carnets, chacun isolant une capacité de la boucle.
 
 | Carnet | Capacité isolée | Séries mobilisées |
 |--------|-----------------|-------------------|
-| [AgentSystems-01 — Perception → Action](AgentSystems-01-Perception-Vers-Action-Python.ipynb) | La **spine composable** : la boucle *percevoir → représenter → inférer → décider → vérifier → exécuter → observer* comme *squelette réutilisable*, l'inférence (déterministe **ou** LLM) comme *point de composition*. | Search, SymbolicAI, Compression, GenAI |
+| [AgentSystems-01 — Perception → Action](AgentSystems-01-Perception-Vers-Action-Python.ipynb) · [jumeau C#](AgentSystems-01-Perception-Vers-Action-CSharp.ipynb) | La **spine composable** : la boucle *percevoir → représenter → inférer → décider → vérifier → exécuter → observer* comme *squelette réutilisable*, l'inférence (déterministe **ou** LLM) comme *point de composition*. | Search, SymbolicAI, Compression, GenAI |
 | [AgentSystems-02 — Perception active et valeur d'information](AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb) · [jumeau C#](AgentSystems-02-Perception-Active-Valeur-Information-CSharp.ipynb) · [jumeau Rust](AgentSystems-02-Perception-Active-Valeur-Information-Rust.ipynb) | La **perception active** : ne lire que les capteurs dont la **valeur d'information** (EVOI, baisse du risque bayésien qu'elle rend possible) vaut le coût de l'observation — la politique *observer ce qui compte* opposée à *lire tout*, avec sondage Monte-Carlo du postérieur et politique d'arrêt. | Autoportant (théorie de la décision) |
 
 Le deuxième angle du projet — la **perception active** (ne lire que les capteurs

@@ -1,0 +1,7 @@
+- name: "AgentSystems-01-Perception-Vers-Action C#"
+  family: cross-series/AgentSystems
+  python: MyIA.AI.Notebooks/cross-series/AgentSystems/AgentSystems-01-Perception-Vers-Action-Python.ipynb
+  csharp: MyIA.AI.Notebooks/cross-series/AgentSystems/AgentSystems-01-Perception-Vers-Action-CSharp.ipynb
+  parity_level: native-both
+  known_differences:
+    - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de AgentSystems-01-Perception-Vers-Action-Python.ipynb. Execution reelle sur kernel .net-csharp : 14 cellules, 0 erreur. Verification independente : approve. Premiere attestation ecrite par l'integration de livraison (check_twin_parity --update), en DERNIERE operation (cf #8957)."
