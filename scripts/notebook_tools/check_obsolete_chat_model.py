@@ -180,6 +180,30 @@ NON_PYTHON_MAGIC_RE = re.compile(r"^#!\s*(\w+)")
 PYTHON_MAGICS = {"python", "python3"}
 IPYTHON_MAGIC_LINE_RE = re.compile(r"^(%|!|\?)")
 
+#: Formes reconnues qui ne sont pas des APPELS de chat mais la CONSTRUCTION
+#: d'un service : le noyau (semantic_kernel) emet la requete, pas cette
+#: ligne (#28955). Le modele configure y est lu et RAPPORTE (visibilite), et
+#: seule la CONTRAINTE DE PARAMETRE peut y Rougeir -- un constructeur n'est
+#: pas une execution, l'accuser serait une accusation sans preuve (#28955,
+#: forme ``OpenAIChatCompletion`` du connecteur semantic_kernel).
+CONSTRUCTOR_LABELS = frozenset({"sk.OpenAIChatCompletion"})
+
+#: Mot-cle portant l'identifiant de modele, par forme reconnue. Une forme
+#: absente de la table porte le modele en ``model=`` (ou en positionnel).
+MODEL_KEYWORD_BY_SITE = {
+    "sk.OpenAIChatCompletion": "ai_model_id",
+}
+
+#: Epinglages de classe A (experience epinglee,
+#: ``docs/genai/model-mapping-openai.md``) : des sondes de CONSTRUCTION
+#: « sans appel LLM » -- exemptees du tier constructeur lui-meme : ni
+#: site, ni rapport (#28955). Matching par suffixe de chemin (insensible
+#: au CWD et aux separatateurs d'OS).
+CLASS_A_PINS = (
+    "myia.ai.notebooks/genai/semantickernel/eval-pilots/"
+    "current_api_probe.py",
+)
+
 
 # ---------------------------------------------------------------------------
 # Structures
@@ -226,6 +250,10 @@ class Ctx:
     #: ``urlopen(<nom>)`` -- la forme dominante du depot (URL et ``data=``
     #: s'en lisent ensuite a l'appel).
     local_requests: dict = field(default_factory=dict)
+    #: (#28955) nom -> LISTE des noeuds de valeur affectes a ce nom, une
+    #: par branche : une URL ecrite dans un ``if/else`` a DEUX valeurs
+    #: candidates, et le site existe des que l'une cible la route chat.
+    local_url_nodes: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -303,11 +331,16 @@ def _dict_model_entry(node: ast.AST) -> ast.AST | None:
 
 
 def classify_chat_call(call: ast.Call, dspy_imported: bool,
-                       request_url_for=None) -> tuple[str, bool] | None:
+                       request_urls_for=None) -> tuple[str, bool] | None:
     """Classe un Call en site chat -> (libelle, model_positionnel_bool).
 
     ``model_positionnel_bool`` dit si le premier argument positionnel est le
     modele (vrai pour l'API OpenAI chat et les constructeurs, faux sinon).
+
+    ``request_urls_for`` resout un NOM d'URL en CANDIDATS (#28955) : une URL
+    affectee en plusieurs branches (if/else) est un site chat des que l'une
+    des branches cible la route -- la route retenue a l'execution ne se
+    laisse pas deviner, mais le site, lui, existe.
     """
     parts = attr_chain(call.func)
     if not parts:
@@ -322,6 +355,13 @@ def classify_chat_call(call: ast.Call, dspy_imported: bool,
         return "ChatCompletion.create", True
     if parts and parts[-1] == "ChatOpenAI":
         return "ChatOpenAI", True
+    # Connecteur semantic_kernel (#28955) : OpenAIChatCompletion(...) est la
+    # CONSTRUCTION d'un service de chat, pas un appel -- la requete est
+    # emise par le noyau, plus tard. La forme est reconnue (le modele
+    # configure est lu et RAPPORTE) mais le site n'est pas une execution :
+    # voir CONSTRUCTOR_LABELS.
+    if parts and parts[-1] == "OpenAIChatCompletion":
+        return "sk.OpenAIChatCompletion", True
     if len(parts) == 2 and parts == ["dspy", "LM"]:
         return "dspy.LM", True
     if len(parts) == 1 and parts == ["LM"] and dspy_imported:
@@ -341,11 +381,14 @@ def classify_chat_call(call: ast.Call, dspy_imported: bool,
                 (kw.value for kw in url.keywords if kw.arg == "url"), None)
         # (#28517) : un Request CONSTRUIT A PART, passe a urlopen par son
         # NOM -- le resolver remonte l'URL du Request lie a ce nom.
+        # (#28955) : cette URL peut elle-meme etre un NOM affecte en
+        # plusieurs branches -- TOUS les candidats sont testes.
+        candidates = [url]
         if (tuple(parts[-3:]) == ("urllib", "request", "urlopen")
                 and isinstance(url, ast.Name)
-                and request_url_for is not None):
-            url = request_url_for(url.id)
-        if targets_chat_completions(url):
+                and request_urls_for is not None):
+            candidates = request_urls_for(url.id)
+        if any(targets_chat_completions(candidate) for candidate in candidates):
             return "http.chat.completions", False
     return None
 
@@ -414,10 +457,22 @@ def _http_body_dict_node(node: ast.AST) -> ast.AST | None:
     return None
 
 
-def model_arg_node(call: ast.Call, positional: bool) -> ast.AST | None:
+def model_arg_node(call: ast.Call, positional: bool,
+                   model_kw: str = "model") -> ast.AST | None:
+    """Noeud portant l'identifiant de modele d'un appel.
+
+    ``model_kw`` nomme le mot-cle de la forme : ``model`` partout, sauf le
+    connecteur semantic_kernel qui le nomme ``ai_model_id`` (#28955). Le
+    mot-cle ``model`` reste accepte en repli : un connecteur expose les
+    deux.
+    """
     for kw in call.keywords:
-        if kw.arg == "model":
+        if kw.arg == model_kw:
             return kw.value
+    if model_kw != "model":
+        for kw in call.keywords:
+            if kw.arg == "model":
+                return kw.value
     if positional and call.args:
         return call.args[0]
     return None
@@ -507,6 +562,11 @@ class NotebookScanner:
 
     def __init__(self, path: str):
         self.path = path
+        #: (#28955) Classe A epinglee : le fichier est entierement exempt du
+        #: tier constructeur (ni site, ni rapport).
+        self._class_a_pin = any(
+            str(path).replace("\\", "/").lower().endswith(suffix)
+            for suffix in CLASS_A_PINS)
         self.module_values: dict[str, Binding] = {}
         self.dict_values: dict[str, dict[str, Binding]] = {}
         #: Nom d'un dict littéral -> node de l'entree "model" (HTTP brut
@@ -518,12 +578,18 @@ class NotebookScanner:
         #: (#28517) Nom d'un ``Request(...)`` lie a un nom -> noeud du
         #: Request (pour ``urlopen(<nom>)``, forme dominante du depot).
         self.request_nodes: dict[str, ast.AST] = {}
+        #: (#28955) Nom -> LISTE des noeuds de valeur affectes a ce nom
+        #: (une par branche) : une URL en ``if/else`` a deux candidats.
+        self.module_url_nodes: dict[str, list[ast.AST]] = {}
         #: Batteries ``NAME = [{cle: valeur}, ...]`` (liste de dictionnaires) :
         #: chaque entree est une table cle -> Binding (forme #23387 point 3).
         self.multi_dict_values: dict[str, list[dict[str, Binding]]] = {}
         self.class_infos: dict[str, ClassInfo] = {}
         self.class_attr_values: dict[str, dict[str, list[Binding]]] = {}
         self.findings: list[dict] = []
+        #: (#28955) Sites de CONSTRUCTION d'un service de chat : le modele
+        #: configure est lu et RAPPORTE, jamais accuse comme une execution.
+        self.constructor_sites: list[dict] = []
         #: Contraintes de PARAMETRES d'un appel dont le modele resolu est de
         #: la famille `gpt-5.6*` (`temperature` != 1, `max_tokens`).
         self.param_findings: list[dict] = []
@@ -605,6 +671,9 @@ class NotebookScanner:
         if isinstance(stmt, ast.ClassDef):
             self.handle_class(stmt, ctx)
             return
+        if isinstance(stmt, ast.If):
+            self._handle_if(stmt, ctx)
+            return
         if isinstance(stmt, ast.For):
             self.handle_for(stmt, ctx)
             return
@@ -633,6 +702,35 @@ class NotebookScanner:
             self.scan_expr(node, ctx)
         for sub in stmt_lists:
             self.visit_block(sub, ctx)
+
+    def _handle_if(self, stmt: ast.If, ctx: Ctx) -> None:
+        """``if/else`` : les affectations des deux branches sont ALTERNATIVES.
+
+        Une URL affectee dans chaque branche a DEUX valeurs candidates : la
+        route retenue a l'execution ne se laisse pas deviner, mais le site
+        existe des que l'une des branches cible la route chat. Hors
+        branches, la derniere affectation l'emporte (une URL ecrasee n'est
+        plus la route vivante) -- c'est `_retain_url_node` qui l'applique.
+
+        Seule la retention des URL est branchee ici : les autres
+        resolutions (modeles, dicts) gardent le comportement generique, et
+        aucune resolution existante n'est perdue.
+        """
+        self.scan_expr(stmt.test, ctx)
+        before_local = {k: list(v) for k, v in ctx.local_url_nodes.items()}
+        before_module = {k: list(v) for k, v in self.module_url_nodes.items()}
+        self.visit_block(stmt.body, ctx)
+        then_local = {k: list(v) for k, v in ctx.local_url_nodes.items()}
+        then_module = {k: list(v) for k, v in self.module_url_nodes.items()}
+        ctx.local_url_nodes = {k: list(v) for k, v in before_local.items()}
+        self.module_url_nodes = {k: list(v) for k, v in before_module.items()}
+        self.visit_block(stmt.orelse, ctx)
+        else_local = {k: list(v) for k, v in ctx.local_url_nodes.items()}
+        else_module = {k: list(v) for k, v in self.module_url_nodes.items()}
+        ctx.local_url_nodes = _union_url_states(
+            before_local, then_local, else_local)
+        self.module_url_nodes = _union_url_states(
+            before_module, then_module, else_module)
 
     def handle_def(self, stmt, ctx: Ctx) -> None:
         params: dict[str, Binding | None] = {}
@@ -716,6 +814,27 @@ class NotebookScanner:
                     self.dict_model_nodes[name] = entry
             self._retain_dict_body(stmt.value, stmt.targets[0].id, ctx)
             self._retain_request(stmt.value, stmt.targets[0].id, ctx)
+            self._retain_url_node(stmt.value, stmt.targets[0].id, ctx)
+
+    def _retain_url_node(self, value: ast.AST, name: str, ctx: Ctx) -> None:
+        """Retient les VALEURS LITTERALES affectees a un nom (#28955).
+
+        Hors branches, la DERNIERE affectation l'emporte : une URL ecrasée
+        n'est plus la route vivante. Dans un ``if/else``, les deux
+        affectations sont ALTERNATIVES : le nom porte alors deux valeurs
+        candidates (voir ``_handle_if``), et le site chat existe des que
+        l'une des deux cible la route. Seule la chaine (ou le f-string)
+        est retenue : une valeur dynamique ne dit rien de la route.
+        """
+        if isinstance(value, ast.Constant):
+            if not isinstance(value.value, str):
+                return
+        elif not isinstance(value, ast.JoinedStr):
+            return
+        if ctx.func_name is not None or ctx.class_name is not None:
+            ctx.local_url_nodes[name] = [value]
+        else:
+            self.module_url_nodes[name] = [value]
 
     def _retain_dict_body(self, value: ast.AST, name: str, ctx: Ctx) -> None:
         """Retient le DICT litteral lui-meme (forme complete) sous son nom.
@@ -764,6 +883,7 @@ class NotebookScanner:
                     self.dict_model_nodes[name] = entry
             self._retain_dict_body(stmt.value, stmt.target.id, ctx)
             self._retain_request(stmt.value, stmt.target.id, ctx)
+            self._retain_url_node(stmt.value, stmt.target.id, ctx)
 
     def handle_for(self, stmt: ast.stmt, ctx: Ctx) -> None:
         """Boucle sur une batterie de dictionnaires.
@@ -776,6 +896,8 @@ class NotebookScanner:
         existante n'est perdue.
         """
         self.scan_expr(stmt.iter, ctx)
+        before_local = {k: list(v) for k, v in ctx.local_url_nodes.items()}
+        before_module = {k: list(v) for k, v in self.module_url_nodes.items()}
         tables = (self._multi_tables(stmt.iter.id, ctx)
                   if isinstance(stmt.iter, ast.Name) else None)
         if tables is not None and isinstance(stmt.target, ast.Name):
@@ -793,6 +915,13 @@ class NotebookScanner:
             self.visit_block(stmt.body, ctx)
         if stmt.orelse:
             self.visit_block(stmt.orelse, ctx)
+        # La boucle peut ne pas s'executer : la valeur d'URL d'avant reste
+        # atteignable, celles vues dans le corps s'y ajoutent (#28955).
+        ctx.local_url_nodes = _union_url_states(
+            before_local, {k: list(v) for k, v in ctx.local_url_nodes.items()})
+        self.module_url_nodes = _union_url_states(
+            before_module,
+            {k: list(v) for k, v in self.module_url_nodes.items()})
 
     def bind_target(self, target, binding: Binding,
                     dict_binding: dict | None, ctx: Ctx,
@@ -866,27 +995,92 @@ class NotebookScanner:
             self.resolve_instantiation(call, func.id, ctx)
         site = classify_chat_call(
             call, self.dspy_imported,
-            request_url_for=lambda name: _request_url_node(
-                self._request_node_of(name, ctx)))
+            request_urls_for=lambda name: self._url_candidates_for_name(
+                name, ctx))
         if site is None:
             return
         label, positional = site
+        if label in CONSTRUCTOR_LABELS:
+            # Construction d'un service, pas une execution (#28955) :
+            # le site est RAPPORTE (visibilite), jamais accuse.
+            self._handle_constructor_site(call, label, positional, ctx)
+            return
         self.stats["chat_sites"] += 1
         cell_id = self._cell_id(ctx.cell_index)
         arg = (self._http_model_node(call, ctx)
                if label == "http.chat.completions"
-               else model_arg_node(call, positional))
+               else model_arg_node(call, positional,
+                                   MODEL_KEYWORD_BY_SITE.get(label, "model")))
         if arg is None:
             self.unresolved.append(self._site(ctx, cell_id, call, label,
                                               "sans argument model"))
             return
         self.resolve_model_expr(arg, label, call, ctx, defer_self=True)
 
+    def _handle_constructor_site(self, call: ast.Call, label: str,
+                                 positional: bool, ctx: Ctx) -> None:
+        """Site de CONSTRUCTION d'un service de chat (#28955).
+
+        Le noyau emet la requete, plus tard : la ligne qui configure le
+        service n'est PAS une execution. Le modele configure est lu et
+        RAPPORTE dans ``constructor_sites`` (advisory, sans effet sur
+        l'exit), et seule la contrainte de PARAMETRE de la generation 5.6
+        peut y rougeir -- un finding d'obsolescence serait une accusation
+        sans preuve. Les epinglages de classe A (sondes « sans appel
+        LLM ») sont exempts d'avance : ni site, ni rapport.
+        """
+        if self._class_a_pin:
+            return
+        self.stats["chat_sites"] += 1
+        cell_id = self._cell_id(ctx.cell_index)
+        arg = model_arg_node(call, positional,
+                             MODEL_KEYWORD_BY_SITE.get(label, "model"))
+        binding = self.bind_value(arg, ctx)
+        entry: dict = self._site(ctx, cell_id, call, label,
+                                  "construction (sans execution)")
+        entry["model"] = (normalize_model(binding.value)
+                          if binding.value is not None else None)
+        entry["via"] = binding.origin
+        if binding.value is not None:
+            if is_obsolete_chat_model(binding.value):
+                entry["obsolete"] = True
+            self._check_param_constraints(binding.value, label, ctx, call)
+        self.constructor_sites.append(entry)
+
     def _request_node_of(self, name: str, ctx: Ctx) -> ast.AST | None:
         """Noeud ``Request(...)`` lie a `name` (scope locale d'abord, puis
         module), ou None -- pour ``urlopen(<nom>)`` (#28517)."""
         return (ctx.local_requests.get(name)
                 or self.request_nodes.get(name))
+
+    def _url_values_for_name(self, name: str, ctx: Ctx) -> list[ast.AST]:
+        """Valeurs LITTERALES affectees a un nom, une par branche (#28955).
+
+        La scope locale PRIME sur la module : un nom re-affecte dans une
+        fonction masque la valeur de module -- jamais de candidate fantome.
+        Liste vide = nom jamais affecte a une chaine = aucun candidat.
+        """
+        if name in ctx.local_url_nodes:
+            return list(ctx.local_url_nodes[name])
+        return list(self.module_url_nodes.get(name, ()))
+
+    def _url_candidates_for_name(self, name: str,
+                                  ctx: Ctx) -> list[ast.AST]:
+        """Candidats d'URL pour un nom passe a ``urlopen(<nom>)``.
+
+        Deux formes : le nom porte un ``Request(...)`` construit a part
+        (#28517) -- le candidat est le noeud du SLOT URL de ce Request, et
+        si ce slot est lui-meme un nom affecte en branches (if/else), les
+        candidats sont les valeurs des branches ; ou le nom est directement
+        affecte a une URL litterale en branches.
+        """
+        request = self._request_node_of(name, ctx)
+        if request is not None:
+            slot = _request_url_node(request)
+            if isinstance(slot, ast.Name):
+                return self._url_values_for_name(slot.id, ctx)
+            return [slot] if slot is not None else []
+        return self._url_values_for_name(name, ctx)
 
     def _http_body(self, call: ast.Call, ctx: Ctx) -> ast.AST | None:
         """Corps de la requete HTTP brut (``json=``/``data=``), ou None.
@@ -1489,6 +1683,7 @@ def _report(path: str, kind: str, scanner: NotebookScanner) -> dict:
         "notebook": path,
         "findings": scanner.findings,
         "param_findings": scanner.param_findings,
+        "constructor_sites": scanner.constructor_sites,
         "doc_mentions": scanner.doc_mentions,
         "doc_marked_cells": scanner.doc_marked_cells,
         "unresolved": scanner.unresolved,
@@ -1581,6 +1776,24 @@ def source_kind(p: Path) -> str:
     return "notebook" if p.suffix == ".ipynb" else "python"
 
 
+def _union_url_states(*states: dict) -> dict:
+    """Fusionne des etats d'URL (nom -> liste de noeuds de valeur).
+
+    L'UNION est la semantique des branches alternatives : chaque valeur
+    portee par un etat est atteignable a l'execution (le ``if`` peut ne
+    pas s'executer, l'une des branches peut s'executer) -- le site chat
+    existe donc des que l'une des valeurs cible la route.
+    """
+    out: dict[str, list] = {}
+    for state in states:
+        for name, values in state.items():
+            merged = out.setdefault(name, [])
+            for value in values:
+                if not any(value is kept for kept in merged):
+                    merged.append(value)
+    return out
+
+
 def _is_skipped(q: Path) -> bool:
     """Vrai si ``q`` vit sous un dossier de build/dependance a ne pas scanner."""
     return any(part in SKIP_DIR_NAMES for part in q.parts)
@@ -1645,6 +1858,7 @@ def filter_base(sources: list[tuple[Path, str]], base: str
 def print_text(reports: list[dict], merge_base: str | None) -> None:
     findings = [f for r in reports for f in r["findings"]]
     params = [p for r in reports for p in r["param_findings"]]
+    constructors = [c for r in reports for c in r["constructor_sites"]]
     mentions = [m for r in reports for m in r["doc_mentions"]]
     unresolved = [u for r in reports for u in r["unresolved"]]
     stats = {k: sum(r["stats"].get(k, 0) for r in reports) for k in
@@ -1664,13 +1878,22 @@ def print_text(reports: list[dict], merge_base: str | None) -> None:
         print(f"PARAM-FINDING {p['path']} cell {p['cell']}{cid} "
               f"line {p['line']}: {p['site']} vers '{p['model']}' porte "
               f"{p['param']}{value} -- {p['reason']}")
+    for c in constructors:
+        cid = f" id {c['cell_id']}" if c["cell_id"] else ""
+        model = c["model"] if c["model"] is not None else "non resolu"
+        flag = (" -- modele OBSOLETE configure (advisory)"
+                if c.get("obsolete") else "")
+        print(f"CONSTRUCTOR {c['path']} cell {c['cell']}{cid} "
+              f"line {c['line']}: {c['site']} configure '{model}' "
+              f"(construction, sans execution){flag} -- via {c['via']}")
     for m in mentions:
         print(f"DOC-MENTION {m['path']} cell {m['cell']}: "
               f"mentions {', '.join(m['models'])} sans marqueur "
               f"'# obsolescence: DOC' (advisory, sans effet sur l'exit)")
     marked = sum(r["doc_marked_cells"] for r in reports)
     print(f"-- {len(findings)} finding(s) ; {len(params)} contrainte(s) de "
-          f"parametre(s) ; {len(unresolved)} site(s) chat non "
+          f"parametre(s) ; {len(constructors)} construction(s) de service "
+          f"rapportee(s) (advisory) ; {len(unresolved)} site(s) chat non "
           f"resolus statiquement (rapportes, jamais accuses) ; "
           f"{len(mentions)} mention(s) doc sans marqueur, {marked} cellule(s) "
           f"marquee(s).")
@@ -1726,6 +1949,8 @@ def main(argv=None) -> int:
             "obsolete_models": sorted(OBSOLETE_CHAT_MODELS),
             "findings": findings,
             "param_findings": [p for r in reports for p in r["param_findings"]],
+            "constructor_sites": [c for r in reports
+                                   for c in r["constructor_sites"]],
             "doc_mentions": [m for r in reports for m in r["doc_mentions"]],
             "unresolved": [u for r in reports for u in r["unresolved"]],
             "stats": {
