@@ -23,7 +23,14 @@ Le module fournit :
   - ``connectivity_game`` : jeu de connectivité d'Amer et Gimenez (2004) ;
   - ``GroupValueTable`` : tabulation de v sur les 2^n coalitions et calcul
     vectorisé des valeurs individuelles, de groupe, de la profitabilité, de la
-    complémentarité moyenne (définition 3) et du meilleur groupe de taille k.
+    complémentarité moyenne (définition 3) et du meilleur groupe de taille k ;
+  - ``group_profitability`` : comparaison mesurée de phi_g(C) et de la somme des
+    phi_i du groupe (section 4 de l'article) ;
+  - ``random_tu_game``, ``synergy_game``, ``redundancy_game`` : trois familles
+    de jeux TU aléatoires déterministes (graine) — bruit, synergie positive,
+    recouvrement ;
+  - ``profitability_scan`` : balayage seedé qui mesure, sur une famille de jeux,
+    la fréquence de profitabilité d'un groupe et isole un contre-exemple.
 
 Convention : les joueurs sont indexés de 0 à n-1, comme dans ``CoalitionGame``.
 """
@@ -31,10 +38,11 @@ Convention : les joueurs sont indexés de 0 à n-1, comme dans ``CoalitionGame``
 from __future__ import annotations
 
 from collections import deque
+from dataclasses import dataclass
 from fractions import Fraction
 from itertools import combinations
 from math import factorial
-from typing import Dict, FrozenSet, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import Dict, FrozenSet, Iterable, List, Optional, Sequence, Set, Tuple, Union
 
 import numpy as np
 
@@ -310,6 +318,247 @@ class GroupValueTable:
         return [self.game.player_names[i] for i in group]
 
 
+@dataclass(frozen=True)
+class GroupProfitability:
+    """
+    Comparaison de la valeur de groupe et de la somme des valeurs individuelles
+    (section 4 de Flores, Molina et Tejada 2019).
+
+    Le groupe C est *profitable* quand phi_g(C) >= sum_{i in C} phi(i) : agir
+    comme une seule unite vaut au moins la somme des membres pris separement.
+    L'ecart ``gap`` est la difference des deux termes ; il est negatif quand
+    le groupe n'est pas rentable.
+
+    Les valeurs sont des ``Fraction`` quand la mesure a ete faite en arithmetique
+    exacte, des ``float`` sinon.
+    """
+
+    group: Tuple[int, ...]
+    group_value: Union[float, Fraction]
+    additive_value: Union[float, Fraction]
+    gap: Union[float, Fraction]
+
+    @property
+    def is_profitable(self) -> bool:
+        """Vrai si phi_g(C) >= somme des phi_i des membres du groupe."""
+        return self.gap >= 0
+
+
+def group_profitability(
+    game: CoalitionGame,
+    group: Iterable[int],
+    exact: bool = False,
+) -> GroupProfitability:
+    """
+    Mesure la profitabilite d'un groupe : phi_g(C) contre sum_{i in C} phi(i).
+
+    Avec ``exact=True`` les poids de Shapley et les valeurs sont rationnels :
+    le resultat est exact quand v renvoie des entiers ou des ``Fraction``.
+    """
+    g = _as_group(game, group)
+    phi_g = shapley_group_value(game, g, exact=exact)
+    additive = additive_group_value(game, g, exact=exact)
+    return GroupProfitability(
+        group=tuple(sorted(g)),
+        group_value=phi_g,
+        additive_value=additive,
+        gap=phi_g - additive,
+    )
+
+
+def random_tu_game(
+    n_players: int,
+    seed: int = 0,
+    *,
+    value_max: int = 10,
+    player_names: Optional[List[str]] = None,
+) -> CoalitionGame:
+    """
+    Jeu TU aleatoire a valeurs independantes : v(empty) = 0 et, pour chaque
+    coalition non vide, v(S) tire uniformement dans {0, ..., value_max}.
+
+    Aucune structure n'est imposee : les coalitions ne se tiennent pas entre
+    elles. C'est la famille « bruit », ou la profitabilite d'un groupe n'est
+    decidee par rien d'autre que le tirage.
+
+    Le jeu est entierement determine par ``seed`` : deux appels avec la meme
+    graine donnent le meme jeu.
+    """
+    if n_players < 1:
+        raise ValueError("n_players doit valoir au moins 1.")
+    if value_max < 1:
+        raise ValueError("value_max doit valoir au moins 1.")
+    rng = np.random.default_rng(seed)
+    draws = rng.integers(0, value_max + 1, size=(1 << n_players) - 1)
+
+    def v(coalition: Set[int]) -> int:
+        if not coalition:
+            return 0
+        mask = 0
+        for i in coalition:
+            mask |= 1 << i
+        return int(draws[mask - 1])
+
+    return CoalitionGame(n_players, v, player_names=player_names)
+
+
+def synergy_game(
+    n_players: int,
+    seed: int = 0,
+    *,
+    weight_max: int = 5,
+    synergy_max: int = 5,
+    player_names: Optional[List[str]] = None,
+) -> CoalitionGame:
+    """
+    Jeu TU a poids individuels et synergie de paires non negative :
+
+        v(S) = sum_{i in S} w_i + sum_{i<j in S} b_ij,   w_i >= 0, b_ij >= 0.
+
+    Le jeu est suradditif : v(A union B) >= v(A) + v(B) pour A et B disjoints.
+    Deux joueurs qui importent ensemble valent plus que separement :
+    c'est la famille ou un groupe a une chance d'etre profitable.
+    """
+    if n_players < 1:
+        raise ValueError("n_players doit valoir au moins 1.")
+    rng = np.random.default_rng(seed)
+    weights = rng.integers(0, weight_max + 1, size=n_players)
+    bonus = {
+        (i, j): int(rng.integers(0, synergy_max + 1))
+        for i, j in combinations(range(n_players), 2)
+    }
+
+    def v(coalition: Set[int]) -> int:
+        total = sum(int(weights[i]) for i in coalition)
+        for i, j in combinations(sorted(coalition), 2):
+            total += bonus[(i, j)]
+        return total
+
+    return CoalitionGame(n_players, v, player_names=player_names)
+
+
+def redundancy_game(
+    n_players: int,
+    seed: int = 0,
+    *,
+    weight_max: int = 5,
+    penalty_max: int = 5,
+    player_names: Optional[List[str]] = None,
+) -> CoalitionGame:
+    """
+    Jeu TU a recouvrement : v(S) = max(0, sum_{i in S} w_i - sum_{i<j in S} b_ij),
+    avec w_i >= 0 et b_ij >= 0.
+
+    Les joueurs se font concurrence : reunir un groupe ne cree pas de valeur
+    supplementaire, il en retire. C'est la famille ou un groupe a une chance
+    d'etre non profitable.
+    """
+    if n_players < 1:
+        raise ValueError("n_players doit valoir au moins 1.")
+    rng = np.random.default_rng(seed)
+    weights = rng.integers(0, weight_max + 1, size=n_players)
+    penalty = {
+        (i, j): int(rng.integers(0, penalty_max + 1))
+        for i, j in combinations(range(n_players), 2)
+    }
+
+    def v(coalition: Set[int]) -> int:
+        total = sum(int(weights[i]) for i in coalition)
+        for i, j in combinations(sorted(coalition), 2):
+            total -= penalty[(i, j)]
+        return max(0, total)
+
+    return CoalitionGame(n_players, v, player_names=player_names)
+
+
+GAME_FAMILIES = ("iid", "synergy", "redundancy")
+
+
+def _build_family(family: str, n_players: int, seed: int, value_max: int) -> CoalitionGame:
+    """Construit un jeu de la famille demandee (semantique des parametres differente)."""
+    if family == "iid":
+        return random_tu_game(n_players, seed, value_max=value_max)
+    if family == "synergy":
+        return synergy_game(n_players, seed)
+    if family == "redundancy":
+        return redundancy_game(n_players, seed)
+    raise ValueError(f"famille inconnue : {family} (attendu : {list(GAME_FAMILIES)}).")
+
+
+def profitability_scan(
+    n_players: int,
+    group_size: int,
+    trials: int = 200,
+    seed: int = 0,
+    *,
+    family: str = "iid",
+    value_max: int = 10,
+) -> Dict[str, object]:
+    """
+    Balaye des jeux aleatoires seedes et mesure la profitabilite d'un groupe.
+
+    Le groupe mesure est toujours {0, ..., group_size-1}. Dans la famille
+    ``iid`` les coalitions sont exchangeables, donc le choix du groupe ne
+    change pas la loi de l'ecart ; dans les familles a structure il est fixe
+    pour que les tirages restent comparables d'une graine a l'autre.
+
+    Chaque tirage utilise la graine ``seed + numero_du_tirage`` : le balayage
+    est reproductible, et deux joueurs peuvent retrouver le jeu d'un tirage
+    precis a partir de son numero.
+
+    Returns:
+        Un dictionnaire : compteurs (``profitable_fraction``, ``mean_gap``,
+        ``min_gap``, ``max_gap``), bornes du balayage, et ``counterexample`` —
+        le premier tirage non profitable, avec les valeurs de toutes ses
+        coalitions, ou ``None`` si aucun tirage n'a echoue.
+    """
+    if family not in GAME_FAMILIES:
+        raise ValueError(f"famille inconnue : {family} (attendu : {list(GAME_FAMILIES)}).")
+    if trials < 1:
+        raise ValueError("trials doit valoir au moins 1.")
+    if not 1 <= group_size <= n_players - 1:
+        raise ValueError("group_size doit valoir au moins 1 et moins que n_players.")
+    group = tuple(range(group_size))
+
+    gaps: List[Union[float, Fraction]] = []
+    counterexample: Optional[Dict[str, object]] = None
+    for trial in range(trials):
+        trial_seed = seed + trial
+        game = _build_family(family, n_players, trial_seed, value_max)
+        phi_g = shapley_group_value(game, group, exact=True)
+        additive = additive_group_value(game, group, exact=True)
+        gap = phi_g - additive
+        gaps.append(gap)
+        if gap < 0 and counterexample is None:
+            counterexample = {
+                "trial": trial,
+                "seed": trial_seed,
+                "group": group,
+                "group_value": phi_g,
+                "additive_value": additive,
+                "gap": gap,
+                "coalition_values": {
+                    ",".join(str(i) for i in sorted(coalition)): game.value(set(coalition))
+                    for coalition in game.all_coalitions()
+                },
+            }
+
+    array = np.asarray(gaps, dtype=float)
+    return {
+        "family": family,
+        "n_players": n_players,
+        "group_size": group_size,
+        "group": group,
+        "trials": trials,
+        "seed": seed,
+        "profitable_fraction": float(np.mean(array >= 0)),
+        "mean_gap": float(array.mean()),
+        "min_gap": float(array.min()),
+        "max_gap": float(array.max()),
+        "counterexample": counterexample,
+    }
+
+
 __all__ = [
     "merging_game",
     "shapley_group_value",
@@ -317,4 +566,11 @@ __all__ = [
     "shapley_group_value_monte_carlo",
     "connectivity_game",
     "GroupValueTable",
+    "GroupProfitability",
+    "group_profitability",
+    "random_tu_game",
+    "synergy_game",
+    "redundancy_game",
+    "profitability_scan",
+    "GAME_FAMILIES",
 ]

@@ -31,14 +31,21 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from cooperative_games import (  # noqa: E402
+    GAME_FAMILIES,
     CoalitionGame,
+    GroupProfitability,
     GroupValueTable,
     additive_group_value,
     connectivity_game,
+    group_profitability,
     merging_game,
+    profitability_scan,
+    random_tu_game,
+    redundancy_game,
     shapley_group_value,
     shapley_group_value_monte_carlo,
     shapley_value_formula,
+    synergy_game,
 )
 
 # Exemple 1 de l'article : sommets 1..9, ramenés aux indices 0..8.
@@ -269,3 +276,88 @@ def test_invalid_inputs_raise(example1, example1_table):
         shapley_group_value_monte_carlo(example1, {0}, n_samples=1)
     with pytest.raises(ValueError):
         GroupValueTable(CoalitionGame(23, lambda s: 0))
+
+
+class TestGroupProfitability:
+    """Profitabilité d'un groupe : phi_g(C) contre la somme des phi_i (section 4)."""
+
+    def test_game_families(self):
+        assert GAME_FAMILIES == ("iid", "synergy", "redundancy")
+
+    def test_random_tu_game_deterministic_and_bounded(self):
+        a = random_tu_game(5, seed=7, value_max=4)
+        b = random_tu_game(5, seed=7, value_max=4)
+        assert a.value(set()) == 0
+        for coalition in a.all_coalitions():
+            assert 0 <= a.value(coalition) <= 4
+            assert a.value(coalition) == b.value(coalition)
+
+    def test_random_tu_game_rejects_bad_args(self):
+        with pytest.raises(ValueError):
+            random_tu_game(0)
+        with pytest.raises(ValueError):
+            random_tu_game(3, value_max=0)
+
+    def test_synergy_game_is_superadditive(self):
+        for seed in (0, 1, 42):
+            game = synergy_game(5, seed=seed)
+            players = set(range(5))
+            for s in combinations(range(1, 5), 1, ):
+                for s_size in (1, 2):
+                    for s_combo in combinations(range(5), s_size):
+                        s_set = set(s_combo)
+                        remaining = players - s_set
+                        for t_combo in combinations(remaining, 1):
+                            t_set = set(t_combo)
+                            assert game.value(s_set | t_set) >= game.value(s_set) + game.value(t_set)
+
+    def test_redundancy_game_non_negative(self):
+        game = redundancy_game(5, seed=3)
+        assert game.value(set()) == 0
+        for coalition in game.all_coalitions():
+            assert game.value(coalition) >= 0
+
+    def test_group_profitability_matches_published_example(self, example1):
+        p45 = group_profitability(example1, {node(4), node(5)}, exact=True)
+        p46 = group_profitability(example1, {node(4), node(6)}, exact=True)
+        assert isinstance(p45, GroupProfitability)
+        assert p45.group == (node(4), node(5))
+        assert p45.gap == Fraction(-5, 63) and not p45.is_profitable
+        assert p46.gap == Fraction(-49, 180) and not p46.is_profitable
+
+    def test_group_profitability_consistency(self, example1):
+        p = group_profitability(example1, {node(4), node(5)}, exact=True)
+        assert p.gap == p.group_value - p.additive_value
+        assert p.is_profitable == (p.gap >= 0)
+
+    def test_scan_reproducible(self):
+        a = profitability_scan(6, 2, trials=200, seed=42, family="iid")
+        b = profitability_scan(6, 2, trials=200, seed=42, family="iid")
+        for key in ("profitable_fraction", "mean_gap", "min_gap", "max_gap"):
+            assert a[key] == b[key]
+
+    def test_scan_invariants(self):
+        r = profitability_scan(6, 2, trials=200, seed=5, family="iid")
+        assert 0.0 <= r["profitable_fraction"] <= 1.0
+        assert r["min_gap"] <= r["mean_gap"] <= r["max_gap"]
+
+    def test_scan_synergy_all_profitable(self):
+        r = profitability_scan(6, 2, trials=200, seed=42, family="synergy")
+        assert r["profitable_fraction"] == 1.0
+        assert r["min_gap"] == 0.0
+        assert r["counterexample"] is None
+
+    def test_scan_counterexample_when_unprofitable(self):
+        r = profitability_scan(6, 2, trials=200, seed=42, family="iid")
+        assert r["profitable_fraction"] < 1.0
+        ce = r["counterexample"]
+        assert ce is not None and ce["gap"] < 0
+        assert ce["group_value"] < ce["additive_value"]
+
+    def test_scan_rejects_bad_args(self):
+        with pytest.raises(ValueError):
+            profitability_scan(6, 2, family="nope")
+        with pytest.raises(ValueError):
+            profitability_scan(6, 6, trials=1)
+        with pytest.raises(ValueError):
+            profitability_scan(6, 2, trials=0)

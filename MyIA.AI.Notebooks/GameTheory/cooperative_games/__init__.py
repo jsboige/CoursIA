@@ -42,7 +42,14 @@ from .group_value import (
     additive_group_value,
     shapley_group_value_monte_carlo,
     connectivity_game,
-    GroupValueTable
+    GroupValueTable,
+    GroupProfitability,
+    group_profitability,
+    random_tu_game,
+    synergy_game,
+    redundancy_game,
+    profitability_scan,
+    GAME_FAMILIES
 )
 from .core import (
     compute_core,
@@ -117,6 +124,13 @@ __all__ = [
     "shapley_group_value_monte_carlo",
     "connectivity_game",
     "GroupValueTable",
+    "GroupProfitability",
+    "group_profitability",
+    "random_tu_game",
+    "synergy_game",
+    "redundancy_game",
+    "profitability_scan",
+    "GAME_FAMILIES",
     # Core
     "compute_core",
     "is_in_core",
