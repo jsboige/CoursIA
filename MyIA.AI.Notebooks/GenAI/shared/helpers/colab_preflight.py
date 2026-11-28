@@ -66,8 +66,10 @@ INFO = "INFO"
 
 # Emplacement mesure du binaire installe par `npm i -g @anthropic-ai/claude-code`
 # sous Colab (runtime 2026-11-25 : code retour 0 en 11,5 s, binaire dans
-# /tools/node/bin). Le runtime ne met PAS ce repertoire dans le PATH du kernel
-# Python : c'est la cause du cas qui echouait en TP.
+# /tools/node/bin). Fait mesure sur ce runtime : `/tools/node/bin` etait deja
+# dans le PATH du kernel -- l'installation seule ne suffit donc pas a expliquer
+# un echec, et le cas "installe mais hors du PATH" reste un cas **defensif**
+# (il s'est produit sur d'autres runtimes), pas le fait general.
 COLAB_NPM_BIN_DIR = "/tools/node/bin"
 
 # Modele du carnet FT-01 (fine-tuning) : 124 M parametres.
@@ -156,10 +158,12 @@ def _is_colab() -> bool:
 def check_claude_cli() -> List[Dict[str, Any]]:
     """Verifie la CLI Claude Code : presente, executable, et dans le PATH.
 
-    Le cas d'echec mesure sous Colab : le binaire est installe par npm dans
-    ``/tools/node/bin`` mais ce repertoire n'est pas dans le PATH du kernel, donc
-    ``shutil.which("claude")`` rend ``None`` alors que la CLI est la. Le
-    controle distingue les deux et nomme le remede exact.
+    Deux causes distinctes de ``shutil.which("claude") is None`` sous Colab :
+    le binaire n'est pas installe du tout, ou il est installe (par npm, dans
+    ``/tools/node/bin``) mais ce repertoire n'est pas dans le PATH du kernel.
+    Sur le runtime mesure le 2026-11-25, ``/tools/node/bin`` etait deja dans le
+    PATH : la seconde cause est donc un cas **defensif**, pas le fait general.
+    Le controle distingue les deux et nomme le remede exact.
     """
     elements: List[Dict[str, Any]] = []
 
