@@ -963,6 +963,19 @@ def _priorite_query() -> str:
     return PRIORITE_QUERY % (owner, name, PRIORITE_PAGE, "\n".join(champs))
 
 
+def _priorite_motif(texte: str) -> str:
+    """Premiere ligne non vide d'un diagnostic, bornee.
+
+    Le motif d'une lecture non mesuree est imprime dans le bilan : il nomme
+    la CAUSE (stderr du runner, message GraphQL), pas le seul code de retour.
+    """
+    for ligne in (texte or "").splitlines():
+        ligne = " ".join(ligne.split())
+        if ligne:
+            return ligne[:160]
+    return ""
+
+
 def _priorite_page(brut: str, noeuds: list[dict]) -> tuple[bool, str | None]:
     """Range une page dans ``noeuds`` ; dit s'il y en a une autre (curseur).
 
@@ -974,8 +987,18 @@ def _priorite_page(brut: str, noeuds: list[dict]) -> tuple[bool, str | None]:
         data = json.loads(brut)
     except json.JSONDecodeError as exc:
         raise UnexpectedError(f"page priorite : stdout illisible ({exc})") from exc
-    if not isinstance(data, dict) or data.get("errors"):
-        raise UnexpectedError("page priorite : reponse GraphQL en erreur ou illisible")
+    if not isinstance(data, dict):
+        raise UnexpectedError("page priorite : reponse illisible")
+    if data.get("errors"):
+        erreurs = data["errors"]
+        premiere = erreurs[0] if isinstance(erreurs, list) and erreurs else None
+        cause = (
+            _priorite_motif(str(premiere.get("message") or ""))
+            if isinstance(premiere, dict) else ""
+        )
+        raise UnexpectedError(
+            "page priorite : erreur GraphQL" + (f" : {cause}" if cause else "")
+        )
     donnees = data.get("data") if isinstance(data.get("data"), dict) else {}
     depot = donnees.get("repository") if isinstance(donnees.get("repository"), dict) else {}
     pulls = depot.get("pullRequests")
@@ -1075,9 +1098,14 @@ def lire_priorite(runner: Runner, gh_env: dict[str, str]) -> dict:
             res = runner.run(cmd, env=gh_env)
             pages += 1
             if res.returncode != 0:
+                # Le code de retour seul ne dit rien d'actionnable : le motif
+                # porte la cause lue sur stderr (mesure du 27/11 -- quota
+                # GraphQL epuise : « page 1 rc=1 » ne nommait pas la limite).
+                cause = _priorite_motif(res.stderr)
                 return {
                     "lecture": PRIORITE_NON_MESUREE,
-                    "motif": f"page {pages} rc={res.returncode}",
+                    "motif": (f"page {pages} rc={res.returncode}"
+                              + (f" : {cause}" if cause else ""))[:200],
                 }
             suite, curseur = _priorite_page(res.stdout, noeuds)
             if not suite:

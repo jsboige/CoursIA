@@ -24,6 +24,11 @@ Aucun reseau : la lecture groupee est servie par un faux serveur GraphQL,
 page par VALEUR du curseur. Une requete qui ne porte pas le curseur sous le
 nom de la variable de la requete recoit la premiere page -- le defaut mesure
 le 27/11 sur le pool reel (garde de 20 pages atteinte au premier essai).
+
+Deux modules, une ligne de partage : celui-ci lit la LECTURE (temoin de
+l'ordre, canon, requete, pannes) et definit les faux ; l'effet de la priorite
+sur la passe ENTIERE est verifie par ``test_merge_ready_priority_pass.py``,
+qui reprend ces faux.
 """
 
 import json
@@ -130,6 +135,8 @@ class ServeurPriorite:
     def __init__(self, pages: dict[str | None, object]) -> None:
         self.pages = pages
         self.rc: dict[str | None, int] = {}
+        #: stderr d'une page illisible ; vide, le runner est muet sur la cause.
+        self.stderr = "gh: HTTP 500"
         #: Valeur du curseur de chaque requete recue, dans l'ordre.
         self.appels: list[str | None] = []
 
@@ -139,7 +146,7 @@ class ServeurPriorite:
         )
         self.appels.append(apres)
         if apres in self.rc:
-            return ORG.RunResult(self.rc[apres], "", "gh: HTTP 500")
+            return ORG.RunResult(self.rc[apres], "", self.stderr)
         if apres not in self.pages:
             return ORG.RunResult(0, json.dumps(
                 {"errors": [{"message": "INVALID_CURSOR_ARGUMENTS"}]}
@@ -495,7 +502,7 @@ def _serveur_illisible_en_page_2() -> ServeurPriorite:
         (
             "rc-non-nul",
             _serveur_illisible_en_page_2(),
-            "page 2 rc=1",
+            "page 2 rc=1 : gh: HTTP 500",
             2,
         ),
         (
@@ -507,7 +514,7 @@ def _serveur_illisible_en_page_2() -> ServeurPriorite:
         (
             "erreur-graphql",
             ServeurPriorite({None: json.dumps({"errors": [{"message": "rate limit"}]})}),
-            "UnexpectedError : page priorite : reponse GraphQL en erreur ou illisible",
+            "UnexpectedError : page priorite : erreur GraphQL : rate limit",
             1,
         ),
         (
@@ -555,208 +562,46 @@ def test_une_lecture_en_panne_est_nommee_et_sa_borne_toujours_levee(
     assert runner.budgets.count(None) == 1
 
 
-# --- dans la passe : une lecture a l'ouverture, jamais une par PR ------------------
+# Le stderr reel de ``gh api graphql`` quand le seau GraphQL du jeton est epuise
+# (mesure du 27/11, flotte sous le meme utilisateur) : une ligne, apres « gh: ».
+QUOTA_GRAPHQL = "gh: API rate limit already exceeded for user ID 3159389."
 
 
-def test_une_seule_lecture_a_l_ouverture_avant_toute_vue_de_pr(tmp_path):
-    serveur = ServeurPriorite({
-        None: _page(
-            [_noeud(101), _noeud(102, {HUMAIN: [_revue()]})], suite=True, curseur="c1"
-        ),
-        "c1": _page([_noeud(103, {HUMAIN: [_revue()]})]),
-    })
-    runner = PriorityRunner(
-        serveur=serveur, prs=(101, 102, 103), views=_vues((101, 102, 103), {102, 103})
-    )
+def test_le_motif_nomme_la_cause_d_une_page_non_lue():
+    """« page 1 rc=1 » ne dit pas quoi faire : le motif porte la cause.
 
-    rc, lines, _ = run_organ(tmp_path, runner)
+    Mesure du 27/11 : seau GraphQL epuise pour le jeton partage de la flotte.
+    La lecture valait « non mesuree » -- attendu -- mais son motif etait
+    ``page 1 rc=1`` : l'operateur ne pouvait pas distinguer un quota d'une
+    panne reseau.
+    """
+    serveur = _serveur({102})
+    serveur.rc[None] = 1
+    serveur.stderr = QUOTA_GRAPHQL
+    runner = PriorityRunner(serveur=serveur)
 
-    assert rc == 0
-    assert [row["pr"] for row in lines] == [102, 103, 101]
-    lectures = _lectures(runner)
-    assert len(lectures) == 2, "une requete par page, aucune par PR"
-    liste = next(
-        rang for rang, (cmd, _) in enumerate(runner.calls)
-        if cmd[:3] == ["gh", "pr", "list"]
-    )
-    premiere_vue = min(
-        rang for rang, (cmd, _) in enumerate(runner.calls)
-        if cmd[:3] == ["gh", "pr", "view"]
-    )
-    assert liste < lectures[0][0] <= lectures[-1][0] < premiere_vue
+    resultat = ORG.lire_priorite(runner, {"GH_TOKEN": "jeton"})
 
-
-def test_une_pr_approuvee_absente_de_la_file_ne_derange_pas_la_passe(tmp_path):
-    """Entre la liste et la lecture, une PR a pu se fermer : elle est ignoree."""
-    runner = PriorityRunner(
-        serveur=ServeurPriorite({None: _page([
-            _noeud(101), _noeud(102), _noeud(999, {HUMAIN: [_revue()]}),
-        ])}),
-        prs=(101, 102), views=_vues((101, 102)),
-    )
-
-    rc, lines, _ = run_organ(tmp_path, runner, extra=("--json",))
-
-    assert rc == 0
-    assert [row["pr"] for row in lines] == [101, 102]
-
-
-def test_le_bilan_nomme_les_approuvees_et_les_lectures_incompletes(tmp_path, capsys):
-    runner = PriorityRunner(
-        serveur=ServeurPriorite({None: _page([
-            _noeud(101), _noeud(102, {HUMAIN: [_revue()]}),
-            _noeud(103, {HUMAIN: [_revue()]}, tete=""),
-        ])}),
-        prs=(101, 102, 103), views=_vues((101, 102, 103), {102}),
-    )
-
-    rc, _, _ = run_organ(tmp_path, runner, extra=("--json",))
-
-    assert rc == 0
-    assert organ._payload(capsys)["priority"] == {
-        "read": "measured",
-        "approved": [102],
-        "truncated": [103],
-        "pages": 1,
-        "read_prs": 3,
+    assert resultat == {
+        "lecture": ORG.PRIORITE_NON_MESUREE,
+        "motif": "page 1 rc=1 : " + QUOTA_GRAPHQL,
     }
+    assert runner.budgets == [ORG.PRIORITE_BUDGET_S, None]
 
 
-def test_une_lecture_non_mesuree_laisse_l_ordre_du_curseur_et_le_dit(tmp_path, capsys):
-    """Le runner ne sert pas la lecture : priorite NON MESUREE, ordre inchange."""
-    runner = ScriptedRunner(prs=(101, 102, 103), views=_vues((101, 102, 103), {102}))
+def test_un_motif_multiligne_est_reduit_a_sa_premiere_ligne_et_borne():
+    assert ORG._priorite_motif("") == ""
+    assert ORG._priorite_motif("\n  \n") == ""
+    assert ORG._priorite_motif("premiere\nseconde") == "premiere"
+    assert ORG._priorite_motif("  espaces   multiples  ") == "espaces multiples"
+    assert len(ORG._priorite_motif("x" * 400)) == 160
+    # Sans stderr (runner muet), le motif garde le code de retour seul.
+    serveur = _serveur({102})
+    serveur.rc[None] = 7
+    serveur.stderr = ""
+    runner = PriorityRunner(serveur=serveur)
 
-    rc, lines, _ = run_organ(tmp_path, runner, extra=("--json",))
-
-    assert rc == 0
-    assert [row["pr"] for row in lines] == [101, 102, 103]
-    priorite = organ._payload(capsys)["priority"]
-    assert priorite["read"] == "unreadable"
-    assert priorite["reason"].startswith("AssertionError : commande non scriptee")
-
-    runner = ScriptedRunner(prs=(101, 102), views=_vues((101, 102)))
-    rc, _, _ = run_organ(tmp_path, runner)
-    resume = capsys.readouterr().out
-    assert rc == 0
-    ligne = next(l for l in resume.splitlines() if l.startswith("priorite :"))
-    assert ligne.startswith("priorite : NON MESUREE (AssertionError : commande non scriptee")
-    assert ligne.endswith("-- ordre du curseur seul")
-
-
-# --- la priorite est un renseignement d'ORDRE : gardes et verdicts inchanges -------
-
-
-def test_une_pr_priorisee_mais_sale_est_sautee_et_rien_n_est_fusionne(tmp_path):
-    runner = PriorityRunner(
-        serveur=_serveur({102}), prs=(101, 102), views=_vues((101, 102), {102}),
-        pulls=[{"mergeable_state": "dirty", "head": {"sha": HEAD}}],
-    )
-
-    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
-
-    rows = {row["pr"]: row for row in lines}
-    assert rc == 0
-    assert [row["pr"] for row in lines] == [102, 101], "servie en premier quand meme"
-    assert rows[102]["verdict"] == "skipped"
-    assert rows[102]["reason"] == "mergeable-state:dirty"
-    assert rows[101]["reason"] == "no-coordinator-approval"
-    assert not _fusions(runner)
-
-
-def test_la_priorite_ne_cree_jamais_une_approbation(tmp_path):
-    """La lecture groupee dit « approuvee », la lecture TYPEE de l'etape 2ter dit non.
-
-    Le verdict releve de l'etape 2ter, sur la tete EVALUEE : la PR est servie
-    en premier, et sautee comme avant.
-    """
-    runner = PriorityRunner(
-        serveur=_serveur({102}), prs=(101, 102), views=_vues((101, 102), set())
-    )
-
-    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
-
-    rows = {row["pr"]: row for row in lines}
-    assert rc == 0
-    assert [row["pr"] for row in lines] == [102, 101]
-    assert rows[102]["verdict"] == "skipped"
-    assert rows[102]["reason"] == "no-coordinator-approval"
-    assert not _fusions(runner)
-
-
-def test_le_verdict_releve_de_la_lecture_typee_pas_de_la_lecture_groupee(tmp_path):
-    """La lecture groupee dit « approuvee a la tete » ; la vue EVALUEE dit non.
-
-    Entre les deux lectures, la derniere voix du coordinateur a pu changer, ou
-    la tete a bouger : l'etape 2ter relit les reviews sur la tete evaluee. Une
-    approbation qui ne couvre pas cette tete est perime ou inverifiable --
-    jamais une fusion sur la foi de la seule lecture d'ordre.
-    """
-    vues = _vues((101, 102), {102})
-    vues[102] = default_view(pr=102, coordinator=HEAD_MOVED)
-    runner = PriorityRunner(serveur=_serveur({102}), prs=(101, 102), views=vues)
-
-    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
-
-    rows = {row["pr"]: row for row in lines}
-    assert rc == 0
-    assert [row["pr"] for row in lines] == [102, 101]
-    assert rows[102]["verdict"] == "skipped"
-    assert rows[102]["reason"].startswith("coordinator-approval-")
-    assert not _fusions(runner)
-
-
-# --- le curseur tourne aussi dans le groupe approuve -------------------------------
-
-
-def test_le_curseur_tourne_dans_le_groupe_approuve(tmp_path, monkeypatch):
-    """Trois approuvees, deux par passe : chacune attend son tour, aucune ne meurt de faim.
-
-    Sans ordre du curseur DANS le groupe, chaque passe repartirait des deux
-    premieres approuvees et la troisieme ne serait jamais evaluee -- le defaut
-    meme que le curseur ferme pour la file entiere.
-    """
-    monkeypatch.setattr(ORG, "_clock", organ._fake_clock(100.0))
-    prs = tuple(range(101, 111))
-    approuvees = {102, 104, 106}
-    journal = tmp_path / "journal.jsonl"
-    passes = []
-    for _ in range(4):
-        # Le journal CUMULE les passes : on ne lit que les lignes de celle-ci.
-        deja = (
-            len(journal.read_text(encoding="utf-8").splitlines())
-            if journal.is_file() else 0
-        )
-        runner = PriorityRunner(
-            serveur=_serveur(approuvees, pool=prs), prs=prs, views=_vues(prs, approuvees)
-        )
-        rc, lines, _ = run_organ(tmp_path, runner, extra=("--pass-budget-s", "250"))
-        assert rc == 0
-        passes.append(lines[deja:])
-
-    tour = [[row["pr"] for row in passe] for passe in passes]
-    assert [passe[:2] for passe in tour] == [
-        [102, 104], [106, 102], [104, 106], [102, 104]
-    ]
-    # Les non-approuvees attendent : la passe n'evalue que deux PRs.
-    assert all(
-        row["verdict"] == ORG.VERDICT_NOT_EVALUATED
-        for passe in passes for row in passe[2:]
-    )
-    # Le curseur de reprise est la derniere PR evaluee -- dans le groupe approuve.
-    assert ORG.read_pass_cursor(journal) == 104
-
-
-def test_le_reste_est_servi_des_que_le_groupe_approuve_laisse_la_place(
-    tmp_path, monkeypatch
-):
-    monkeypatch.setattr(ORG, "_clock", organ._fake_clock(100.0))
-    prs = tuple(range(101, 107))
-
-    runner = PriorityRunner(
-        serveur=_serveur({103}, pool=prs), prs=prs, views=_vues(prs, {103})
-    )
-    rc, lines, _ = run_organ(tmp_path, runner, extra=("--pass-budget-s", "250"))
-
-    assert rc == 0
-    evaluees = [row["pr"] for row in lines if row["verdict"] != ORG.VERDICT_NOT_EVALUATED]
-    assert evaluees == [103, 101]
+    assert ORG.lire_priorite(runner, {"GH_TOKEN": "jeton"}) == {
+        "lecture": ORG.PRIORITE_NON_MESUREE,
+        "motif": "page 1 rc=7",
+    }
