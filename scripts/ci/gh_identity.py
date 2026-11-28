@@ -39,11 +39,15 @@ legitimes sans que personne ne le voie.
 from __future__ import annotations
 
 import argparse
+import contextlib
+import json
 import os
 import re
 import socket
 import subprocess
 import sys
+import time
+from pathlib import Path
 
 SHARED_LOGIN = "jsboige"
 
@@ -285,6 +289,246 @@ def gh_env(base: dict | None = None) -> dict:
     return env
 
 
+# --- Mode LECTURE : le jeton d'installation de l'App de la lane (#17437 P1) --
+#
+# Le seau GraphQL est PAR UTILISATEUR : toutes les lanes sortent sous
+# `jsboige` et vident le meme seau (5000 req/h). Une GitHub App porte un seau
+# PAR INSTALLATION : la lecture de masse peut donc partir ailleurs sans
+# toucher au quota d'ecriture, qui reste sous `jsboige`.
+#
+# Mesure du 2026-11-24 (ce siege, App `coursia-lane-ai-01`, App 5036190) :
+#   jeton de l'App  -> `rate_limit` : core 5000/5000, graphql 5000/5000
+#   jeton `jsboige` -> le meme seau, epuisement mesure par la flotte
+# L'App est bien installee sur `jsboige/CoursIA` (`/installation/repositories`
+# -> 1 depot). Un jeton d'installation ne peut PAS appeler `/user` (403
+# `Resource not accessible by integration`) : c'est une installation, pas un
+# utilisateur -- les organes qui ont besoin de `/user` ne passent pas en
+# mode lecture.
+#
+# Trois proprietes non negociables :
+#
+# 1. **L'ecriture ne change pas.** `post_dossier.resolve_write_token()`
+#    resout `jsboige` en ECARTANT `GH_TOKEN` de l'environnement : le jeton
+#    App ne peut donc pas s'y substituer par accident.
+# 2. **Le jeton ne transite ni par le disque ni par l'ecran.** Il vit en
+#    memoire, dans le processus de l'organe ; il n'est jamais ecrit, jamais
+#    affiche, jamais pose dans la configuration partagee de `gh`.
+# 3. **Son absence n'est jamais silencieuse.** Pas d'App exploitable -> l'organe
+#    dit pourquoi il lit sous le compte partage, sur stderr.
+
+#: Le dossier des cles deposees par le flux App Manifest.
+APP_KEY_DIRNAME = "github-apps"
+
+#: Le prefixe de l'entree de coffre qui porte la PEM d'une App.
+APP_VAULT_ENTRY = "github-app "
+
+#: Le depot de reference (une App n'est lisible que sur les depots ou elle est
+#: installee).
+DEFAULT_REPO = "jsboige/CoursIA"
+
+#: Le jeton forge depend de l'App et du depot vise.
+_LECTURE_JETON: dict[tuple[str, str], tuple[str, float]] = {}
+
+#: L'absence d'App n'est annoncee qu'une fois par processus.
+_LECTURE_ANNONCE = False
+
+
+def app_slug(hostname: str | None = None) -> str | None:
+    """Le slug de l'App de la machine : ``coursia-lane-<lane>``.
+
+    La machine `myia-po-2025` porte l'App `coursia-lane-po-2025` ; la machine
+    `myia-ai-01` porte `coursia-lane-ai-01` (le pilote, App 5036190). La
+    convention est celle du manifeste (`github_app_manifest.APP_PREFIX`).
+
+    L'App du COORDINATEUR (`coursia-coord-ai01`) n'est **pas** celle de la
+    lane worker : elle porte la voix du coordinateur, elle ne se lit pas.
+    """
+    host = (hostname or machine_hostname()).split(".")[0].strip().lower()
+    lane = host[len("myia-"):] if host.startswith("myia-") else host
+    if not lane:
+        return None
+    return f"{APP_LOGIN_PREFIX}{lane}"
+
+
+def app_key_dir(base: Path | str | None = None) -> Path:
+    """Le dossier des cles deposees (``.secrets/github-apps`` du depot)."""
+    racine = Path(base) if base else Path(__file__).resolve().parents[2]
+    return racine / ".secrets" / APP_KEY_DIRNAME
+
+
+def _app_id_fiche(slug: str, key_dir: Path | None = None) -> str | None:
+    """L'App ID, lu dans la fiche deposee a cote de la PEM."""
+    path = (key_dir or app_key_dir()) / f"{slug}.json"
+    try:
+        fiche = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    identifiant = fiche.get("id")
+    return str(identifiant) if identifiant else None
+
+
+def _app_id_coffre(slug: str) -> str | None:
+    """L'App ID, lu dans l'entree du coffre partage (`github-app <slug>`).
+
+    L'import du coffre est LOCAL : `gh_identity` est importe par des organes
+    qui n'ont ni `pykeepass` ni besoin de l'App.
+    """
+    try:
+        secrets_dir = str(Path(__file__).resolve().parents[1] / "secrets")
+        if secrets_dir not in sys.path:
+            sys.path.insert(0, secrets_dir)
+        import agent_keyring  # noqa: PLC0415
+        kp = agent_keyring.open_vault(quiet=True)
+        entree = agent_keyring.find_entry(
+            kp, f"{APP_VAULT_ENTRY}{slug}", agent_keyring.DEFAULT_GROUP)
+    except (Exception, SystemExit) as exc:  # pragma: no cover - coffre absent, module absent
+        # `SystemExit` inclus : `open_vault` leve `SystemExit(EXIT_UNKNOWN)`
+        # quand le module `pykeepass` est absent, et `SystemExit` herite de
+        # `BaseException` -- un `except Exception` seul laisse l'exception
+        # remonter et tue l'organe au lieu de retomber sur le jeton normal.
+        print(f"GH-IDENTITY (INFO): coffre illisible pour l'App {slug} : "
+              f"{type(exc).__name__}", file=sys.stderr)
+        return None
+    if entree is None:
+        return None
+    return (entree.username or "").strip() or None
+
+
+def _forge_depuis_le_coffre(slug: str, app_id: str, repo: str) -> str | None:
+    """Le jeton d'installation, forge dans un sous-processus ou le coffre
+    injecte la PEM dans l'environnement de l'enfant.
+
+    La PEM ne transite ni par `argv` ni par le disque : le coffre l'injecte
+    chez l'enfant, et l'enfant ne rend que le jeton.
+    """
+    scripts_dir = Path(__file__).resolve().parents[1]
+    try:
+        proc = subprocess.run(
+            [
+                sys.executable, str(scripts_dir / "secrets" / "agent_keyring.py"),
+                "run",
+                "--env", f"APP_PEM={APP_VAULT_ENTRY}{slug}",
+                "--",
+                sys.executable, str(scripts_dir / "secrets" / "github_app_token.py"),
+                "--app-id", app_id,
+                "--key-env", "APP_PEM",
+                "--repo", repo,
+                "--quiet",
+            ],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=120,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if proc.returncode != 0:
+        return None
+    jeton = (proc.stdout or "").strip()
+    return jeton or None
+
+
+def lecture_token(slug: str | None = None, repo: str = DEFAULT_REPO,
+                  key_dir: Path | str | None = None) -> str | None:
+    """Le jeton d'installation de l'App de la lane, ou None.
+
+    Deux sources, dans cet ordre :
+
+    - la **PEM deposee** dans ``.secrets/github-apps/<slug>.pem`` (le flux App
+      Manifest y ecrit la cle et la fiche qui porte l'App ID) ;
+    - le **coffre partage** (`github-app <slug>`), qui porte la meme cle et
+      l'App ID dans son champ `user`.
+
+    Le jeton est memorise pour la duree de sa vie (une heure) : une passe de
+    lecture ne le forge pas a chaque appel. L'ECHEC est memorise lui aussi
+    (cinq minutes) : sans App, chaque appel GH ne doit pas rouvrir le
+    coffre.
+    """
+    slug = slug or app_slug()
+    if not slug:
+        return None
+    memorise = _LECTURE_JETON.get((slug, repo))
+    if memorise and memorise[1] > time.time():
+        return memorise[0] or None
+
+    dossier = app_key_dir(key_dir)
+    pem = dossier / f"{slug}.pem"
+    app_id = _app_id_fiche(slug, dossier)
+    jeton: str | None = None
+    if pem.is_file() and app_id:
+        try:
+            proc = subprocess.run(
+                [
+                    sys.executable,
+                    str(Path(__file__).resolve().parents[1] / "secrets" / "github_app_token.py"),
+                    "--app-id", app_id, "--key", str(pem), "--repo", repo, "--quiet",
+                ],
+                capture_output=True, text=True, encoding="utf-8", errors="replace",
+                timeout=120,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            proc = None
+        if proc is not None and proc.returncode == 0:
+            jeton = (proc.stdout or "").strip() or None
+    if not jeton:
+        app_id = app_id or _app_id_coffre(slug)
+        if app_id:
+            jeton = _forge_depuis_le_coffre(slug, app_id, repo)
+    _LECTURE_JETON[(slug, repo)] = (jeton or "", time.time() + (3000 if jeton else 300))
+    return jeton
+
+
+def read_env(base: dict | None = None) -> dict:
+    """L'environnement des LECTURES : `GH_TOKEN` = jeton App quand il existe.
+
+    L'environnement de base est copie, jamais modifie : l'ecriture garde le
+    jeton qu'elle a resolu.
+    """
+    env = dict(base if base is not None else os.environ)
+    jeton = lecture_token()
+    if jeton:
+        env["GH_TOKEN"] = jeton
+    else:
+        _annonce_repli_lecture()
+    return env
+
+
+def _annonce_repli_lecture() -> None:
+    global _LECTURE_ANNONCE
+    if not _LECTURE_ANNONCE:
+        _LECTURE_ANNONCE = True
+        print(
+            "GH-IDENTITY (INFO): pas de jeton App exploitable pour cette "
+            "machine -- les lectures utilisent l'identite de base "
+            "(seau partage). Pose : la cle deposee dans "
+            f".secrets/{APP_KEY_DIRNAME}/, ou l'entree de coffre "
+            f"'{APP_VAULT_ENTRY}<slug>'.",
+            file=sys.stderr,
+        )
+
+
+@contextlib.contextmanager
+def lecture(base: dict | None = None):
+    """Fait passer les LECTURES de ce bloc sur le jeton App de la lane.
+
+    Le jeton n'est pose que pendant le bloc et l'environnement est rendu a
+    l'identique a la sortie : une ecriture faite hors du bloc garde le
+    jeton du compte partage. L'absence d'App n'est pas silencieuse.
+    """
+    jeton = lecture_token()
+    if not jeton:
+        _annonce_repli_lecture()
+        yield base
+        return
+    memorise = os.environ.get("GH_TOKEN")
+    os.environ["GH_TOKEN"] = jeton
+    try:
+        yield base
+    finally:
+        if memorise is None:
+            os.environ.pop("GH_TOKEN", None)
+        else:
+            os.environ["GH_TOKEN"] = memorise
+
+
 def is_rate_limit_error(text: str) -> bool:
     return bool(RATE_LIMIT_RE.search(text or ""))
 
@@ -314,9 +558,33 @@ def _cli(argv: list[str] | None = None) -> int:
         "--account", action="store_true",
         help="affiche uniquement le compte machine resolu (sans appel reseau)",
     )
+    parser.add_argument(
+        "--read", action="store_true",
+        help="mode lecture : l'App de la machine est-elle exploitable ? "
+             "(aucun jeton n'est affiche ; le seau de l'App est lu)",
+    )
     args = parser.parse_args(argv)
     if args.account:
         print(machine_account())
+        return 0
+    if args.read:
+        slug = app_slug()
+        jeton = lecture_token()
+        print(f"app={slug} jeton={'OBTENU' if jeton else 'ABSENT'}")
+        if not jeton:
+            return 1
+        env = dict(os.environ, GH_TOKEN=jeton)
+        proc = subprocess.run(
+            ["gh", "api", "rate_limit", "--jq",
+             '"graphql=\\(.resources.graphql.remaining)/\\(.resources.graphql.limit) '
+             'core=\\(.resources.core.remaining)/\\(.resources.core.limit)"'],
+            capture_output=True, text=True, encoding="utf-8", env=env,
+        )
+        if proc.returncode != 0:
+            print(f"gh api rate_limit a echoue : {proc.stderr.strip()[:300]}",
+                  file=sys.stderr)
+            return 1
+        print(proc.stdout.strip())
         return 0
     if args.whoami:
         try:

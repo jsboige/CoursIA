@@ -68,6 +68,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
 
 import belt_equite as be  # noqa: E402
 import check_lane_claim as clc  # noqa: E402
+import gh_identity  # noqa: E402
 import grain_tag as gt  # noqa: E402
 import recette_due as rd  # noqa: E402
 import tirage_journal as tj  # noqa: E402
@@ -318,7 +319,8 @@ def gh_open_prs() -> list[dict]:
         ["gh", "pr", "list", "--repo", rd.REPO, "--state", "open",
          "--limit", "500", "--json",
          "number,title,body,createdAt,closingIssuesReferences"],
-        capture_output=True, text=True, encoding="utf-8", check=True)
+        capture_output=True, text=True, encoding="utf-8", check=True,
+        env=gh_identity.read_env())
     return json.loads(out.stdout)
 
 
@@ -475,7 +477,8 @@ def measure_adherence(previous: dict | None, lanes: list[str], *,
 def gh_issue_state(number: int) -> dict:
     out = subprocess.run(["gh", "issue", "view", str(number), "--repo", rd.REPO,
                           "--json", "number,state,comments"],
-                         capture_output=True, text=True, encoding="utf-8", check=True)
+                         capture_output=True, text=True, encoding="utf-8", check=True,
+                         env=gh_identity.read_env())
     return json.loads(out.stdout)
 
 
