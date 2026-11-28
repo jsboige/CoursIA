@@ -182,12 +182,14 @@ version de l'interpréteur, pas le modèle de raisonnement.
 
 Le nom de kernelspec committé reste `python3`, le nom canonique du dépôt : il
 ne doit jamais être remplacé par un nom de poste (`ml313-cuda` et consorts
-sont des ponts d'exécution locaux, jamais committés). La garantie que
-`python3` désigne bien 3.13 est un fait de poste : sur les sièges de la
-flotte, `python3` pointe vers 3.13 (cf. `docs/reference/kernels-runtime.md`).
-Sur un poste dont `python3` désigne un interpréteur plus ancien, la
-réparation se fait **au niveau du kernelspec du poste**, pas dans le carnet :
-réenregistrer `python3` vers l'interpréteur 3.13, puis rejouer.
+sont des ponts d'exécution locaux, jamais committés). Que `python3` désigne
+3.13 est un fait de poste, pas une propriété de la flotte : les sorties
+commitées de cette série l'attestent — elles ont été produites sur un poste
+dont `python3` désignait 3.13 (l'inventaire des postes vit dans
+`docs/reference/kernels-runtime.md`, il ne fait pas la garantie). Sur un
+poste dont `python3` désigne un interpréteur plus ancien, la réparation se
+fait **au niveau du kernelspec du poste**, pas dans le carnet :
+réenregistrer `python3` vers un interpréteur 3.13, puis rejouer.
 
 ### Configuration
 
