@@ -30,6 +30,43 @@ class ProcessValueError(ValueError):
     """Erreur de parametrage du harnais transformer."""
 
 
+def enable_determinism() -> None:
+    """Rend l'entrainement reproductible d'un run a l'autre sur GPU.
+
+    Deux sources d'alea ont ete mesurees sur ce harnais (#22297).
+
+    **Le backward de l'attention.** Le kernel *memory-efficient* de
+    ``scaled_dot_product_attention`` additionne des gradients par
+    atomiques : la somme n'y est pas associative, et torch le signale
+    ("Memory Efficient attention defaults to a non-deterministic
+    algorithm"). On force donc le backend **math**, deterministe par
+    construction, et on coupe les deux backends non deterministes.
+    Mesure (RTX 3090, torch 2.14.0+cu126, 40 pas, meme graine) : les
+    panneaux different entre le backend par defaut et le backend math
+    (empreintes ``0670d680a4419126`` et ``90a2435b7d978e21``), ce qui
+    confirme que le kernel non deterministe etait bien sur le chemin.
+
+    **Les algorithmes de torch.** ``use_deterministic_algorithms`` est
+    active en mode **strict** (``warn_only=False``) : une operation sans
+    implementation deterministe leve au lieu de signaler en silence.
+    Le regime strict tient sur ce harnais (entrainement + capture, mes
+    a chaud) ; ``cudnn.deterministic`` fige aussi le choix d'algorithme
+    de convolution, et ``benchmark=False`` empeche l'autotuning, qui
+    choisit un algorithme different d'une machine a l'autre.
+
+    Mesure (RTX 3090, torch 2.14.0+cu126, 40 pas, meme graine) : sans
+    ce reglage, deux entrainements dans le meme processus donnent deux
+    empreintes de panneaux differentes ; avec, deux processus distincts
+    donnent la meme empreinte.
+    """
+    torch.use_deterministic_algorithms(True, warn_only=False)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cuda.enable_flash_sdp(False)
+    torch.backends.cuda.enable_mem_efficient_sdp(False)
+    torch.backends.cuda.enable_math_sdp(True)
+
+
 @dataclass(frozen=True)
 class TokenizerConfig:
     """Grille de discretisation gelee, derivee des parametres du banc.
@@ -166,6 +203,7 @@ def train_tiny(
     Le protocole vary-one du banc fournit les sequences ; aucune donnee
     d'evaluation n'entre ici (la mesure se fait ailleurs sur decoupe gelee).
     """
+    enable_determinism()
     model.to(device)
     tokens_all = torch.from_numpy(token_seqs).to(device)
     n, total_len = tokens_all.shape
