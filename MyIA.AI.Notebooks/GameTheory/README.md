@@ -743,6 +743,34 @@ Le bloc `CATALOG-STATUS` en tête de ce fichier fait foi pour le nombre de noteb
 | Geanakoplos, « Three Brief Proofs of Arrow's Impossibility Theorem » (2005) | SocialChoice 01, `Arrow.lean` |
 | Sen, *Collective Choice and Social Welfare* (1970) | SocialChoice 01b, `Sen.lean` |
 
+### Mapping carnet ↔ manuel (BOOK_MAPPING)
+
+Chaque carnet du parcours principal porte, dans sa cellule de références, l'ancrage chapitre vérifié sur les PDF du gisement ; le jumeau C# reprend l'ancre de son carnet Python. La table en donne la carte d'ensemble, et le carnet reste la source : c'est lui qui cite la page quand il la connaît.
+
+Abréviations : **OR94** Osborne & Rubinstein, *A Course in Game Theory* (1994) · **LBS** Leyton-Brown & Shoham, *Essentials of Game Theory* (2008) · **SLB** Shoham & Leyton-Brown, *Multiagent Systems* (2009) · **Brandt et al.** *Handbook of Computational Social Choice* (2016).
+
+| Palier | Carnet | Manuel et chapitre |
+|--------|--------|--------------------|
+| 01 | [Setup](GameTheory-01-Setup-Python.ipynb) | OR94 ch. 1 « Introduction » (§1.4 *Rational Behavior*) ; LBS ch. 1 « Games in Normal Form » |
+| 02 | [NormalForm](GameTheory-02-NormalForm-Python.ipynb) | OR94 ch. 2 §2.1-2.2 et §2.4, ch. 3 §3.1 ; LBS ch. 1-3 ; SLB ch. 3-4 |
+| 03 | [Topology2x2](GameTheory-03-Topology2x2-Python.ipynb) | OR94 ch. 2 §2.1-2.3 ; LBS ch. 1 §1.3 et ch. 2 |
+| 04 | [NashEquilibrium](GameTheory-04-NashEquilibrium-Python.ipynb) | OR94 ch. 2 §2.1 (p. 11), §2.2, §2.4 et §2.5 ; LBS ch. 2 |
+| 05 | [ZeroSum-Minimax](GameTheory-05-ZeroSum-Minimax-Python.ipynb) | OR94 ch. 2 §2.5 (p. 21-23) ; LBS §1.3.3 (p. 5) et ch. 3 §3.1 (p. 15) |
+| 06 | [EvolutionTrust](GameTheory-06-EvolutionTrust-Python.ipynb) | OR94 §3.4 « Evolutionary Equilibrium » ; LBS §3.8 « Evolutionarily Stable Strategies » |
+| 07 | [ExtensiveForm](GameTheory-07-ExtensiveForm-Python.ipynb) | OR94 ch. 6 « Extensive Games with Perfect Information » ; LBS ch. 4 |
+| 08 | [CombinatorialGames](GameTheory-08-CombinatorialGames-Python.ipynb) | aucun chapitre : la théorie des jeux combinatoires n'est traitée par aucun des manuels archivés ; le carnet s'appuie sur ses références propres (Bouton 1902, Sprague 1935, Grundy 1939, Berlekamp-Conway-Guy 1982) |
+| 09 | [BackwardInduction](GameTheory-09-BackwardInduction-Python.ipynb) | OR94 §6.1 ; LBS ch. 4 |
+| 10 | [ForwardInduction-SPE](GameTheory-10-ForwardInduction-SPE-Python.ipynb) | OR94 §6.2 « Subgame Perfect Equilibrium », puis ch. 6 (pp. 110-114) ; LBS ch. 4 |
+| 11 | [BayesianGames](GameTheory-11-BayesianGames-Python.ipynb) | OR94 §2.6 et ch. 12 §12.3 ; LBS ch. 7 (§7.1.3 *Epistemic Types*) ; SLB ch. 6 |
+| 12 | [ReputationGames](GameTheory-12-ReputationGames-Python.ipynb) | LBS ch. 6 « Repeated and Stochastic Games » et ch. 7 ; SLB ch. 6 |
+| 13 | [ImperfectInfo-CFR](GameTheory-13-ImperfectInfo-CFR-Python.ipynb) | OR94 ch. 11-12 ; SLB ch. 5 |
+| 14 | [DifferentialGames](GameTheory-14-DifferentialGames-Python.ipynb) | aucun chapitre : les jeux différentiels sont hors du champ des manuels archivés ; référence du carnet, Isaacs (1965) |
+| 15 | [CooperativeGames](GameTheory-15-CooperativeGames-Python.ipynb) | OR94 ch. 13 « The Core » et ch. 14 ; Brandt et al. ch. 16 ; SLB ch. 12 |
+| 16 | [MechanismDesign](GameTheory-16-MechanismDesign-Python.ipynb) | SLB ch. 10-11 ; Brandt et al. ch. 14 |
+| 17 | [MultiAgent-RL](GameTheory-17-MultiAgent-RL-Python.ipynb) | SLB ch. 7 « Learning and Teaching » |
+
+Les paliers à variantes (approfondissements `0Nb`, `0Nc`, jumeaux Rust, formalisations Lean) se rattachent au chapitre du palier dont ils dépendent.
+
 ### En ligne
 
 - [Game Theory (Stanford Encyclopedia of Philosophy)](https://plato.stanford.edu/entries/game-theory/)
