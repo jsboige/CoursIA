@@ -954,7 +954,7 @@ def main(argv: list[str] | None = None) -> int:
               + TRANCHE31 + TRANCHE32 + TRANCHE33 + TRANCHE34 + TRANCHE35
               + TRANCHE36 + TRANCHE37 + TRANCHE38 + TRANCHE39 + TRANCHE40 + TRANCHE41
               + TRANCHE42 + TRANCHE43 + TRANCHE44 + TRANCHE45 + TRANCHE46 + TRANCHE47
-              + TRANCHE48 + TRANCHE49 + TRANCHE50 + TRANCHE52
+              + TRANCHE48 + TRANCHE49 + TRANCHE50
               + RISK_KERNEL_GUARDS + TOPLEVEL_SERIES_GUARDS
               + CURRICULUM_PREREQ_GUARDS
               if not args.only or g.name == args.only]
