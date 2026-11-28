@@ -64,6 +64,63 @@ supérieurs, et l'**acyclicité** `H^n(C⁰F) = 0` pour `n ≥ 1` ([God58] II.5)
     conoyau.
   - R. Godement, *Topologie algébrique et théorie des faisceaux* [God58],
     Chap. II §5. Acyclicité — frontière nommée de la Partie 91.
+
+
+## Correspondance Stacks (groupe « l'exactitude » — #28788)
+
+Lecture de `AxiomMath/Stacks` sur l'**arborescence locale**
+`StacksFrontier/Topology/Sheaves/` (clone sparse du dossier entier). Le
+critère de classement est le **contenu**, jamais le seul nom : une recherche
+par identifiant qui ne renvoie rien n'établit pas une absence, elle établit
+qu'un énoncé n'est pas *nommé* ainsi. Un verdict « absent » signifie donc :
+aucun contenu équivalent dans l'ensemble de `Topology/Sheaves/`, à aucun
+endroit — les sept énoncés de la colonne « absent » ci-dessous ont été
+relu dans le **contenu** des fichiers qui les portent, pas comptés.
+
+Les **23 énoncés publics** du module sont classés un par un ; les sept
+helpers `private` (`zero_app`, `toGodement_range_le_comap`,
+`unitImageQuotientPresheaf`, `unitImageQuotientπ`,
+`toGodement_comp_unitImageQuotientπ`, `surjective_cokernel_app`,
+`exists_of_cokernelπ_app_eq_zero`) sont des briques d'implémentation, sans
+contrepartie à classer chez Stacks.
+
+| Énoncé | Classe | Référent Stacks | Ce que notre version ajoute |
+|---|---|---|---|
+| `godementCanonicalDOne` | partiel | `Cohomology/GodementResolution/Basic.lean:466` `godementComplex` ; `:482` `godementComplexEvalIso` | la récurrence `d^{n+1} := godementStep d^n` entre les degrés, sur le site des ouverts |
+| `godementCanonicalDZero_comp_godementCanonicalDOne` | partiel | `Basic.lean:466` `godementComplex` (la null-composition est portée par le type `CochainComplex`) | la null-composition **prouvée** à chaque degré |
+| `mono_toGodement_of_isSheaf` | partiel | `Basic.lean:475` `godementAugmentation` ; `StalkHomotopy.lean:558` `quasiIso_godementAugmentation` | le **mono** de l'unité, en catégories de préfaisceaux (Stacks : quasi-isomorphisme de complexes) |
+| `eq_zero_of_locally_zero_cokernel_toGodement` | partiel | `Stalk/Separated.lean:78` `IsSeparated'` ; `:86` `isSeparated'_iff` ; `Sheafify/Separated.lean:71` `IsSeparated` ; `:88` `toSheafify_app_eq_iff_germ_eq` | le critère de séparéité appliqué au **conoyau** de l'unité, qui n'est pas un faisceau |
+| `injective_toGodement_cokernel_of_isSheaf` | partiel | `Stalk/Separated.lean:86` `isSeparated'_iff` (007A) | l'injectivité de l'unité du conoyau, par **localité** puis séparéité — sans recollement |
+| `mono_toGodement_cokernel_of_isSheaf` | partiel | `Stalk/Separated.lean:86` `isSeparated'_iff` | la **montée catégorique** (mono), que Stacks ne fait pas |
+| `exact_toGodement_godementCanonicalDZero` | **couvert** | `StalkHomotopy.lean:558` `quasiIso_godementAugmentation` (0FKS clause (3)) | l'exactitude au **degré 0**, en complexe court de préfaisceaux |
+| `epi_stalkFunctor_map_of_epi` | partiel | `Modules/Exactness.lean:52` `stalkAddCommGroupFunctor` ; `:77` `exact_iff_stalkShortComplex_exact` ; `Sheaf/Abelian.lean:75` `shortExact_of_stalk` | l'isolat « le foncteur tige préserve les épis », hors d'un énoncé d'exactitude |
+| `stalkEvalLeg` | absent | — (le germe de Stacks est un quotient : `Basis/Germs.lean:132` `Stalk`, `:136` `germ`) | l'évaluation d'une section de Godement **en un point**, possible parce que la section est une fonction |
+| `stalkEvalCocone` | absent | — (idem) | le cône sur le diagramme des voisinages |
+| `stalkEval` | partiel | `StalkHomotopy.lean:520` `homotopyEquivalences_stalk_godementAugmentation` ; `:95` `godementStalkPullbackIso` | une **application** (l'évaluation), dont la section fera la rétraction |
+| `germ_stalkEval` | absent | — (le pendant du contenu : `Basis/Germs.lean:124` `StalkDatum.Rel`, `:132`, `:136`) | la propriété universelle de la colimite, déployée |
+| `toGodement_app_stalkEvalLeg` | absent | — (le pendant le plus proche : `Basic.lean:475` `godementAugmentation`) | la lisibilité de l'évaluation avec l'unité |
+| `toGodement_stalkEval` | partiel | `StalkHomotopy.lean:520` `homotopyEquivalences_stalk_godementAugmentation` ; `:558` `quasiIso_godementAugmentation` | un **scindage** (rétraction `ev_x₀`), inconditionnel |
+| `stalkEval_stalkFunctor_map_toGodement_apply` | absent | — (le pendant du scindage : `StalkHomotopy.lean:520`) | la forme appliquée du scindage |
+| `mono_stalkFunctor_map_toGodement` | partiel | `Sheaf/Abelian.lean:88` (usage de `TopCat.Presheaf.mono_iff_stalk_mono`) ; `:75` | l'instance « l'unité de Godement est mono **en tige** », inconditionnelle |
+| `stalkFunctor_preservesMono` | partiel | `Sheaf/Abelian.lean:88` | l'instance, que Stacks utilise sans l'énoncer |
+| `stalkFunctor_preservesHomology` | partiel | `Modules/Exactness.lean:77` `exact_iff_stalkShortComplex_exact` (01AG) | la forme **locale** (préservation par un foncteur) |
+| `stalkFunctor_preservesFiniteLimits` | absent | — (aucune mention d'AB5 ni de `PreservesFiniteLimits` **pour le foncteur tige** dans `Topology/Sheaves/`) | l'axiome AB5 explicitement, dont `Modules/Exactness.lean:77` n'est qu'une conséquence |
+| `stalkFunctor_map_exact` | **couvert** | `Modules/Exactness.lean:77` `exact_iff_stalkShortComplex_exact` (01AG) ; `Sheaf/Abelian.lean:75` `shortExact_of_stalk` | la conservation de l'exactitude **sans hypothèse de faisceau**, sur des préfaisceaux de groupes abéliens |
+| `stalk_exact_godementStep` | partiel | `StalkHomotopy.lean:558` `quasiIso_godementAugmentation` ; `:127` `quasiIso_of_forall_stalk_quasiIso_nat` | la version **générique** (toute flèche `f`), qui rend la récurrence entre degrés uniforme |
+| `stalk_exact_toGodement_godementCanonicalDZero` | **couvert** | `StalkHomotopy.lean:558` `quasiIso_godementAugmentation` (0FKS clause (3)) | le degré 0 **inconditionnel** (aucune hypothèse de faisceau) |
+| `stalk_exact_godementCanonicalDZero_godementCanonicalDOne` | **couvert** | `StalkHomotopy.lean:558` `quasiIso_godementAugmentation` | le **degré 1** isolé, la récurrence rendue visible |
+
+**Décompte** : 4 couverts, 13 partiels, 6 absents — sur 23 énoncés publics.
+
+**Écarts de cadre, énoncés.** Stacks travaille en **faisceaux de modules** sur
+espace annelé (`SheafOfModules`, topologie de Grothendieck) et en
+`TopCat.Sheaf` ; le lac travaille en **préfaisceaux de groupes abéliens** sur
+la topologie des ouverts. Les deux « complexes de Godement » ne sont pas le
+même objet : chez Stacks, le terme de degré `n` est l'itérée `(f_* f^*)^{n+1}`
+le long de `X_discret ⟶ X` (`Basic.lean:482`), chez nous le terme est construit
+par un pas canonique `godementStep` sur le site des ouverts. Le verdict dit
+« couvert / partiel / absent » **avec cette ligne** ; il ne dit pas
+« équivalent importable » — l'import de `StacksFrontier` reste hors périmètre.
 -/
 
 universe u
@@ -79,6 +136,15 @@ canonique de la Partie 89 appliqué à `d⁰`. Le terme `C¹F = C⁰(coker μ)` 
 P89 comme codomaine de `d⁰`) engendre à son tour `C²F = C⁰(coker d⁰)`, et `d¹`
 est la flèche `C¹F ⟶ C²F`. Le motif est uniforme : `d^{n+1} := godementStep d^n`,
 chaque terme étant le préfaisceau de Godement du conoyau de la différentielle
+
+**Renvoi Stacks** — *partiel* : `Cohomology/GodementResolution/Basic.lean:466`
+`godementComplex` (le complexe de Godement de 0FKS) et `:482`
+`godementComplexEvalIso` (le terme de degré `n` est l'itérée `(f_* f^*)^{n+1} F`).
+Stacks pose le terme de chaque degré d'un seul trait ; notre version pose une
+**récurrence** entre les degrés (`d^{n+1} := godementStep d^n`) sur le site des
+ouverts, en préfaisceaux de groupes abéliens, et identifie `d¹` au pas
+canonique appliqué à `d⁰`. L'écart de cadre est écrit dans l'en-tête du
+module.
 précédente ([God58] II §4.1). -/
 noncomputable def godementCanonicalDOne (F : X.Presheaf AddCommGrpCat.{u}) :
     godementPresheaf (cokernel (toGodement F)) ⟶
@@ -89,6 +155,13 @@ noncomputable def godementCanonicalDOne (F : X.Presheaf AddCommGrpCat.{u}) :
 `comp_godementStep_zero` (P89) — la résolution canonique est un complexe au-delà
 du degré 0, et le restera à chaque degré suivant par le même argument : chaque
 différentielle composée avec son pas canonique s'annule par la condition
+
+**Renvoi Stacks** — *partiel* : chez Stacks la null-composition est **portée par
+le type** : `godementComplex` (`Cohomology/GodementResolution/Basic.lean:466`)
+est un `CochainComplex`, dont la null-composition fait partie de la structure.
+Stacks n'énonce donc aucun lemme de null-composition ; notre version la
+**prouve** à chaque degré, pour le pas `d^{n+1} := godementStep d^n`, par
+l'instance de `comp_godementStep_zero`.
 universelle du conoyau. -/
 theorem godementCanonicalDZero_comp_godementCanonicalDOne
     (F : X.Presheaf AddCommGrpCat.{u}) :
@@ -102,6 +175,15 @@ groupes abéliens, un morphisme est mono exactement quand chaque composante
 l'est (`NatTrans.mono_iff_mono_app`), et dans `AddCommGrpCat` un morphisme est
 mono exactement quand il est injectif (`AddCommGrpCat.mono_iff_injective`).
 C'est l'exactitude de `0 → F → C⁰F` **en F**, énoncée dans le langage des
+
+**Renvoi Stacks** — *partiel* : la même flèche est chez Stacks
+l'augmentation `F[0] ⟶ godementComplex` (`Cohomology/GodementResolution/Basic.lean:475`
+`godementAugmentation`), et Stacks en dit **plus** sur elle, mais dans un autre
+langage : `Cohomology/GodementResolution/StalkHomotopy.lean:558`
+`quasiIso_godementAugmentation` (clause (3) de 0FKS) fait de l'augmentation un
+**quasi-isomorphisme** de complexes de cochaînes. Le **monomorphisme** de
+l'unité, lui, n'est pas énoncé chez Stacks ; notre version l'énonce en
+catégories de préfaisceaux, comme mono — et non comme quasi-isomorphisme.
 catégories. -/
 theorem mono_toGodement_of_isSheaf (F : X.Presheaf AddCommGrpCat.{u})
     (hF : TopCat.Presheaf.IsSheaf F) :
@@ -272,6 +354,16 @@ recollement de la Partie 84 au quotient :
    famille que `σ`, et l'unicité du recollement identifie les deux ;
 5. **Conclusion** — `s = π σ = π (μ t') = 0` par la condition du conoyau.
 
+
+**Renvoi Stacks** — *partiel* : le **critère** de séparéité est chez Stacks
+`Stalk/Separated.lean:78` `IsSeparated'` et `:86` `isSeparated'_iff` (007A),
+puis, sous forme de recollement, `Sheafify/Separated.lean:71` `IsSeparated` et
+`:88` `toSheafify_app_eq_iff_germ_eq` (« deux sections ont la même image par
+`toSheafify` si et seulement si leurs germes coïncident »). Stacks énonce ce
+critère pour un **faisceau** ; notre énoncé l'applique au **conoyau** de
+l'unité, qui n'est pas un faisceau — d'où l'écart : Stacks ne peut pas
+l'énoncer dans ce cadre, et le passage du recollement à la séparéité est chez
+nous un lemme à part entière.
 [God58] Chap. II §4.1. -/
 theorem eq_zero_of_locally_zero_cokernel_toGodement
     (F : X.Presheaf AddCommGrpCat.{u}) (hF : TopCat.Presheaf.IsSheaf F)
@@ -406,6 +498,13 @@ voisinage par point où les restrictions des deux sections coïncident ; la
 différence, localement nulle dans le conoyau, est nulle par le pas A
 (`eq_zero_of_locally_zero_cokernel_toGodement`) — la séparéité du conoyau
 tient exactement le rôle que le recollement jouait pour l'injectivité de
+
+**Renvoi Stacks** — *partiel* : pendant de `Stalk/Separated.lean:86`
+`isSeparated'_iff` (007A), Stacks énonce l'injectivité de la famille des
+germes pour un **faisceau**. Notre version l'énonce pour l'unité du conoyau
+`toGodement (coker μ)`, par **localité** (deux germes égaux en un point
+donnent un voisinage) puis **séparéité du conoyau** (pas A ci-dessus) — le
+recollement des sections, que Stacks utilise, n'est pas requis ici.
 l'unité elle-même. -/
 theorem injective_toGodement_cokernel_of_isSheaf (F : X.Presheaf AddCommGrpCat.{u})
     (hF : TopCat.Presheaf.IsSheaf F) (U : Opens X) :
@@ -439,6 +538,13 @@ theorem injective_toGodement_cokernel_of_isSheaf (F : X.Presheaf AddCommGrpCat.{
 pas B de la Partie 91 (montée 2/2)** : la montée catégorique de
 l'injectivité section par section ci-dessus, par `NatTrans.mono_iff_mono_app`
 puis `AddCommGrpCat.mono_iff_injective` — le même geste que
+
+**Renvoi Stacks** — *partiel* : c'est la **montée catégorique** du renvoi
+précédent (`Stalk/Separated.lean:86` `isSeparated'_iff`), que Stacks ne fait
+pas : leur formulation est l'équivalence **pointwise** (deux sections dont les
+germes coïncident sont égales), la nôtre est un morphisme de catégories
+(`NatTrans.mono_iff_mono_app` puis `AddCommGrpCat.mono_iff_injective`). Le
+contenu est chez Stacks ; la formulation mono ne l'est pas.
 `mono_toGodement_of_isSheaf` (P90) pour l'unité elle-même. -/
 theorem mono_toGodement_cokernel_of_isSheaf (F : X.Presheaf AddCommGrpCat.{u})
     (hF : TopCat.Presheaf.IsSheaf F) :
@@ -456,6 +562,16 @@ courts : l'exactitude de `μ ≫ cokernel.π μ` est celle du conoyau
 τ = (𝟙, 𝟙, `toGodement (coker μ)`) — dont la composante τ₃ est mono par
 `mono_toGodement_cokernel_of_isSheaf` — porte cette exactitude de `π` à
 `π ≫ τ₃ = d⁰` par `ShortComplex.exact_iff_of_epi_of_isIso_of_mono`
+
+**Renvoi Stacks** — *couvert* : `Cohomology/GodementResolution/StalkHomotopy.lean:558`
+`quasiIso_godementAugmentation`, clause (3) de 0FKS — « l'exactitude de
+`0 → F → f_* f^* F → f_* f^* f_* f^* F → ⋯` » (SGA 4 XVII 4.2.3 (ii)). Stacks
+établit donc l'exactitude du complexe **augmenté de l'unité de Godement**, ce
+que notre énoncé établit au **degré 0**. Ce que notre version ajoute : la
+formulation en **complexe court** de préfaisceaux de groupes abéliens (le
+transfert `ShortComplex.exact_iff_of_epi_of_isIso_of_mono`, τ₁ = τ₂ = 𝟙,
+τ₃ = l'unité du conoyau, mono par le pas B), là où Stacks détecte l'exactitude
+sur les tiges.
 ([God58] II §4.1). -/
 theorem exact_toGodement_godementCanonicalDZero (F : X.Presheaf AddCommGrpCat.{u})
     (hF : TopCat.Presheaf.IsSheaf F) :
@@ -509,6 +625,15 @@ un adjoint à gauche (adjonction tige ⊣ gratte-ciel de
 `skyscraperPresheafStalkAdjunction`), donc préserve les épimorphismes.
 Appliqué à la projection `cokernel.π f` — épimorphe par construction —
 ceci fournit l'ingrédient « épi » du transport d'exactitude vers les
+
+**Renvoi Stacks** — *partiel* : le foncteur tige est chez Stacks
+`Modules/Exactness.lean:52` `stalkAddCommGroupFunctor`, et la **combinaison**
+est énoncée : `Modules/Exactness.lean:77` `exact_iff_stalkShortComplex_exact`
+(01AG) et `Sheaf/Abelian.lean:75` `shortExact_of_stalk`. Stacks énonce donc
+la conservation des épis **à l'intérieur** d'un énoncé d'exactitude ; l'isolat
+« le foncteur tige préserve les épimorphismes » n'y est pas, et notre version
+se place dans une autre catégorie (préfaisceaux de groupes abéliens, non
+faisceaux de modules).
 tiges : `(coker f)ₓ₀` reçoit surjectivement `(C⁰...)ₓ₀`. -/
 theorem epi_stalkFunctor_map_of_epi {A B : X.Presheaf AddCommGrpCat.{u}}
     (f : A ⟶ B) [Epi f] (x₀ : X) :
@@ -519,6 +644,17 @@ theorem epi_stalkFunctor_map_of_epi {A B : X.Presheaf AddCommGrpCat.{u}}
 `x₀` (objet de `(OpenNhds x₀)ᵒᵖ`), l'application « évaluer la section de
 Godement en `x₀` » : une section de `C⁰F` sur `V` est une fonction
 `σ : ∀ y ∈ V, Fₓ`, on prend sa valeur en `x₀`. Morphisme de groupes
+
+**Renvoi Stacks** — *absent* : aucun pendant dans
+`StacksFrontier/Topology/Sheaves/`. Stacks n'a pas de mécanisme d'**évaluation
+d'une section en un point** : son germe est un **quotient** par la relation
+d'équivalence des germes (`Basis/Germs.lean:132` `Stalk`, `:136` `germ`), non
+une colimite dotée d'une application d'évaluation. La construction n'est pas
+transposable parce que son origine est **propre au lac** : une section de
+`C⁰F` est une *fonction* `σ : ∀ y ∈ V, Fₓ`, et l'évaluation est la
+restriction de cette fonction à `x₀`. Le plus proche chez Stacks :
+`Cohomology/GodementResolution/StalkHomotopy.lean:95`
+`godementStalkPullbackIso` (le foncteur tige factorise par `f^*` au point).
 abstraits : la structure de `C⁰F(V)` est ponctuelle. -/
 noncomputable def stalkEvalLeg (F : X.Presheaf AddCommGrpCat.{u}) (x₀ : X)
     (V : (OpenNhds x₀)ᵒᵖ) :
@@ -532,6 +668,11 @@ noncomputable def stalkEvalLeg (F : X.Presheaf AddCommGrpCat.{u}) (x₀ : X)
 cocone sur le diagramme des voisinages `(OpenNhds x₀)ᵒᵖ ⥤ AddCommGrpCat` —
 c'est la bien-définition de l'évaluation : restreindre la section puis
 évaluer en `x₀`, ou l'évaluer directement, donne le même germe, car
+
+**Renvoi Stacks** — *absent* : idem `stalkEvalLeg`. Le cône sur le
+diagramme des voisinages, dont l'universalité est la condition de
+bien-définition de l'évaluation, n'a pas de pendant chez Stacks : le germe y
+est un quotient (`Basis/Germs.lean:132`, `:136`), non une colimite.
 `godementMap` ne fait que restreindre la fonction. -/
 noncomputable def stalkEvalCocone (F : X.Presheaf AddCommGrpCat.{u}) (x₀ : X) :
     Cocone ((OpenNhds.inclusion x₀).op ⋙ godementPresheaf F) where
@@ -554,6 +695,15 @@ Le domaine est déclaré en forme **dépliée** (`(stalkFunctor x₀).obj (C⁰F
 plutôt que `(C⁰F).stalk x₀`) : les deux sont définitionnellement égales,
 mais la forme dépliée est celle du codomaine de `stalkFunctor.map` —
 elle rend les compositions `map ≫ ev` correctes à la transparence des
+
+**Renvoi Stacks** — *partiel* : Stacks dispose d'une **équivalence** entre
+le stalk de `F` et le terme de degré 0 du complexe de Godement —
+`Cohomology/GodementResolution/StalkHomotopy.lean:520`
+`homotopyEquivalences_stalk_godementAugmentation`, et `:95`
+`godementStalkPullbackIso` pour le foncteur tige lui-même. Notre version
+construit une **application** (l'évaluation par universalité de la colimite),
+dont la section fera la **rétraction** `ev_x₀` : le scindage, lui, n'est pas
+énoncé chez Stacks.
 instances, que la réécriture exige. -/
 noncomputable def stalkEval (F : X.Presheaf AddCommGrpCat.{u}) (x₀ : X) :
     (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).obj (godementPresheaf F) ⟶
@@ -563,6 +713,14 @@ noncomputable def stalkEval (F : X.Presheaf AddCommGrpCat.{u}) (x₀ : X) :
 /-- **L'évaluation d'un germe est la valeur en `x₀`** : sur un germe
 représenté par une section de Godement `σ` sur `U ∋ x₀`, l'évaluation
 donne `σ(x₀)` — la propriété universelle du cocone (`colimit.ι_desc`),
+
+**Renvoi Stacks** — *absent* : lemme de la construction de l'évaluation
+(la propriété universelle de la colimite, déployée en forme appliquée) ; aucun
+pendant, Stacks n'ayant pas d'évaluation en un point (`Basis/Germs.lean:132`,
+`:136`). Le pendant le plus proche du **contenu** — l'indépendance du germe
+quant au représentant — est chez Stacks la définition même du germe comme
+quotient (`Basis/Germs.lean:124` `StalkDatum.Rel`, `:132` `Stalk`, `:136`
+`germ`).
 dépliée en forme appliquée par l'attribut `elementwise`. -/
 @[reassoc, elementwise nosimp]
 theorem germ_stalkEval (F : X.Presheaf AddCommGrpCat.{u}) (x₀ : X)
@@ -576,6 +734,13 @@ d'évaluation redonne le germe — sur `s ∈ F(U)`, prendre la section de
 Godement de `s` puis l'évaluer en `x₀` rend le germe de `s` en `x₀`.
 Les deux membres sont la même fonction de `F(U)` : l'égalité est
 définitionnelle (`ext` puis `rfl`), comme la naturalité du cocone
+
+**Renvoi Stacks** — *absent* : composant du scindage, sans pendant (voir
+`stalkEvalLeg`). C'est la legende qui relie l'unité de Godement à
+l'évaluation ; chez Stacks, le pendant le plus proche est la naturalité de
+l'augmentation `F[0] ⟶ godementComplex`
+(`Cohomology/GodementResolution/Basic.lean:475`), qui ne dit rien de
+l'évaluation.
 d'évaluation. -/
 theorem toGodement_app_stalkEvalLeg (F : X.Presheaf AddCommGrpCat.{u}) (x₀ : X)
     (U : Opens X) (hx : x₀ ∈ U) :
@@ -597,6 +762,15 @@ appliquées, dont l'unification entre formes repliée (`F.stalk x₀`) et
 dépliée (`(stalkFunctor x₀).obj F`) échoue à la transparence des
 instances. La chaîne est un `calc` dont chaque étape est un **terme**
 (`assoc`, `congrArg` sur les lemmes de Mathlib), élaboré à transparence
+
+**Renvoi Stacks** — *partiel* : Stacks établit sur les tiges un fait
+**plus fort en genre** et **différent en nature** :
+`Cohomology/GodementResolution/StalkHomotopy.lean:520`
+`homotopyEquivalences_stalk_godementAugmentation` donne l'équivalence
+d'homotopie entre le stalk de `F` et celui du terme de degré 0, d'où
+`:558` `quasiIso_godementAugmentation`. Notre version construit un
+**scindage** — une rétraction `ev_x₀` de l'unité de tiges — que Stacks
+n'énonce pas, et qui est inconditionnel (aucune hypothèse de faisceau).
 par défaut, où formes repliée et dépliée s'unifient librement. -/
 theorem toGodement_stalkEval (F : X.Presheaf AddCommGrpCat.{u}) (x₀ : X) :
     (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map (toGodement F) ≫
@@ -625,6 +799,12 @@ morphisme de tiges de l'unité. La preuve applique l'égalité hom-niveau
 ci-dessus à l'élément `t` (`congrArg` sur `ConcreteCategory.hom`),
 élaborée à transparence par défaut, où les formes repliée et dépliée du
 domaine de `stalkEval` sont interchangeables ; les deux réductions
+
+**Renvoi Stacks** — *absent* : forme appliquée du renvoi précédent (le
+pendant du scindage reste
+`Cohomology/GodementResolution/StalkHomotopy.lean:520`
+`homotopyEquivalences_stalk_godementAugmentation`, qui n'est pas une
+rétraction).
 restantes (`comp_apply`, `id_apply`) sont définitionnelles. -/
 theorem stalkEval_stalkFunctor_map_toGodement_apply
     (F : X.Presheaf AddCommGrpCat.{u}) (x₀ : X)
@@ -644,6 +824,15 @@ est `stalkEval`. À comparer avec `mono_toGodement_of_isSheaf` (Partie 90) :
 au niveau préfaisceaux, le mono de l'unité exige `F` faisceau ; au niveau
 des tiges, il est **inconditionnel** — c'est ce qui permet au transport
 d'exactitude de la Partie 93(a) de s'affranchir de toute hypothèse de
+
+**Renvoi Stacks** — *partiel* : le **contenu** — « le mono se détecte sur les
+tiges » — est chez Stacks, `Sheaf/Abelian.lean:88` (usage de
+`TopCat.Presheaf.mono_iff_stalk_mono` dans `shortExact_of_stalk`, `:75`) ;
+l'instance « l'unité de Godement est mono **en tige** » n'y est pas, et
+Stacks travaille en faisceaux de modules sur espace annelé
+(`Modules/Exactness.lean:52`), non en préfaisceaux de groupes abéliens sur le
+site des ouverts. C'est cette instance qui autorise le transport d'exactitude
+sans hypothèse de séparéité.
 séparéité sur les conoyaux intermédiaires. -/
 theorem mono_stalkFunctor_map_toGodement (F : X.Presheaf AddCommGrpCat.{u})
     (x₀ : X) :
@@ -676,6 +865,10 @@ préservation de l'homologie ⇒ des limites finies. -/
 
 /-- Le foncteur tige préserve les monomorphismes : un mono de préfaisceaux
 de groupes abéliens est injectif composante par composante, et cette
+
+**Renvoi Stacks** — *partiel* : Stacks utilise la même détection que nous
+(`Sheaf/Abelian.lean:88`, à l'intérieur de `shortExact_of_stalk`), mais
+n'énonce pas l'instance « le foncteur tige préserve les monomorphismes ».
 injectivité passe aux tiges — la face concrète d'AB5. -/
 instance stalkFunctor_preservesMono (x₀ : X) :
     Functor.PreservesMonomorphisms
@@ -692,6 +885,13 @@ instance stalkFunctor_preservesMono (x₀ : X) :
 l'homologie — un mono de préfaisceaux reste mono sur les tiges (face
 concrète d'AB5), un épi reste épi (adjonction tige ⊣ gratte-ciel), et la
 préservation des conoyaux vient de celle des colimites (adjoint à
+
+**Renvoi Stacks** — *partiel* : l'énoncé voisin est chez Stacks
+`Modules/Exactness.lean:77` `exact_iff_stalkShortComplex_exact` (01AG) et
+`Sheaf/Abelian.lean:75` `shortExact_of_stalk` — l'exactitude d'un court
+complexe se détecte sur les tiges. Notre instance en est la forme **locale**
+(la préservation de l'homologie par un foncteur) ; Stacks énonce le fait
+global, non l'instance.
 gauche). -/
 noncomputable instance stalkFunctor_preservesHomology (x₀ : X) :
     (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).PreservesHomology := by
@@ -705,6 +905,15 @@ noncomputable instance stalkFunctor_preservesHomology (x₀ : X) :
   exact Functor.map_mono (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀) _
 
 /-- **AB5 pour les tiges** : le foncteur tige d'un préfaisceau de groupes
+
+**Renvoi Stacks** — *absent* : aucun énoncé de `Topology/Sheaves/` ne
+mentionne AB5 ni la préservation des limites finies **par le foncteur tige**
+(les occurrences de `PreservesFiniteLimits` de l'arborescence lue portent sur
+d'autres foncteurs : `ClosedImmersion/AbelianCohomology.lean`,
+`AlgebraicStructure/`). Le contenu le plus proche est
+`Modules/Exactness.lean:77` `exact_iff_stalkShortComplex_exact`, qui en est
+une **conséquence**, non l'axiome. Notre instance est donc la forme **la plus
+forte** de ce que l'on trouve chez Stacks sur ce point.
 abéliens préserve les limites finies. -/
 noncomputable instance stalkFunctor_preservesFiniteLimits (x₀ : X) :
     Limits.PreservesFiniteLimits
@@ -715,6 +924,15 @@ noncomputable instance stalkFunctor_preservesFiniteLimits (x₀ : X) :
 préfaisceaux de groupes abéliens reste exacte en chaque tige. Brique (i)
 du re-scopage de la Partie 93 — combinée aux tiges des conoyaux (brique
 ii) et au splicing (brique iii), elle ferme l'exactitude du complexe
+
+**Renvoi Stacks** — *couvert* : `Modules/Exactness.lean:77`
+`exact_iff_stalkShortComplex_exact` (01AG) et `Sheaf/Abelian.lean:75`
+`shortExact_of_stalk` énoncent le **sens direct** que nous prouvons —
+l'exactitude d'une suite se transporte aux tiges (Stacks l'énonce comme une
+équivalence, nous comme la conservation de l'exactitude par le foncteur
+tige). Ce que notre version ajoute : le foncteurPreservesExactness sur des
+**préfaisceaux** de groupes abéliens, sans hypothèse de faisceau, là où Stacks
+travaille en faisceaux de modules sur espace annelé.
 canonique en chaque point. -/
 theorem stalkFunctor_map_exact {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
     (hS : S.Exact) (x₀ : X) :
@@ -763,6 +981,15 @@ transfère l'exactitude de la tige de `f ≫ π_f` — brique (i) appliquée à
 `(𝟙, 𝟙, tige de l'unité de coker f)` : la composante τ₃ est mono par
 `mono_stalkFunctor_map_toGodement`, **sans aucune hypothèse de faisceau**.
 C'est la brique de récurrence du complexe canonique : chaque degré en est
+
+**Renvoi Stacks** — *partiel* : Stacks établit l'exactitude de la
+construction **de Godement** — `Cohomology/GodementResolution/StalkHomotopy.lean:558`
+`quasiIso_godementAugmentation`, clause (3) de 0FKS, détectée sur les tiges
+(`StalkHomotopy.lean:127` `quasiIso_of_forall_stalk_quasiIso_nat`). Notre
+énoncé est la version **générique** : il vaut pour **toute** flèche `f` de
+préfaisceaux, et pas seulement pour les différentielles du complexe canonique
+— c'est ce qui rend la récurrence `d^{n+1} = godementStep d^n` uniforme d'un
+degré à l'autre.
 une instance. -/
 theorem stalk_exact_godementStep {A B : X.Presheaf AddCommGrpCat.{u}}
     (f : A ⟶ B) (x₀ : X) :
@@ -815,6 +1042,12 @@ theorem stalk_exact_godementStep {A B : X.Presheaf AddCommGrpCat.{u}}
 faisceau. Le mono de l'unité, coûteux en préfaisceaux (il fallait la
 séparéité du conoyau, pas A), est gratuit en tige
 (`mono_stalkFunctor_map_toGodement`). Instance du lemme générique en
+
+**Renvoi Stacks** — *couvert* : `Cohomology/GodementResolution/StalkHomotopy.lean:558`
+`quasiIso_godementAugmentation` (clause (3) de 0FKS) — l'exactitude de
+`0 → F → f_* f^* F → ⋯` détectée sur les tiges ; notre énoncé est le degré 0
+de cette exactitude, énoncé en complexe court et **inconditionnel** (aucune
+hypothèse de faisceau, là où la version préfaisceaux exigeait `F` faisceau).
 `f = μ` : `d⁰ = godementStep μ` par définition. -/
 theorem stalk_exact_toGodement_godementCanonicalDZero
     (F : X.Presheaf AddCommGrpCat.{u}) (x₀ : X) :
@@ -837,6 +1070,13 @@ theorem stalk_exact_toGodement_godementCanonicalDZero
 `F`. C'est le même lemme générique appliqué à `f = d⁰` : chaque degré
 suivant du complexe canonique en est une instance identique, le motif
 `d^{n+1} = godementStep dⁿ` (P89) rendant la récurrence uniforme — la
+
+**Renvoi Stacks** — *couvert* : même référent que ci-dessus
+(`Cohomology/GodementResolution/StalkHomotopy.lean:558`
+`quasiIso_godementAugmentation`) : Stacks établit l'exactitude du complexe
+augmenté **en un seul énoncé**, donc de chaque degré ; notre version isole le
+**degré 1** et rend visible la récurrence (chaque degré suivant en est une
+instance identique).
 preuve ne change pas d'un degré à l'autre. -/
 theorem stalk_exact_godementCanonicalDZero_godementCanonicalDOne
     (F : X.Presheaf AddCommGrpCat.{u}) (x₀ : X) :

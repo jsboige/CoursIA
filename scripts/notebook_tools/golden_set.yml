@@ -77,7 +77,7 @@ notebooks:
   # resolve SANS champ cwd dedie (verifie empiriquement, PR3 #4209). Kernel
   # python3, dependances STDLIB uniquement (random/sys/time/typing, 0 lib
   # scientifique), random.seed(42) -> sortie deterministe.
-  - path: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb
+  - path: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-01-LogicalLearning-Python.ipynb
     series: SymbolicLearning
     title: "SL-1 - Apprentissage logique (current-best hypothesis, ref. aima-python)"
     kernel: python3

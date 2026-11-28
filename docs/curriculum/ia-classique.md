@@ -94,28 +94,28 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [CSP-1 : Fondamentaux des CSP - Version .NET…](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb) | BETA | Oui |
-| 2 | [CSP-1 : Fondamentaux des CSP](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb) | BETA | Oui |
+| 1 | [CSP-1 : Fondamentaux des CSP - Version .NET…](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb) | BETA | Oui |
+| 2 | [CSP-1 : Fondamentaux des CSP](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb) | BETA | Oui |
 | 3 | [CSP-10 — Couverture minimale avec Z3 en C#](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-CSharp.ipynb) | BETA | Oui |
 | 4 | [CSP-10-Optimisation-Z3-Rust : Couverture Minimale avec…](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Rust.ipynb) | BETA | Oui |
-| 5 | [CSP-10-Optimisation-Z3 : Couverture Minimale avec le…](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb) | BETA | Oui |
-| 6 | [CSP-2 : Propagation de Contraintes et Consistance -…](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb) | BETA | Oui |
-| 7 | [CSP-2 : Propagation de Contraintes et Consistance](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb) | BETA | Oui |
-| 8 | [CSP-3 : CSP Avancé — Contraintes globales et stratégies…](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-CSharp.ipynb) | BETA | Oui |
-| 9 | [CSP-3 : CSP Avance - Contraintes globales, OR-Tools et…](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb) | BETA | Oui |
-| 10 | [CSP-4-Scheduling-CSharp : Problèmes d'Ordonnancement…](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb) | BETA | Oui |
-| 11 | [CSP-4-Scheduling : Problèmes d'Ordonnancement (Rust /…](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-Rust.ipynb) | BETA | Oui |
-| 12 | [CSP-4-Scheduling : Problèmes d'Ordonnancement](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb) | BETA | Oui |
-| 13 | [CSP-5-Optimization-CSharp : Optimisation Combinatoire…](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-CSharp.ipynb) | BETA | Oui |
-| 14 | [CSP-5-Optimization : Problèmes d'Optimisation…](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb) | BETA | Oui |
-| 15 | [CSP-6-Hybridation : Approches Hybrides Modernes (.NET /…](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb) | BETA | Non |
-| 16 | [CSP-6-Hybridation : Approches Hybrides Modernes](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb) | BETA | Non |
-| 17 | [CSP-7 : Contraintes Souples avec Choco-solver](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-CSharp.ipynb) | BETA | Non |
-| 18 | [CSP-7 : Contraintes Souples - Soft CSP](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb) | BETA | Non |
-| 19 | [CSP-8 : Temporels - Raisonnement sur le Temps](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb) | BETA | Non |
-| 20 | [CSP-8 : Temporels - Raisonnement sur le Temps](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb) | BETA | Non |
-| 21 | [CSP-9-Distributed : CSP Distribués (DisCSP)](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb) | BETA | Oui |
-| 22 | [CSP-9-Distributed : CSP Distribués (DisCSP)](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb) | BETA | Oui |
+| 5 | [CSP-10-Optimisation-Z3 : Couverture Minimale avec le…](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Python.ipynb) | BETA | Oui |
+| 6 | [CSP-2 : Propagation de Contraintes et Consistance -…](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-CSharp.ipynb) | BETA | Oui |
+| 7 | [CSP-2 : Propagation de Contraintes et Consistance](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb) | BETA | Oui |
+| 8 | [CSP-3 : CSP Avancé — Contraintes globales et stratégies…](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-CSharp.ipynb) | BETA | Oui |
+| 9 | [CSP-3 : CSP Avance - Contraintes globales, OR-Tools et…](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb) | BETA | Oui |
+| 10 | [CSP-4-Scheduling-CSharp : Problèmes d'Ordonnancement…](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-CSharp.ipynb) | BETA | Oui |
+| 11 | [CSP-4-Scheduling : Problèmes d'Ordonnancement (Rust /…](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Rust.ipynb) | BETA | Oui |
+| 12 | [CSP-4-Scheduling : Problèmes d'Ordonnancement](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb) | BETA | Oui |
+| 13 | [CSP-5-Optimization-CSharp : Optimisation Combinatoire…](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-CSharp.ipynb) | BETA | Oui |
+| 14 | [CSP-5-Optimization : Problèmes d'Optimisation…](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb) | BETA | Oui |
+| 15 | [CSP-6-Hybridation : Approches Hybrides Modernes (.NET /…](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-CSharp.ipynb) | BETA | Non |
+| 16 | [CSP-6-Hybridation : Approches Hybrides Modernes](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb) | BETA | Non |
+| 17 | [CSP-7 : Contraintes Souples avec Choco-solver](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-CSharp.ipynb) | BETA | Non |
+| 18 | [CSP-7 : Contraintes Souples - Soft CSP](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb) | BETA | Non |
+| 19 | [CSP-8 : Temporels - Raisonnement sur le Temps](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb) | BETA | Non |
+| 20 | [CSP-8 : Temporels - Raisonnement sur le Temps](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb) | BETA | Non |
+| 21 | [CSP-9-Distributed : CSP Distribués (DisCSP)](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-CSharp.ipynb) | BETA | Oui |
+| 22 | [CSP-9-Distributed : CSP Distribués (DisCSP)](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb) | BETA | Oui |
 
 ## Search/Part3-Cas-pratiques (55 notebooks)
 

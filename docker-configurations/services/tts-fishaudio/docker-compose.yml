@@ -2,6 +2,9 @@
 # API server with CUDA support on GPU1 (RTX 3090 24GB)
 #
 # GPU: RTX 3090 24GB - ~20GB VRAM with the official fp16 snapshot (--half)
+#      GPU_PCI_INDEX 1. Convention #28423 : CUDA_DEVICE_ORDER=PCI_BUS_ID,
+#      index nvidia-smi (0 = 3080 Ti, 1 = 3090). L'ancienne cle FISHAUDIO_GPU_ID
+#      du .env n'est plus lue : elle ne portait pas d'ordre CUDA.
 # Port: 8197
 # API: POST /v1/tts, GET /v1/health
 # Docs: http://localhost:8197/docs
@@ -70,7 +73,7 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ['${FISHAUDIO_GPU_ID:-1}']
+              device_ids: ['${GPU_PCI_INDEX:-1}']
               capabilities: [gpu]
 
     volumes:
@@ -89,7 +92,9 @@ services:
         target: /root/.cache
 
     environment:
-      - NVIDIA_VISIBLE_DEVICES=${FISHAUDIO_GPU_ID:-1}
+      - CUDA_DEVICE_ORDER=PCI_BUS_ID
+      - CUDA_VISIBLE_DEVICES=${GPU_PCI_INDEX:-1}
+      - NVIDIA_VISIBLE_DEVICES=${GPU_PCI_INDEX:-1}
       - LLAMA_CHECKPOINT_PATH=${LLAMA_CHECKPOINT_PATH:-checkpoints/s2-pro}
       - DECODER_CHECKPOINT_PATH=${DECODER_CHECKPOINT_PATH:-checkpoints/s2-pro/codec.pth}
       - DECODER_CONFIG_NAME=${DECODER_CONFIG_NAME:-modded_dac_vq}
