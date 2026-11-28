@@ -284,7 +284,11 @@ def changed_notebooks(base_ref: str, head_ref: str) -> list[str]:
     """Notebook paths modified between two refs, repo-relative, posix separators."""
     try:
         diff = subprocess.run(
-            ["git", "diff", "--name-only", f"{base_ref}...{head_ref}"],
+            # `-c core.quotePath=false` : git cite les chemins non ASCII, et le
+            # chemin cite n'existe pas sur le disque -- le carnet etait ecarte
+            # en silence (faux vert). Precedent : `check_notebook_navlinks.py`.
+            ["git", "-c", "core.quotePath=false",
+             "diff", "--name-only", f"{base_ref}...{head_ref}"],
             capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(REPO_ROOT), timeout=30,
         )
     except (subprocess.TimeoutExpired, FileNotFoundError):

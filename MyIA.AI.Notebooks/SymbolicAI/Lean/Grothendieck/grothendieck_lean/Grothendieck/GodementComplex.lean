@@ -716,7 +716,7 @@ godementFunctor` (tranche 2).
 
 La **frontière nommée** reste la SES degreewise des complexes canoniques
 eux-mêmes (`ShortExact` de complexes, pas de préfaisceaux en un ouvert) : elle
-exige le relèvement flasque (`epi_of_shortExact_of_isFlasqueSieves`, Partie 94)
+exige le relèvement flasque (`epi_of_shortExact_of_isFlasqueSieves`, Partie 82)
 ou l'échelle de séparabilité — c'est la tranche 2, pour la Partie 99.
 -/
 
@@ -838,7 +838,7 @@ Partie 86, l'épi et l'exactitude pointwise la Partie 98.
 La **frontière nommée** reste le rang `n + 1` : les étages du complexe
 canonique sont `C^{n+2} = C⁰(coker dⁿ)` (P92), donc l'itération exige la SES
 des conoyaux, dont le connecteur serpent `δ = -kernel.ι ≫ cokernel.π`
-(`kernelCokernelCompSequence`) doit s'annuler — relèvement flasque (Partie 94)
+(`kernelCokernelCompSequence`) doit s'annuler — relèvement flasque (Partie 82)
 ou échelle de séparabilité. C'est la tranche suivante.
 -/
 
@@ -976,7 +976,7 @@ l'épi (`epi_godementMapHom_of_epi`) et l'exactitude pointwise (`exact_app_`
 `godementMapHom`) la Partie 98, l'assemblage par le pont
 `shortComplex_exact_iff_app` de cette Partie. C'est la fondation rang 0 de
 l'itération ; le rang `n + 1` (étages `C^{n+2} = C⁰(coker dⁿ)`, P92) exige en
-plus l'annulation du connecteur serpent — relèvement flasque (P94) ou échelle
+plus l'annulation du connecteur serpent — relèvement flasque (P82) ou échelle
 de séparabilité, tranche suivante. -/
 theorem shortExact_map_godementFunctor {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
     (hS : S.ShortExact) : (S.map godementFunctor).ShortExact := by
