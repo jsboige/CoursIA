@@ -6,7 +6,7 @@ Cette série examine des modèles audio pré-entraînés et leurs usages complé
 
 ## Comment lire ce README — Découverte
 
-Lisez d'abord [AudioLDM](06-1-AudioLDM-SOTA-Comparison.ipynb) pour la génération audio par diffusion, puis [HiFi-GAN](06-2-HiFiGAN-SOTA-Comparison.ipynb) pour la synthèse vocale. Le carnet [A-vs-B](06-3-AudioDiffusion-Comparison-A-vs-B.ipynb) rassemble ensuite les comparaisons. Les tâches étant différentes, leurs sorties et mesures ne doivent pas être interprétées comme un classement direct de modèles interchangeables.
+Lisez d'abord [AudioLDM](06-1-AudioLDM-SOTA-Comparison.ipynb) pour la génération audio par diffusion, puis [HiFi-GAN](06-2-HiFiGAN-SOTA-Comparison.ipynb) pour la synthèse vocale. Le carnet [A-vs-B](Audio-06-3-AudioDiffusion-Comparison-A-vs-B-Python.ipynb) rassemble ensuite les comparaisons. Les tâches étant différentes, leurs sorties et mesures ne doivent pas être interprétées comme un classement direct de modèles interchangeables.
 
 ## Parcours principal — Découverte
 
@@ -14,7 +14,7 @@ Lisez d'abord [AudioLDM](06-1-AudioLDM-SOTA-Comparison.ipynb) pour la générati
 |---|---|---|
 | [06-1 — AudioLDM : génération audio](06-1-AudioLDM-SOTA-Comparison.ipynb) | Utiliser un modèle pré-entraîné de diffusion audio conditionnée par le texte et examiner les effets des réglages de génération. | Première étude d'un générateur audio pré-entraîné. |
 | [06-2 — HiFi-GAN : synthèse vocale](06-2-HiFiGAN-SOTA-Comparison.ipynb) | Explorer un vocodeur pré-entraîné et observer les compromis de durée et de latence. | Étudie la synthèse vocale dans une tâche distincte de la génération AudioLDM. |
-| [06-3 — Comparaison audio A-vs-B](06-3-AudioDiffusion-Comparison-A-vs-B.ipynb) | Mettre en regard les observations des expériences précédentes et lire leurs résultats de façon comparative. | Synthèse du parcours ; consulter le carnet pour le périmètre exact de la comparaison. |
+| [06-3 — Comparaison audio A-vs-B](Audio-06-3-AudioDiffusion-Comparison-A-vs-B-Python.ipynb) | Mettre en regard les observations des expériences précédentes et lire leurs résultats de façon comparative. | Synthèse du parcours ; consulter le carnet pour le périmètre exact de la comparaison. |
 
 ## Approfondissements — Pratique
 
@@ -28,7 +28,7 @@ Lisez d'abord [AudioLDM](06-1-AudioLDM-SOTA-Comparison.ipynb) pour la générati
 
 ### Rapprocher les observations
 
-[06-3](06-3-AudioDiffusion-Comparison-A-vs-B.ipynb) reprend les comparaisons dans une vue de synthèse. Vérifiez dans ce carnet les conditions expérimentales et les critères utilisés avant de généraliser les résultats à d'autres modèles ou signaux.
+[06-3](Audio-06-3-AudioDiffusion-Comparison-A-vs-B-Python.ipynb) reprend les comparaisons dans une vue de synthèse. Vérifiez dans ce carnet les conditions expérimentales et les critères utilisés avant de généraliser les résultats à d'autres modèles ou signaux.
 
 Les expériences pré-entraînées peuvent télécharger des poids et demander un environnement matériel adapté. Les exigences, versions et conditions de licence sont précisées dans chaque notebook ; les performances dépendent de la configuration et ne se généralisent pas automatiquement à d'autres machines.
 

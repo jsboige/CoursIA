@@ -4728,6 +4728,17 @@ def _lint_claim_events(
       what the reducer actually kept against the caller).
     Without these args, the lint falls back to the legacy behaviour (every
     epic-wide marker prints `il bloque`), which is the bug #12327 names.
+
+    #28669 (scoped liveness): the SCOPED branch below used to WARN on every
+    dead glob of every open/override marker, including markers their lane has
+    since superseded or released -- 90 of the 99 dead globs on the recorded
+    batch (`scripts/tests/fixtures/claim_grammar/batch.json`, 14 issues) were
+    carried by a marker that no longer holds anything. When `active_claims`
+    is provided, a dead glob WARNs only when the marker IS its lane's active
+    claim; the others are counted and restated as ONE `INFO:` line at the end
+    of the function (observability: the organ says what it withheld). Without
+    `active_claims` the branch is unchanged, exactly like #12327's fallback.
+    A marker with no lane token cannot be proven inactive and keeps its WARN.
     """
     if tracked is None:
         tracked = _git_tracked_files(repo_root)
@@ -4744,6 +4755,13 @@ def _lint_claim_events(
             # already walked (events are built from `comment` dicts that have
             # both body and url -- see `_parse_claim_events`).
             pass  # the real source of bodies is `payload["comments"]` below
+    # #28669 -- compteur des globs morts ETENDUS (marqueur non actif). Une
+    # bride silencieuse doit se dire : l'organe nomme en une ligne ce qu'il
+    # n'a pas signale, sinon la qualification ressemble a une reparation du
+    # defaut qu'elle masque.
+    silenced_dead_globs: dict[str, int] = {}
+    silenced_superseded = 0
+    silenced_released = 0
     for ev in events:
         if ev.get("action") not in ("open", "override"):
             continue
@@ -4821,6 +4839,22 @@ def _lint_claim_events(
                 file=sys.stderr,
             )
             continue
+        # #28669 -- la branche SCOPEE n'avait aucune qualification de
+        # vivacite : tout evenement open/override portant un glob mort
+        # produisait son WARN, y compris un marqueur que sa lane a depuis
+        # superseded ou libere. Le WARN ne parle que sur le claim ACTIF de sa
+        # lane -- le seul cas ou l'auteur peut encore corriger sa clause, et
+        # le seul ou le glob mort decrit un perimetre courant. Mesure sur le
+        # lot enregistre (14 issues) : 90 des 99 globs morts portaient un
+        # marqueur non actif. Sans `active_claims` (appelant qui n'a pas
+        # reduit), la branche garde son comportement d'origine, comme la
+        # branche epic-wide de #12327. Un marqueur SANS lane ne peut pas etre
+        # prouve non actif : il garde son WARN.
+        ev_lane = ev.lane or "?"
+        ev_active = (active_claims.get(ev.lane)
+                     if (active_claims is not None and ev.lane) else None)
+        marker_is_live = (active_claims is None or ev.lane is None
+                          or ev_active is ev)
         # #26657 -- les resolutions de scope de l'evenement (calculees par
         # l'appelant), indexees par glob mort.
         resolved_map = {note["glob"]: note
@@ -4847,6 +4881,17 @@ def _lint_claim_events(
                     file=sys.stderr,
                 )
             if tracked is not None and not _glob_matches_tracked(g, tracked):
+                if not marker_is_live:
+                    # #28669 -- marqueur superseded ou libere : le glob mort
+                    # ne decrit plus aucun perimetre courant. On compte pour
+                    # le dire en une ligne a la fin, on ne WARN pas.
+                    silenced_dead_globs[ev_lane] = (
+                        silenced_dead_globs.get(ev_lane, 0) + 1)
+                    if ev_active is None:
+                        silenced_released += 1
+                    else:
+                        silenced_superseded += 1
+                    continue
                 print(
                     f'WARN: glob sans correspondance : "{g}" '
                     f"(lane {ev.lane or '?'})",
@@ -4875,6 +4920,25 @@ def _lint_claim_events(
                         f"#13129 motif A/C)",
                         file=sys.stderr,
                     )
+    # #28669 -- restitution de la bride. Le WARN ne parle plus sur un
+    # marqueur non actif, mais l'organe ne se tait pas : il dit combien de
+    # globs morts il a etendus, sur quelles lanes, et pourquoi. Un lecteur
+    # qui voit disparaitre 90 WARN doit pouvoir verifier que rien n'est
+    # cache ; un marqueur superseded reste une dette d'hygiene
+    # (`[RELEASED]` l'ancien), pas une alerte de perimetre.
+    if silenced_dead_globs:
+        total_silenced = sum(silenced_dead_globs.values())
+        detail = ", ".join(
+            f"{lane}: {n}" for lane, n in sorted(silenced_dead_globs.items())
+        )
+        print(
+            f"INFO: {total_silenced} glob(s) mort(s) porte(s) par des "
+            f"marqueurs NON ACTIFS, non signale(s) "
+            f"({silenced_superseded} superseded, {silenced_released} sans "
+            f"claim actif) -- le WARN ne parle que sur le claim actif de sa "
+            f"lane (#28669). Par lane : {detail}.",
+            file=sys.stderr,
+        )
 
 
 def _event_is_active_for(legacy: ClaimEvent, active: ClaimEvent) -> bool:
@@ -5678,12 +5742,12 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
     return verdict
 
 
-def _qualification_grain(payload: dict, my_lane: str,
-                         now: datetime | None = None) -> tuple[str, str] | None:
-    """Shim : la qualification du grain est portee par
-    `coordination.tapis_qualification_fil` (module dedie)."""
+def _qualification_grain(payload: dict, my_lane: str, now: datetime | None = None,
+                         chemins: list[str] | None = None) -> tuple[str, str] | None:
+    """Shim : la qualification du grain est portee par `coordination.tapis_qualification_fil`
+    (module dedie) ; `chemins` = les `--paths` de l'appelant, lus par la remise de main (#28899)."""
     from coordination import tapis_qualification_fil  # import tardif : pas de cycle
-    return tapis_qualification_fil.qualification_grain(payload, my_lane, now)
+    return tapis_qualification_fil.qualification_grain(payload, my_lane, now, chemins)
 
 
 def _run_check(payload: dict, my_lane: str, stale_threshold=None,
@@ -5756,7 +5820,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # qualification n'est ni reclame ni edite. La decision vient du meme
     # organe que le tirage (`tapis_rapide.etats`), applique au FIL COMPLET
     # que cette lecture a deja rendu -- pas d'appel reseau supplementaire.
-    code_motif = _qualification_grain(payload, my_lane, now)
+    code_motif = _qualification_grain(payload, my_lane, now, my_paths)
     if code_motif:
         code, motif = code_motif
         print(f"[QUALIFICATION] {code} : {motif} -- grain non qualifie : "
@@ -6076,12 +6140,13 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     #   (b) une lane qui detient DEJA son claim recevait CLEAR pour toujours
     #       (`mine is None`), meme au-dessus d'une PR plus ancienne que son
     #       claim : c'est exactement le cas #26597 (deux PRs pour un grain).
-    # La jambe tourne donc desormais pour la lane appelante ; le filtre
+    # La jambe tourne donc desormais pour la lane appelante. Le filtre
     # chronologique (le `createdAt` serveur du claim contre celui de la PR)
-    # ne retient que les PRs ANTERIEURES au claim : une PR posterieure
-    # reste subsumee par le claim (review 5429946072). Le cout du round-trip
-    # gh est le meme qu'avant (memo de processus + cache de session) ; seule
-    # la lecture d'une lane qui CLAIMait l'evite.
+    # ne retient que les PRs ANTERIEURES au claim (review 5429946072) -- et il
+    # ne s'applique qu'a une PR SANS tag de lane lisible, qui peut etre la
+    # livraison de l'appelante : une lane tierce LISIBLE occupe le grain a
+    # toute date (voir le site du filtre, plus bas). Le cout du round-trip
+    # gh est le meme qu'avant (memo de processus + cache de session).
     implicit_occupation: list[dict] = []
     # #22408 (item 3) -- `[]` disait deux choses incompatibles : « mesure, et
     # personne n'occupe » et « jambe non demandee ». Instance #21881 : le
@@ -6097,12 +6162,29 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             implicit_occupation = _find_open_prs_referencing_issue(
                 int(payload["number"]), my_lane)
             if mine is not None:
-                # #26751 -- la lane appelante detient son claim : seule une PR
-                # ANTERIEURE a ce claim signale que le claim a recouvre une
-                # livraison en cours. Une PR posterieure reste subsumee.
+                # #26751 -- la lane appelante detient son claim : le filtre
+                # chronologique ne vaut que pour une PR dont le tag de lane est
+                # ILLISIBLE (`lane is None`). Une telle PR peut etre la
+                # livraison de l'appelante elle-meme, et une PR posterieure a
+                # son claim y reste subsumee (review 5429946072).
+                #
+                # Des que la lane tierce est LISIBLE, la date ne dit plus rien :
+                # `_find_open_prs_referencing_issue` exclut deja les PR de
+                # l'appelante (`lane == my_lane`, l. 3417), donc tout ce qui
+                # reste occupe le grain, anterieur ou posterieur au claim.
+                # Mesure du 25/11 14:42:43Z : `--paths
+                # Search/Part1-Foundations/Search-11-Metaheuristics-Rust.ipynb`
+                # rendait rc=0 avec `implicit_occupation: []` au-dessus de la PR
+                # #28250 (lane `myia-ai-01:CoursIA-2` lisible, ouverte le 23/11
+                # APRES le claim du 22/11 de `myia-po-2028:claudish`) : les cinq
+                # grains de son lot ont failli etre dupliques, arretes au seul
+                # controle d'instant du lanceur.
                 claim_at = mine.get("created_at")
                 kept: list[dict] = []
                 for finding in implicit_occupation:
+                    if finding.get("lane") is not None:
+                        kept.append(finding)
+                        continue
                     pr_at = finding.get("created_at")
                     if not claim_at or not pr_at:
                         # Mesure impossible : la jambe ne fabrique pas de

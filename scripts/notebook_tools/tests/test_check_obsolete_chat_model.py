@@ -43,7 +43,7 @@ def md(source):
 
 REPO = Path(__file__).resolve().parents[3]
 LIVECODING = (REPO / "MyIA.AI.Notebooks" / "GenAI" / "Audio" /
-              "04-Applications" / "04-5-LiveCoding-LLM-Music.ipynb")
+              "04-Applications" / "Audio-04-5-LiveCoding-LLM-Music-Python.ipynb")
 CONFIG_00_3 = (REPO / "MyIA.AI.Notebooks" / "GenAI" / "00-GenAI-Environment" /
                "00-3-API-Endpoints-Configuration.ipynb")
 

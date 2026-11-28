@@ -20,6 +20,12 @@ qualification ne confirme aucun grain — le mur atteint avant tout verdict, ou
 une fenetre entierement refusee — le **repli chronologique** prend le relais,
 comme le fait le cap de livraisons. Les grains **non qualifies** restent
 DECLARES dans le rapport ; aucun n'est servi en silence.
+
+**La lecture du cap est resserree sur la machine de la lane** (#28884) : le
+cap compte les livraisons de la lane dans les PR fusionnees sur 7 jours, et
+la recherche GitHub ne lui rend que les corps qui citent sa machine -- le
+filtre Python du cap reste seul juge. Mesure du 27/11 : 931 PR et 4,4 Mo lus
+en 9,5 s pour en retenir 3 de la lane.
 """
 from __future__ import annotations
 
@@ -28,12 +34,13 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from coordination import tapis_cap_livraisons, tapis_leger_rapport, tapis_repli
+from coordination import gh_bulk, tapis_cap_livraisons, tapis_leger_rapport, tapis_repli
 from coordination import tapis_qualification as tq
 
-#: La qualification a son PROPRE mur : le mur global borne la LECTURE du
-#: pool, celui-ci borne la LECTURE DES FILS. Les deux sont sequentiels, jamais
-#: simultanes.
+#: Le mur PROPRE de la qualification : il borne la LECTURE DES FILS quand
+#: l'appelant ne donne aucune echeance (appel direct). Au point d'entree, la
+#: qualification partage la part du tirage (I6 de #28114) -- lecture du pool,
+#: cap, qualification et repli -- et le temps du repli y est reserve.
 MUR_QUALIFICATION_S = 60
 
 #: Le TEMPS DU REPLI est RESERVE (reserve du coordinateur, I6 de #28114,
@@ -41,6 +48,12 @@ MUR_QUALIFICATION_S = 60
 #: il doit avoir la place meme quand la qualification a consomme le budget.
 #: La qualification s'arrete donc a `echeance - RESERVE_REPLI_S`.
 RESERVE_REPLI_S = 5
+
+#: La part minimale laissee a la QUALIFICATION par le cap de livraisons : le
+#: cap est fail-OPEN (une mesure perdue n'ecarte rien), la qualification est
+#: fail-CLOSED (un grain non qualifie n'est pas servi) -- le premier ne prend
+#: donc pas la part du second (#28884).
+RESERVE_QUALIFICATION_S = 10
 
 
 def qualifier(file: list, lane: str, maintenant: datetime, jours: int,
@@ -92,6 +105,36 @@ def qualifier(file: list, lane: str, maintenant: datetime, jours: int,
 rapport = tapis_leger_rapport.rapport
 
 
+def lanceur_cap_resserre(run_commande, lane: str):
+    """Le lanceur de la commande, la lecture du cap resserree sur la machine de la lane.
+
+    Le cap ne compte que les livraisons de la LANE : la recherche GitHub rend
+    plus petit le corpus qu'il lit, en ne demandant que les corps qui citent
+    sa machine. Le meme ensemble de PR de la lane, en 2,2 a 2,7 s au lieu de
+    9,5 s sur les trois tranches (27/11, #28884) : le cout etait celui du
+    volume de corps lus, pas celui du nombre d'appels.
+
+    Une PR comptee par le cap porte le nom de la machine dans son tag
+    `Grain:`. Si la recherche derivait, le cap sous-compterait -- dans le
+    sens fail-OPEN : il ecarterait moins, jamais un grain a tort.
+
+    Sans lanceur (`None` : le cap lit par `subprocess`) ou sans `--search`
+    dans l'argv, le lanceur passe tel quel.
+    """
+    if run_commande is None:
+        return None
+    machine = lane.split(":", 1)[0]
+
+    def lancer(argv, timeout):
+        argv = list(argv)
+        if "--search" in argv:
+            pos = argv.index("--search") + 1
+            argv[pos] = f'{argv[pos]} "{machine}" in:body'
+        return run_commande(argv, timeout)
+
+    return lancer
+
+
 def passer_et_replir(file: list, ordre: list, lane: str, maintenant: datetime,
                      prs_ouvertes: list[dict] | None, run=None,
                      repli=None, pool_ouvert: bool = False,
@@ -110,7 +153,8 @@ def passer_et_replir(file: list, ordre: list, lane: str, maintenant: datetime,
 
     `run` : le FETTEUR du cap, au contrat `(since, until) -> list[dict]`.
     `None` : le cap lit le reseau par son propre organe, avec le `run` de la
-    commande (`run_commande`) comme lanceur, sous l'`echeance` partagee.
+    commande (`run_commande`) comme lanceur, resserre sur la machine de la
+    lane (`lanceur_cap_resserre`), sous l'`echeance` partagee.
 
     Rend `(file, temoins, mesure, rendu)` : `rendu` est le `(rapport, code)`
     du repli quand il a rendu la main, `None` sinon.
@@ -122,7 +166,7 @@ def passer_et_replir(file: list, ordre: list, lane: str, maintenant: datetime,
     """
     file, temoins, mesure = tapis_cap_livraisons.passer(
         file, ordre, lane, maintenant, prs_ouvertes, run=run,
-        echeance=echeance, run_commande=run_commande)
+        echeance=echeance, run_commande=lanceur_cap_resserre(run_commande, lane))
     if file or not pool_ouvert or repli is None:
         return file, temoins, mesure, None
     try:
@@ -146,11 +190,11 @@ def servir(classe: dict, file: list, fenetre: dict, origami: dict, lane: str,
     # Le CAP lit le reseau par son PROPRE organe : son contrat de fetteur
     # (`(since, until) -> list[dict]`) n'est pas celui de la commande
     # (`(argv, timeout) -> str`) ; l'adaptation se fait dans le module du cap,
-    # au point de contact, en passant par l'argument du fetteur. Et il est
-    # BORNE par la meme echeance que la qualification, moins la reserve du
-    # repli : le cap consomme le budget de la commande, il ne s'en donne pas
-    # un neuf (#28114, I6).
-    fin_cap = (echeance - RESERVE_REPLI_S) if echeance is not None else None
+    # au point de contact, en passant par l'argument du fetteur.
+    # Le cap cede le budget restant a la qualification et au repli ; si la
+    # lecture du pool l'a deja consomme, cette reserve ne peut etre garantie.
+    fin_cap = (echeance - RESERVE_REPLI_S - RESERVE_QUALIFICATION_S
+               if echeance is not None else None)
     file, temoins_cap, cap_mesure, rendu = passer_et_replir(
         file, classe["grains"] + classe["conteneurs"], lane, maintenant,
         classe["prs"], run=None, run_commande=run, echeance=fin_cap,
@@ -164,7 +208,11 @@ def servir(classe: dict, file: list, fenetre: dict, origami: dict, lane: str,
     if erreur is not None:
         print(f"Qualification en echec ({erreur}) : repli chronologique.",
               file=sys.stderr)
-        return tapis_repli.replir(lane, grains, maintenant, jours, graine, depot)
+        try:
+            return tapis_repli.replir(lane, grains, maintenant, jours, graine, depot)
+        except gh_bulk.LectureIncomplete as exc:
+            raise gh_bulk.LectureIncomplete(exc.lecture, exc.page,
+                                            f"qualification : {erreur} ; repli : {exc.cause}") from exc
     if not file:
         # Une file CONFIRMEE VIDE n'est pas un service : la lane s'eteint
         # (mandat #28114, « file sans fin par lane »). Deux causes, un meme
@@ -174,8 +222,14 @@ def servir(classe: dict, file: list, fenetre: dict, origami: dict, lane: str,
         # le relais, comme le fait le cap de livraisons ; les grains NON
         # QUALIFIES restent DECLARES dans le rapport, jamais servis en
         # silence (fail-CLOSED).
-        r, code = tapis_repli.replir(lane, grains, maintenant, jours, graine,
-                                     depot, echeance=echeance)
+        try:
+            r, code = tapis_repli.replir(lane, grains, maintenant, jours, graine,
+                                         depot, echeance=echeance)
+        except gh_bulk.LectureIncomplete as exc:
+            cause = ("budget de qualification epuise" if qualif.get("budget_epuise")
+                     else "aucun grain confirme par la qualification")
+            raise gh_bulk.LectureIncomplete(exc.lecture, exc.page,
+                                            f"{cause} ; repli : {exc.cause}") from exc
         q = dict(r.get("qualification") or {})
         q.update(qualif or {})
         q["repli"] = ("file confirmee vide : repli chronologique")
