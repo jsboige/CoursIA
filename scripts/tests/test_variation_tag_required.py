@@ -317,7 +317,10 @@ METADATA_DEPENDENT_GUARDS = {
     # #14057 (Vague 2 tranche 1) : l'umbrella porte l'organe base-not-main
     # (lit baseRefName, metadonnee) -- c'est SA surface pull_request qui doit
     # rester non-filtree.
-    ".github/workflows/always-on-metadata-guards.yml": "porte l'organe base-not-main (lit baseRefName, metadonnee) (#14057)",
+    # #28534 : l'umbrella fusionnee porte les organes de metadonnees ET les
+    # cinq organes de body (qui lisent le tag `Grain:` du corps) -- sa
+    # surface pull_request doit rester non filtree elle aussi.
+    ".github/workflows/always-on-guards-edited.yml": "porte les organes de metadonnees et de body (body + base) (#28534)",
     ".github/workflows/variation-tag-guard.yml": "lit le tag Grain: du body",
     ".github/workflows/variation-light-genre.yml": "lit le tag Grain: du body",
     ".github/workflows/base-not-main-advisory.yml": "lit baseRefName (metadonnee)",

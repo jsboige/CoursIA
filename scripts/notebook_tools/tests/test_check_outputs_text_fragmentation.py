@@ -277,7 +277,7 @@ FP_CASES = [
     # (path, cell_index, output_index, description)
     ("MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb", 18, 4, "stderr OpenAI Whisper + \\r\\n"),
     ("MyIA.AI.Notebooks/QuantConnect/projects/PairsTrading/research.ipynb", 14, 0, "stderr PairsTrading"),
-    ("MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb", 18, 1, "stderr CSP-8 C#"),
+    ("MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb", 18, 1, "stderr CSP-8 C#"),
     ("MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-08-LandscapeExplorer.ipynb", 14, 3, "stderr MGS-8 cell14"),
     ("MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-08-LandscapeExplorer.ipynb", 16, 7, "stderr MGS-8 cell16"),
     ("MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb", 4, 3, "stderr Planners-2"),
@@ -288,7 +288,7 @@ FP_CASES = [
     ("MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-CSharp.ipynb", 18, 5, "stderr SW-9 cell18"),
     ("MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-CSharp.ipynb", 25, 1, "stderr SW-9 cell25"),
     ("MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.ipynb", 20, 9, "stderr Z3-Linq2Z3 meal planner"),
-    ("MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb", 3, 10, "stderr SL-4"),
+    ("MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-04-InductiveLogicProgramming-CSharp.ipynb", 3, 10, "stderr SL-4"),
     ("MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07-Extended-Frameworks-CSharp.ipynb", 27, 3, "stderr Tweety-7a Dung via lib"),
     ("MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07-Extended-Frameworks-CSharp.ipynb", 30, 3, "stderr Tweety-7a Weighted via lib"),
     ("MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07-Extended-Frameworks-CSharp.ipynb", 33, 6, "stderr Tweety-7a Social via lib"),

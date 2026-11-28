@@ -7,7 +7,7 @@ La famille Python se lit sur la langue declaree (`language_info.name`), le nom d
 noyau ne servant que de repli : un carnet sans langue ni noyau Python n'est pas
 compte -- le census ne suppose pas Python par defaut. Le compte d'une serie peut
 donc etre inferieur au nombre de fichiers `.ipynb` qu'elle contient.
-Census : **1476** carnets Python, **577** eligibles, **899** refuses.
+Census : **1479** carnets Python, **579** eligibles, **900** refuses.
 
 Source de verite des paquets : `pyodide-lock.json` (ABI 2026_0, Python 3.14.2, wasm32, emscripten_5_0_3 ; 357 paquets),
 commite avec le rapport (`docs/reference/pyodide-lock.json`), ainsi que le cache des sondes
@@ -77,9 +77,9 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | Automata | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 | CaseStudies | 4 | 0 | 4 | 0 | 4 | 0 | 0 | 4 |
 | Causalite | 12 | 2 | 10 | 1 | 0 | 1 | 0 | 9 |
-| Chaines | 14 | 14 | 0 | 0 | 0 | 0 | 0 | 0 |
+| Chaines | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
 | Coalitions | 4 | 2 | 2 | 0 | 0 | 0 | 2 | 1 |
-| Complexity | 29 | 25 | 4 | 0 | 0 | 0 | 1 | 3 |
+| Complexity | 28 | 24 | 4 | 0 | 0 | 0 | 1 | 3 |
 | Compression | 13 | 10 | 3 | 1 | 0 | 0 | 0 | 2 |
 | Constructeur | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 | DataScienceWithAgents | 110 | 40 | 70 | 45 | 5 | 3 | 26 | 28 |
@@ -98,7 +98,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | InformationTheory | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 0 |
 | Integrales | 4 | 4 | 0 | 0 | 0 | 0 | 0 | 0 |
 | Jauge | 4 | 3 | 1 | 1 | 0 | 0 | 0 | 0 |
-| Lean | 132 | 105 | 27 | 1 | 5 | 4 | 11 | 18 |
+| Lean | 134 | 107 | 27 | 1 | 5 | 4 | 11 | 18 |
 | ML-Training-Pipeline | 18 | 11 | 7 | 0 | 0 | 0 | 1 | 7 |
 | ML.Net | 15 | 12 | 3 | 1 | 0 | 0 | 2 | 2 |
 | Metajeux | 7 | 5 | 2 | 1 | 0 | 0 | 1 | 0 |
@@ -140,7 +140,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | gateway | 2 | 0 | 2 | 0 | 0 | 0 | 1 | 1 |
 | kelly_lean | 5 | 5 | 0 | 0 | 0 | 0 | 0 | 0 |
 | partner-course-quant-trading | 7 | 0 | 7 | 0 | 0 | 0 | 5 | 4 |
-| projects | 113 | 5 | 108 | 10 | 0 | 3 | 65 | 54 |
+| projects | 114 | 5 | 109 | 10 | 0 | 3 | 66 | 54 |
 | research | 26 | 5 | 21 | 4 | 0 | 0 | 4 | 17 |
 | scripts/notebook_tools | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 
@@ -165,7 +165,7 @@ disait. Le comptage avant/apres est donc sur la meme population :
 
 | Mesure | Avant | Apres |
 |---|---:|---:|
-| Carnets eligibles | 784 | 577 |
+| Carnets eligibles | 786 | 579 |
 
 Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suffisance`).
 
@@ -205,7 +205,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-09-Guardrails-AI-Shield-Python.ipynb` | ArgumentAnalysis | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-10-Privacy-Export-Python.ipynb` | ArgumentAnalysis | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb` | ArgumentAnalysis | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
-| `MyIA.AI.Notebooks/GenAI/Audio/06-Diffusion-SOTA/06-3-AudioDiffusion-Comparison-A-vs-B.ipynb` | Audio | python3 | - | - |
+| `MyIA.AI.Notebooks/GenAI/Audio/06-Diffusion-SOTA/Audio-06-3-AudioDiffusion-Comparison-A-vs-B-Python.ipynb` | Audio | python3 | - | - |
 | `MyIA.AI.Notebooks/InformationCalcul/Automata/Automata-01-AutomatesFinis-Python.ipynb` | Automata | python3 | - | - |
 | `MyIA.AI.Notebooks/Probas/Causalite/Causalite-00-Echelle-de-Pearl-Intro-Python.ipynb` | Causalite | python3 | matplotlib==3.10.8, networkx==3.6.1, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Probas/Causalite/Causalite-07-Quasi-Experimentales-Python.ipynb` | Causalite | coursia-ml-training | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2, scikit-learn==1.8.0, scipy==1.18.0, statsmodels==0.14.6 | - |
@@ -223,6 +223,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/Physique/Chaines/Chaines-12-Boosts-Et-L-Unite-Une-Python.ipynb` | Chaines | python3 | - | - |
 | `MyIA.AI.Notebooks/Physique/Chaines/Chaines-13-Spin-Helicite-Groupe-Spin-C-Python.ipynb` | Chaines | python3 | matplotlib==3.10.8 | - |
 | `MyIA.AI.Notebooks/Physique/Chaines/Chaines-14-P-C-T-Et-CPT-Python.ipynb` | Chaines | python3 | matplotlib==3.10.8 | - |
+| `MyIA.AI.Notebooks/Physique/Chaines/Chaines-15-Theoreme-D-Ordre-Python.ipynb` | Chaines | python3 | matplotlib==3.10.8 | - |
 | `MyIA.AI.Notebooks/GameTheory/Coalitions/Coalitions-02-Assistance-Games-Python.ipynb` | Coalitions | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GameTheory/Coalitions/Coalitions-04-Munkres-Affectation-Python.ipynb` | Coalitions | python3 | numpy==2.4.6, scipy==1.18.0 | - |
 | `MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-01-StepCounting-Python.ipynb` | Complexity | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
@@ -249,7 +250,6 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-07c-LeBilanMathocalypse-Python.ipynb` | Complexity | python3 | - | - |
 | `MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08d-IndependanceProuvee-BusyBeaver-Covering-Python.ipynb` | Complexity | python3 | - | - |
 | `MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08e-NF-MachinesCompteARebours-Python.ipynb` | Complexity | python3 | - | - |
-| `MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08f-Independance-Arithmetique-BusyBeaver-Lean-Python.ipynb` | Complexity | python3 | - | - |
 | `MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb` | Compression | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-02-HuffmanCanonique-Python.ipynb` | Compression | python3 | matplotlib==3.10.8 | - |
 | `MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-Python.ipynb` | Compression | python3 | matplotlib==3.10.8 | - |
@@ -403,8 +403,8 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-5-Bonsai-Image-Ternary.ipynb` | Image | python3 | ipython==9.12.0, matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/GenAI/Image/05-History/05-0b-Demoscene-Intros-Procedurales-Python.ipynb` | Image | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GenAI/Image/05-History/05-0c-Low-Complexity-Art-Python.ipynb` | Image | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/GenAI/Image/05-History/05-0d-Groupes-De-Frise-Python.ipynb` | Image | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GenAI/Image/05-History/05-0e-MDL-Mesure-Unique-Python.ipynb` | Image | python3 | numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/GenAI/Image/05-History/05-0f-Groupes-De-Frise-Python.ipynb` | Image | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Probas/Infer/Infer-08b-TrueSkill-Formules-Fermees-Python.ipynb` | Infer | python3 | - | - |
 | `MyIA.AI.Notebooks/Physique/InformationQuantique/InfoQuant-01-Intrication-Werner-PPT-Distillation-Python.ipynb` | InformationQuantique | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Physique/InformationQuantique/InfoQuant-02-Trois-Copies-Werner-Distillabilite-Python.ipynb` | InformationQuantique | python3 | numpy==2.4.6 | - |
@@ -436,6 +436,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-04-DD-AR-Python.ipynb` | Lean | python3 | sympy==1.14.0 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-04b-IMO-AG-30-Python.ipynb` | Lean | python3 | numpy==2.4.6, sympy==1.14.0 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-05-Pont-Formel-Python.ipynb` | Lean | python3 | sympy==1.14.0 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/GROTH-05b-GelfandKirillov-Python.ipynb` | Lean | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/GOL-06-Translateur-Life.ipynb` | Lean | python3-lean | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/GOL-08-Loi-II-Translateur-Life.ipynb` | Lean | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/GOL-09-Perplexite-Structurelle-Hashlife.ipynb` | Lean | python3 | pandas==3.0.2 | - |
@@ -465,6 +466,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-38-Capstone-Geometry-Lean-Python.ipynb` | Lean | python3 | numpy==2.4.6, sympy==1.14.0 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb` | Lean | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb` | Lean | python3 | numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-42-Independance-Arithmetique-BusyBeaver-Lean.ipynb` | Lean | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-01-Descente-Budget-Lean-Python.ipynb` | Lean | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-04-Capstone-Digestion-Python.ipynb` | Lean | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/KNOTS-01-Conway-Proofs-Lean-Python.ipynb` | Lean | python3-lean | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
@@ -646,7 +648,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-12a-Composer-Regards.ipynb` | Part1-Foundations | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13-AutomaticGroups-WordProblem.ipynb` | Part1-Foundations | python3 | - | - |
 | `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb` | Part1-Foundations | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb` | Part2-CSP | python3 | matplotlib==3.10.8, networkx==3.6.1, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb` | Part2-CSP | python3 | matplotlib==3.10.8, networkx==3.6.1, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-07-Wordle-Python.ipynb` | Part3-Cas-pratiques | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12-ConnectFour-Python.ipynb` | Part3-Cas-pratiques | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-Python.ipynb` | Part3-Cas-pratiques | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
@@ -713,13 +715,13 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-05-Gibbard-Satterthwaite-Python.ipynb` | SocialChoice | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-06-Mobius-Aggregation-Pouvoir-Manipulation-Python.ipynb` | SocialChoice | python3 | - | - |
 | `MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-07-Committees-Core-Python.ipynb` | SocialChoice | python3 | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0 | - |
-| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb` | SymbolicLearning | python3 | - | - |
-| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning.ipynb` | SymbolicLearning | python3 | matplotlib==3.10.8 | - |
-| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis.ipynb` | SymbolicLearning | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction-output.ipynb` | SymbolicLearning | python3 | numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction.ipynb` | SymbolicLearning | python3 | numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb` | SymbolicLearning | python3 | - | - |
-| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb` | SymbolicLearning | python3 | numpy==2.4.6, scikit-learn==1.8.0 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-01-LogicalLearning-Python.ipynb` | SymbolicLearning | python3 | - | - |
+| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-02-KnowledgeBasedLearning-Python.ipynb` | SymbolicLearning | python3 | - | - |
+| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-03-RelevanceLearning-Python.ipynb` | SymbolicLearning | python3 | numpy==2.4.6, scikit-learn==1.8.0 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Python.ipynb` | SymbolicLearning | python3 | matplotlib==3.10.8 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis-Python.ipynb` | SymbolicLearning | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction-Python.ipynb` | SymbolicLearning | python3 | numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction-output-Python.ipynb` | SymbolicLearning | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GenAI/Texte/10g_Speculative_Decoding.ipynb` | Texte | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GenAI/Texte/10h_Roofline_Memory_Bandwidth.ipynb` | Texte | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GenAI/Texte/14b_Paginated_Memory-Python.ipynb` | Texte | python3 | - | - |
@@ -814,7 +816,7 @@ fichier `pyodide-refus.tsv`, une ligne par carnet refuse.
 | _research | cle, gpu, reseau, suffisance | - |
 | gateway | import_absent, suffisance | kernel_gateway (1) |
 | partner-course-quant-trading | import_absent, suffisance | AlgorithmImports (5) |
-| projects | gpu, import_absent, reseau, suffisance | AlgorithmImports (65) |
+| projects | gpu, import_absent, reseau, suffisance | AlgorithmImports (66) |
 | research | gpu, import_absent, suffisance | AlgorithmImports (4) |
 
 Les motifs **se cumulent** : un carnet refuse pour une cle d'API et pour un import

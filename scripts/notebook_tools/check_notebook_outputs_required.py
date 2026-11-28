@@ -119,7 +119,7 @@ def pr_diff_files(base: str, head: str) -> list[Path] | None:
     """
     try:
         proc = subprocess.run(
-            ["git", "diff", "--name-only", f"{base}...{head}"],
+            ["git", "-c", "core.quotePath=false", "diff", "--name-only", f"{base}...{head}"],
             cwd=REPO_ROOT, capture_output=True, text=True, check=True,
             encoding="utf-8", errors="replace",
         )

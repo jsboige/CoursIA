@@ -627,7 +627,7 @@ def main(argv=None):
         import subprocess
         import tempfile
         r = subprocess.run(
-            ['git', 'diff', '-M', '--name-status', f'{args.base_ref}...HEAD',
+            ['git', "-c", "core.quotePath=false", 'diff', '-M', '--name-status', f'{args.base_ref}...HEAD',
              '--', 'MyIA.AI.Notebooks/'],
             capture_output=True, text=True,
             encoding='utf-8', errors='replace')

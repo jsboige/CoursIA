@@ -189,8 +189,8 @@ def profile_list():
             print(f"    Demarrer    : {', '.join(profile['services_up'])}")
         if profile['services_down']:
             print(f"    Arreter     : {', '.join(profile['services_down'])}")
-        print(f"    GPU 0 (3090): {profile.get('gpu_0_usage', 'non specifie')}")
-        print(f"    GPU 1 (3080): {profile.get('gpu_1_usage', 'non specifie')}")
+        print(f"    GPU 0 (3080 Ti): {profile.get('gpu_0_usage', 'non specifie')}")
+        print(f"    GPU 1 (3090): {profile.get('gpu_1_usage', 'non specifie')}")
 
     print(f"\n{'=' * 70}")
     print(f"  {len(GPU_PROFILES)} profils disponibles")

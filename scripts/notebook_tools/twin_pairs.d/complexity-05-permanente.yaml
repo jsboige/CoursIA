@@ -8,3 +8,4 @@
   known_differences:
   - 'MathNet.Numerics 5.0.0 utilise son fournisseur Managed pour LU ; NumPy utilise son propre moteur. Les temps ne sont pas directement comparables.'
   - 'La figure C# est un SVG statique ; les exercices sont répartis dans le parcours et le harnais chronomètre réellement la réponse étudiante.'
+  - 'Côté Python seulement (2026-11-25) : la section « Pour aller plus loin » renvoie vers Coalitions-04, le lake assignment_lean, Coalitions-05 et Sudoku-15. Le côté C# garde la section d''origine ; les mêmes liens y seront ajoutés quand ce carnet sera libre (PR #27393 en cours sur le fichier).'

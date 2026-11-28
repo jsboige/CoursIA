@@ -16,8 +16,8 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 | `MyIA.AI.Notebooks/Search/discrepancy_lean` | 34 | 26 | declare | couverte | ok (1) | - | 2026-08-25 |
 | `MyIA.AI.Notebooks/ML/learning_theory_lean` | 32 | 30 | declare | couverte | 1 hors site (5 carnets) | - | 2026-06-25 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/knot_lean` | 25 | 24 | declare | couverte | non consomme | - | 2026-10-08 |
+| `MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean` | 16 | 2 | declare | couverte | ok (2) | - | 2026-10-12 |
 | `MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext` | 15 | 14 | declare | couverte | ok (1) | - | 2026-06-10 |
-| `MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean` | 15 | 2 | declare | couverte | ok (1) | - | 2026-10-12 |
 | `MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean` | 15 | 14 | declare | couverte | ok (2) | - | 2026-10-02 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean` | 12 | 10 | declare | couverte | ok (4) | - | 2026-05-15 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean` | 11 | 0 | declare | couverte | ok (1) | - | 2026-09-21 |
@@ -28,6 +28,7 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 | `MyIA.AI.Notebooks/GameTheory/assignment_lean` | 7 | 6 | declare | couverte | 1 hors site (3 carnets) | - | 2026-08-23 |
 | `MyIA.AI.Notebooks/Search/search_lean` | 7 | 6 | declare | couverte | ok (1) | - | 2026-07-09 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean` | 7 | 0 | declare | couverte | non consomme | - | 2026-10-04 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/formal_groups_lean` | 7 | 6 | declare | couverte | ok (1) | - | 2026-09-06 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean` | 7 | 6 | declare | couverte | 1 hors site (2 carnets) | - | 2026-09-19 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples` | 7 | 5 | declare | couverte | non consomme | - | 2026-01-29 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean` | 7 | 6 | declare | couverte | ok (2) | - | 2026-08-15 |
@@ -35,11 +36,10 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 | `MyIA.AI.Notebooks/GameTheory/lean_game_defs` | 6 | 6 | declare | couverte | non consomme | 1 / 1 | 2026-06-10 |
 | `MyIA.AI.Notebooks/QuantConnect/kelly_lean` | 6 | 5 | declare | couverte | ok (1) | - | 2026-06-24 |
 | `MyIA.AI.Notebooks/Sudoku/sudoku_lean` | 6 | 5 | declare | couverte | ok (14) | - | 2026-06-24 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/formal_groups_lean` | 6 | 5 | declare | couverte | ok (1) | - | 2026-09-06 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean` | 6 | 5 | declare | couverte | ok (4) | 2 / 2 | 2026-05-29 |
 | `MyIA.AI.Notebooks/GameTheory/minimax_lean` | 5 | 4 | declare | couverte | ok (1) | - | 2026-06-24 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Galois/galois_lean` | 5 | 2 | declare | couverte | ok (1) | - | 2026-10-31 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean` | 5 | 0 | declare | couverte | non consomme | - | 2026-11-16 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean` | 5 | 0 | declare | couverte | 1 hors site (3 carnets) | - | 2026-11-16 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean` | 5 | 0 | declare | couverte | non consomme | - | 2026-11-13 |
 | `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean` | 5 | 4 | declare | couverte | 1 hors site (2 carnets) | - | 2026-06-24 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/kls_lean` | 4 | 0 | hors CI | hors matrice | non consomme | - | 2026-10-08 |
@@ -61,7 +61,7 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 
 ### Reconciliation
 
-528 modules + 388 miroirs attribues a un lac + 11 fichiers hors lac + 26 fichiers ecartes (dossier vendu, ou extension `.lean` portee par un fichier qui n'est pas du Lean) = 953 fichiers `.lean` traces, soit la population entiere de `git ls-files '*.lean'`. Un fichier qui n'apparait dans aucune de ces quatre colonnes a ete perdu en route : c'est le defaut que cette reconciliation rend visible.
+530 modules + 389 miroirs attribues a un lac + 11 fichiers hors lac + 26 fichiers ecartes (dossier vendu, ou extension `.lean` portee par un fichier qui n'est pas du Lean) = 956 fichiers `.lean` traces, soit la population entiere de `git ls-files '*.lean'`. Un fichier qui n'apparait dans aucune de ces quatre colonnes a ete perdu en route : c'est le defaut que cette reconciliation rend visible.
 
 ### Lacs hors CI
 
@@ -98,7 +98,7 @@ Traces par git, mais dans aucun dossier portant un `lakefile` : ils ne sont cons
 
 La doctrine demande qu'un lac vive dans le dossier de la (sous-)serie dont les carnets l'importent. La consommation se mesure sur le seul signal objectif disponible sans build : une ligne `import <Module>` d'un carnet, ou `<Module>` est un fichier `.lean` du lac. Les imports de paquets (`Mathlib`, `Batteries`) ne rattachent un carnet a aucun lac -- sans cette restriction, tout carnet Lean consommerait tous les lacs. Un carnet est « au site » quand il vit sous le dossier du lac, « hors site » sinon.
 
-30 lacs sur 42 sont consommes, dont 8 depuis un dossier hors site. Ce n'est pas un defaut en soi : c'est le fait que R1 rend arbitrable, et que la ligne nomme.
+31 lacs sur 42 sont consommes, dont 9 depuis un dossier hors site. Ce n'est pas un defaut en soi : c'est le fait que R1 rend arbitrable, et que la ligne nomme.
 
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean` — 4 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean`
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean` — 9 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean`
@@ -107,6 +107,7 @@ La doctrine demande qu'un lac vive dans le dossier de la (sous-)serie dont les c
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean` — 5 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Tweety`
 - `MyIA.AI.Notebooks/GameTheory/assignment_lean` — 3 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse`
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean` — 2 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean`
+- `MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean` — 3 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean`
 - `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean` — 2 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean/VERIF`
 
 ## R4 — les doublons de theoreme, et leur declaration
