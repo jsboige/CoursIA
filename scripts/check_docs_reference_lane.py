@@ -310,9 +310,9 @@ def _changed_docs(root: Path, base: str) -> set[str] | None:
     """Docs under docs/ changed between ``base`` and HEAD (repo-relative,
     forward slashes), or None when git cannot answer (fail-closed).
 
-    Kept for the callers that need the DIFF; the date check itself no longer
-    reads it -- the PR's own commits are the only thing that decides which
-    docs the PR is answerable for (see ``_pr_own_commits``).
+    The PR's own commits decide WHEN a doc was revised (see
+    ``_pr_own_commits``); this net diff only removes the docs those commits
+    touched and then restored to the base content.
     """
     try:
         out = _git(root, "diff", "--name-only", f"{base}...HEAD", "--", "docs/")
@@ -363,6 +363,14 @@ def scan_perenne(
                     if name not in date_of:
                         date_of[name] = commit_date
                     touched.add(name)
+            # A doc the PR's commits touched and then restored to the base
+            # content is not a revision of the PR: its net diff is empty, so
+            # nothing in it is the PR's to date (#27838, a revert of
+            # docs/reference/cluster-agents.md reddened a PR that no longer
+            # modified it). When git cannot answer, keep every touched doc.
+            net = _changed_docs(root, base)
+            if net is not None:
+                touched &= net
 
     for path in docs:
         rel = path.relative_to(root)
