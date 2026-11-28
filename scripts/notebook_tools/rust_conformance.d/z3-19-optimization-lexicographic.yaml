@@ -1,0 +1,346 @@
+# Conformité différentielle de Z3-19-Optimization-Lexicographic (triplet Python + C# + Rust).
+#
+# Les trois carnets ont la MÊME structure de cellules — 12 cellules, dont 7 de
+# code aux memes index 1, 2, 4, 6, 8, 9, 10. La correspondance est donc directe
+# par index ; elle n'a pas besoin d'être écrite à la main comme dans les
+# triplets dont les structures divergent (Sudoku, CSP).
+#
+# Écarts de rendu MESURÉS entre les trois côtés (aucun n'est supposé) :
+#   - cellule 1 : le jumeau C# affiche une bannière « Moteur : Microsoft.Z3
+#     Z3 4.12.2.0 » avant les deux lignes de contraintes. Les mesures c1 sont
+#     donc ancrées SUR les lignes de contraintes et d'objectifs, jamais sur le
+#     début de cellule ;
+#   - cellule 2 : le jumeau C# rend la sélection ["B", "C"] (guillemets
+#     doubles) là où Python et Rust rendent ['B', 'C'] (guillemets simples).
+#     La mesure c2_lex_verdict capture le verdict à partir de « (impact »,
+#     donc APRÈS la liste ;
+#   - cellule 6 : le jumeau C# rend le poids « alpha = 0 » là où Python et
+#     Rust rendent « alpha = 0.0 » (format du float : écart de rendu, pas de
+#     sémantique). La mesure c6_lecture compare Python et Rust et déclare le
+#     côté C# absent avec son motif.
+#
+# Une seconde différence, elle aussi mesurée : le jumeau C# écrit ses sorties
+# avec des fins de ligne CRLF (\r\n) là où Python et Rust écrivent LF (\n).
+# Le contenu est identique au caractère près, la comparaison de texte brut ne
+# l'est donc pas. Les mesures multi-lignes sont par conséquent ANCRÉES SUR UNE
+# LIGNE (le motif capture la ligne sans son \r final), et les deux mesures de
+# chiffres sur bloc passent par `transform: digits`, qui ignore les fins de
+# ligne. Aucune mesure ne compare des blocs bruts entre C# et Python/Rust.
+#
+# Les cellules 8, 9 et 10 sont les trois exercices (C.1) : elles rendent le
+# même message sur les trois côtés et sont comparées en égalité stricte.
+#   - cellule 4 : le libelle de sortie de la phase d'enumeration differe entre les cotes.
+#     Rust nomme la phase « Affectations faisables » (l'exclusion ne prouve pas la non-dominance,
+#     c'est le filtre qui la teste) ; les cotes de reference conservent le libelle herite
+#     « Pareto : N solutions non-dominnees trouvees ». La mesure compare donc le NOMBRE
+#     d'affectations (groupe capture commun aux trois motifs), pas le libelle.
+- name: "Z3-19-Optimization-Lexicographic"
+  family: "SymbolicAI/SMT/Z3-API"
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-19-Optimization-Lexicographic-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-19-Optimization-Lexicographic-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-19-Optimization-Lexicographic-Rust.ipynb
+  measures:
+    - id: c1_contraintes
+      description: "Cellule 1 — modèle et contraintes posés (ligne ancrée ; la bannière « Moteur » du jumeau C# est hors capture)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 1
+          pattern: "(?m:^(Contraintes\\ posees\\ :[^\\r\\n]*)\\r?$)"
+          transform: text
+        csharp:
+          cell: 1
+          pattern: "(?m:^(Contraintes\\ posees\\ :[^\\r\\n]*)\\r?$)"
+          transform: text
+        rust:
+          cell: 1
+          pattern: "(?m:^(Contraintes\\ posees\\ :[^\\r\\n]*)\\r?$)"
+          transform: text
+    - id: c1_objectifs
+      description: "Cellule 1 — les deux objectifs déclarés au solveur (ligne ancrée)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 1
+          pattern: "(?m:^(Objectifs\\ :[^\\r\\n]*)\\r?$)"
+          transform: text
+        csharp:
+          cell: 1
+          pattern: "(?m:^(Objectifs\\ :[^\\r\\n]*)\\r?$)"
+          transform: text
+        rust:
+          cell: 1
+          pattern: "(?m:^(Objectifs\\ :[^\\r\\n]*)\\r?$)"
+          transform: text
+    - id: c2_lex_verdict
+      description: "Cellule 2 — impact et coût de la solution lexicographique (capturé après la liste de sélection, que le C# rend avec des guillemets doubles)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "(?m:(\\(impact = 18, cout = 12 k€\\))\\r?$)"
+          transform: text
+        csharp:
+          cell: 2
+          pattern: "(?m:(\\(impact = 18, cout = 12 k€\\))\\r?$)"
+          transform: text
+        rust:
+          cell: 2
+          pattern: "(?m:(\\(impact = 18, cout = 12 k€\\))\\r?$)"
+          transform: text
+    - id: c2_lex_lecture
+      description: "Cellule 2 — lecture « la seule combinaison à impact 18 » (ligne ancrée)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "(?m:^(  -> B \\+ C[^\\r\\n]*)\\r?$)"
+          transform: text
+        csharp:
+          cell: 2
+          pattern: "(?m:^(  -> B \\+ C[^\\r\\n]*)\\r?$)"
+          transform: text
+        rust:
+          cell: 2
+          pattern: "(?m:^(  -> B \\+ C[^\\r\\n]*)\\r?$)"
+          transform: text
+    - id: c2_lex_secondaire
+      description: "Cellule 2 — coût secondaire retenu par l'optimisation lexicographique (ligne ancrée)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "(?m:^(  -> Cout secondaire[^\\r\\n]*)\\r?$)"
+          transform: text
+        csharp:
+          cell: 2
+          pattern: "(?m:^(  -> Cout secondaire[^\\r\\n]*)\\r?$)"
+          transform: text
+        rust:
+          cell: 2
+          pattern: "(?m:^(  -> Cout secondaire[^\\r\\n]*)\\r?$)"
+          transform: text
+    - id: c4_compte_solutions
+      description: "Cellule 4 — nombre d'affectations faisables énumérées par la stratégie d'exclusion (ligne ancrée ; le libellé diffère côté Rust — « Affectations faisables » —, c'est le nombre qui est comparé)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "(?m:^Pareto : (\\d+) solutions non-dominnees trouvees\\r?$)"
+          transform: text
+        csharp:
+          cell: 4
+          pattern: "(?m:^Pareto : (\\d+) solutions non-dominnees trouvees\\r?$)"
+          transform: text
+        rust:
+          cell: 4
+          pattern: "(?m:^Affectations faisables : (\\d+) enumeratees[^\\r\\n]*\\r?$)"
+          transform: text
+    - id: c4_tableau_chiffres
+      description: "Cellule 4 — suite des nombres du tableau du front de Pareto (impact puis coût des 7 solutions, dans l'ordre)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "\\A(.*?)(?m:^Apres\\ filtrage)"
+          transform: digits
+        csharp:
+          cell: 4
+          pattern: "\\A(.*?)(?m:^Apres\\ filtrage)"
+          transform: digits
+        rust:
+          cell: 4
+          pattern: "\\A(.*?)(?m:^Apres\\ filtrage)"
+          transform: digits
+    - id: c4_selection_bc
+      description: "Cellule 4 — première ligne du front : sélection B+C, impact 18, coût 12 (ligne ancrée : le libellé et ses deux nombres)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "(?m:^(B\\+C\\s+18\\s+12)\\r?$)"
+          transform: text
+        csharp:
+          cell: 4
+          pattern: "(?m:^(B\\+C\\s+18\\s+12)\\r?$)"
+          transform: text
+        rust:
+          cell: 4
+          pattern: "(?m:^(B\\+C\\s+18\\s+12)\\r?$)"
+          transform: text
+    - id: c4_compte_pareto
+      description: "Cellule 4 — nombre de solutions Pareto-optimales après filtrage (ligne ancrée)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "(?m:^(Apres filtrage \\(selection non vide \\+ non-dominance\\) : 6 solutions Pareto-optimales)\\r?$)"
+          transform: text
+        csharp:
+          cell: 4
+          pattern: "(?m:^(Apres filtrage \\(selection non vide \\+ non-dominance\\) : 6 solutions Pareto-optimales)\\r?$)"
+          transform: text
+        rust:
+          cell: 4
+          pattern: "(?m:^(Apres filtrage \\(selection non vide \\+ non-dominance\\) : 6 solutions Pareto-optimales)\\r?$)"
+          transform: text
+    - id: c6_tableau_chiffres
+      description: "Cellule 6 — suite des nombres du tableau de la somme pondérée (alpha, impact, coût et score des 8 poids, dans l'ordre)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "\\A(.*?)(?m:^Lecture\\ :)"
+          transform: digits
+        csharp:
+          cell: 6
+          pattern: "\\A(.*?)(?m:^Lecture\\ :)"
+          transform: digits
+        rust:
+          cell: 6
+          pattern: "\\A(.*?)(?m:^Lecture\\ :)"
+          transform: digits
+    - id: c6_lecture_derivee
+      description: "Cellule 6 — lecture dérivée : pour chaque alpha, l'ensemble des sélections optimales et leur score (calculé, pas recopié)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "\\A(?:.*?)(?m:^(Lecture\\ :.*?))(?m:^Seuils\\ )"
+          transform: text
+        csharp:
+          absent: "Le jumeau C# rend le poids « alpha = 0 » là où Python et Rust rendent « alpha = 0.0 » (format du float) : la lecture dérivée est donc déclarée absente côté C#, écart mesuré ; la comparaison stricte porte sur Python et Rust."
+        rust:
+          cell: 6
+          pattern: "\\A(?:.*?)(?m:^(Lecture\\ :.*?))(?m:^Seuils\\ )"
+          transform: text
+    - id: c6_seuil_vide
+      description: "Cellule 6 — intervalle d'optimalité de la sélection vide (ligne ancrée)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "(?m:^(  vide     : alpha dans \\[1\\.6, inf\\])\\r?$)"
+          transform: text
+        csharp:
+          cell: 6
+          pattern: "(?m:^(  vide     : alpha dans \\[1\\.6, inf\\])\\r?$)"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "(?m:^(  vide     : alpha dans \\[1\\.6, inf\\])\\r?$)"
+          transform: text
+    - id: c6_seuil_b
+      description: "Cellule 6 — intervalle d'optimalité de la sélection B (ligne ancrée)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "(?m:^(  B        : alpha dans \\[1\\.5, 1\\.6\\])\\r?$)"
+          transform: text
+        csharp:
+          cell: 6
+          pattern: "(?m:^(  B        : alpha dans \\[1\\.5, 1\\.6\\])\\r?$)"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "(?m:^(  B        : alpha dans \\[1\\.5, 1\\.6\\])\\r?$)"
+          transform: text
+    - id: c6_seuil_ab
+      description: "Cellule 6 — intervalle d'optimalité de la sélection A+B (ligne ancrée)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "(?m:^(  A\\+B      : alpha dans \\[1\\.333, 1\\.5\\])\\r?$)"
+          transform: text
+        csharp:
+          cell: 6
+          pattern: "(?m:^(  A\\+B      : alpha dans \\[1\\.333, 1\\.5\\])\\r?$)"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "(?m:^(  A\\+B      : alpha dans \\[1\\.333, 1\\.5\\])\\r?$)"
+          transform: text
+    - id: c6_seuil_bc
+      description: "Cellule 6 — intervalle d'optimalité de la sélection B+C (ligne ancrée)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "(?m:^(  B\\+C      : alpha dans \\[0, 1\\.333\\])\\r?$)"
+          transform: text
+        csharp:
+          cell: 6
+          pattern: "(?m:^(  B\\+C      : alpha dans \\[0, 1\\.333\\])\\r?$)"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "(?m:^(  B\\+C      : alpha dans \\[0, 1\\.333\\])\\r?$)"
+          transform: text
+    - id: c8_exercice_lex
+      description: "Cellule 8 — exercice 1 (optimisation lexicographique sur 4 projets) : message de l'énoncé stubbé"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          cell: 8
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c9_exercice_pareto
+      description: "Cellule 9 — exercice 2 (front de Pareto sur 4 projets) : message de l'énoncé stubbé"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          cell: 9
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c10_exercice_pondere
+      description: "Cellule 10 — exercice 3 (somme pondérée sur 4 poids) : message de l'énoncé stubbé"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          cell: 10
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
