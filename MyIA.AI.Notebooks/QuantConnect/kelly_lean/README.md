@@ -43,6 +43,22 @@ flowchart TD
     STAR --> OPT -.-> UNIQ
 ```
 
+## Comment lire ce README
+
+- **Vous voulez le résultat** : la section des théorèmes prouvés donne les deux énoncés phares —
+  `kelly_optimal` (majoration) et `kelly_unique` (unicité du maximiseur) — et leurs lemmes supports.
+- **Vous voulez la preuve** : [Stratégie de preuve](#stratégie-de-preuve) montre comment `log t ≤ t − 1`
+  remplace toute concavité abstraite ; [Modules](#modules) donne le fichier et le rôle de chaque brique.
+- **Vous voulez le reconstruire** : [Build](#build) porte la commande `lake build` et ce qui l'accompagne
+  en CI.
+- **Vous voulez l'enseigner** : [Notebooks compagnons](#notebooks-compagnons) ordonne les carnets — le
+  volet Python, puis le jumeau à kernel Lean, puis les quatre extensions numérotées.
+- **Vous cherchez ce qui n'est pas fait** : [Jalon ouvert](#jalon-ouvert-non-sorry-backed) et
+  [Approfondissements](#approfondissements) nomment les pistes écartées et les généralisations hors
+  périmètre.
+- Les comptes (`sorry`, jobs de build) se lisent dans le [Build](#build) et la CI, pas dans la prose
+  de cette page.
+
 ## Stratégie de preuve
 
 On évite la concavité abstraite (`StrictConcaveOn`) et l'on prouve `g(f) ≤ g(f*)`
@@ -126,7 +142,7 @@ périmètre du cadre canonique de Kelly (pari de Bernoulli).
 Le lake est le livrable formel (`lake build` = preuve d'exécution, convention des
 lakes frères) ; les notebooks compagnons le rendent pédagogique :
 
-| Notebook | Rôle |
+| Notebook | Ce qu'on y apprend |
 |---|---|
 | [`Kelly_companion-Python.ipynb`](Kelly_companion-Python.ipynb) | **Volet numérique (Python)** : montre, côte à côte avec les théorèmes prouvés, pourquoi `f*` maximise le taux de croissance espéré `g(f)` et pourquoi tout sur-pari (`f > f*`) ou sous-pari (`f < f*`) est strictement sous-optimal — narration économique, figures et lien trading. |
 | [`Kelly_companion-Lean.ipynb`](Kelly_companion-Lean.ipynb) | **Jumeau à kernel Lean 4** : chaque énoncé du lake est importé et vérifié par le noyau Lean lui-même (`#check`, `#print axioms`, exemples re-prouvés en cellule) — les énoncés qui compilent, pas la prose recopiée. |
@@ -141,3 +157,13 @@ quatre etapes du plan de croissance trace dans l'issue
 [#16231](https://github.com/jsboige/CoursIA/issues/16231)). Les modules Lean
 `Fractional` et `MultiIssue` accompagnent les carnets 1 et 3 ; les carnets 2 et 4
 sont purement numeriques.
+
+## Approfondissements
+
+| Fil | Où continuer | Ce qu'on y apprend |
+|---|---|---|
+| La preuve par la concavité | [Jalon ouvert](#jalon-ouvert-non-sorry-backed), `Kelly/Growth.lean` | la voie écartée — `StrictConcaveOn` puis le maximiseur unique de Mathlib — et pourquoi la tangente du log atteint le même résultat plus elementairement |
+| Au-delà du pari de Bernoulli | [Jalon ouvert](#jalon-ouvert-non-sorry-backed), module [`Kelly/Bet.lean`](Kelly/Bet.lean) | ce que le cadre canonique suppose (deux issues, cote connue) et ce qu'une distribution continue ou multi-issues demanderait en plus |
+| Le position sizing en pratique | [`Kelly_companion-Fractional-Python.ipynb`](Kelly_companion-Fractional-Python.ipynb), [`Kelly_companion-Optimist-Bias-Python.ipynb`](Kelly_companion-Optimist-Bias-Python.ipynb) | pourquoi on joue une fraction de `f*` plutot que `f*`, et pourquoi un `p` estimé surexpose meme quand la formule est juste |
+| La reference et la feuille de route | Kelly (1956), *A New Interpretation of Information Rate*, BSTJ ; [#4052](https://github.com/jsboige/CoursIA/issues/4052), [#4038](https://github.com/jsboige/CoursIA/issues/4038) | l'article d'origine, et la place de ce lake dans la roadmap Lean du depot (Tier 2) |
+| La serie qui consomme ce theoreme | [QuantConnect](../README.md) | comment le position sizing demontre ici innerve les strategies de la serie trading, du sizing d'un pari au vol-targeting |
