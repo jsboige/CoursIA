@@ -24,7 +24,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import gh_bulk, gh_selection, tapis_diff, tapis_fil_complet
+from coordination import gh_bulk, gh_prs_cache, gh_selection, tapis_diff, tapis_fil_complet
 from coordination import tapis_qualification as tq
 from coordination.tapis_marqueurs import _iso
 
@@ -52,7 +52,9 @@ def main(argv: list[str] | None = None, run=gh_bulk.run_defaut,
         return 2
     maintenant = maintenant or datetime.now(UTC)
     debut = time.monotonic()
-    prs = gh_bulk.lire_prs_ouvertes(run)
+    # Les PRs sont lues **par le cache partage** : le tirage vient de les payer,
+    # la qualification ne les relit pas depuis le reseau (#29027).
+    prs = gh_prs_cache.lire_prs_partagees(run, jours=args.jours, echeance=debut + args.budget_s)
     servis, ecartees, echecs, arrete, appels, chrono = tq.qualifier(
         candidats, args.lane, maintenant, args.jours, prs, run,
         debut + args.budget_s, debut=debut, preuve=tapis_diff.preuve_gh(run))

@@ -34,7 +34,8 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from coordination import gh_bulk, tapis_cap_livraisons, tapis_leger_rapport, tapis_repli
+from coordination import (gh_bulk, gh_prs_cache, tapis_cap_livraisons,
+                          tapis_leger_rapport, tapis_repli)
 from coordination import tapis_qualification as tq
 
 #: Le mur PROPRE de la qualification : il borne la LECTURE DES FILS quand
@@ -187,6 +188,12 @@ def servir(classe: dict, file: list, fenetre: dict, origami: dict, lane: str,
     complet, et le RAPPORT publie les refus -- une exclusion n'est jamais
     silencieuse.
     """
+    # Le tirage **publie** la liste de PRs qu'il vient de payer : la
+    # qualification, qui vient apres et sur le meme contenu, la relit dans le
+    # cache partage au lieu de payer la meme pagination une seconde fois
+    # (#29027). Le tirage garde sa lecture fraiche -- il n'est jamais servi
+    # une liste plus ancienne que celle qu'il lit lui-meme.
+    gh_prs_cache.publier_prs(classe["prs"])
     # Le CAP lit le reseau par son PROPRE organe : son contrat de fetteur
     # (`(since, until) -> list[dict]`) n'est pas celui de la commande
     # (`(argv, timeout) -> str`) ; l'adaptation se fait dans le module du cap,
