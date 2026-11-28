@@ -299,6 +299,34 @@ BATCH_MODE=false
 
 **Relevé du 2026-11-27** (`docker inspect` sur les conteneurs du banc) : `comfyui-qwen` (masque `1`, sans ordre) et `tts-api` (masque `1`, sans ordre) sur la 3080 Ti ; `whisper-api`, `demucs-api` et `whisper-webui` (masque `0`, sans ordre) sur la 3090 ; `tts-kokoro` et `tts-tada` (masque `1` + `PCI_BUS_ID`) sur la 3090 ; `qwen3_4b_awq_embedding_server` (workspace `vllm`, hors dépôt ; masque `0` + `PCI_BUS_ID`) sur la 3080 Ti ; `comfyui-video` (`0,1` + `PCI_BUS_ID`) voit les deux cartes. `vllm-zimage` et `tts-fishaudio` ne portent pas de masque `CUDA_VISIBLE_DEVICES` : leur carte se lit à leur VRAM résidente, pas à un index. Les services du tableau absents de ce relevé ne tournaient pas à cette date : leur ligne est la carte cible de la décision #28423 §2, pas une mesure.
 
+**Ce relevé du 27/11 mesure la convention telle que les composes la déclarent, pas son effet.** Un conteneur garde l'environnement de sa création : ni `docker restart` ni `docker start` ne relisent le compose ou le `.env`. Les sept conteneurs GPU relevés le 28/11 (`whisper-api`, `demucs-api`, `tts-api`, `comfyui-qwen`, `comfyui-video`, `tts-fishaudio`, `whisper-webui`) avaient été créés entre le 7 et le 20/11 et n'avaient fait que redémarrer le 28/11 à 00:30Z : ils portaient encore l'état d'avant le merge.
+
+**Relevé du 2026-11-28, après re-création service par service** (`docker inspect` et témoin pris *dans* chaque conteneur, même instant 13:33Z) :
+
+| Service | Créé (UTC) | Masque + ordre | Témoin dans le conteneur | Carte |
+|---|---|---|---|---|
+| `whisper-api` | 13:06:04 | `1` + `PCI_BUS_ID` | pas de `torch` dans l'image ; `ctranslate2.get_cuda_device_count()` = 1 | 3090 (masque et ordre ; le lien masque → carte est mesuré sur `demucs-api`, même masque, même ordre) |
+| `demucs-api` | 13:06:30 | `1` + `PCI_BUS_ID` | `torch` : `count=1 \| NVIDIA GeForce RTX 3090` | 3090 |
+| `tts-api` | 13:07:03 | `0` + `PCI_BUS_ID` | `torch` : `count=1 \| NVIDIA GeForce RTX 3080 Ti Laptop GPU` | 3080 Ti |
+| `comfyui-qwen` | 13:09:03 | `0` + `PCI_BUS_ID` | `torch` : `count=1 \| 3080 Ti` ; log du serveur : `Total VRAM 16384 MB`, `Device: cuda:0 NVIDIA GeForce RTX 3080 Ti Laptop GPU` | 3080 Ti |
+| `comfyui-video` | 13:24:54 | `1` + `PCI_BUS_ID` | `torch` : `count=1 \| NVIDIA GeForce RTX 3090` ; log du serveur : `Total VRAM 24576 MB`, `Device: cuda:0 NVIDIA GeForce RTX 3090` | 3090 |
+| `tts-fishaudio` | 13:21:54 | `1` + `PCI_BUS_ID` | `/app/.venv/bin/python` : `count=1 \| NVIDIA GeForce RTX 3090 \| 64ab47ac-…` ; `/v1/health` 200 | 3090 |
+
+Six services sur sept ont été recréés depuis le compose mergé (`up -d --force-recreate`, un service à la fois, témoin dans chacun). Le septième, `whisper-webui`, n'a pas été recréé : le travail d'une autre lane était en cours sur sa configuration montée en lecture-écriture (`max_new_tokens` de `default_parameters.yaml`, modifié à 12:15Z), et recréer le service aurait coupé son essai. Il reste sur son ancien masque `0` sans ordre, qui le place sur la 3090 par l'ordre CUDA par défaut. `tts-tada` et `tts-kokoro` ne sont pas touchés. Le conteneur `tts-fishaudio-idle-monitor`, vestige d'un compose antérieur à la variante int4, est mort depuis trois semaines (`Exited (137)`) et laissé en place.
+
+**Le témoin doit mesurer l'organe qui choisit la carte, pas seulement le masque.** Sur `comfyui-video`, `torch` rendait bien `RTX 3090` alors que le serveur venait de démarrer sur la 3080 Ti : `ComfyUI/main.py` recopie la valeur de `--cuda-device` dans `CUDA_VISIBLE_DEVICES`, en **remplaçant** le masque du conteneur, avant tout import de `torch`. L'argument attendu est donc l'identifiant `nvidia-smi` — pas une position dans le masque visible. La ligne qui tranche est celle du serveur (`Total VRAM` : `16384 MB` = 3080 Ti, `24576 MB` = 3090). L'entrypoint du service passe désormais cet identifiant tel quel et refuse de démarrer si le masque ne contient pas la carte visée ; le 28/11, avant ce correctif, le banc portait la surcharge `COMFYUI_EXTRA_ARGS="--cuda-device 1"` dans son `.env` local (argparse retient la dernière occurrence).
+
+**Deux faux échecs de santé, même classe.** `comfyui-qwen` (sain à 13:17:54Z, créé à 13:09:03Z, soit près de 9 min pour un budget de 180 s + 5 × 30 s) et `comfyui-video` (sain à 13:32:45Z, créé à 13:24:54Z, près de 8 min pour 300 s + 5 × 30 s) dépassent tous deux `start_period` + `retries` : la sonde les déclare `unhealthy` alors que le serveur ouvre son port peu après, et ils repassent au vert sans intervention. Un `up -d --wait` sur une dépendance `service_healthy` rend donc un échec alors que le service guérit seul ; relancer `up -d` **sans** `--force-recreate` démarre le sidecar idle-monitor resté en attente.
+
+### Éviction pendant une réparation de l'embedder (arbitrage #28423, choix a)
+
+Le placement du 2026-11-24 reste tel quel. Pendant une réparation de l'embedder, la lane `myia-po-2023:vllm` peut arrêter `comfyui-qwen` et `tts-api` pour libérer la VRAM du GPU 0, puis les relancer, sous quatre conditions :
+
+1. **Seulement en panne constatée** : moteur figé ou en échec d'initialisation, avec la mesure de VRAM libre qui montre que le seuil (12 288 MiB) n'est pas atteint. L'éviction n'est jamais préventive.
+2. **Arrêt, jamais suppression** : `docker stop`, puis `docker start` dès que le moteur répond. Aucun changement de compose, aucune re-création.
+3. **Prévenir dans le même cycle** : une ligne sur le dashboard `workspace-CoursIA` (services arrêtés, heure d'arrêt, heure de relance, durée).
+4. **Ne pas évincer pendant un cours annoncé** sur les dashboards CoursIA, où les services GenAI peuvent être en usage.
+
 ### Quantization Settings per Service
 
 | Service | Hôte | Model | Quantization | Idle VRAM |

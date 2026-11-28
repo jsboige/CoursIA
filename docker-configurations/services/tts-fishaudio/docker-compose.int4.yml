@@ -21,6 +21,16 @@
 # service only survived pre-#303 because it had NO bound at all. Full
 # mechanism + measured peaks: README.md, section "Variante int4".
 #
+# Checkpoint key: the int4 checkpoint is read from FISHAUDIO_INT4_CHECKPOINT,
+# never from LLAMA_CHECKPOINT_PATH. The bench .env carries
+# LLAMA_CHECKPOINT_PATH=checkpoints/s2-pro for the fp16 route, and the two
+# variants sharing that key made `up -d` on this file start the int4 server on
+# the fp16 snapshot without saying so (measured 2026-11-28). There is no
+# default: the loader reads the groupsize from the directory name, so the
+# directory carries the quantization timestamp and no stable value exists. An
+# unset key stops the command at render time, with the expected form named,
+# instead of failing minutes later at model load.
+#
 # Checkpoints / references are shared with the canonical tree via bind mounts
 # (relative to this directory; override with CHECKPOINTS_PATH /
 # REFERENCES_PATH in .env — see .env.example). The model weights are not
@@ -36,7 +46,7 @@ services:
     command:
       - serve_int4.py
       - --llama-checkpoint-path
-      - ${LLAMA_CHECKPOINT_PATH:-checkpoints/fs-1.2-int4-g128}
+      - ${FISHAUDIO_INT4_CHECKPOINT:?definir FISHAUDIO_INT4_CHECKPOINT dans .env (ex. checkpoints/fs-1.2-int4-g128-20261030)}
       - --decoder-checkpoint-path
       - ${DECODER_CHECKPOINT_PATH:-checkpoints/s2-pro/codec.pth}
       - --decoder-config-name
@@ -80,7 +90,7 @@ services:
       - CUDA_DEVICE_ORDER=PCI_BUS_ID
       - CUDA_VISIBLE_DEVICES=${GPU_PCI_INDEX:-1}
       - NVIDIA_VISIBLE_DEVICES=${GPU_PCI_INDEX:-1}
-      - LLAMA_CHECKPOINT_PATH=${LLAMA_CHECKPOINT_PATH:-checkpoints/fs-1.2-int4-g128}
+      - LLAMA_CHECKPOINT_PATH=${FISHAUDIO_INT4_CHECKPOINT}
       - DECODER_CHECKPOINT_PATH=${DECODER_CHECKPOINT_PATH:-checkpoints/s2-pro/codec.pth}
       - DECODER_CONFIG_NAME=${DECODER_CONFIG_NAME:-modded_dac_vq}
       - API_SERVER_NAME=0.0.0.0

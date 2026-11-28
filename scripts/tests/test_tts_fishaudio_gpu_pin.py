@@ -130,3 +130,56 @@ def test_env_example_declares_the_convention() -> None:
     text = _read(ENV_EXAMPLE)
     assert "PCI_BUS_ID" in text
     assert "RTX 3090" in text
+
+
+# --- Checkpoint de la variante int4 ------------------------------------------------
+#
+# Mesure du 2026-11-28 sur le banc : le `.env` porte
+# `LLAMA_CHECKPOINT_PATH=checkpoints/s2-pro` pour la route fp16, et le compose
+# int4 lisait la meme clef. `docker compose -f docker-compose.int4.yml up -d`
+# demarrait donc le serveur int4 sur le snapshot fp16 sans le dire. Son defaut
+# (`checkpoints/fs-1.2-int4-g128`) ne designait aucun dossier du disque : le
+# dossier reel porte le dateur de quantization.
+INT4_COMPOSE = SERVICE_DIR / "docker-compose.int4.yml"
+FP16_COMPOSE = SERVICE_DIR / "docker-compose.yml"
+INT4_CHECKPOINT_KEY = "FISHAUDIO_INT4_CHECKPOINT"
+
+
+def _command_interpolations(text: str) -> list[str]:
+    """Les variables interpolees par les items de la liste `command:`."""
+    return re.findall(r"^\s*- \$\{([A-Z][A-Z0-9_]*)", text, re.MULTILINE)
+
+
+def test_int4_compose_reads_a_checkpoint_key_of_its_own() -> None:
+    """Le compose int4 ne lit pas la clef du compose fp16."""
+    interpolations = _command_interpolations(_read(INT4_COMPOSE))
+    assert interpolations == [
+        INT4_CHECKPOINT_KEY,
+        "DECODER_CHECKPOINT_PATH",
+        "DECODER_CONFIG_NAME",
+    ], interpolations
+    # La route fp16, elle, garde sa clef.
+    assert "--llama-checkpoint-path ${LLAMA_CHECKPOINT_PATH" in _read(FP16_COMPOSE)
+
+
+def test_int4_compose_refuses_to_render_without_its_checkpoint() -> None:
+    """Sans la clef, compose s'arrete au rendu -- pas au chargement du modele.
+
+    Le defaut d'avant designait un dossier absent ; un defaut date perirait a
+    la quantization suivante. `:?` nomme la forme attendue.
+    """
+    int4 = _read(INT4_COMPOSE)
+    guard = re.findall(rf"\$\{{{INT4_CHECKPOINT_KEY}:\?([^}}]*)\}}", int4)
+    assert len(guard) == 1, guard
+    assert "fs-1.2-int4-g128" in guard[0], guard[0]
+    assert f"${{{INT4_CHECKPOINT_KEY}:-" not in int4
+
+
+def test_env_example_documents_the_int4_checkpoint_key() -> None:
+    """Le .env.example porte la clef int4 et rend sa valeur explicitement datee.
+
+    `<timestamp>` force a le remplacer par le dossier du disque.
+    """
+    values = _assignments(_read(ENV_EXAMPLE))
+    assert "LLAMA_CHECKPOINT_PATH" not in values
+    assert values.get(INT4_CHECKPOINT_KEY) == "checkpoints/fs-1.2-int4-g128-<timestamp>"
