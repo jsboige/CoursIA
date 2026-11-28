@@ -348,7 +348,10 @@ def test_arbre_reel_sans_reference_cassee() -> None:
     assert census["distantes"] == []
     assert not any(l.porteur == ip.PORTEUR_INCONNU for l in lignes)
     certifies = [d for d, v in census["par_deck"].items() if v["pptx_certifie"]]
-    assert len(certifies) >= 5
+    # Plancher cale sur l'arbre mesure : #28246 a retire 52 images de 03-logique et
+    # 04-probabilites (formules passees en KaTeX, doublons), ces deux decks sont depuis
+    # partiels -- 4 decks certifies (05, 06, S1, S2).
+    assert len(certifies) >= 4
     for l in lignes:
         if l.porteur == ip.PORTEUR_MEDIA and ip.NOM_MEDIA.match(Path(l.image).stem):
             assert l.pptx is not None or "reconstitution arretee" in l.preuve or "inventaire" in l.preuve
@@ -384,6 +387,8 @@ def test_temoin_sur_arbre_reel(capsys) -> None:
                 f"  {t.deck:34s} {t.touches:3d}/{t.essais:3d}  hasard tire {t.hasard_tire:2d}"
                 f"  attendu {t.hasard_attendu:5.1f}  p={t.valeur_p:.2e}  {verdict}"
             )
-    assert essais >= 100
+    # 95 essais sur les 4 decks certifies apres #28246 (189 sur 6 avant) : le plancher suit
+    # l'arbre, l'ecart au hasard et les trois decks soutenus restent les vraies dents.
+    assert essais >= 90
     assert touches >= 2 * max(hasard, 1)
     assert sum(t.mord for t in temoins) >= 3
