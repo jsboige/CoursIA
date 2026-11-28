@@ -1,0 +1,289 @@
+# Conformite differentielle de la paire GameTheory-16h (Cooperation LLM,
+# issue #27944, lot Rust std de l'Epic Origami #26510).
+#
+# Le portage Rust (kernel evcxr, `std` seul) reprend le driver multi-seed
+# du carnet Python : 5 seeds, 100 rounds, 50 matches par (heterogeneite,
+# seed), 6 politiques scriptees (le « agent LLM » est le proxy
+# llm_proxy_tft = generous_tft), modele nul uniform_random_seed et controle
+# negatif always_defect. Le RNG est un MT19937 bit-exact de
+# random.Random(seed) de CPython, recopie tel quel dans chaque cellule qui
+# tire : les 9 sorties numeriques sont comparees a l'egalite stricte
+# (tolerance 0) — le replay les a rendues identiques octet pour octet.
+#
+# Pas de jumeau C# dans le depot : le cote C# est declare ABSENT pour
+# chaque mesure (motif : « pas de jumeau C# dans le depot »).
+- name: "GameTheory-16h Cooperation LLM (protocole multi-seed)"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-16h-Cooperation-LLM-Python.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/GameTheory-16h-Cooperation-LLM-Rust.ipynb
+  measures:
+    - id: gel_seeds
+      description: "Liste des seeds gelees au §0 (cellule 1)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 1
+          pattern: "SEEDS = \\[([0-9, ]+)\\]"
+          transform: text
+        rust:
+          cell: 1
+          pattern: "SEEDS = \\[([0-9, ]+)\\]"
+          transform: text
+        csharp:
+          absent: "pas de jumeau C# dans le depot (paire Python/Rust)"
+    - id: gel_rounds
+      description: "Longueur IPD N_ROUNDS gele au §0 (cellule 1)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 1
+          pattern: "N_ROUNDS = (\\d+)"
+          transform: int
+        rust:
+          cell: 1
+          pattern: "N_ROUNDS = (\\d+)"
+          transform: int
+        csharp:
+          absent: "pas de jumeau C# dans le depot (paire Python/Rust)"
+    - id: gel_matches
+      description: "N_MATCHES_PER_PAIR gele au §0 (cellule 1)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 1
+          pattern: "N_MATCHES_PER_PAIR = (\\d+)"
+          transform: int
+        rust:
+          cell: 1
+          pattern: "N_MATCHES_PER_PAIR = (\\d+)"
+          transform: int
+        csharp:
+          absent: "pas de jumeau C# dans le depot (paire Python/Rust)"
+    - id: gel_heterogeneites
+      description: "Liste des heterogeneites gelees au §0 (cellule 4)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "HETEROGENEITIES = \\[('[\\w', ]+)\\]"
+          transform: text
+        rust:
+          cell: 4
+          pattern: "HETEROGENEITIES = \\[('[\\w', ]+)\\]"
+          transform: text
+        csharp:
+          absent: "pas de jumeau C# dans le depot (paire Python/Rust)"
+    - id: gel_h0_band
+      description: "Bande de nullite H0 gele au §0 (cellule 4)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "H0 band = \\S+ (\\d+\\.\\d+)"
+          transform: float
+        rust:
+          cell: 4
+          pattern: "H0 band = \\S+ (\\d+\\.\\d+)"
+          transform: float
+        csharp:
+          absent: "pas de jumeau C# dans le depot (paire Python/Rust)"
+    - id: politiques_chargees
+      description: "Liste des 6 politiques chargees au §1 (cellule 6)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "chargees : \\[('[\\w', ]+)\\]"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "chargees : \\[('[\\w', ]+)\\]"
+          transform: text
+        csharp:
+          absent: "pas de jumeau C# dans le depot (paire Python/Rust)"
+    - id: paire_llm_only
+      description: "Couple de politiques de l'heterogeneite llm_only (cellule 9)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "llm_only\\s+= \\((\\w+, \\w+)\\)"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "llm_only\\s+= \\((\\w+, \\w+)\\)"
+          transform: text
+        csharp:
+          absent: "pas de jumeau C# dans le depot (paire Python/Rust)"
+    - id: test_negative_coop0
+      description: "Taux de cooperation agent 0 du test canari always_defect seed 0 (cellule 12)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "coop_0 = ([\\d.]+)"
+          transform: float
+        rust:
+          cell: 12
+          pattern: "coop_0 = ([\\d.]+)"
+          transform: float
+        csharp:
+          absent: "pas de jumeau C# dans le depot (paire Python/Rust)"
+    - id: test_negative_coop1
+      description: "Taux de cooperation agent 1 du test canari always_defect seed 0 (cellule 12)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "coop_1 = ([\\d.]+)"
+          transform: float
+        rust:
+          cell: 12
+          pattern: "coop_1 = ([\\d.]+)"
+          transform: float
+        csharp:
+          absent: "pas de jumeau C# dans le depot (paire Python/Rust)"
+    - id: llm_only_mean_c0
+      description: "Taux de cooperation moyen agent 0 de llm_only, seed 0 (cellule 15)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "llm_only\\s+0\\s+([\\d.]+)"
+          transform: float
+        rust:
+          cell: 15
+          pattern: "llm_only\\s+0\\s+([\\d.]+)"
+          transform: float
+        csharp:
+          absent: "pas de jumeau C# dans le depot (paire Python/Rust)"
+    - id: scripted_only_mean_c0
+      description: "Taux de cooperation moyen agent 0 de scripted_only, seed 0 (cellule 15)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "scripted_only\\s+0\\s+([\\d.]+)"
+          transform: float
+        rust:
+          cell: 15
+          pattern: "scripted_only\\s+0\\s+([\\d.]+)"
+          transform: float
+        csharp:
+          absent: "pas de jumeau C# dans le depot (paire Python/Rust)"
+    - id: null_global_mean
+      description: "Moyenne globale du modele nul uniform_random (cellule 18)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "Moyenne globale du nul : ([\\d.]+)"
+          transform: float
+        rust:
+          cell: 18
+          pattern: "Moyenne globale du nul : ([\\d.]+)"
+          transform: float
+        csharp:
+          absent: "pas de jumeau C# dans le depot (paire Python/Rust)"
+    - id: null_inter_seed_stdev
+      description: "Ecart-type inter-seed du modele nul (cellule 18)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "Ecart-type inter-seed\\s+: ([\\d.]+)"
+          transform: float
+        rust:
+          cell: 18
+          pattern: "Ecart-type inter-seed\\s+: ([\\d.]+)"
+          transform: float
+        csharp:
+          absent: "pas de jumeau C# dans le depot (paire Python/Rust)"
+    - id: negative_control_coop
+      description: "Cooperation du controle negatif always_defect, seed 0 (cellule 21)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "seed=0 : coop_0 = ([\\d.]+)"
+          transform: float
+        rust:
+          cell: 21
+          pattern: "seed=0 : coop_0 = ([\\d.]+)"
+          transform: float
+        csharp:
+          absent: "pas de jumeau C# dans le depot (paire Python/Rust)"
+    - id: negative_control_payoff
+      description: "Payoff du controle negatif always_defect, seed 0 (cellule 21)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "seed=0 : coop_0 = [\\d.]+, payoff_0 = (\\d+)"
+          transform: int
+        rust:
+          cell: 21
+          pattern: "seed=0 : coop_0 = [\\d.]+, payoff_0 = (\\d+)"
+          transform: int
+        csharp:
+          absent: "pas de jumeau C# dans le depot (paire Python/Rust)"
+    - id: verdict_scripted_only
+      description: "Taux de cooperation moyen de scripted_only au verdict §7 (cellule 24)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: "scripted_only\\s+([\\d.]+)"
+          transform: float
+        rust:
+          cell: 24
+          pattern: "scripted_only\\s+([\\d.]+)"
+          transform: float
+        csharp:
+          absent: "pas de jumeau C# dans le depot (paire Python/Rust)"
+    - id: bilan_h0
+      description: "Nombre de verdicts H0 du bilan §7 (cellule 24)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: "Bilan : (\\d+) H0"
+          transform: int
+        rust:
+          cell: 24
+          pattern: "Bilan : (\\d+) H0"
+          transform: int
+        csharp:
+          absent: "pas de jumeau C# dans le depot (paire Python/Rust)"
+    - id: bilan_h1
+      description: "Nombre de verdicts H1 du bilan §7 (cellule 24)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: "Bilan : \\d+ H0, (\\d+) H1"
+          transform: int
+        rust:
+          cell: 24
+          pattern: "Bilan : \\d+ H0, (\\d+) H1"
+          transform: int
+        csharp:
+          absent: "pas de jumeau C# dans le depot (paire Python/Rust)"
