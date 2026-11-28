@@ -453,9 +453,16 @@ def test_le_cliquet_est_cable_dans_la_voie_rapide():
     import fast_lane
     from fast_lane_registry import TRANCHE40
 
-    assert len(TRANCHE40) == 1, "la tranche du cliquet porte un seul garde"
-    g = TRANCHE40[0]
-    assert g.name == "Harness autoloaded weight ratchet (base vs PR, bloquant)"
+    # La tranche porte desormais un second garde (l'invariant d'inventaire des
+    # regles, #15204) : le garde du cliquet est donc designe par son NOM, pas
+    # par sa position -- conformement a l'intention du test (epingler le
+    # contenu du garde, pas un compte de tranches).
+    par_nom = {g.name: g for g in TRANCHE40}
+    nom_cliquet = "Harness autoloaded weight ratchet (base vs PR, bloquant)"
+    assert nom_cliquet in par_nom, (
+        "la tranche du cliquet porte le garde du cliquet")
+    g = par_nom[nom_cliquet]
+    assert g.name == nom_cliquet
     assert g.blocking, "le cliquet est bloquant : en advisory il n'arreterait rien"
     assert g.needs_base, "le cliquet compare la base a la tete"
     assert g.diff_bounded, "le garde est rejoue sur les seuls fichiers du diff"
