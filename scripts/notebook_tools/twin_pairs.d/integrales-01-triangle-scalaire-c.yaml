@@ -1,0 +1,10 @@
+- name: "Integrales-01-Triangle-Scalaire C#"
+  family: Physique/Integrales
+  python: MyIA.AI.Notebooks/Physique/Integrales/Integrales-01-Triangle-Scalaire-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Physique/Integrales/Integrales-01-Triangle-Scalaire-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux cotes sont solver-free par construction : la quadrature tanh-sinh (noeuds et poids) est ecrite a la main de part et d'autre, mpmath ne servant que d'arithmetique de quadrature cote Python. Aucun moteur externe n'est saute (reserve Hermes 23/11 10:16Z, aligne sur #28238)."
+  known_differences:
+    - "2026-11-24 (myia-po-2028:claudish) : parity_level corrige de native-both a semantic sur la reserve Hermes du 23/11 -- le test du _schema.yaml exige de nommer un moteur externe par cote, et ici les deux cotes reimplementent l'integrale a la main. La paire soeur Integrales-04 porte le meme native-both herite : tranche dediee a prevoir, hors de cette PR."
+    - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de Integrales-01-Triangle-Scalaire-Python.ipynb. Execution reelle sur kernel .net-csharp : 15 cellules, 0 erreur. Verification independente : approve. Premiere attestation ecrite par l'integration de livraison (check_twin_parity --update), en DERNIERE operation (cf #8957)."
