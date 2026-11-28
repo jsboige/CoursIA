@@ -484,6 +484,56 @@ print(run_borne(["claude", "-p", "Reponds uniquement: OK"], budget_s=45, env=env
 
 Si vous voulez que l'agent lance lui-meme les tests, ajoutez `Bash` a `--allowedTools` — mais **la verification independante reste due** : relancez les tests hors de l'agent. Un agent qui se valide lui-meme n'est pas une preuve.
 
+### Le cycle agentique mesure (2026-11-28)
+
+Une troisieme passe, dans un runtime Colab reel, qui va plus loin que les deux
+precedentes : elle **execute** un cycle agentique complet — la CLI appelle une
+API HTTP, recoit une demande d'outil, l'execute reellement, puis termine sur une
+reponse finale.
+
+**Ce qui est mesure**
+
+| Ce qui est mesure | Resultat |
+|---|---|
+| Runtime | `Linux-6.6.159+-x86_64-with-glibc2.39`, Python 3.13.18, Node v22.23.4, `cwd=/content` |
+| CLI | deja presente dans le runtime : `/tools/node/bin/claude`, `claude --version` -> `2.1.332 (Claude Code)` (l'installation elle-meme reste la mesure du 2026-11-25) |
+| Appels a l'API | **3 requetes `POST /v1/messages`**, `model` = `claude-opus-5-5`, 12 outils proposes par la CLI (`Write`, `Bash`, `Read`, `Edit`, `Agent`, …) |
+| Tours d'outils | 2 tours reels : ecriture du fichier, puis lecture par une commande |
+| Resultat du cycle | `num_turns: 3`, `is_error: false`, `terminal_reason: "completed"`, `permission_denials: []`, `subtype: "success"` |
+| Effet reel | `hello.py` **present sur disque**, contenu `print('bonjour')` |
+| Reponse finale | « C'est fait : le fichier a ete ecrit puis relis. » |
+
+**Le modele distant etait un serveur local.** Pour que la mesure porte sur la
+*plomberie* (installation, appel HTTP, boucle d'outils, execution reelle, fin de
+cycle) sans dependre d'une cle, le serveur local imite l'API Messages d'Anthropic
+(SSE). Aucune cle de la flotte n'est utilisee, **aucun appel facture n'est emis**,
+aucune cle de module n'est requise, aucun secret n'est lu ni affiche. Ce que cette
+mesure **n'etablit pas** : la qualite de la reponse d'un modele distant reel — c'est
+exactement ce que couvre la **cle de module** du TP, le seul geste que la procedure
+laisse a l'etudiant.
+
+**Colab tourne en root : `--dangerously-skip-permissions` y est refuse.** La CLI
+sort en erreur :
+
+```
+--dangerously-skip-permissions cannot be used with root/sudo privileges for security reasons
+```
+
+Le jeu de drapeaux qui fonctionne sous Colab est `--allowedTools Write Bash Read` :
+il pre-approuve les outils demandes **sans** ce drapeau. C'est la variante mesuree
+retenue ci-dessus ; `--permission-mode acceptEdits --allowedTools "Bash,Write,Read"`
+est le repli.
+
+> **A adapter en TP.** Le runtime Colab execute en **root** : n'utilisez pas
+> `--dangerously-skip-permissions`, il echoue. Preferez `--allowedTools Write Bash Read`.
+> Et rappelez que la validation **reste hors de l'agent** : apres le cycle, relancez
+> vous-meme les tests.
+
+Un **prevol executable** des trois parcours existe dans le depot :
+`MyIA.AI.Notebooks/GenAI/shared/helpers/colab_preflight.py` (tests :
+`MyIA.AI.Notebooks/GenAI/shared/helpers/tests/test_colab_preflight.py`). Il verifie
+install, versions, GPU et cles en un seul appel, sans dependre d'une cle.
+
 ### Les deux modes d'echec, mesures
 
 Les deux produisent un **symptome muet**, et c'est ce qui rend le diagnostic difficile en TP :
