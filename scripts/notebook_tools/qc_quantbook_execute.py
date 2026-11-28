@@ -287,7 +287,7 @@ def run(
 
 
 def main() -> int:
-    p = argparse.ArgumentParser()
+    p = argparse.ArgumentParser(description=__doc__.strip().splitlines()[0])
     p.add_argument("project_dir", help="QC project folder (sibling to main.py + research.ipynb)")
     p.add_argument("--notebook", default="research.ipynb")
     p.add_argument("--port", type=int, default=8889)

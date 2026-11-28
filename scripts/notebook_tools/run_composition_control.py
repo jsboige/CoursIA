@@ -46,7 +46,7 @@ def http_ready(url: str, timeout_s: int = 120) -> bool:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(description=__doc__.strip().splitlines()[0])
     ap.add_argument("--port", type=int, default=8768)
     ap.add_argument("--keep", action="store_true", help="conserver le fixture (debug)")
     args = ap.parse_args()
