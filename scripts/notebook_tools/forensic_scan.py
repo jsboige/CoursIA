@@ -171,7 +171,7 @@ def collect_notebooks(root: Path) -> list[Path]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=__doc__.strip().splitlines()[0])
     parser.add_argument("--root", default="MyIA.AI.Notebooks", help="Notebook root")
     parser.add_argument("--repo-root", default=".", help="Git repo root")
     parser.add_argument("--json-out", default=None, help="JSON output file")

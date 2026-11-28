@@ -93,7 +93,7 @@ def out_summary(out: dict, max_out: int) -> str:
 
 
 def main():
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(description=__doc__.strip().splitlines()[0])
     ap.add_argument("path")
     ap.add_argument("--max-src", type=int, default=600, help="caractères max de source par cellule")
     ap.add_argument("--max-out", type=int, default=300, help="caractères max d'output texte")

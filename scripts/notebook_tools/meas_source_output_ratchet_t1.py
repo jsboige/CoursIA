@@ -28,13 +28,17 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _run(cmd, cwd):
-    return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, check=False)
+    # `encoding=` explicite : sans lui, un hote cp1252 leve sur une sortie
+    # git UTF-8 (classe #12811). Meme forme que le reste du depot.
+    return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True,
+                          encoding="utf-8", errors="replace", check=False)
 
 
 def _run_stderr_capture(cmd, cwd):
     """Like _run but keeps stderr (we read it independently after)."""
     return subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE,
-                          stderr=subprocess.PIPE, text=True, check=False)
+                          stderr=subprocess.PIPE, text=True,
+                          encoding="utf-8", errors="replace", check=False)
 
 
 def _base_for_window(branch, n_commits):
@@ -110,7 +114,7 @@ def measure_window(window_commits, branch, head_oid):
 
 
 def main():
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(description=__doc__.strip().splitlines()[0])
     ap.add_argument("--branch", default="origin/main")
     ap.add_argument("--head", default=None, help="HEAD ref (default = branch)")
     ap.add_argument("--out-dir", required=True)
