@@ -43,7 +43,8 @@ explicite d'une lane et le grain deja dans sa file (correction en cours).
 (``tapis_rapide.py --json``, cle ``grains``). Le second ecarte les grains deja
 livres -- le premier non : 34 des 40 grains du tirage coordinateur etaient
 livres, et une partie est partie dans les files des workers. ``record``
-refuse donc un grain ``delivered`` dans la file d'une lane worker.
+refuse donc un grain ``delivered`` dans la file d'une lane worker, et un
+grain deja porte par une PR OUVERTE d'une autre lane (27/11).
 
 ``files.json`` (ecrit par le coordinateur) :
 ``{"lanes": {"myia-po-2023:CoursIA": {"arc": "Search, du diagnostic au correctif",
@@ -67,6 +68,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
 
 import belt_equite as be  # noqa: E402
+import belt_occupation as bo  # noqa: E402
 import check_lane_claim as clc  # noqa: E402
 import grain_tag as gt  # noqa: E402
 import recette_due as rd  # noqa: E402
@@ -634,7 +636,8 @@ def equite_dispatch(assignment: dict, belt: dict | None,
 
 
 def record(assignment: dict, belt: dict | None, now: datetime,
-           previous: dict | None = None) -> dict:
+           previous: dict | None = None,
+           open_prs: list[dict] | None = None) -> dict:
     """Valide et horodate la repartition decidee par le coordinateur.
 
     **Un grain ``delivered`` (label ``candidate-delivered``) n'entre pas dans la
@@ -647,8 +650,15 @@ def record(assignment: dict, belt: dict | None, now: datetime,
     Le refus porte sur les grains **visibles dans le tirage** : une issue que le
     tirage ne porte pas passe (le coordinateur compose ses files a partir du
     tirage ; une composition hors tirage n'est pas verifiable ici).
+
+    **Un grain deja porte par une PR OUVERTE d'une autre lane** n'entre pas
+    non plus (27/11, ``belt_occupation``). ``open_prs`` est la lecture des PRs
+    ouvertes ; ``None`` quand elle n'a pas pu etre faite -- une absence de
+    mesure, ecrite dans la repartition, jamais un ensemble vide.
     """
     titles = {int(p["number"]): p for p in grains_du_belt(belt)}
+    index = (bo.index_par_issue(open_prs, pr_lane, pr_issue_refs)
+             if open_prs is not None else None)
     seen: dict[int, str] = {}
     lanes = {}
     for lane, info in assignment["lanes"].items():
@@ -664,9 +674,14 @@ def record(assignment: dict, belt: dict | None, now: datetime,
                     f"#{n} est un grain `delivered` (label `candidate-delivered`) : "
                     f"l'urne de cloture n'appartient pas a la lane worker {lane} "
                     f"({', '.join(sorted(LANES_URNE_DELIVERED))})")
+            if index is not None:
+                motif = bo.refus(n, lane, p, index)
+                if motif:
+                    raise ValueError(motif)
             queue.append({"number": n, "title": p.get("title"), "family": family_of(p) if p else None})
         lanes[lane] = {"arc": info.get("arc"), "queue": queue}
     return {"assigned_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "lanes": lanes,
+            "occupation": "mesuree" if index is not None else "non mesuree",
             "equite": equite_dispatch(assignment, belt, previous)}
 
 
@@ -704,9 +719,20 @@ def main(argv: list[str] | None = None) -> int:
     now = datetime.now(timezone.utc)
 
     if args.cmd == "record":
+        # Les PRs ouvertes : un grain porte par une autre lane est refuse. Une
+        # lecture impossible est une ABSENCE DE MESURE : elle est dite, et la
+        # repartition l'ecrit -- jamais un ensemble vide qui laisserait tout
+        # passer en se lisant « aucune PR ouverte ».
+        open_prs = None
+        try:
+            open_prs = gh_open_prs()
+        except (subprocess.CalledProcessError, FileNotFoundError,
+                json.JSONDecodeError) as exc:
+            print(f"(PRs ouvertes NON MESUREES : lecture impossible -- "
+                  f"{error_label(exc)})", file=sys.stderr)
         try:
             result = record(_read_json(args.assignment), _read_json(args.belt_json),
-                            now, _load_previous(args.previous))
+                            now, _load_previous(args.previous), open_prs=open_prs)
         except (ValueError, KeyError) as exc:
             print(f"REFUS: {exc}")
             return 1
