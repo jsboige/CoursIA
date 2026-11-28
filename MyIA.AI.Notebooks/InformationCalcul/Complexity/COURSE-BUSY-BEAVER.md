@@ -118,7 +118,7 @@ choisir l'autre convention.
    I3-380 → I3-334. C'est le seul mouvement que le mot « course » suggère, et le seul où un
    écart d'états se lit directement.
 2. **Changement de théorie.** PA → ZF (commit du 15/11), et ZF → NF chez l'autre programme
-   (`wlad-svennik`, §5). Le prix en états n'est **pas** comparable tel quel : les deux calculs
+   (`wlad-svennik`, §5). Le prix en états : **comparaison non établie**. Les deux calculs
    prouvent l'arrêt dans des systèmes différents, et c'est l'énoncé qu'il faut citer, pas le
    nombre.
 3. **Montée en théorie.** ZFC + I₃ (`I3-380`, `I3-334`) puis ZFC + I₀ avec un cardinal de
@@ -379,11 +379,15 @@ configuration réalisant le graphe d'un automate fini, une configuration émulan
 Turing. Le zéro du barreau 2 est **calibré**, et le carnet le dit dans ces termes : « Le zéro
 mesure le budget, pas un aveuglement de l'instrument. »
 
-Et la phrase que `GOL-04` formule pour lui-même, et qui vaut mot pour mot des deux côtés :
+Et les deux phrases que `GOL-04` formule pour lui-même — dont **une seule** est des deux côtés :
 
 > « l'écart entre vérifier et construire n'est pas un manque d'ingéniosité, il est structurel » ;
 > « Le barreau suivant ne se franchira pas en échantillonnant plus fort […] mais en assemblant des
 > composants : c'est un changement de nature, pas de budget. »
+
+La seconde est entièrement du côté **construction** : c'est elle qui vaut des deux côtés. La
+première mêle les deux termes, et seule sa moitié **construction** est transférable à BB — la
+moitié « vérifier » est retirée pour BB (la borne, ci-dessous).
 
 **Le vocabulaire, pris aux fichiers.** Le terme « Spartan » est ancré dans
 `conway_lean/Conway/Life/Computation_en.lean`, qui écrit au sujet de l'eater : « the first
@@ -430,7 +434,7 @@ affirme, et ce qu'elle n'affirme pas :
 | Un état PA et un état ZF mesurent-ils la même chose ? | **comparaison non établie** | théories différentes ; l'équivalence des énoncés arithmétiques est **rapportée** par la note de 2016, non vérifiée ici |
 | La bande de 2016 est-elle infinie des deux côtés ? | non précisé là où j'ai lu | le 7-uplet ne fixe pas le sens ; `ZF192` écrit « in both directions » |
 | Andrew James Wade (crédit du générateur) est-il l'auteur de Gemini ? | **homonymie non tranchée** | `ZF/generator/LICENSE.wade` ne dit que « MIT No Attribution / Copyright 2025 Andrew James Wade » |
-| Le rythme actuel est-il tenable ? | non établi | six semaines d'historique (06/11 → 24/11) ne font pas une tendance |
+| Le rythme actuel est-il tenable ? | non établi | dix-huit jours d'historique (06/11 → 24/11) ne font pas une tendance |
 
 ## 11. Sources, et où elles sont archivées
 
@@ -480,6 +484,7 @@ veille** : il signale, il n'établit rien.
 | Date | Version | Événement | Ce qui change ici |
 |---|---|---|---|
 | 2026-11-26 | v1 | premier état, sur le cliché `88c1fdbbddb1` (7 projets, 19 commits) | création du document ; intègre l'erratum Hermes du 26/11 (échelle de temps longue, « comparaison non établie », vocabulaire de l'analogie ramené à une hypothèse de lecture) |
+| 2026-11-28 | v1.1 | trois résidus de prose repris, sans nouveau cliché ni changement de fond (résidus consignés par le coordinateur le 27/11, [Epic #20607](https://github.com/jsboige/CoursIA/issues/20607)) | §3 : « comparaison non établie », la formule unique du document ; §9 : la phrase de `GOL-04` partagée est restreinte à sa moitié construction ; §10 : « dix-huit jours d'historique » au lieu de « six semaines » |
 
 **Procédure de mise à jour.** Quand un bond survient : (1) ré-archiver le dépôt dans un **dossier
 neuf** daté, jamais par écrasement ; (2) ajouter une ligne au tableau §3 si la trajectoire change,
