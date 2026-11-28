@@ -232,7 +232,7 @@ theorem mv_toBiprod_fromBiprod_field
     S.toBiprod F n ≫ S.fromBiprod F n = 0 :=
   S.toBiprod_fromBiprod F n
 
-/-! ## 8. Correspondance Stacks (groupe #12 de #28537, relevé du 26/11)
+/-! ## 8. Correspondance Stacks (groupe #12 de #28537, relevé du 26/11/2026)
 
 Comparaison **énoncé par énoncé** avec le référentiel `AxiomMath/Stacks`
 (`StacksFrontier/Topology/Sheaves/Cohomology/MayerVietoris/`). Références
