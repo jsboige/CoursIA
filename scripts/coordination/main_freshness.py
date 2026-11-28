@@ -129,6 +129,9 @@ ORGANES = (
     # Le CHEMIN DU TIRAGE : classement, rotation, fenetre, qualification,
     # service, reprise, occupation, etats et tranche -- tous modifient le
     # grain servi, donc tous doivent correspondre a origin/main.
+    # La grammaire des marqueurs de claim y entre par `tapis_attente.relachee()`,
+    # qui y lit la clause `paths:` d'une remise (#28899).
+    "scripts/coordination/claim_grammar.py",
     "scripts/coordination/tapis_acceptance.py",
     "scripts/coordination/tapis_age.py",
     "scripts/coordination/tapis_ancre.py",

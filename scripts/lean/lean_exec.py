@@ -1705,6 +1705,30 @@ def _emit(result: dict, as_json: bool) -> int:
     return result["exit_code"]
 
 
+def _terminate_run_tree(proc: subprocess.Popen, job: WindowsJob | None,
+                        confined: bool) -> list[int]:
+    """Tue l'arbre par tous les moyens, puis verifie la postcondition."""
+    if os.name == "nt":
+        if confined and job is not None and job.handle:
+            job.terminate()
+            time.sleep(1.0)
+        kill_pids(sorted(descendants_of(proc.pid), reverse=True))
+    else:
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except OSError:
+            pass
+        kill_pids(sorted(descendants_of(proc.pid), reverse=True))
+    orphans = []
+    for _ in range(4):
+        time.sleep(1.5)
+        orphans = find_orphans(proc.pid, job if confined else None)
+        if not orphans:
+            break
+        kill_pids(orphans)
+    return orphans
+
+
 def run_command(
     cmd: list[str],
     timeout_s: float | None = None,
@@ -2071,29 +2095,18 @@ def run_command(
             return _emit(result, as_json)
         time.sleep(0.5)
 
-    # --- Supervision : timeout / interruption / violation de budget ---
-    def terminate_tree() -> list[int]:
-        """Tue l'arbre par tous les moyens, puis verifie la postcondition."""
-        if os.name == "nt":
-            if confined and job is not None and job.handle:
-                job.terminate()
-                time.sleep(1.0)
-            kill_pids(sorted(descendants_of(proc.pid), reverse=True))
-        else:
-            try:
-                os.killpg(proc.pid, signal.SIGKILL)
-            except OSError:
-                pass
-            kill_pids(sorted(descendants_of(proc.pid), reverse=True))
-        orphans = []
-        for _ in range(4):  # grace ~6 s, re-sonde
-            time.sleep(1.5)
-            orphans = find_orphans(proc.pid, job if confined else None)
-            if not orphans:
-                break
-            kill_pids(orphans)
-        return orphans
+    return _supervise_run(proc, job, confined, granted, budget, timeout_s,
+                          started, result, child_out_fh, child_err_fh,
+                          child_in_fh, tree_lease, run_id, as_json)
 
+
+def _supervise_run(proc: subprocess.Popen, job: WindowsJob | None,
+                   confined: bool, granted: int, budget: int,
+                   timeout_s: float | None, started: float, result: dict,
+                   child_out_fh, child_err_fh, child_in_fh, tree_lease,
+                   run_id: str, as_json: bool) -> int:
+    """Surveille le processus admis, nettoie ses ressources et rend son verdict."""
+    # --- Supervision : timeout / interruption / violation de budget ---
     status = "ok"
     child_exit = None
     killed = False
@@ -2107,7 +2120,7 @@ def run_command(
                 if timeout_s is not None and time.time() - started > timeout_s:
                     status = "timeout"
                     killed = True
-                    orphans = terminate_tree()
+                    orphans = _terminate_run_tree(proc, job, confined)
                     break
                 # Budget supervise : ce run ne doit jamais heberger plus de
                 # COMPILATIONS lean vivantes que la parallélisme accordee
@@ -2121,12 +2134,12 @@ def run_command(
                         result["budget_violation"] = reason
                         status = "timeout"
                         killed = True
-                        orphans = terminate_tree()
+                        orphans = _terminate_run_tree(proc, job, confined)
                         break
     except KeyboardInterrupt:
         status = "interrupted"
         killed = True
-        orphans = terminate_tree()
+        orphans = _terminate_run_tree(proc, job, confined)
 
     # --- Postcondition finale : zero descendant orphelin, echec visible ---
     if not killed:

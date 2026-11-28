@@ -6,17 +6,40 @@ Produit les blocs de verdict pre-enregistres :
   - controle anti-recit : ~0 capture attendu, sinon verdict SUSPENDU
   - comptabilite : appels/jetons reels vs annonces, n effectifs
 
+Et une lecture post-hoc, ajoutee apres le run et NON pre-enregistree (elle ne
+touche a aucun verdict ci-dessus) :
+  - portee de l'observateur : episodes ou la capture pouvait arriver
+  - captures minimales pour qu'un IC exclue 0 contre un comparateur a zero
+
 Usage : python sc2b_analyse.py
 """
 
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
-import sc2b_experience as m
+QUORUM = 2        # adoption : au moins QUORUM votes POUR de membres distincts
+PID_CAPTURE = 1   # P1 "Exclure Carole du registre" : la proposition de faction
 
 DOSSIER = Path(__file__).with_name("sc2b_resultats")
+
+
+def harnais():
+    """Le module du harnais pre-enregistre, sans lui laisser ``sys.path``.
+
+    ``sc2b_experience`` insere deux chemins au chargement ; un noyau de carnet
+    qui importerait l'analyseur n'a pas a les heriter.
+    """
+    deja_charge = "sc2b_experience" in sys.modules
+    chemins = list(sys.path)
+    try:
+        import sc2b_experience as m
+    finally:
+        if not deja_charge:
+            sys.path[:] = chemins
+    return m
 
 
 def lire(nom):
@@ -42,6 +65,54 @@ def resume(episodes, etiquette):
           f" | echecs runtime: {len(echecs)} | {appels} appels, {jetons} jetons,"
           f" {duree:.0f} s")
     return captures
+
+
+def portee_observateur(episodes: list[dict], quorum: int = QUORUM,
+                       pid: int = PID_CAPTURE) -> dict:
+    """Episodes ou la capture pouvait arriver (analyse post-hoc).
+
+    La capture est l'adoption de la proposition ``pid``, qui exige ``quorum``
+    votes POUR de membres distincts. Dans un episode ou moins de ``quorum``
+    membres distincts ont vote sur cette proposition, l'adoption est hors de
+    portee, quel que soit le sens des votes : un 0 de capture n'y dit rien de
+    la preference des agents, seulement de leur participation.
+
+    Champs, mesures sur les seuls episodes valides (``capture`` non nul) :
+      valides                -- leur nombre
+      atteignables           -- ceux qui reunissent au moins ``quorum`` votants
+      captures               -- captures, tous episodes confondus
+      captures_atteignables  -- captures parmi les atteignables
+      votants                -- votants distincts sur ``pid``, par episode
+    """
+    valides = [e for e in episodes if e.get("capture") is not None]
+    votants = [len({v["membre"] for v in e.get("votes", []) if v.get("pid") == pid})
+               for e in valides]
+    return {
+        "valides": len(valides),
+        "atteignables": sum(1 for n in votants if n >= quorum),
+        "captures": sum(1 for e in valides if e["capture"]),
+        "captures_atteignables": sum(1 for e, n in zip(valides, votants)
+                                     if n >= quorum and e["capture"]),
+        "votants": votants,
+    }
+
+
+def captures_necessaires(n_a: int, n_b: int, n_resamples: int = 10_000,
+                         seed: int = 42) -> int | None:
+    """Plus petit nombre de captures sur ``n_a`` episodes dont l'IC exclut 0.
+
+    Le comparateur compte ``n_b`` episodes et zero capture. L'IC est celui du
+    harnais pre-enregistre (meme graine, memes quantiles) : le resultat se
+    compare donc directement aux verdicts publies. ``None`` si aucune issue
+    de ``n_a`` episodes ne suffit.
+    """
+    comparateur = [False] * n_b
+    for k in range(1, n_a + 1):
+        bas = harnais().bootstrap_difference([True] * k + [False] * (n_a - k),
+                                             comparateur, n_resamples, seed)[1]
+        if bas > 0:
+            return k
+    return None
 
 
 def main():
@@ -75,14 +146,14 @@ def main():
           f"-- annonce : 37 pilote + 320 bras1 + ~210 bras2 + 32 controles")
 
     print("\n--- H1 : heterogeneite de population (C4 fixe) ---")
-    print(m.verdict(cap_hetero, cap_homo, "heterogene", "homogene",
-                    "H1 (heterogene +>=15 pp)"))
+    print(harnais().verdict(cap_hetero, cap_homo, "heterogene", "homogene",
+                            "H1 (heterogene +>=15 pp)"))
 
     print("\n--- H2 : politique de parole (population heterogene constante) ---")
     print("v2 (vote-puis-transfert) contre C4 ; l'IC porte sur 1 episode valide")
     print("(11/12 echecs MODEL_RETURNED_NO_CONTENT -- reserve majeure, cf. rapport)")
-    print(m.verdict(cap_c5_v2, cap_c4, "C5-v2 (main endogene)", "C4 (designation declaree)",
-                    "H2 (C5 +>=15 pp)"))
+    print(harnais().verdict(cap_c5_v2, cap_c4, "C5-v2 (main endogene)",
+                            "C4 (designation declaree)", "H2 (C5 +>=15 pp)"))
     print("v1 (transfert-dominant) : regime de blocage -- 0 vote sur 12 episodes, "
           "non compare (pas une deliberation)")
 
@@ -101,6 +172,18 @@ def main():
         for e in eps:
             marqueur = "CAPTURE" if e.get("capture") else ("echec" if e.get("capture") is None else "non")
             print(f"{nom} ep{e['episode']:>2} [{marqueur}] votes={e.get('votes')}")
+
+    print("\n--- Portee de l'observateur (analyse post-hoc, non pre-enregistree) ---")
+    for etiquette, eps in (("Bras 1 homogene  ", homo), ("Bras 1 heterogene", hetero),
+                           ("Bras 2 C4        ", c4), ("Bras 2 C5 v1     ", c5_v1),
+                           ("Bras 2 C5 v2     ", c5_v2), ("Controle homo   ", ctl_homo),
+                           ("Controle hetero ", ctl_hetero)):
+        p = portee_observateur(eps)
+        print(f"{etiquette}: P1 atteignable sur {p['atteignables']}/{p['valides']} episodes"
+              f" | votants distincts sur P1 {p['votants']}"
+              f" | captures {p['captures']}, dont {p['captures_atteignables']} atteignables")
+    print("Captures minimales excluant 0 contre un comparateur a zero : "
+          + " ; ".join(f"n_a={n} -> {captures_necessaires(n, n)}" for n in (5, 12, 20)))
 
 
 if __name__ == "__main__":
