@@ -6641,9 +6641,22 @@ def _no_open_prs(monkeypatch):
     happened the day this leg was first wired (#16451, #16306, #16102 all
     touched `check_unaddressed_nits.py`). A guard test must not depend on the
     fleet's live plateau.
+
+    #28869 -- the leg has TWO seams, and neutralising one left the other live:
+    `_compute_open_pr_collisions` (the `--paths` intersection) AND
+    `_find_open_prs_referencing_issue` (the IMPLICIT leg of #14300, which
+    resolves the repo through `GH_REPO`/`gh repo view`). Since #28869 an
+    IMPLICIT leg that was REQUESTED and could not run returns `exit 2` instead
+    of printing a CLEAR nobody measured -- correct, but it made these three
+    tests fail on any surface whose `GH_REPO` is unset or unusable, the CI
+    included, with `assert 2 == 0` and no claim of theirs in the way. Both
+    seams are patched here: the leg runs, measures nothing, and CLEAR is
+    earned rather than assumed.
     """
     monkeypatch.setattr(clc, "_compute_open_pr_collisions",
                         lambda paths, my_lane, prs=None: ([], []))
+    monkeypatch.setattr(clc, "_find_open_prs_referencing_issue",
+                        lambda issue_number, my_lane, prs=None, threshold=None: [])
 
 
 def _write_mixed_paths_payload(tmp_path):
@@ -6850,8 +6863,7 @@ def test_issue_mode_clear_when_pr_is_own_lane(monkeypatch, tmp_path, capsys):
     source = _write_payload(payload(comment(
         "[RELEASED] lane other:CoursIA", "2026-08-15T00:00:00Z",
     ), number=16176), tmp_path)
-    monkeypatch.setattr(clc, "_compute_open_pr_collisions",
-                        lambda paths, my_lane, prs=None: ([], []))
+    _no_open_prs(monkeypatch)
     rc = clc.main([
         "16176", "--lane", "myia-po-2024:CoursIA", "--from-json", source,
         "--no-stale", "--paths", "scripts/notebook_tools/wsl_papermill.py",
@@ -6874,7 +6886,8 @@ def test_issue_mode_degrades_to_warn_when_gh_fails(monkeypatch, tmp_path, capsys
     def _boom(paths, my_lane, prs=None):
         raise RuntimeError("gh pr list --state open failed (exit 1)")
 
-    monkeypatch.setattr(clc, "_compute_open_pr_collisions", _boom)
+    _no_open_prs(monkeypatch)       # the IMPLICIT leg runs and measures nothing
+    monkeypatch.setattr(clc, "_compute_open_pr_collisions", _boom)   # this one dies
     rc = clc.main([
         "16176", "--lane", "myia-po-2024:CoursIA", "--from-json", source,
         "--no-stale", "--paths", "scripts/notebook_tools/wsl_papermill.py",
