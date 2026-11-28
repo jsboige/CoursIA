@@ -23,6 +23,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -214,13 +215,18 @@ def test_surface_machine_absente_est_rendue_manquante_pas_zero(tmp_path):
 
 
 def test_root_relatif_est_resolu_avant_slug_memoire(tmp_path, monkeypatch):
-    """Le slug mémoire dépend de la racine absolue, jamais de ``Path('.')``."""
+    """Le slug mémoire dépend de la racine absolue, jamais de ``Path('.')``.
+
+    Le slug est le CHEMIN DU PROJET entier, pas le nom de son dernier
+    dossier : la convention reelle de Claude Code (mesuree sur les
+    repertoires de la machine le 2026-11-28) transforme chaque caractere qui
+    n'est ni alphanumerique ni `-` en `-`, sur le chemin complet.
+    """
     repo = tmp_path / "CoursIA"
     repo.mkdir()
     home = tmp_path / "home"
-    drive = repo.resolve().drive[:1].lower()
-    expected = (home / ".claude" / "projects" / (drive + "--CoursIA")
-                / "memory" / "MEMORY.md")
+    slug = re.sub(r"[^A-Za-z0-9-]", "-", os.path.abspath(str(repo)))
+    expected = (home / ".claude" / "projects" / slug / "memory" / "MEMORY.md")
     expected.parent.mkdir(parents=True)
     expected.write_text("# mémoire\n", encoding="utf-8")
     (home / ".claude" / "CLAUDE.md").write_text("# global\n", encoding="utf-8")
@@ -233,6 +239,66 @@ def test_root_relatif_est_resolu_avant_slug_memoire(tmp_path, monkeypatch):
 
     assert not missing
     assert str(expected) in {e["path"] for e in entries}
+    # Le slug porte le CHEMIN, pas le seul nom de dossier : c'est precisement
+    # ce qui manquait (un projet a chemin imbrique n'etait jamais trouve).
+    assert slug != repo.name
+    assert slug.endswith("-CoursIA")
+
+
+@pytest.mark.skipif(os.name != "nt",
+                    reason="convention de slug mesuree sur la machine Windows")
+def test_slug_memoire_porte_le_chemin_complet_et_non_la_feuille():
+    """Un projet a chemin imbrique doit produire un slug de chemin complet.
+
+    L'ancienne derivation (lettre de lecteur + `--` + NOM DU DERNIER
+    DOSSIER) ne couvrait que les projets poses a la racine d'un lecteur :
+    sur `d:\\Dev\\CoursIA-3` elle rendait `d--CoursIA-3`, un repertoire qui
+    n'existe pas. La surface `MEMORY.md` etait alors declaree MANQUANTE sur
+    tout projet a chemin imbrique, et le budget de #15204 ne pouvait jamais
+    etre certifie.
+    """
+    slug = mah.memory_slug(Path("d:/Dev/CoursIA-3"))
+    assert slug.startswith("d--Dev-"), slug
+    assert slug.endswith("CoursIA-3"), slug
+    assert "-" in slug[len("d--"):], "le chemin complet est dans le slug"
+
+
+@pytest.mark.skipif(os.name != "nt",
+                    reason="convention de slug mesuree sur la machine Windows")
+def test_slug_memoire_conforme_aux_repertoires_reels_de_la_machine():
+    """La convention est MESUREE, pas deduite : on la fige sur des reels.
+
+    Les entrees attendues sont les repertoires qui existent reellement sous
+    `~/.claude/projects/` sur cette machine. Une convention derivee « au
+    feeling » ne serait pas verifiee par ce test.
+    """
+    attendu = {
+        "d:\\Dev\\CoursIA-3":
+            "d--Dev-CoursIA-3",
+        "d:\\Dev\\CoursIA-2":
+            "d--Dev-CoursIA-2",
+        "C:\\dev\\claudish":
+            "C--dev-claudish",
+        ("C:\\dev\\roo-extensions\\.claude\\worktrees\\wt-13089"
+         "\\myia-po-2026\\20260831-212600"):
+            ("C--dev-roo-extensions--claude-worktrees-wt-13089"
+             "-myia-po-2026-20260831-212600"),
+    }
+    for chemin, slug in attendu.items():
+        assert mah.memory_slug(Path(chemin)) == slug, chemin
+
+
+@pytest.mark.skipif(os.name != "nt",
+                    reason="convention de slug mesuree sur la machine Windows")
+def test_slug_memoire_conserve_la_casse_de_la_lettre_du_lecteur():
+    """`resolve()` met la lettre du lecteur en majuscule, `abspath` non.
+
+    `d--Dev-CoursIA-3` est le repertoire REEL de ce projet. Une normalisation
+    de casse ici rendrait la surface introuvable — silencieusement, comme
+    l'ancien bug.
+    """
+    assert mah.memory_slug(Path("d:/Dev/CoursIA-3")) == "d--Dev-CoursIA-3"
+    assert mah.memory_slug(Path("D:/Dev/CoursIA-3")) == "D--Dev-CoursIA-3"
 
 
 def test_mesure_complete_reflete_les_surfaces_manquantes(tmp_path):
@@ -377,6 +443,142 @@ def test_meme_memoire_absente_puis_presente_encadre_un_seuil(tmp_path):
     )
     assert complete_guard.returncode == 1
     assert "DEPASSEMENT" in complete_guard.stderr
+
+
+# --- perimetre d'acceptance (#15204) : deux nombres, jamais un seul ----------
+
+
+def _accroche_home(tmp_path, monkeypatch, globales="# globale\n"):
+    """Une maison factice : CLAUDE.md global + rules globales."""
+    home = tmp_path / "home"
+    (home / ".claude" / "rules").mkdir(parents=True)
+    (home / ".claude" / "CLAUDE.md").write_text("# global\n", encoding="utf-8")
+    (home / ".claude" / "rules" / "globale.md").write_text(globales, encoding="utf-8")
+    monkeypatch.setattr(mah.os.path, "expanduser", lambda value: str(home))
+    return home
+
+
+def test_perimetre_exclut_les_rules_globales_qui_ne_sont_pas_dans_la_cible(
+        tmp_path, monkeypatch):
+    """Les rules globales de `~/.claude/rules/` sont auto-chargees, mais la
+    cible de #15204 ne les comptait pas.
+
+    La cible (157 500 o) a ete fixee le 2026-09-08 sur un perimetre de quatre
+    surfaces. Les rules globales n'existaient pas ce jour-la. Les additionner
+    au total rend le verdict indecidable : elles font grimper le chiffre sans
+    qu'aucune surface comptee n'appartienne au perimetre.
+    """
+    _accroche_home(tmp_path, monkeypatch)
+    root = _arbre(tmp_path / "repo", "# cible\n", "# autre\n")
+    memory = tmp_path / "machine" / "MEMORY.md"
+    memory.parent.mkdir(parents=True)
+    memory.write_text("# memoire\n", encoding="utf-8")
+
+    m = mah.measure(root, machine=True, memory_file=memory)
+    acc = m["acceptance"]
+
+    assert acc["certified"] is True
+    surfaces = {s["surface"]: s["bytes"] for s in acc["surfaces"]}
+    exclues = {s["surface"]: s["bytes"] for s in acc["excluded_surfaces"]}
+    assert "regles globales (~/.claude/rules)" not in surfaces
+    assert exclues["regles globales (~/.claude/rules)"] > 0
+    # Invariant : perimetre + surfaces hors perimetre = ce qu'une session
+    # charge reellement. Les deux nombres ne se recouvrent pas, ils se
+    # completent.
+    assert (acc["bytes"] + sum(s["bytes"] for s in acc["excluded_surfaces"])
+            == m["autoloaded_total_bytes"])
+
+
+def test_ecart_du_perimetre_ne_confond_pas_le_total_brut(tmp_path, monkeypatch):
+    """Le verdict de l'acceptance se juge sur le perimetre, pas sur le total.
+
+    Mesure du 2026-11-28 sur cette machine : total brut 192 895 o (ecart de
+    35 395 o) contre perimetre 171 705 o (ecart de 14 205 o). Se fier au
+    total brut triple l'ecart et fait porter aux lanes une dette qui n'est
+    pas la leur.
+    """
+    _accroche_home(tmp_path, monkeypatch, globales="# globale\n" + "x" * 4000)
+    root = _arbre(tmp_path / "repo", "# cible\n", "# autre\n")
+    memory = tmp_path / "machine" / "MEMORY.md"
+    memory.parent.mkdir(parents=True)
+    memory.write_text("# memoire\n", encoding="utf-8")
+
+    m = mah.measure(root, machine=True, memory_file=memory)
+    acc = m["acceptance"]
+    cible = mah.ACCEPTANCE_TARGET_BYTES
+
+    assert acc["bytes"] < m["autoloaded_total_bytes"]
+    assert acc["gap_bytes"] == acc["bytes"] - cible
+    assert acc["gap_bytes"] < m["autoloaded_total_bytes"] - cible
+    assert acc["satisfied"] is (acc["bytes"] <= cible)
+    assert acc["target_bytes"] == cible
+    assert acc["target_tokens"] == mah.ACCEPTANCE_TARGET_TOKENS
+
+
+def test_perimetre_non_certifie_sans_les_surfaces_machine(tmp_path):
+    """Hors `--with-machine`, le perimetre ne se calcule pas : il se DIT.
+
+    Une surface machine non lue ne se compte pas zero : elle rendrait un
+    perimetre trop petit, et un « objectif atteint » forge.
+    """
+    root = _arbre(tmp_path / "repo", "# cible\n", "# autre\n")
+    acc = mah.measure(root)["acceptance"]
+    assert acc["certified"] is False
+    assert acc["bytes"] is None
+    assert acc["gap_bytes"] is None
+    assert acc["satisfied"] is None
+
+
+def test_cible_de_l_acceptance_est_cellule_du_mandat():
+    """70k tokens au ratio calibre, soit 157 500 octets (mandat du 2026-09-08)."""
+    assert mah.ACCEPTANCE_TARGET_TOKENS == 70000
+    assert mah.ACCEPTANCE_TARGET_BYTES == 157500
+    assert mah.ACCEPTANCE_TARGET_BYTES == int(
+        mah.ACCEPTANCE_TARGET_TOKENS * mah.DEFAULT_RATIO)
+
+
+def test_max_perimeter_bytes_juge_le_perimetre_et_non_le_total(tmp_path):
+    """Les deux garde-fous ne jugent pas le meme nombre.
+
+    Un seuil pose entre le perimetre et le total brut passe sur l'un et
+    rouge sur l'autre : c'est la preuve qu'ils ne mesurent pas la meme chose.
+    """
+    root = _arbre(tmp_path / "repo", "# cible\n", "# autre\n")
+    home = tmp_path / "home"
+    (home / ".claude" / "rules").mkdir(parents=True)
+    (home / ".claude" / "CLAUDE.md").write_text("# global\n", encoding="utf-8")
+    (home / ".claude" / "rules" / "globale.md").write_text(
+        "# globale\n" + "x" * 5000, encoding="utf-8")
+    memory = tmp_path / "machine" / "MEMORY.md"
+    memory.parent.mkdir(parents=True)
+    memory.write_text("# memoire\n", encoding="utf-8")
+    env = os.environ.copy()
+    env["HOME"] = str(home)
+    env["USERPROFILE"] = str(home)
+
+    data = json.loads(_cli("--with-machine", "--memory-file", str(memory),
+                            "--json", root=root, env=env).stdout)
+    perimetre = data["acceptance"]["bytes"]
+    total = data["autoloaded_total_bytes"]
+    assert perimetre < total
+    seuil = (perimetre + total) // 2
+
+    r_perimetre = _cli("--with-machine", "--memory-file", str(memory),
+                       "--max-perimeter-bytes", str(seuil), "--json",
+                       root=root, env=env)
+    r_total = _cli("--with-machine", "--memory-file", str(memory),
+                   "--max-bytes", str(seuil), "--json", root=root, env=env)
+    assert r_perimetre.returncode == 0, r_perimetre.stderr
+    assert r_total.returncode == 1
+
+
+def test_max_perimeter_bytes_refuse_un_perimetre_non_certifiable(tmp_path):
+    root = _arbre(tmp_path / "repo", "# cible\n", "# autre\n")
+    absent = tmp_path / "absent" / "MEMORY.md"
+    r = _cli("--with-machine", "--memory-file", str(absent),
+             "--max-perimeter-bytes", "10000000", "--json", root=root)
+    assert r.returncode == 2
+    assert "NON CERTIFIABLE" in r.stderr
 
 
 if __name__ == "__main__":  # pragma: no cover
