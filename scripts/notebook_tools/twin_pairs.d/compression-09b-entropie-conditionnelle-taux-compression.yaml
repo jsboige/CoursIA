@@ -1,0 +1,13 @@
+- name: "Compression-09b Entropie Conditionnelle Taux Compression"
+  family: InformationCalcul/Compression
+  python: MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09b-Entropie-Conditionnelle-Taux-Compression-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09b-Entropie-Conditionnelle-Taux-Compression-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Sujet solver-free by design : entropie de Shannon, entropie conditionnelle, information mutuelle et taux d'entropie sont calcules a la main des deux cotes. Python s'appuie sur numpy (bincount, tables jointes) ; le jumeau C# reconstruit les memes tables de probabilite et de contextes en BCL pure (System.Math.Log2, Dictionary<long,long>, System.Random), avec zero paquet NuGet et aucun moteur externe omis."
+  known_differences:
+    - "Generateur pseudo-aleatoire different : Python utilise numpy default_rng (PCG64) avec les graines 42/7/11 ; C# utilise System.Random avec les memes graines. Les valeurs analytiques et deterministes coincident au chiffre (pi = 0.8333/0.1667, H0 analytique = 0.6500, rho analytique = 0.5575, log2(27) = 4.755) ; les estimations empiriques different au 3e-4 au 2e-2 (echantillonnage), sans changer aucune conclusion (H(|1) colle a rho, source structuree abaissee, source i.i.d. plate)."
+    - "Pas de figure matplotlib cote C# : la courbe du taux d'entropie H(X_t | contexte de longueur k) est rendue sous forme de tableau texte (le noyau .net-csharp ne fournit pas de traceur sans dependance), alors que le jumeau Python affiche deux sous-graphes."
+    - "Tables de contextes stockees dans des dictionnaires (Dictionary<long,long>) cote C# au lieu du tableau dense numpy bincount : a l'ordre 5, le tableau dense 27^5 x 27 ferait ~3 Go, alors que seuls les contextes observes sont peu nombreux. La valeur calculee est mathematiquement identique a la formule de Python."
+    - "Les trois exercices restent des stubs non resolus dans les deux versions ; les signatures C# renvoient double?/int? (l'equivalent de return None) et le carnet s'execute de bout en bout."
+    - "Noyaux et runtime differents : .net-csharp / .NET 9 / C# 13 contre CPython 3 + numpy ; la culture invariante est posee cote C# pour que le separateur decimal reste le point, comme les valeurs citees dans la prose."
