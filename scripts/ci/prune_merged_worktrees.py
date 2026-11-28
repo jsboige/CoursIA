@@ -1295,15 +1295,23 @@ def quarantine_worktree_modules(
     if refusal is not None:
         return False, refusal, None
 
+    # La propriete de la racine se prouve AVANT toute ecriture. Cette voie
+    # creait la racine, puis posait le marqueur s'il manquait : une racine
+    # preexistante sans marqueur etait donc ADOPTEE, et `purge_quarantine`
+    # (fail-closed sur ce seul temoin) aurait ensuite retire ses enfants,
+    # qui ne sont pas ceux de l'organe. La voie archives de HEAD porte ce
+    # controle depuis #28687 ; celle-ci le portait pas (#28833).
+    ownership = quarantine_root_ownership_refusal(quarantine_root)
+    if ownership is not None:
+        return False, ownership, None
+    # `claim_quarantine_root` cree la racine marqueur en premier, et
+    # n'adopte pas une racine nee entre le controle et cet appel.
+    claimed = claim_quarantine_root(quarantine_root)
+    if claimed is not None:
+        return False, claimed, None
+
     dest_root = quarantine_root / dest_name
     try:
-        quarantine_root.mkdir(parents=True, exist_ok=True)
-        marker = quarantine_root / QUARANTINE_MARKER
-        if not marker.exists():
-            marker.write_text(
-                "racine de quarantaine du pruneur de worktrees\n",
-                encoding="utf-8",
-            )
         if dest_root.exists():
             return False, "quarantine-destination-exists", None
         dest_root.mkdir(parents=True)

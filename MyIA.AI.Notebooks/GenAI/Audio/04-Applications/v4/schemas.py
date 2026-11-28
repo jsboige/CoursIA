@@ -289,8 +289,10 @@ class Zonos3Annotation(BaseModel):
     source:
         Who decided it.
     fallback_tag:
-        The FishAudio tag equivalent, used when the served checkpoint
-        does not expose the axis' direction.
+        The FishAudio tag equivalent, named in the report when the served
+        checkpoint does not expose the axis' direction.  ZONOS3 reads the
+        request text literally, so the tag is reported there, never put
+        back into the text.
     """
 
     segment_id: int

@@ -10,8 +10,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scan_slidev_composition import (  # noqa: E402
+    build_font_pin,
     content_overflow,
     github_annotations,
+    launch_browser,
     occupation_flagged,
     parse_headmatter_canvas,
     split_slides_source,
@@ -302,12 +304,11 @@ def test_occupation_no_images_not_flagged():
     assert occupation_flagged({"slide": 1, "occupation": None}, 552) is False
 
 
-def test_controle_positif_warning_when_baseline_omitted():
-    """`controle_positif_warning` renseigne un scan SANS baseline.
+def _exec_report_block(baseline_slide=None, font_pin=None):
+    """Exécute le bloc `report = {…}` de main() sur un namespace minimal.
 
-    Acceptance #13223 : un `controle_positif_ok: null` (scan sans controle
-    positif arme) doit etre visible en tete de rapport. Le champ est rendu
-    par la logique de build du `report`, pas par l'instrument navigateur.
+    Le bloc est lu dans la SOURCE du scanner : c'est la logique de build du
+    rapport qui est exercée, pas une copie qui dériverait.
     """
     import argparse
     import textwrap
@@ -316,38 +317,136 @@ def test_controle_positif_warning_when_baseline_omitted():
     end_marker = '        "_slide_lines": {str(k): v for k, v in slide_lines.items()},\n    }'
     end = src.index(end_marker, start) + len(end_marker)
     block = textwrap.dedent(src[start:end])
+    ns = {
+        "args": argparse.Namespace(baseline_slide=baseline_slide,
+                                   baseline_commit="abc" if baseline_slide else None,
+                                   slides_md=None, url="http://localhost:8767/"),
+        "results": [],
+        "content_overflow": lambda r: False,
+        "occupation_flagged": lambda r, h: False,
+        "slide_lines": {},
+        # variables locales de main() — c'est ce que le bloc report lit
+        "stale_streaks": [],
+        "canvas_w": 980, "canvas_h": 552,
+        "BORNE": "ADVISORY",
+        # trio environnement de polices — ajoute au bloc report par #24171,
+        # il faut le fournir au namespace sinon l'exec() du bloc lève NameError
+        "FONT_DEPENDENCY": "dep-polices",
+        "font_env": {}, "font_signature": lambda e: "sig",
+        # pin de polices (`--pin-fonts`, #24171) : None = scan sans pin
+        "font_pin": font_pin, "pin_loaded": None, "rendered_font_slides": [],
+        "FONT_PIN_DEPENDENCY": "dep-pin",
+        "ctrl_positif_ok": None, "ctrl_positif_msg": None,
+        "n_total": 0, "n_hors": 0, "n_chev": 0, "n_eteints": 0, "n_rec": 0, "n_occ": 0,
+    }
+    exec(block, ns)
+    return ns["report"]
 
-    def _build(baseline_slide):
-        ns = {
-            "args": argparse.Namespace(baseline_slide=baseline_slide,
-                                       baseline_commit="abc" if baseline_slide else None,
-                                       slides_md=None, url="http://localhost:8767/"),
-            "results": [],
-            "content_overflow": lambda r: False,
-            "occupation_flagged": lambda r, h: False,
-            "slide_lines": {},
-            # variables locales de main() — c'est ce que le bloc report lit
-            "stale_streaks": [],
-            "canvas_w": 980, "canvas_h": 552,
-            "BORNE": "ADVISORY",
-            # trio environnement de polices — ajoute au bloc report par #24171,
-            # il faut le fournir au namespace sinon l'exec() du bloc lève NameError
-            "FONT_DEPENDENCY": "dep-polices",
-            "font_env": {}, "font_signature": lambda e: "sig",
-            "ctrl_positif_ok": None, "ctrl_positif_msg": None,
-            "n_total": 0, "n_hors": 0, "n_chev": 0, "n_eteints": 0, "n_rec": 0, "n_occ": 0,
-        }
-        exec(block, ns)
-        return ns["report"]
 
-    rpt = _build(None)
+def test_controle_positif_warning_when_baseline_omitted():
+    """`controle_positif_warning` renseigne un scan SANS baseline.
+
+    Acceptance #13223 : un `controle_positif_ok: null` (scan sans controle
+    positif arme) doit etre visible en tete de rapport. Le champ est rendu
+    par la logique de build du `report`, pas par l'instrument navigateur.
+    """
+    rpt = _exec_report_block(None)
     assert rpt["controle_positif_armed"] is False
     assert rpt["controle_positif_warning"] is not None
     assert "sans contrôle positif" in rpt["controle_positif_warning"]
     # et le warning reste None quand le baseline est armé
-    rpt2 = _build(7)
+    rpt2 = _exec_report_block(7)
     assert rpt2["controle_positif_armed"] is True
     assert rpt2["controle_positif_warning"] is None
+
+
+def test_report_nomme_le_pin_et_sa_dependance():
+    """Le rapport dit s'il a été mesuré sous `--pin-fonts` (#24171).
+
+    Sans pin : la dépendance aux polices système et l'indice du flag. Sous
+    pin : la dépendance du pin et le relevé DU pin (verified, escaped…).
+    """
+    from types import SimpleNamespace
+    sans = _exec_report_block()
+    assert sans["font_dependency"] == "dep-polices"
+    assert sans["font_pin"]["enabled"] is False
+    assert "--pin-fonts" in sans["font_pin"]["hint"]
+
+    releve = {"enabled": True, "verified": False, "escaped": [{"slide": 3, "family": "X", "glyphs": 2}]}
+    pin = SimpleNamespace(report=lambda loaded, slides: releve)
+    avec = _exec_report_block(font_pin=pin)
+    assert avec["font_dependency"] == "dep-pin"
+    assert avec["font_pin"] == releve
+
+
+# ---- Pin de polices : les deux moitiés du contrat d'exit 3 (#24171) ---------
+# slides-composition-advisory.yml rougit sur `scanner exit 3` et n'écrit PAS
+# d'entrée de manifeste, parce que le scanner rend 3 AVANT d'écrire un rapport.
+# Ces tests sont les seuls à l'épingler.
+
+def test_build_font_pin_rend_le_pin_verifie():
+    pin, erreur = build_font_pin()
+    assert erreur is None
+    assert pin.signature  # le verrou des polices livrées a été vérifié
+
+
+def test_le_scanner_lance_chromium_avec_les_arguments_du_pin():
+    """Sous pin, le lancement porte `font_pin.launch_args` — la même liste que
+    celle entrée dans `font_pin.signature`. Rien d'autre ne le voit manquer :
+    sur un siège Windows l'argument est un no-op mesuré, et les tests
+    navigateur du pin lancent EUX-MÊMES leur navigateur. Sans pin, lancement
+    inchangé (`args` non transmis).
+    """
+    class _Chromium:
+        def __init__(self):
+            self.appels = []
+
+        def launch(self, **kwargs):
+            self.appels.append(kwargs)
+
+    class _PW:
+        def __init__(self):
+            self.chromium = _Chromium()
+
+    pin, erreur = build_font_pin()
+    assert erreur is None
+    pw = _PW()
+    launch_browser(pw, pin)
+    assert pw.chromium.appels == [{"headless": True, "args": list(pin.launch_args)}]
+    assert pw.chromium.appels[0]["args"] == ["--font-render-hinting=none"]
+    launch_browser(pw, None)
+    assert pw.chromium.appels[1] == {"headless": True, "args": None}
+
+
+def test_pin_inapplicable_rend_3_avant_tout_navigateur(tmp_path, monkeypatch, capsys):
+    """Polices altérées : exit 3, un message, AUCUN rapport, AUCUN navigateur.
+
+    `sys.modules["playwright"] = None` rend playwright inimportable : si le
+    contrôle du pin reculait derrière le lancement du navigateur, ce test
+    mourrait en ImportError au lieu de lire 3.
+    """
+    import importlib
+    import json
+    import shutil
+    import scan_slidev_composition as scanner
+    # Le module du pin est celui que le scanner importe (script ou paquet).
+    pinmod = importlib.import_module(
+        "slidev_font_pin" if not scanner.__package__ else scanner.__package__ + ".slidev_font_pin")
+    polices = tmp_path / "fonts"
+    shutil.copytree(pinmod.FONT_DIR, polices)
+    (polices / "selawik-regular.ttf").write_bytes(b"pas une police")
+    monkeypatch.setattr(pinmod, "FONT_DIR", polices)
+    monkeypatch.setitem(sys.modules, "playwright", None)
+    sortie = tmp_path / "rapport.json"
+    monkeypatch.setattr(sys, "argv", ["scan_slidev_composition.py", "--url", "http://localhost:1/",
+                                      "--pin-fonts", "--out", str(sortie)])
+    assert scanner.main() == 3
+    rendu = json.loads(capsys.readouterr().out)
+    assert "inapplicable" in rendu["error"] and "selawik-regular.ttf" in rendu["error"]
+    assert rendu["font_pin"] == {"enabled": False, "applied": False}
+    assert not sortie.exists(), (
+        "un pin inapplicable ne laisse pas de rapport : un rapport ANCIEN au même "
+        "chemin se lirait comme la mesure du jour (mesuré sur une matrice #24171)")
 
 
 # ---- Fixture du contrôle positif CI (#15545) -------------------------------
