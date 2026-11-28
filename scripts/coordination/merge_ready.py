@@ -1989,7 +1989,7 @@ def warm_up_candidates(rows: list) -> list[int]:
 #: review se classe sans appel supplementaire (l'oid de review y figure, mesure
 #: du 2026-09-25 : ``gh pr view --json reviews`` rend ``commit.oid``).
 PR_VIEW_FIELDS = (
-    "number,title,isDraft,body,headRefName,headRefOid,baseRefName,baseRefOid,files,"
+    "number,state,title,isDraft,body,headRefName,headRefOid,baseRefName,baseRefOid,files,"
     "changedFiles,comments,reviews"
 )
 
@@ -3566,6 +3566,15 @@ def evaluate_pr(
         return PRVerdict(pr, view_head, "skipped", reason, False, disposition,
                          stack, stack_incidents, detail)
 
+    # 0. PR deja fermee ou fusionnee (#28887) : la liste des candidates est
+    # figee au debut de la passe, et une PR fusionnee entre-temps garde
+    # `mergeable_state: unknown` pour toujours -- l'evaluer coutait ~134 s
+    # de sondage par PR avant le skip, et le budget de passe s'y epuisait.
+    # Une vue sans champ `state` (anciens tests, lecture partielle) reste
+    # evaluee comme avant.
+    etat_pr = str(view.get("state") or "").upper()
+    if etat_pr and etat_pr != "OPEN":
+        return skip(f"not-open:{etat_pr.lower()}")
     # 1. prefiltre bon marche.
     if view.get("isDraft"):
         return skip("draft")
