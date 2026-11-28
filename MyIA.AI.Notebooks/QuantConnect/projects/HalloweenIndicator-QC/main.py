@@ -40,6 +40,11 @@ class HalloweenIndicatorAlgorithm(QCAlgorithm):
         self.settings.seed_initial_prices = True
 
         self._spy = self.add_equity("SPY", Resolution.DAILY).symbol
+        # Témoin de publication du suivi en ombre (#27482) : `ingest-qc` lit le
+        # graphique `Benchmark` du backtest. Sans benchmark déclaré, ce graphique
+        # vaut 0.0 partout, chaque séance s'y lit comme figée et le passage est
+        # refusé.
+        self.set_benchmark(self._spy)
         # Chaque mode n'abonne que ses titres : BIL pour les deux modes
         # saisonniers, BND pour le 60/40.
         self._bil = (
@@ -77,8 +82,17 @@ class HalloweenIndicatorAlgorithm(QCAlgorithm):
         # l'ouverture de chaque séance de SPY, répartie sur e0..e4, plus les séries
         # `fees` et `turnover` à chaque séance (contrat #27482). Tous les modes
         # la prennent au même instant, sur la clôture précédente.
+        # Règle 2 du contrat : le point n'est tracé que si `on_data` a reçu cette
+        # clôture publiée, pour SPY et pour chaque titre détenu. Une barre
+        # recopiée vers l'avant (séance pas encore publiée en fin de fenêtre)
+        # saute le point. `_stale` vaut la liste des barres recopiées de la
+        # dernière clôture reçue, `None` tant qu'aucune n'est arrivée depuis le
+        # point précédent ; la liste vide du départ laisse passer le premier
+        # point, la valeur initiale du portefeuille.
         self._closes = 0
         self.traded = 0.0
+        self._stale = []
+        self.shadow_skips = 0
         self.schedule.on(
             self.date_rules.every_day(self._spy),
             self.time_rules.after_market_open(self._spy, 0),
@@ -112,7 +126,26 @@ class HalloweenIndicatorAlgorithm(QCAlgorithm):
         self.set_holdings([PortfolioTarget(target, 1.0)], liquidate_existing_holdings=True)
         self._held = target
 
+    def on_data(self, data):
+        if data.bars.contains_key(self._spy):
+            self._stale = self._fill_forward(data)
+
+    def _fill_forward(self, data):
+        """SPY et titres détenus dont la barre de la séance est recopiée vers l'avant."""
+        symbols = [self._spy] + [holding.symbol for holding in self.portfolio.values()
+                                 if holding.invested and holding.symbol != self._spy]
+        return sorted(symbol.value for symbol in symbols
+                      if data.bars.contains_key(symbol)
+                      and data.bars[symbol].is_fill_forward)
+
     def _trace(self):
+        stale, self._stale = self._stale, None
+        if stale is None or stale:
+            self.shadow_skips += 1
+            cause = ", ".join(stale) if stale else "aucune barre de SPY reçue"
+            self.log(f"{self.time:%Y-%m-%d} shadow: point sauté, clôture de la veille "
+                     f"non publiée ({cause})")
+            return
         self.plot("shadow", f"e{self._closes % 5}", self.portfolio.total_portfolio_value)
         self.plot("shadow", "fees", self.portfolio.total_fees / self.start_value)
         self.plot("shadow", "turnover", self.traded)
@@ -128,3 +161,4 @@ class HalloweenIndicatorAlgorithm(QCAlgorithm):
 
     def on_end_of_algorithm(self):
         self.set_runtime_statistic("invalid_orders", str(self._invalid_orders))
+        self.set_runtime_statistic("Shadow skips FF", str(self.shadow_skips))

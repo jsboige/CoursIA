@@ -170,7 +170,7 @@ def get_changed_notebooks(base: str, paths: list[str] | None = None) -> list[Pat
 
     try:
         result = subprocess.run(
-            ["git", "diff", "--name-only", "--diff-filter=ACM", anchor],
+            ["git", "-c", "core.quotePath=false", "diff", "--name-only", "--diff-filter=ACM", anchor],
             capture_output=True, text=True, check=True,
             encoding="utf-8", errors="replace",
             cwd=str(REPO_ROOT),
