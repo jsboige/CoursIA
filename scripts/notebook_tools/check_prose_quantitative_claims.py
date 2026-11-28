@@ -914,7 +914,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
     ArtifactExemption(
         path=(
             "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/"
-            "02-9-AceStep-Music-Generation.ipynb"
+            "Audio-02-9-AceStep-Music-Generation-Python.ipynb"
         ),
         motif=re.compile(r"Chaque section devrait contenir 2-6 lignes de texte"),
         raison=(
@@ -927,7 +927,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
     ArtifactExemption(
         path=(
             "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/"
-            "04-14-VoiceLeading-Rendu-GenAI.ipynb"
+            "Audio-04-14-VoiceLeading-Rendu-GenAI-Python.ipynb"
         ),
         motif=re.compile(r"donne 12 lignes \(classes\)"),
         raison=(
@@ -1277,6 +1277,39 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
             "dans l'enonce ET dans la cellule de code de l'exercice."
         ),
     ),
+    # Tranche accents de la serie Sudoku (#16638) : trois lignes PRE-EXISTANTES
+    # que la restauration canonique des accents re-touche, donc rendues comme
+    # ajoutees. Meme classe que la renormalisation EOL du renommage T4
+    # (#25008) : la valeur chiffree n'a pas ete ecrite par la tranche et ne
+    # derive pas avec le depot -- c'est une propriete du domaine (taille de la
+    # grille, definition d'une technique, contenu du corpus fourni).
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/Sudoku/Sudoku-08-HumanStrategies-CSharp.ipynb",
+        motif=re.compile(r"Naked Triples\*\* \(3 cellules, 3 candidats\)"),
+        raison=(
+            "Definition d'une technique de Sudoku : un Naked Triple porte "
+            "exactement trois cellules et trois candidats. Ce n'est pas un "
+            "decompte d'artefacts du depot ; il ne derive pas."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/Sudoku/Sudoku-08-HumanStrategies-Python.ipynb",
+        motif=re.compile(r"ou les 81 cellules deviennent des sommets"),
+        raison=(
+            "Taille du plateau de Sudoku (9x9 = 81 cellules), transposee en "
+            "sommets pour la coloration de graphe. Propriete du domaine, pas "
+            "un compteur d'etat du depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb",
+        motif=re.compile(r"\*\*Fichiers disponibles\*\* \| 3 fichiers \.txt"),
+        raison=(
+            "Description du corpus fourni a l'exercice, dont les trois "
+            "fichiers sont nommes sur la meme ligne (Easy51, hardest, "
+            "top95). Contenu pedagogique fige, pas un decompte du depot."
+        ),
+    ),
     # Rapport de scan V3 (EPIC #4362, PR #27414) : les deux exemptions posees
     # initialement couvraient des ELISIONS ecrites a la main, pas des sorties
     # d'outil (review ai-01 du 2026-11-20 : ni le script de scan ni l'organe
@@ -1284,6 +1317,51 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
     # rapport cite les sorties INTEGRALES des deux outils en blocs verbatim :
     # un bloc verbatim complet ne porte plus de compte fait a la main, et les
     # compteurs d'etat du depot restent surveilles.
+    #
+    # Mesures FIGEES du film Gource 4K de la serie Vibe-Coding (EPIC #28070,
+    # PR #28786) : les « N lignes » ci-dessous comptent les lignes de texte
+    # que l'OCR de Windows lit sur une TRAME du film, pas les lignes d'un
+    # fichier du depot. Le film est livre hors depot et ne change pas : la
+    # mesure ne derive avec aucun commit de CoursIA. Meme classe que le run
+    # HopfProblem ci-dessus (resultat d'une mesure hors depot). Les comptes
+    # d'artefacts VIVANTS de la meme page (fichiers et repertoires de `main`
+    # au jour du rendu) ne sont PAS exempte : ils ont ete retires de la prose
+    # au profit du predicat.
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GenAI/Vibe-Coding/README.md",
+        motif=re.compile(r"la date : 151 lignes"),
+        raison=(
+            "Film Gource 4K livre hors depot (PR #28786) : lignes de texte "
+            "lues par l'OCR sur un extrait du film, en profondeur 2 -- pas "
+            "les lignes d'un fichier du depot. Le film est fige, la mesure "
+            "ne derive avec aucun commit de CoursIA."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GenAI/Vibe-Coding/README.md",
+        motif=re.compile(r"profondeur 2 ; 66 lignes"),
+        raison=(
+            "Meme film, meme compteur OCR, meme extrait en profondeur 1. "
+            "Mesure figee d'une trame, pas un etat du depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GenAI/Vibe-Coding/README.md",
+        motif=re.compile(r"profondeur 1 ; 41 lignes"),
+        raison=(
+            "Meme film, meme compteur OCR, meme extrait en profondeur 1 avec "
+            "--max-file-lag 0.3. Mesure figee d'une trame, pas un etat du depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GenAI/Vibe-Coding/README.md",
+        motif=re.compile(r"mesure donne 828 lignes"),
+        raison=(
+            "Meme compteur OCR sur le film entier livre (182 trames) : total "
+            "des lignes de texte lues sur les trames du film, qui est fige. "
+            "Pas un decompte de lignes de CoursIA."
+        ),
+    ),
 )
 
 # ----------------------------------------------------------------------------

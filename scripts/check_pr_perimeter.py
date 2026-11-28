@@ -2209,6 +2209,36 @@ _DIFF_SIZE_CAP_SIGNATURES = (
 )
 
 
+# Signature of a `gh pr diff` COMPUTATION refusal -- the third member of the
+# family, after the 300-FILE cap (#14911) and the SIZE cap (#25085).
+#
+# GitHub declines to COMPUTE the diff at all and answers
+# `HTTP 422: Server Error: Sorry, this diff is taking too long to generate`,
+# with `PullRequest.diff not_available` in the payload -- measured 2026-11-27
+# on #28393 (97 files, 30 audio notebooks renamed, base64 outputs sitting on
+# single lines of 850 KB to 3.84 MB; blobs up to 23.5 MB). The SAME command
+# surfaces under a second spelling on a runner (`stream error: stream ID 3;
+# CANCEL; received from peer`): three attempts, two heads, same refusal, so a
+# mere re-run does not lift it.
+#
+# The refusal says nothing about the PERIMETER: `GET /pulls/N/files` returned
+# all 97 files in 0.9 s while the diff was still refused. The blocking
+# perimeter checks read that paginated list; the unified diff only serves the
+# baseline-move detection, which is ADVISORY in `--scan-thread` (the CI
+# wiring, l.2876). So the guard degrades exactly like its two siblings instead
+# of answering "PERIMETRE NON MESURABLE" on a PR whose perimeter it reads
+# perfectly well.
+#
+# The TRANSPORT spelling is deliberately NOT recognised: `stream error ...
+# CANCEL; received from peer` names the stream that closed, not the failure
+# that closed it -- it can carry this refusal or another one, and recognising
+# it would widen the net past what was measured.
+_DIFF_TIME_CAP_SIGNATURES = (
+    "is taking too long to generate",
+    "PullRequest.diff not_available",
+)
+
+
 def _exit_unmeasurable(reason: str) -> None:
     """Exit with the non-measurable verdict, mirroring ``#14292``.
 
@@ -2261,6 +2291,15 @@ def _pr_diff_text(pr: int) -> str:
     the paginated file list. Only the advisory baseline-move detection is lost,
     and the warning says so.
 
+    The COMPUTATION refusal is the third member of the family, degraded the
+    same way (#28874): GitHub declines to compute the diff at all and answers
+    ``HTTP 422: this diff is taking too long to generate`` /
+    ``PullRequest.diff not_available`` -- measured 2026-11-27 on #28393, where
+    ``/pulls/28393/files`` returned all 97 files in 0.9 s. A re-run does not
+    lift it (three attempts, two heads). Its transport-level spelling
+    (``stream error ... CANCEL``) is left unrecognised on purpose: see
+    ``_DIFF_TIME_CAP_SIGNATURES``.
+
     One failure is a RENDERING refusal, not an unreadable diff: a payload
     carrying terminal escape sequences (ANSI colour codes inside a committed
     artefact -- measured 2026-10-29 on #22341). The bytes are readable over a
@@ -2283,6 +2322,15 @@ def _pr_diff_text(pr: int) -> str:
             f"::warning::gh pr diff {pr} indisponible (diff au-dela du plafond de "
             "TAILLE de l'API) : detection des baseline-moves retractee a vide ; "
             f"le perimetre est lu via /pulls/{pr}/files pagine (sans ce plafond).",
+            file=sys.stderr,
+        )
+        return ""
+    if any(sig in (stderr or "") for sig in _DIFF_TIME_CAP_SIGNATURES):
+        print(
+            f"::warning::gh pr diff {pr} indisponible (GitHub a refuse de "
+            "CALCULER le diff) : detection des baseline-moves retractee a vide ; "
+            f"le perimetre est lu via /pulls/{pr}/files pagine (la liste des "
+            "fichiers reste lisible et sans ce plafond).",
             file=sys.stderr,
         )
         return ""
@@ -2458,6 +2506,62 @@ def _decode_nul_paths(raw: bytes) -> set[str]:
     }
 
 
+# #28843 : Windows borne la ligne de commande de CreateProcess a 32 767
+# caracteres. Au-dela, Popen leve OSError (WinError 206) AVANT tout code de
+# retour : la liste des chemins d'une PR de renommage (~360 fichiers suffisent,
+# mesuree a 46 718 caracteres sur 508 chemins) rendait donc l'organe inutilisable
+# sur un siege Windows. Budget sous la limite, avec la marge des prefixes.
+_PATHSPEC_BUDGET_WINDOWS = 30_000
+_DIFF_PATHSPEC_PREFIX = ["git", "diff", "--name-only", "-z"]
+
+
+def _chunk_pathspecs(base_ref: str, head: str, paths: list[str], budget: int) -> list[list[str]]:
+    """#28843: split ``paths`` into chunks whose command line stays under ``budget``.
+
+    ``subprocess.list2cmdline`` is the function ``Popen`` applies itself on
+    Windows, so the measured length is the one the kernel sees. A single path
+    longer than the budget stays alone in its chunk: the caller's ``OSError``
+    fail-safe then covers it rather than silently dropping it.
+    """
+    prefix = _DIFF_PATHSPEC_PREFIX + [base_ref, head, "--"]
+    chunks: list[list[str]] = []
+    current: list[str] = []
+    for path in paths:
+        if current and len(subprocess.list2cmdline(prefix + current + [path])) > budget:
+            chunks.append(current)
+            current = [path]
+        else:
+            current.append(path)
+    if current:
+        chunks.append(current)
+    return chunks
+
+
+def _changed_paths(base_ref: str, head: str, paths: list[str]) -> Optional[set[str]]:
+    """#28843: union of ``git diff --name-only -z`` over command-line-sized chunks.
+
+    None on any failure (git error, ``OSError`` from an over-long command line,
+    undecodable output) so the caller keeps its documented fail-safe.
+    """
+    if sys.platform == "win32":
+        chunks = _chunk_pathspecs(base_ref, head, paths, _PATHSPEC_BUDGET_WINDOWS)
+    else:
+        chunks = [paths]
+    changed: set[str] = set()
+    try:
+        for chunk in chunks:
+            proc = subprocess.run(
+                _DIFF_PATHSPEC_PREFIX + [base_ref, head, "--"] + chunk,
+                capture_output=True,
+            )
+            if proc.returncode != 0:
+                return None
+            changed |= _decode_nul_paths(proc.stdout)
+    except (OSError, UnicodeDecodeError):
+        return None
+    return changed
+
+
 def _classify_carried(pr: int, files: list[dict]) -> CarriedNote:
     """#13637: partition ``files`` (the API list) into the PR's own contribution
     and the carried files.
@@ -2469,8 +2573,10 @@ def _classify_carried(pr: int, files: list[dict]) -> CarriedNote:
     origin/<base> <head> -- p`` empty => carried.
 
     Fail-safe: on any resolution failure (base ref unfetchable, head unknown,
-    git error) returns an empty ``charries`` -- no file is ever wrongly
-    excluded, the fallback is the pre-fix behaviour.
+    git error, ``OSError`` raised by an over-long command line) returns an
+    empty ``charries`` -- no file is ever wrongly excluded, the fallback is the
+    pre-fix behaviour. The pathspec list is chunked on Windows so that a large
+    PR is measured instead of falling back (#28843).
     """
     if not files:
         return CarriedNote(propres=files, charries=[], base_age_hours=None)
@@ -2480,15 +2586,8 @@ def _classify_carried(pr: int, files: list[dict]) -> CarriedNote:
     api_paths = sorted({f["path"] for f in files if f.get("path")})
     if not api_paths:
         return CarriedNote(propres=files, charries=[], base_age_hours=None)
-    proc = subprocess.run(
-        ["git", "diff", "--name-only", "-z", base_ref, head, "--"] + api_paths,
-        capture_output=True,
-    )
-    if proc.returncode != 0:
-        return CarriedNote(propres=files, charries=[], base_age_hours=None)
-    try:
-        changed = _decode_nul_paths(proc.stdout)
-    except UnicodeDecodeError:
+    changed = _changed_paths(base_ref, head, api_paths)
+    if changed is None:
         return CarriedNote(propres=files, charries=[], base_age_hours=None)
     carried = set(api_paths) - changed
     propres, charries = partition_propres(files, carried)

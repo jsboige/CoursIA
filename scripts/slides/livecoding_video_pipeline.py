@@ -677,13 +677,16 @@ def compose_narration_llm(
         f"environ {n_target} segments. Nomme les voix, synthés et effets "
         f"réellement présents dans le script ci-dessus."
     )
+    # #14755 : la generation 5.6 n'accepte que la temperature par defaut (1) ;
+    # un temperature=0.8 herite de la generation 4 est refuse en HTTP 400
+    # ("only the default (1) value is supported"). On n'en passe donc aucune :
+    # la sortie reste tenue par le prompt systeme et par validate_narration.
     response = client.chat.completions.create(
         model=model,
         messages=[
             {"role": "system", "content": NARRATION_SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt},
         ],
-        temperature=0.8,
     )
     raw = response.choices[0].message.content or ""
     cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip())

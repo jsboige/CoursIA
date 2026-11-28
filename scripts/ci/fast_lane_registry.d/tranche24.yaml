@@ -1,0 +1,12 @@
+# TRANCHE24 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE24
+guards:
+  -
+    name: "Verdict on invalid measurement (empty or HTTP-error response)"
+    argv: ["python", "scripts/notebook_tools/check_empty_verdict.py", "--diff-base", "{base_ref}", "."]
+    source: "native"
+    paths: ["**.ipynb", "scripts/notebook_tools/check_empty_verdict.py", "scripts/tests/test_check_empty_verdict.py"]
+    blocking: false
+    needs_base: true
+    absorbed: true
+    pre_argv: ["python", "scripts/notebook_tools/check_empty_verdict.py", "--self-test"]

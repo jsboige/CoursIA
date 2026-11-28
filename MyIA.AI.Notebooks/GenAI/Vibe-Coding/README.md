@@ -202,41 +202,92 @@ Le harnais réel fonctionne comme une **flotte** d'agents qui se coordonnent san
 
 Avec plus de 22 000 commits sur quatre ans, l'historique git de CoursIA se prête à une **animation [Gource](https://gource.io/)** : le dépôt comme arbre qui pousse, chaque commit est une étincelle sur un fichier. C'est le même harnais que vous venez de lire — vu de l'extérieur, dans le temps.
 
-**Accès** : la vidéo (`gource-coursia-history.mp4`) est stockée **hors dépôt** — une vidéo de plus de 512 Ko n'entre pas dans le dépôt. Elle vit dans le Google Drive du mainteneur, dossier `MyIA/IA/CoursIA-artefacts/` (demander l'accès au mainteneur pour la consulter).
+**Accès** : la vidéo (`gource-coursia-history-2160p.mp4`, 3840×2160, 30 images par seconde, 3 min 02, 252,6 Mo) est stockée **hors dépôt** — une vidéo de cette taille n'entre pas dans le dépôt. Elle vit dans le Google Drive du mainteneur, dossier `MyIA/IA/CoursIA-artefacts/`, qui garde aussi les rendus 1080p antérieurs (demander l'accès au mainteneur pour la consulter). Les huit trames clés ci-dessous sont dans le dépôt, sous `assets/gource/`, pour que l'histoire reste lisible sans la vidéo.
 
-**Ce qu'elle montre** : l'arborescence réelle du dépôt telle que git la connaît, ses commits réels (2022-08-19 → 2026-11-24), et les auteurs git tels qu'ils sont enregistrés dans l'historique public.
+**Ce qu'elle montre** : l'arborescence réelle du dépôt telle que git la connaît, ses 22 732 commits réels (2022-08-19 → 2026-11-26, état du clone au moment du rendu), et les auteurs git tels qu'ils sont enregistrés dans l'historique public.
 
 **Ce qu'elle ne montre pas** (bornes à garder en tête) :
 
 - Gource ne distingue pas une contribution humaine d'une contribution agentique : sous un compte git partagé, les deux apparaissent mêlées.
 - Les **sous-modules** (Z3.Linq, Argumentum, …) apparaissent comme un seul fichier (le *gitlink*) : leur historique interne ne se déploie pas dans l'animation.
 - Un commit est un événement git, pas une mesure de valeur pédagogique.
+- Le temps de la vidéo n'est **pas** proportionnel au temps calendaire : Gource saute les périodes sans commit. Mesuré sur le rendu livré par OCR du bandeau, une lecture par seconde (182 mesures, une seule illisible) : 2025 commence à 31 s, 2026 apparaît dans un saut entre 91 et 92 s, et la date se fige à 171 s sur le dernier commit (2026-11-26 14:46:43). De 31 à 171 s, 140 s sur 181,6 font 77 % du film : les trois quarts de la durée couvrent 2025 et 2026. À l'autre bout, les vingt et un mois qui séparent le premier commit des premiers carnets tiennent dans un seul saut, entre la 5ᵉ et la 6ᵉ seconde (2022-09-08 → 2024-05-18, 618 jours).
 
-**Jalons de l'historique** (date du premier commit touchant chaque périmètre, lue dans `git log`) :
+**Moins d'étiquettes.** Trois faits commandent la densité des noms ; deux sont des réglages, et le film livré les porte tous les deux. D'abord, la durée d'affichage d'un nom de répertoire n'est **pas** réglable : dans Gource 0.53, `RDirNode::drawDirName` (`src/dirnode.cpp`) dessine un nom pendant les **cinq secondes** qui suivent la dernière apparition d'un fichier dans ce répertoire ou dans l'un de ses descendants, avec un alpha qui décroît linéairement jusqu'à zéro, et cette constante n'est exposée par aucune option ; `--filename-time`, le seul réglage de durée d'affichage des noms, ne concerne que les noms de fichiers (masqués ici) et refuse moins de 2 s. Ensuite, deux leviers subsistent :
+
+- **`--dir-name-depth 1`** : Gource nomme les répertoires jusqu'à la profondeur demandée **plus un** — le test du code est `dir_name_depth < depth - 1`, les répertoires de premier niveau étant à `depth 1` — donc les deux premiers niveaux : les sections du dépôt (`MyIA.AI.Notebooks`, `docs`, `scripts`, …) et, dessous, les séries (`SymbolicAI`, `GenAI`, `QuantConnect`, `IIT`, `GameTheory`, …). Le rendu précédent, en profondeur 2, nommait un niveau de plus, les sous-séries. Compté à la date du rendu sur les fichiers ajoutés de `main`, renommages compris comme ajouts : le niveau retiré est le plus peuplé des trois, et le vivier de noms que Gource peut avoir à dessiner tombe à un peu plus d'un tiers.
+- **`--max-file-lag 0.3`** : les fichiers d'un commit apparaissent dans une fenêtre de 0,3 s au lieu de 5 s. Le minuteur de chaque répertoire parent est ré-armé à chaque apparition de fichier (`parent->nodeUpdated(true)`), donc cette fenêtre est ce qui étale les noms dans le temps.
+
+Mesuré sur le même extrait 4K de la fin de l'historique, par OCR à une lecture par seconde, en comptant les lignes de texte autres que la date : 151 lignes et jusqu'à 25 noms simultanés en profondeur 2 ; 66 lignes et 10 noms en profondeur 1 ; 41 lignes et 9 noms en ajoutant `--max-file-lag 0.3`. Sur cet extrait le dernier nom s'éteint à 13 s, 10 s puis 6 s, et le troisième film dure 12,4 s au lieu de 17,0 s — l'écart entre les deux fenêtres de fichiers fait 4,7 s. Sur le film entier livré, la même mesure donne 828 lignes sur 182 trames (moyenne 4,55 par trame), un maximum de 12 vers 150 s, et plus aucun nom après 175 s. La police des noms passe de 26 à 20 : en 4K, les étiquettes que l'OCR restitue mesurent 30 à 38 pixels de haut.
+
+Trois bornes de méthode. L'OCR de Windows lit mal un nom en fondu ou masqué par un autre : ces comptes sont des ordres de grandeur, pas des énumérations. Les 0,3 s demandées pour l'affichage lui-même ne sont pas atteignables sans recompiler Gource avec une constante plus petite ; `--max-file-lag 0.3` agit sur l'apparition des fichiers, pas sur le fondu des noms. Enfin ces chiffres viennent de l'OCR et de git, pas d'un regard humain : la relecture visuelle des trames n'a pas été faite.
+
+**Jalons de l'historique** (date du premier commit touchant chaque périmètre, lue par `git log --reverse --diff-filter=A`) :
 
 | Date | Jalon |
 |------|-------|
 | 2022-08-19 | Premier commit du dépôt |
-| 2024-05-14 | Premier carnet Jupyter |
-| 2024-11-18 | Première série Search / SMT |
+| 2024-05-14 | Premier carnet Jupyter et premier projet .NET (`*.csproj`) |
+| 2024-05-20 | Premier fichier C# (`*.cs`) |
+| 2024-11-18 | Première série Search (GeneticSharp) |
 | 2025-01-31 | Première série GenAI |
-| 2026-01-23 | Première preuve Lean |
+| 2026-01-23 | Premier fichier Lean et dossier `SymbolicAI/Lean/` |
 | 2026-01-27 | Première série GameTheory |
 | 2026-02-02 | Premier projet QuantConnect |
-| 2024-05-14 | Premier fichier C# / .NET |
+| 2026-06-11 | Première série Z3 / SMT, rangée sous `SMT/` le 2026-06-13 |
+
+**Trames clés.** Chaque image est une trame extraite du film, réduite à 1600×900 pour le dépôt (de 13 à 116 Ko), et sa date est celle que Gource dessine lui-même en haut : la provenance est dans l'image, pas dans une correspondance externe. Six trames sont ancrées sur les jalons du tableau ci-dessus, la septième sur la zone la plus dense du film, la huitième sur la dernière seconde datée. Pour chacune, deux mesures indépendantes se lisent côte à côte : la date et les noms lus par OCR sur la trame, et l'arbre que git avait ce jour-là (`git ls-tree -r` sur le dernier commit du jour).
+
+![2022-08-23 : le premier commit, trois fichiers à la racine](assets/gource/01-2022-08-naissance.jpg)
+
+*Bandeau : mardi 23 août 2022. Trois fichiers à la racine, aucun répertoire — il n'y a donc rien à nommer, et l'OCR n'y lit aucun nom. L'arbre est exactement celui du premier commit, daté du 19 août : entre les deux, aucun fichier n'a été ajouté.*
+
+![2024-05-18 : les premiers carnets, un seul répertoire](assets/gource/02-2024-05-premiers-carnets.jpg)
+
+*Bandeau : samedi 18 mai 2024. Douze fichiers, dont huit sous `MyIA.AI.Notebooks` — le seul répertoire de premier niveau. Premier carnet Jupyter et premier projet .NET le 14 mai, premier fichier C# le 20 : la trame est donc prise quatre jours après l'arrivée des carnets. L'OCR n'y restitue aucun nom, le seul présent étant en fondu.*
+
+![2024-11-22 : trois répertoires, la première série Search](assets/gource/03-2024-11-premieres-series.jpg)
+
+*Bandeau : vendredi 22 novembre 2024. Cinquante-huit fichiers et trois répertoires de premier niveau (`.vscode`, `MyIA.AI.Notebooks`, `MyIA.AI.Shared`), l'arbre laissé par le dernier commit du 21 novembre. La première série Search (GeneticSharp) est entrée le 18. Cinq lignes de texte sont lues sur la trame, aucune ne donne un nom entier.*
+
+![2025-02-02 : l'entrée de GenAI dans l'historique](assets/gource/04-2025-02-entree-genai.jpg)
+
+*Bandeau : dimanche, février 2025 — le quantième n'y est pas lisible ; la courbe date ↔ temps situe la trame au 2 février. Soixante-deux fichiers, trois répertoires, et un arbre qui n'a pas bougé depuis le commit du 31 janvier, celui qui fait entrer la série GenAI : à quatre jours d'historique par seconde, ce week-end tient dans une demi-seconde de film. L'OCR lit un fragment d'un seul nom (`. Notebooks`, 31 pixels de haut), reste de `MyIA.AI.Notebooks`, le seul répertoire de premier niveau de l'arbre.*
+
+![2026-01-23 : les premiers fichiers Lean](assets/gource/05-2026-01-serie-lean.jpg)
+
+*Bandeau : vendredi 23 janvier 2026. Neuf cent cinquante-neuf fichiers et douze répertoires de premier niveau, un ordre de grandeur de plus que la trame précédente. Le premier fichier Lean et le dossier `SymbolicAI/Lean/` entrent ce jour-là. L'OCR lit `docs` (32 pixels) et deux fragments (`ookAp`, `cripts`), restes de `GradeBookApp` et de `scripts`.*
+
+![2026-06-12 : Z3 / SMT la veille](assets/gource/06-2026-06-z3-smt.jpg)
+
+*Bandeau : vendredi 12 juin 2026. Cinq mille quatre cent dix-huit fichiers et onze répertoires de premier niveau ; la série Z3 / SMT a été créée la veille, et sera rangée sous `SMT/` le lendemain. L'OCR lit `slides` (30 pixels), `.github` (38 pixels) et des fragments restés illisibles.*
+
+![2026-09-20 : dix-huit répertoires, la densification](assets/gource/07-2026-09-densification.jpg)
+
+*Bandeau : dimanche 20 septembre 2026. Onze mille cent soixante et onze fichiers et dix-huit répertoires de premier niveau — le maximum des huit trames. C'est la zone la plus dense du film, celle où le nombre d'étiquettes devient le sujet. Les huit lignes de texte lues y sont toutes partielles (`…Unrading.Backtester.Tests`, `tran ions`, `.cl u`, `cripts`) : à cette densité les noms se chevauchent, et aucun ne se lit entier.*
+
+![2026-11-26 14:46:43 : l'état final](assets/gource/08-2026-11-etat-final.jpg)
+
+*Bandeau : jeudi 26 novembre 2026, 14:46:43 — l'heure du dernier commit du rendu. Dix-neuf mille cent quarante et un fichiers et treize répertoires de premier niveau, les projets .NET désormais repartis sous `dotnet/` (GradeBookApp, MyIA.AI.Shared, les trois MyIA.Trading.*). L'OCR n'y lit aucun nom : sur cette trame, tous les noms sont éteints.*
 
 **Comment la reproduire** (procédure reproductible) :
 
-1. **Prérequis** : [Gource 0.53](https://github.com/acaudwell/Gource/releases/tag/gource-0.53) (archive `win64` : le binaire + ses DLLs, à dézipper dans un dossier) et **ffmpeg** dans le PATH ; un clone **complet** du dépôt (pas shallow — Gource lit tout l'historique).
+1. **Prérequis** : [Gource 0.53](https://github.com/acaudwell/Gource/releases/tag/gource-0.53) (archive `win64` : le binaire + ses DLLs, à dézipper dans un dossier) et **ffmpeg** dans le PATH ; un clone **complet** du dépôt (pas shallow — Gource lit tout l'historique, et sur un clone superficiel il produit une animation tronquée **sans erreur**).
 2. **Rendu** (depuis la racine du clone ; `-s 0.25` = 0,25 s de vidéo par jour d'historique, l'auto-skip de Gource compresse les périodes sans commit) :
 
    ```bash
-   gource -s 0.25 -r 30 --output-ppm-stream - . \
-     | ffmpeg -y -r 30 -f image2pipe -vcodec ppm -i - -b:v 4000k gource-coursia-history.mp4
+   gource --viewport 3840x2160 --multi-sampling \
+          --hide filenames,usernames,mouse --dir-name-depth 1 \
+          --dir-font-size 20 --file-font-size 12 --max-file-lag 0.3 \
+          -s 0.25 -r 30 --stop-at-end --output-ppm-stream - . \
+     | ffmpeg -y -v error -r 30 -f image2pipe -vcodec ppm -i - \
+              -c:v libx264 -crf 18 -preset medium -pix_fmt yuv420p \
+              gource-coursia-history-2160p.mp4
    ```
 
-3. **Mesure de référence** : la vidéo fait **3 min 29** (119 Mo) ; le rendu complet (plus de 22 000 commits) a tourné en arrière-plan en ~20 min sur une machine du cluster (mesuré le 24/11/2026).
-4. **Note Gource** : le flag `-a` n'est **pas** un booléen dans la 0.53 — c'est `--auto-skip-seconds SECONDS` (actif par défaut) ; il n'y a pas de `--auto-skip-times` dans ce binaire.
+3. **Mesure de référence** : 5 449 trames, **181,6 s**, 252,6 Mo (252 631 744 octets) en 3840×2160 ; le rendu complet a tourné en arrière-plan en 7 min 32 s sur une machine du cluster (mesuré le 26/11/2026). Les rendus antérieurs, gardés dans le même dossier Drive : 6 294 trames en 209,8 s (99,77 Mo) en 1080p, et une première version (`-b:v 4000k`, sortie 1024×768) de 3 min 29 pour 119 Mo. Un film 4K pèse environ 250 Mo : c'est la raison pour laquelle il vit hors du dépôt.
+4. **Trames clés, méthode** : la date d'une trame ne se projette pas depuis un index de commit, elle se lit sur le film. Une courbe date ↔ temps est d'abord établie par OCR du bandeau, une lecture par seconde (182 mesures sur ce film, une seule illisible) : c'est elle qui donne les instants des sauts et celui où la date se fige. Chaque trame est ensuite extraite en pleine résolution à la seconde qui atteint son jalon (puis réduite à 1600×900 pour le dépôt), son bandeau est relu par OCR **sur l'image extraite** — huit relectures, huit concordances — et les noms de répertoires sont comptés par le même OCR sur la trame entière. Le moteur est celui livré avec Windows (`Windows.Media.Ocr`, appelable depuis Windows PowerShell 5.1), appliqué à la trame pleine : en 4K, les noms y mesurent 30 à 38 pixels de haut. Pour comparer les réglages, trois extraits de la fin de l'historique ont été rendus en 4K (profondeur 2 ; profondeur 1 ; profondeur 1 avec `--max-file-lag 0.3`) et mesurés par le même compteur.
+5. **Note Gource** : le flag `-a` n'est **pas** un booléen dans la 0.53 — c'est `--auto-skip-seconds SECONDS` (actif par défaut) ; il n'y a pas de `--auto-skip-times` dans ce binaire.
 
 ### Références croisées
 
