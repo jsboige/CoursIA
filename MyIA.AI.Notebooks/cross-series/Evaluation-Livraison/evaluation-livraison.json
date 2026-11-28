@@ -19,13 +19,19 @@
     "motifs_d_exclusion": [
       "type matching : la reponse attendue est un appariement, non une lettre",
       "reponses multiples : la lettre rendue n'identifie plus une reponse unique"
-    ]
+    ],
+    "empreinte_sha256": "ae4434d3edc94537016514dfbf632ae79ec961db813be1ece341ea077db17daf",
+    "empreinte_portee": "les six fichiers YAML de la banque, tries par nom : nom du fichier puis SHA-256 de son texte, fins de ligne ramenees a LF et marque d encodage retiree",
+    "empreinte_epinglee_le": "2026-11-27",
+    "controle": "le carnet recalcule l empreinte a chaque execution et s arrete si elle differe de l epingle : le verdict consigne ne decrit plus la banque"
   },
   "juge": {
     "type": "deterministe",
-    "principe": "extraction de la premiere lettre isolee de la reponse, comparee a la cle de correction",
-    "auto_tests": 7,
-    "auto_tests_conformes": 7,
+    "principe": "extraction de la premiere lettre isolee de la reponse, comparee a la cle de correction ; les marqueurs Markdown (gras, code, tiret) sont des frontieres de mot",
+    "auto_tests": 11,
+    "auto_tests_conformes": 11,
+    "reponses_ambigues": 0,
+    "reponses_ambigues_portee": "reponses portant plusieurs lettres isolees dans la plage des options de leur question ; la regle du juge retient la premiere, le verdict d une telle reponse dependrait de l ordre des lettres",
     "statuts": [
       "correct",
       "incorrect",
@@ -34,10 +40,13 @@
   },
   "candidat": {
     "type": "modele local auto-heberge",
+    "identifiant_servi": "qwen3.6-35b-a3b",
     "route_declaree_dans_le_carnet": true,
+    "route": "lue dans l environnement (VLLM_BASE_URL), a defaut dans le trousseau local du depot ; jamais devinee, jamais remplacee",
     "temperature": 0,
     "raisonnement": "desactive",
-    "cle": "lue dans le trousseau local du siege, jamais ecrite dans le carnet"
+    "cle": "lue dans l environnement (VLLM_API_KEY), a defaut dans le trousseau local du depot, jamais ecrite dans le carnet",
+    "hors_service": "sans route, sans cle, ou face a une route qui ne repond pas, le carnet s arrete a la declaration de la route, avec un message qui nomme ce qui manque ; aucun repli par abstention a ce stade ; un incident de transport en cours de passe est compte comme une abstention et affiche dans la passe"
   },
   "seuils": {
     "exactitude_globale_min": 0.5,
@@ -49,26 +58,39 @@
     "declaration": "ecrits avant la mesure, affiches dans les sorties, jamais reecrits apres"
   },
   "mesures": {
-    "exactitude_globale": 0.6444,
-    "bonnes_reponses": 87,
+    "passe_commitee_le": "2026-11-28T01:52Z",
+    "exactitude_globale": 0.6370,
+    "bonnes_reponses": 86,
     "questions_posees": 135,
     "taux_abstention": 0.0,
+    "incidents_de_transport": 0,
     "hasard_de_reference_global": 0.2005,
     "exactitude_par_theme": {
       "dl-evaluation-seance": 0.8125,
-      "ia-1-introduction-agents": 0.8462,
+      "ia-1-introduction-agents": 0.7692,
       "ia-2-resolution-problemes": 0.3125,
       "ia-3-logique-bases-connaissances": 0.6875,
       "ia-4-systemes-probabilistes": 0.5217,
       "ia-5-apprentissage": 0.8947
     },
     "exactitude_par_type": {
-      "multichoice": 0.6198,
+      "multichoice": 0.6116,
       "truefalse": 0.8571
     },
+    "latence_p50_s": 0.43,
+    "latence_p95_s": 0.64,
     "jetons_total": 20638,
     "jetons_par_requete": 152.9,
-    "jetons_par_bonne_reponse": 237.2
+    "jetons_par_bonne_reponse": 240.0,
+    "passes_successives": {
+      "protocole": "meme candidat, meme route, temperature 0 ; une passe par execution complete du carnet, dans l ordre chronologique (la premiere a ete executee le 2026-11-26 ; les trois suivantes le 2026-11-27 ; la cinquieme le 2026-11-28, celle dont les sorties sont commitees)",
+      "bonnes_reponses": [87, 85, 86, 86, 86],
+      "questions_posees": 135,
+      "exactitude_globale": [0.6444, 0.6296, 0.6370, 0.6370, 0.6370],
+      "exactitude_ia_2_resolution_problemes": [0.2812, 0.3125, 0.3125, 0.3125, 0.3125],
+      "jetons_total": [20638, 20638, 20638, 20638, 20638],
+      "lecture": "le service ne rend pas exactement les memes reponses d une passe a l autre : quatre passes sur cinq donnent entre 85 et 86 bonnes reponses ; la premiere en donnait 87. Le total de jetons est identique sur les cinq. Le verdict est FAIL a 5 seuils sur 6 a chaque passe ; le seuil non franchi est toujours l exactitude du theme ia-2-resolution-problemes, sous le plancher de 0.35. Les passages successifs sont mesures avec le juge mis a jour ; le diagnostic apparie ancien et nouveau juge sur les memes reponses et trouve 0 changement de verdict. La variation vient donc des reponses servies, pas du changement de juge. La cinquieme passe a rendu les memes reponses que la quatrieme : c est la latence qui differe (p95 de 0.59 s a 0.64 s), la reponse elle-meme non. Le detail des passes est consigne ici plutot que presente comme un resultat stable dans la prose du carnet."
+    }
   },
   "verdict": {
     "resultat": "FAIL",

@@ -20,10 +20,12 @@ mesure.
 
 Le carnet livré ici joue cet enchaînement sur un cas réel du dépôt :
 
-- **la route** — le modèle local du siège, joint par une adresse déclarée dans
-  la première cellule, et une clé lue dans le trousseau local, jamais écrite
-  dans le carnet ;
-- **la référence** — la banque de questions publiée, lue et jamais modifiée ;
+- **la route** — le modèle local du siège, joint par une adresse lue dans
+  l'environnement (`VLLM_BASE_URL`) ou, à défaut, dans le trousseau local du
+  dépôt — jamais devinée —, et une clé lue au même endroit, jamais écrite dans
+  le carnet ;
+- **la référence** — la banque de questions publiée, lue et jamais modifiée,
+  épinglée par une empreinte SHA-256 comparée à celle du manifeste ;
 - **le juge** — déterministe, vérifié par auto-tests avant la première question ;
 - **les seuils** — écrits avant la mesure, jamais réécrits après ;
 - **le verdict** — la comparaison aux seuils, seuil par seuil, avec la liste de
@@ -33,7 +35,9 @@ Le carnet livré ici joue cet enchaînement sur un cas réel du dépôt :
 
 Le manifeste [`evaluation-livraison.json`](evaluation-livraison.json) reprend ce
 protocole sous la forme des parcours verticaux : une branche, son carnet, sa
-référence, son juge, ses seuils et son verdict.
+référence, son juge, ses seuils et son verdict. Il porte aussi les mesures de
+chaque passe exécutée ; les valeurs varient entre passes et ne se recopient pas
+ici comme des propriétés stables du candidat.
 
 C'est la **première branche** du parcours vertical d'évaluation ; les suivantes
 ont vocation à y ajouter le juge probabiliste avec garde-fou anti-bias, qui
@@ -41,13 +45,16 @@ n'est pas écrit ici.
 
 ## Exécution
 
-Le carnet s'exécute avec le noyau Python du dépôt. Il lit la clé du service
-local dans le trousseau du dépôt — jamais dans le carnet — et interroge le
-service local :
+Le carnet s'exécute avec le noyau Python du dépôt. Il lit la route et la clé du
+service local dans l'environnement, à défaut dans le trousseau du dépôt —
+jamais dans le carnet — et interroge le service :
 
 ```bash
-python -m papermill MyIA.AI.Notebooks/cross-series/Evaluation-Livraison/Evaluation-Livraison-01-Protocole-Python.ipynb .tmp/evaluation-livraison-exec.ipynb
+VLLM_BASE_URL=<route du service> python -m papermill MyIA.AI.Notebooks/cross-series/Evaluation-Livraison/Evaluation-Livraison-01-Protocole-Python.ipynb .tmp/evaluation-livraison-exec.ipynb
 ```
+
+Sans route joignable, le carnet s'arrête à sa première cellule avec un message
+qui nomme ce qui manque : aucun repli par abstention ne remplace la mesure.
 
 Les sorties committées dans le carnet sont celles d'une exécution réelle sur le
 siège : route déclarée, mesure, verdict.
