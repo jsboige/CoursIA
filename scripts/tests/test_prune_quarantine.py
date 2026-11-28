@@ -281,9 +281,16 @@ class TestQuarantineWorktreeModules:
     def test_destination_existante_refusee(self, tmp_path):
         wt = _real_worktree(tmp_path)
         _bare_submodules(wt, ["A"])
-        (tmp_path / "q" / "dest").mkdir(parents=True)
+        # La racine doit etre celle de l'organe -- marquee -- pour que le
+        # refus porte sur la DESTINATION et non sur la propriete de la
+        # racine (#28833) : une racine sans marqueur est refusee avant tout.
+        q = tmp_path / "q"
+        q.mkdir()
+        (q / pmw.QUARANTINE_MARKER).write_text(
+            pmw.QUARANTINE_MARKER_TEXT, encoding="utf-8")
+        (q / "dest").mkdir(parents=True)
         ok, msg, info = pmw.quarantine_worktree_modules(
-            str(wt), tmp_path / "q", "dest")
+            str(wt), q, "dest")
         assert ok is False
         assert msg == "quarantine-destination-exists"
         assert info is None
@@ -355,6 +362,60 @@ class TestQuarantineWorktreeModules:
             str(wt), wt / "q", "dest")
         assert ok is False
         assert msg == "quarantine-root-inside-worktree"
+
+    def test_racine_preexistante_sans_marqueur_refusee_avant_toute_ecriture(
+            self, tmp_path):
+        """Une racine qui existe SANS le marqueur n'est pas celle de
+        l'organe. L'ADOPTER (y ecrire le marqueur) la declarerait purgeable :
+        `purge_quarantine` etant fail-closed sur ce seul temoin, une purge
+        ulterieure retirerait alors SES enfants, qui ne sont pas les notres
+        (#28833, meme garde que la voie archives depuis #28687).
+
+        Refus nomme AVANT toute ecriture : le fichier temoin reste intact,
+        aucun marqueur n'est pose, aucun sous-repertoire n'est cree, et le
+        `modules/` du worktree n'a pas bouge.
+        """
+        wt = _real_worktree(tmp_path)
+        _bare_submodules(wt, ["A"])
+        q = tmp_path / "q"
+        q.mkdir()
+        witness = q / "temoin.txt"
+        witness.write_text("contenu etranger", encoding="utf-8")
+
+        ok, msg, info = pmw.quarantine_worktree_modules(str(wt), q, "dest")
+
+        assert ok is False
+        assert msg == f"quarantine-root-not-ours:{q}", msg
+        assert info is None
+        assert witness.read_text(encoding="utf-8") == "contenu etranger"
+        assert not (q / pmw.QUARANTINE_MARKER).exists()
+        assert sorted(p.name for p in q.iterdir()) == ["temoin.txt"]
+        assert (pmw.worktree_gitdir(str(wt)) / "modules" / "A").is_dir(), (
+            "un refus ne deplace rien")
+
+    @pytest.mark.parametrize("layout", ["vide", "dest-seule", "dest-fichier"])
+    def test_racine_sans_marqueur_refusee_quel_que_soit_son_contenu(
+            self, tmp_path, layout):
+        """Le contenu d'une racine ne prouve rien : ni le vide, ni le NOM de
+        notre propre sous-repertoire -- en dossier ou en simple fichier --
+        ne fait d'une racine preexistante une racine de l'organe."""
+        wt = _real_worktree(tmp_path)
+        _bare_submodules(wt, ["A"])
+        q = tmp_path / "q"
+        q.mkdir()
+        dest = q / "dest"
+        if layout == "dest-seule":
+            dest.mkdir()
+        elif layout == "dest-fichier":
+            dest.write_text("un fichier", encoding="utf-8")
+        before = sorted(str(p.relative_to(q)) for p in q.rglob("*"))
+
+        ok, msg, _ = pmw.quarantine_worktree_modules(str(wt), q, "dest")
+
+        assert ok is False
+        assert msg.startswith("quarantine-root-not-ours:"), msg
+        assert sorted(str(p.relative_to(q)) for p in q.rglob("*")) == before
+        assert not (q / pmw.QUARANTINE_MARKER).exists()
         assert (pmw.worktree_gitdir(str(wt)) / "modules" / "A").is_dir()
 
 
@@ -863,6 +924,11 @@ class TestDecontaminationSubmodule:
         # Le `modules/` qu'elle porte contient de VRAIS gitdirs : c'est ce
         # qu'une passe precedente y deplace.
         qroot = tmp_path / "quarantaine"
+        qroot.mkdir()
+        # Une passe precedente de l'organe laisse une racine MARQUEE : le
+        # contenu seul ne prouve pas la propriete (#28833).
+        (qroot / pmw.QUARANTINE_MARKER).write_text(
+            pmw.QUARANTINE_MARKER_TEXT, encoding="utf-8")
         entry = qroot / f"20240101T000000-1-{wt.name}"
         sub = entry / "modules" / rel
         sub.mkdir(parents=True)

@@ -1,7 +1,7 @@
 ---
 title: "Bio & Médecine — les mathématiques et les algorithmes du vivant"
 subtitle: "Série pédagogique — modéliser le vivant, puis soumettre le calcul à une voie indépendante : populations, épidémies, séquences, évolution, réseaux de gènes, neurones, structures moléculaires"
-description: "Série Bio & Médecine du dépôt CoursIA — croissance logistique contrôlée par sa solution exacte, Lotka-Volterra contrôlé par son intégrale première, SIR contrôlé par l'équation transcendante de sa taille finale, et, dans le pli Structures, un squelette protéique construit pas à pas dont la liaison hydrogène et la carte des angles diédraux sont mesurées, avec contre-témoins qui doivent échouer. Le même geste que la série Physique, appliqué aux objets du vivant."
+description: "Série Bio & Médecine du dépôt CoursIA — croissance logistique contrôlée par sa solution exacte, Lotka-Volterra contrôlé par son intégrale première, SIR contrôlé par l'équation transcendante de sa taille finale, et, dans le pli Structures, un squelette protéique construit pas à pas dont la liaison hydrogène et la carte des angles diédraux sont mesurées, avec contre-témoins qui doivent échouer, puis une chaîne de résidus sur réseau carré dont l'espace des conformations est énuméré en entier et la marche qui cherche le pli résolue exactement. Le même geste que la série Physique, appliqué aux objets du vivant."
 listing:
   - id: dynamiques
     contents: "Dynamiques/*.ipynb"
@@ -26,7 +26,7 @@ cas où il doit échouer.
 
 ## Vue d'ensemble
 
-Sept plis, un même contrat de méthode. Deux sont ouverts à ce jour : **Dynamiques**, où la série prend son départ, et **Structures**, sa première feuille.
+Sept plis, un même contrat de méthode. Deux sont ouverts à ce jour : **Dynamiques**, où la série prend son départ, et **Structures**, qui compte deux feuilles.
 
 | Pli | Objet | Ce qui sert de vérité | État |
 |-----|-------|-----------------------|------|
@@ -35,13 +35,13 @@ Sept plis, un même contrat de méthode. Deux sont ouverts à ce jour : **Dynami
 | **Évolution** | Wright-Fisher et Moran, fixation, coalescent, phylogénie, jeux évolutionnaires | La probabilité de fixation de Kimura ; l'arbre retrouvé sur des séquences simulées le long d'un arbre connu | À venir |
 | **Réseaux du vivant** | Cinétique enzymatique, interrupteurs bistables, répressilateur, motifs de Turing | L'approximation quasi stationnaire contre la cinétique complète ; la bifurcation localisée analytiquement puis numériquement | À venir |
 | **Neurones** | Hodgkin-Huxley, FitzHugh-Nagumo, intègre-et-tire, excitabilité | Le seuil et la période lus sur le plan de phase, contre ceux mesurés sur le modèle complet | À venir |
-| **Structures** | Squelette peptidique et liaison hydrogène, carte des angles diédraux ; puis repliement d'ARN, modèle HP de protéines sur réseau | La vis analytique et la rotation du repère peptidique, contre les vis mesurées ; puis l'optimum d'une énumération exhaustive sur petites instances | **Livré** : [Structures-01](Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb) |
+| **Structures** | Squelette peptidique et liaison hydrogène, carte des angles diédraux ; puis une chaîne de résidus sur réseau carré, son espace de conformations, ses bornes et le paysage de son énergie | La vis analytique et la rotation du repère peptidique, contre les vis mesurées ; puis le dénombrement par deux algorithmes indépendants, et la formule fermée de la loi stationnaire contre la résolution du système | **Livré** : [Structures-01](Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb) et [Structures-02](Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb) |
 | **Mesure médicale** | Transformée de Radon et rétroprojection filtrée, pharmacocinétique, tests imparfaits, survie | Le fantôme reconstruit contre l'original ; la solution analytique du modèle à un compartiment | À venir |
 
 **Kernels** : `python3` · **GPU** : non requis · **Prérequis** : Python scientifique et
-équations différentielles ordinaires pour Dynamiques, géométrie dans l'espace et
-algorithmique pour Structures ; chaque pli indique ses prérequis propres dans le README
-de la série.
+équations différentielles ordinaires pour Dynamiques, géométrie dans l'espace,
+algorithmique et marche aléatoire sur un graphe pour Structures ; chaque pli indique ses
+prérequis propres dans le README de la série.
 
 ## Le contrat des cinq points
 
@@ -70,11 +70,13 @@ pas nulle — elle vaut ce que prédit $I_0/(1-R_0)$, ce qui est un résultat en
 ::: {#dynamiques}
 :::
 
-## Structures : la liaison hydrogène comme rotation
+## Structures : la liaison hydrogène comme rotation, le repliement comme paysage
 
-Le pli Structures part du squelette et ne replie encore rien. Il construit une chaîne peptidique à partir de paramètres déclarés, mesure la vis d'une hélice et la compare à sa formule analytique, puis retrouve l'hélice $\alpha$ par un critère à quatre conditions emprunté à DSSP. La carte des couples $(\varphi,\psi)$ n'est pas un point mais un bassin : `154` cases sur `5184`, en deux régions miroir de `77` cases, où l'hélice tourne de `3,5099` à `4,1289` résidus par tour.
+Le pli Structures commence par le squelette. Il construit une chaîne peptidique à partir de paramètres déclarés, mesure la vis d'une hélice et la compare à sa formule analytique, puis retrouve l'hélice $\alpha$ par un critère à quatre conditions emprunté à DSSP. La carte des couples $(\varphi,\psi)$ n'est pas un point mais un bassin : `154` cases sur `5184`, en deux régions miroir de `77` cases, où l'hélice tourne de `3,5099` à `4,1289` résidus par tour.
 
 Le carnet dit aussi ce qu'un tel critère ne peut pas. Il est achiral, et son contre-témoin le montre : l'hélice gauche passe le même test que l'hélice droite. Il n'impose que des bornes supérieures de distance et des bornes inférieures d'angle, si bien qu'une liaison peptidique tordue lui fait accepter un hydrogène à `0,42` Å d'un oxygène — seule la planéité du groupe l'arrête.
+
+Le second carnet passe au pli lui-même, sur le plus petit modèle qui se calcule en entier : une chaîne de résidus hydrophobes et polaires sur un réseau carré, dont l'énergie compte les contacts entre hydrophobes. Il énumère l'espace des conformations — `4067` à dix résidus, `30 073` à douze, par deux algorithmes indépendants — démontre deux bornes sur le nombre de contacts et les éprouve sur les `1024` séquences de dix résidus, puis résout exactement la loi de long terme de la marche biaisée qui cherche le pli. Cette loi n'est pas celle de Gibbs, et un contre-témoin à énergie nulle en montre la cause.
 
 ::: {#structures}
 :::

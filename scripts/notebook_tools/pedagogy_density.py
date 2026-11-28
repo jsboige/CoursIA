@@ -611,8 +611,8 @@ def _baseline_at(ref: str) -> dict | None:
         return None
 
 
-def _merge_base(ref: str) -> str | None:
-    """Point de fork entre ``ref`` et ``HEAD`` (``git merge-base ref HEAD``).
+def _merge_base(ref: str, head: str = "HEAD") -> str | None:
+    """Point de fork entre ``ref`` et ``head`` (``git merge-base ref head``).
 
     LOST_KEY et l'apport de la PR se definissent contre l'etat d'AVANT la PR,
     c'est-a-dire au merge-base, pas a la pointe de la base (residu de #10403). Sur une
@@ -630,7 +630,7 @@ def _merge_base(ref: str) -> str | None:
 
     repo_root = _TOOLS_DIR.parents[1]
     proc = subprocess.run(
-        ["git", "-C", str(repo_root), "merge-base", ref, "HEAD"],
+        ["git", "-C", str(repo_root), "merge-base", ref, head],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     if proc.returncode != 0:
@@ -639,25 +639,72 @@ def _merge_base(ref: str) -> str | None:
     return merge_base or None
 
 
-def _renamed_notebook_pairs(base_ref: str) -> list[tuple[str, str]] | None:
-    """``(old, new)`` pairs git reports as renames between ``base_ref`` and HEAD.
+def _head_parents() -> list[str]:
+    """Les parents de HEAD (``git rev-list --parents -n 1 HEAD``).
+
+    Un parent pour un commit ordinaire, deux pour un commit de fusion. C'est
+    le NOMBRE qui distingue les deux : le parent unique d'un commit ordinaire
+    n'est pas une ref de fusion, c'est l'etat d'avant.
+    """
+    import subprocess
+
+    repo_root = _TOOLS_DIR.parents[1]
+    proc = subprocess.run(
+        ["git", "-C", str(repo_root), "rev-list", "--parents", "-n", "1", "HEAD"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        return []
+    fields = proc.stdout.split()
+    return fields[1:]
+
+
+def _pr_head_ref() -> str:
+    """La TETE de la PR, et non la ref de fusion que la CI checkout (#28910).
+
+    ``actions/checkout`` pose ``refs/pull/N/merge`` par defaut : c'est un
+    commit de fusion dont le premier parent est la tete de la branche de la PR
+    et le second la pointe de la base. Comparer CETTE ref a la base attribue
+    a la PR tout ce que la base a recu depuis le ``base.sha`` de l'evenement
+    -- renommages de `main` compris. Mesure (#28910) : sur une PR qui ne
+    touche pas la serie, l'organe imputait a la PR 55 renommages recus par
+    `main`, dont un seul suffisait a faire sortir un LOST_KEY sur un carnet
+    que la PR n'avait pas touche.
+
+    Le premier parent d'une ref de fusion EST la tete de la PR : c'est donc
+    lui qu'il faut comparer. Quand HEAD n'est pas une fusion (run local sur
+    une branche), HEAD EST la tete de la PR -- et son parent unique n'est
+    PAS la tete : c'est l'etat d'avant.
+    """
+    parents = _head_parents()
+    return parents[0] if len(parents) >= 2 else "HEAD"
+
+
+def _renamed_notebook_pairs(
+    base_ref: str,
+    head_ref: str = "HEAD",
+) -> list[tuple[str, str]] | None:
+    """``(old, new)`` pairs git reports as renames between ``base_ref`` and ``head_ref``.
 
     ``-M`` enables rename detection; ``--name-status`` gives ``R<score> old new``.
     Returns ``None`` when the base ref cannot be resolved (shallow clone, absent
     object), so the caller can say "not evaluated" instead of claiming a
     conformity it never measured -- the #8819 lesson transposed.
 
-    La forme est en TROIS points (``base_ref...HEAD``), donc deja resolue au
+    La forme est en TROIS points (``base_ref...head_ref``), donc deja resolue au
     merge-base : passer la pointe de la base ou le merge-base rend le meme
-    jeu de paires. L'appelant passe le merge-base pour n'avoir qu'une seule
-    resolution de reference dans tout ``_check_orphans`` (residu de #10403).
+    jeu de paires -- sur une branche lineaire. L'hypothese NE TIENT PLUS
+    d'une ref de fusion dont le parent cote base est en avance sur la base
+    comparee : la, la forme en trois points couvre tout ce que la base a
+    recu (55 renommages mesures, #28910). L'appelant compare donc la TETE de
+    la PR (cf :func:`_pr_head_ref`), pas la ref de fusion.
     """
     import subprocess
 
     repo_root = _TOOLS_DIR.parents[1]
     proc = subprocess.run(
         ["git", "-C", str(repo_root), "-c", "core.quotepath=false", "diff",
-         "-M", "--name-status", f"{base_ref}...HEAD", "--", "*.ipynb"],
+         "-M", "--name-status", f"{base_ref}...{head_ref}", "--", "*.ipynb"],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     if proc.returncode != 0:
@@ -689,8 +736,62 @@ def _keys_lost_by_rename(
         (old, new)
         for old, new in renamed
         if old in base_baseline and new not in head_baseline
+        and not _key_prolonged(old, base_baseline, head_baseline)
     ]
     return sorted(lost)
+
+
+#: Marqueurs de "genre" d'un carnet : meme famille, chemin different.
+#: Ordonnes du plus long au plus court -- le premier qui matche est retire.
+_KIND_MARKERS = (
+    "-output-Python", "-output-Rust", "-output-CSharp", "-output-Dotnet",
+    "-output-Lean", "-output-Julia", "-output",
+    "-Python", "-Rust", "-CSharp", "-Dotnet", "-Lean", "-Julia",
+)
+
+
+def _radical(path: str) -> str:
+    """Le radical d'un chemin de carnet : sa famille, sans son marqueur de genre.
+
+    ``SL-12c-PavlovDLS-Reproduction.ipynb``,
+    ``SL-12c-PavlovDLS-Reproduction-Python.ipynb`` et
+    ``SL-12c-PavlovDLS-Reproduction-output-Python.ipynb`` partagent le meme
+    radical : ce sont des declinaisons d'un meme carnet, pas trois carnets
+    distincts. Le radical permet de reconnaitre une cle DEPLACEE vers une
+    declinaison voisine -- ce que ``git diff -M`` ne sait pas faire quand il
+    apparie le mauvais jumeau (#28910).
+    """
+    stem = path[: -len(".ipynb")] if path.endswith(".ipynb") else path
+    for marker in _KIND_MARKERS:
+        if stem.endswith(marker):
+            return stem[: -len(marker)]
+    return stem
+
+
+def _key_prolonged(
+    old: str,
+    base_baseline: dict[str, float],
+    head_baseline: dict[str, float],
+) -> bool:
+    """Vrai si une cle de meme radical, NOUVELLE a HEAD, prolonge l'ancienne.
+
+    Le cas mesure (#28910) : ``git diff -M`` apparie l'ancien chemin a son
+    jumeau ``-output-...`` plutot qu'a la declinaison qui porte vraiment la
+    cle. La cle n'est pas perdue -- elle a change de declinaison -- mais le
+    test la lisait comme une perte.
+
+    Seule une cle ABSENTE du baseline de base compte : une cle deja presente
+    appartient a un autre carnet, et sa presence ne dit rien de ce
+    renommage. La regle ne peut donc pas masquer une vraie perte : elle
+    exige une cle neuve de meme radical.
+    """
+    radical = _radical(old)
+    for key in head_baseline:
+        if key in base_baseline:
+            continue
+        if _radical(key) == radical:
+            return True
+    return False
 
 
 def _check_orphans(base_ref: str | None = None) -> int:
@@ -736,16 +837,23 @@ def _check_orphans(base_ref: str | None = None) -> int:
         # La comparaison se fait au MERGE-BASE, pas a la pointe de `--base`
         # (residu de #10403) : une base en retard a gagne des commits depuis le fork, et
         # lire son etat attribue a la PR les cles que `main` a ajoutees.
-        merge_base = _merge_base(base_ref)
+        #
+        # Et elle se fait sur la TETE DE LA PR, pas sur la ref de fusion que la
+        # CI checkout (#28910) : comparer la ref de fusion attribue a la PR les
+        # renommages recus par `main` entre le `base.sha` de l'evenement et la
+        # pointe de la base.
+        pr_head = _pr_head_ref()
+        merge_base = _merge_base(base_ref, pr_head)
         if merge_base is None:
             lost_note = (
-                f"LOST_KEY non evalue (merge-base entre {base_ref} et HEAD "
+                f"LOST_KEY non evalue (merge-base entre {base_ref} et la tete de "
+                f"la PR {pr_head} "
                 f"indeterminable dans ce clone -- clone superficiel ?) "
                 f"-- conformite ni affirmee ni niee"
             )
         else:
             base_data = _baseline_at(merge_base)
-            renamed = _renamed_notebook_pairs(merge_base)
+            renamed = _renamed_notebook_pairs(merge_base, pr_head)
             if base_data is None or renamed is None:
                 lost_note = (
                     f"LOST_KEY non evalue (merge-base {merge_base} illisible dans "
@@ -754,10 +862,16 @@ def _check_orphans(base_ref: str | None = None) -> int:
             else:
                 lost = _keys_lost_by_rename(
                     base_data.get("notebooks", {}), baseline, renamed)
+                head_note = ""
+                if pr_head != "HEAD":
+                    head_note = (
+                        f" (ref de fusion : compare a la tete de la PR {pr_head})"
+                    )
                 lost_note = (
                     f"LOST_KEY evalue contre {base_ref}, au merge-base "
                     f"{merge_base} "
                     f"({len(renamed)} renommage(s) de notebook detecte(s))"
+                    f"{head_note}"
                 )
 
     failed = False
