@@ -1,0 +1,7 @@
+- name: "Lean-20-Capstone-Digestions-Tao C#"
+  family: SymbolicAI/Lean
+  python: MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-20-Capstone-Digestions-Tao-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-20-Capstone-Digestions-Tao-CSharp.ipynb
+  parity_level: native-both
+  known_differences:
+    - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de Lean-20-Capstone-Digestions-Tao-Python.ipynb. Execution reelle sur kernel .net-csharp : 5 cellules, 0 erreur. Verification independente : approve. Premiere attestation ecrite par l'integration de livraison (check_twin_parity --update), en DERNIERE operation (cf #8957)."

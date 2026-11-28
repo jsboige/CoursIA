@@ -298,6 +298,11 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # always-on-metadata-guards.yml : routable (triggers pull_request +
     #   workflow_dispatch seulement). Son jumeau always-on-guards.yml ne l'est
     #   PAS -- il porte pull_request_review, classe FORK_REACHABLE (#14294).
+    # #28534 : les deux workflows de la classe `edited` sont fusionnes en
+    #   `always-on-guards-edited.yml` -- meme forme hybride auditee, meme
+    #   declencheur `pull_request` SANS `branches:` (base-not-main doit voir
+    #   les PR dont la base n'est PAS main, #10918), donc routable.
+    "always-on-guards-edited.yml",
     "always-on-metadata-guards.yml",
     # #22937 (volet (d), 2026-10-28, lane myia-ai-01:CoursIA-2) : la garde
     #   des waivers de chemins locaux REJOINT LA COHORTE (forme hybride

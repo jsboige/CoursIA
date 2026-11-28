@@ -59,6 +59,58 @@ degrees, and the **acyclicity** `H^n(C⁰F) = 0` for `n ≥ 1` ([God58] II.5).
     cokernel's unit.
   - R. Godement, *Topologie algébrique et théorie des faisceaux* [God58],
     Chap. II §5. Acyclicity — named frontier of Part 91.
+
+
+## Stacks correspondence (the "exactness" group — #28788)
+
+Read on the **local tree** `StacksFrontier/Topology/Sheaves/` (sparse clone of
+the whole folder). The classification criterion is **content**, never the name
+alone: an identifier search that returns nothing does not establish an
+absence, it establishes that a statement is not *named* that way. An
+"absent" verdict therefore means: no equivalent content anywhere in
+`Topology/Sheaves/` — the seven statements below classed "absent" were
+re-read in the **content** of the files that carry them, not counted.
+
+The **23 public statements** of the module are classed one by one; the seven
+`private` helpers are implementation bricks, with no counterpart to class.
+
+| Statement | Class | Stacks referent | What our version adds |
+|---|---|---|---|
+| `godementCanonicalDOne` | partial | `Cohomology/GodementResolution/Basic.lean:466` `godementComplex` ; `:482` `godementComplexEvalIso` | the recursion `d^{n+1} := godementStep d^n` between degrees, on the site of opens |
+| `godementCanonicalDZero_comp_godementCanonicalDOne` | partial | `Basic.lean:466` `godementComplex` (the null-composition is carried by the type `CochainComplex`) | the null-composition **proved** at each degree |
+| `mono_toGodement_of_isSheaf` | partial | `Basic.lean:475` `godementAugmentation` ; `StalkHomotopy.lean:558` `quasiIso_godementAugmentation` | the **mono** of the unit, in categories of presheaves (Stacks: quasi-isomorphism of complexes) |
+| `eq_zero_of_locally_zero_cokernel_toGodement` | partial | `Stalk/Separated.lean:78` `IsSeparated'` ; `:86` `isSeparated'_iff` ; `Sheafify/Separated.lean:71` `IsSeparated` ; `:88` `toSheafify_app_eq_iff_germ_eq` | the separatedness criterion applied to the **cokernel** of the unit, which is not a sheaf |
+| `injective_toGodement_cokernel_of_isSheaf` | partial | `Stalk/Separated.lean:86` `isSeparated'_iff` (007A) | the injectivity of the cokernel's unit, by **locality** then separatedness — without gluing |
+| `mono_toGodement_cokernel_of_isSheaf` | partial | `Stalk/Separated.lean:86` `isSeparated'_iff` | the **categorical ascent** (mono), which Stacks does not make |
+| `exact_toGodement_godementCanonicalDZero` | **covered** | `StalkHomotopy.lean:558` `quasiIso_godementAugmentation` (0FKS clause (3)) | exactness at **degree 0**, in a short complex of presheaves |
+| `epi_stalkFunctor_map_of_epi` | partial | `Modules/Exactness.lean:52` `stalkAddCommGroupFunctor` ; `:77` `exact_iff_stalkShortComplex_exact` ; `Sheaf/Abelian.lean:75` `shortExact_of_stalk` | the isolated "the stalk functor preserves epis", outside an exactness statement |
+| `stalkEvalLeg` | absent | — (Stacks' germ is a quotient: `Basis/Germs.lean:132` `Stalk`, `:136` `germ`) | the evaluation of a Godement section **at a point**, possible because the section is a function |
+| `stalkEvalCocone` | absent | — (idem) | the cone on the diagram of neighborhoods |
+| `stalkEval` | partial | `StalkHomotopy.lean:520` `homotopyEquivalences_stalk_godementAugmentation` ; `:95` `godementStalkPullbackIso` | an **arrow** (the evaluation), whose section will be the retraction |
+| `germ_stalkEval` | absent | — (the counterpart of the content: `Basis/Germs.lean:124` `StalkDatum.Rel`, `:132`, `:136`) | the universal property of the colimit, unfolded |
+| `toGodement_app_stalkEvalLeg` | absent | — (closest counterpart: `Basic.lean:475` `godementAugmentation`) | the compatibility of the evaluation with the unit |
+| `toGodement_stalkEval` | partial | `StalkHomotopy.lean:520` `homotopyEquivalences_stalk_godementAugmentation` ; `:558` `quasiIso_godementAugmentation` | a **splitting** (retraction `ev_x₀`), unconditional |
+| `stalkEval_stalkFunctor_map_toGodement_apply` | absent | — (the counterpart of the splitting: `StalkHomotopy.lean:520`) | the applied form of the splitting |
+| `mono_stalkFunctor_map_toGodement` | partial | `Sheaf/Abelian.lean:88` (use of `TopCat.Presheaf.mono_iff_stalk_mono`) ; `:75` | the instance "the Godement unit is mono **at the stalk**", unconditional |
+| `stalkFunctor_preservesMono` | partial | `Sheaf/Abelian.lean:88` | the instance, which Stacks uses without stating it |
+| `stalkFunctor_preservesHomology` | partial | `Modules/Exactness.lean:77` `exact_iff_stalkShortComplex_exact` (01AG) | the **local** form (preservation by a functor) |
+| `stalkFunctor_preservesFiniteLimits` | absent | — (no mention of AB5 nor `PreservesFiniteLimits` **for the stalk functor** in `Topology/Sheaves/`) | AB5 stated explicitly, of which `Modules/Exactness.lean:77` is only a consequence |
+| `stalkFunctor_map_exact` | **covered** | `Modules/Exactness.lean:77` `exact_iff_stalkShortComplex_exact` (01AG) ; `Sheaf/Abelian.lean:75` `shortExact_of_stalk` | preservation of exactness **without any sheaf hypothesis**, on presheaves of abelian groups |
+| `stalk_exact_godementStep` | partial | `StalkHomotopy.lean:558` `quasiIso_godementAugmentation` ; `:127` `quasiIso_of_forall_stalk_quasiIso_nat` | the **generic** version (any arrow `f`), which makes the recursion between degrees uniform |
+| `stalk_exact_toGodement_godementCanonicalDZero` | **covered** | `StalkHomotopy.lean:558` `quasiIso_godementAugmentation` (0FKS clause (3)) | degree 0, **unconditional** (no sheaf hypothesis) |
+| `stalk_exact_godementCanonicalDZero_godementCanonicalDOne` | **covered** | `StalkHomotopy.lean:558` `quasiIso_godementAugmentation` | degree 1 isolated, the recursion made visible |
+
+**Count**: 4 covered, 13 partial, 6 absent — over 23 public statements.
+
+**Framework gaps, stated.** Stacks works in sheaves of modules over a ringed
+space (`SheafOfModules`, Grothendieck topology) and in `TopCat.Sheaf`; the
+lake works in **presheaves of abelian groups** over the topology of opens. The
+two "Godement complexes" are not the same object: in Stacks the degree-`n`
+term is the iterate `(f_* f^*)^{n+1}` along `X_discrete ⟶ X`
+(`Basic.lean:482`), while ours is built by a canonical step `godementStep` on
+the site of opens. The verdict says "covered / partial / absent" **with that
+line**; it does not say "importable counterpart" — importing `StacksFrontier`
+remains out of scope.
 -/
 
 universe u

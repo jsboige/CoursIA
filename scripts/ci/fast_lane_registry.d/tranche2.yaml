@@ -1,0 +1,105 @@
+# TRANCHE2 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+# Forme 1 : ratchet autonome binaire (exit 0/1), PRE-CONTROLE self-test
+# (les deux steps du workflow d'origine, sans shell).
+# Source : notebook-output-failure-ratchet.yml (job `ratchet`).
+group: TRANCHE2
+guards:
+  # Output-object flood ratchet: the sibling above watches text banners and
+  # machine paths; nothing counted output OBJECTS per cell, so a notebook
+  # could grow to 45k lines of dot-output objects while every other gate
+  # stayed green (Sudoku-15, user report 2026-09-06).
+  # Source : notebook-output-flood-ratchet.yml (job `ratchet`).
+  -
+    name: "Output-failure ratchet (base vs PR)"
+    argv: ["python", "scripts/notebook_tools/check_output_failure_text.py", "{base_ref}"]
+    source: "notebook-output-failure-ratchet.yml"
+    paths: ["**.ipynb", "scripts/notebook_tools/check_output_failure_text.py", ".github/workflows/notebook-output-failure-ratchet.yml"]
+    blocking: true
+    needs_base: true
+    absorbed: true
+    pre_argv: ["python", "scripts/notebook_tools/check_output_failure_text.py", "--self-test"]
+  # Output-volume COLLAPSE ratchet, blocking since #21424 T2 (2026-10-19):
+  # the two siblings above watch output GROWTH (flood) and failure
+  # banners; nothing watched contraction -- #15209 lost 72 % of its output
+  # chars (11 code cells executed "successfully", graceful-degradation
+  # guards if api_ok:) while every gate stayed green. The ratchet
+  # discriminates by CAUSE: signature of degradation gracieuse and
+  # order-of-magnitude loss per cell, exempting the two mechanically
+  # detectable legitimate causes (content moved to a notebook created
+  # by the same diff, and diagnostic-text purge CS####/warning).
+  #
+  # The gate is BLOCKING since T2 -- a flagged cell is a hard failure
+  # UNLESS the PR body carries a `## Output-collapse justification`
+  # section naming the cell and the reason (NAMING c.2193 family, the
+  # kernel-drift guard exemption). T1 brought the `--history` mode
+  # (H.6 audit-history organ) so a contributor can locate the cell's
+  # restore point and the responsible PR before justifying.
+  -
+    name: "Output-flood ratchet (base vs PR)"
+    argv: ["python", "scripts/notebook_tools/check_output_flood.py", "{base_ref}"]
+    source: "notebook-output-flood-ratchet.yml"
+    paths: ["**.ipynb", "scripts/notebook_tools/check_output_flood.py", ".github/workflows/notebook-output-flood-ratchet.yml"]
+    blocking: true
+    needs_base: true
+    absorbed: true
+    pre_argv: ["python", "scripts/notebook_tools/check_output_flood.py", "--self-test"]
+  # Forme 2 : iter par notebook change, rc=1 defaut / rc=2 illisible.
+  # Source : fabricated-output-gate.yml (job `fabricated-output`).
+  -
+    name: "Output-collapse ratchet (base vs PR)"
+    argv: ["python", "scripts/notebook_tools/check_output_collapse.py", "{base_ref}"]
+    source: "notebook-output-collapse-ratchet.yml"
+    paths: ["**.ipynb", "scripts/notebook_tools/check_output_collapse.py", ".github/workflows/notebook-output-collapse-ratchet.yml"]
+    blocking: true
+    needs_base: true
+    absorbed: true
+    pre_argv: ["python", "scripts/notebook_tools/check_output_collapse.py", "--self-test"]
+  # Forme 3 : iter par notebook change + Pillow (deja dans le job lane).
+  # Source : degenerate-figure-gate.yml (job `degenerate-figure`).
+  -
+    name: "No fabricated text output in changed notebooks"
+    argv: ["python", "scripts/notebook_tools/detect_fabricated_outputs.py", "--check", "{changed_paths}"]
+    source: "fabricated-output-gate.yml"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "scripts/notebook_tools/detect_fabricated_outputs.py", ".github/workflows/fabricated-output-gate.yml"]
+    blocking: true
+    iterates_paths: true
+    absorbed: true
+    warn_rc:
+      -
+        2
+  # Translation hot-drift ATTRIBUTION, advisory (#15322): a prose-realignment
+  # PR that edits the source of a cell carrying a deposited translation
+  # without resyncing its CSV row turns the repo-wide hot-subset ratchet
+  # (#13551) red on MAIN -- and every open PR inherits the red (36 PRs at
+  # once; incidents #15253 / #15136 / #15216). The ratchet must stay
+  # repo-wide; what was missing is the per-PR question: which cells does
+  # THIS diff put into the hot subset? The predicate is reused verbatim from
+  # scripts/translation/check_translation_sync.py (issue constraint: no
+  # second predicate that could diverge from the ratchet it protects); the
+  # delta (source cells changed between merge-base and head) isolates the
+  # PR's own contribution, so inherited main-side drift never flags. Advisory
+  # per the issue: neutral conclusion naming the cells; blocking only after
+  # the trigger rate is measured (calibration on 98 landed notebook PRs:
+  # 6 flagged, 6/6 true positives -- the 3 documented incidents plus 3
+  # repaired-after-the-fact landings the issue table did not list).
+  # Source : translation-hot-drift-advisory.yml (stub dispatch-only).
+  -
+    name: "No degenerate figure in changed notebooks"
+    argv: ["python", "scripts/notebook_tools/detect_blank_figures.py", "--check", "{changed_paths}"]
+    source: "degenerate-figure-gate.yml"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "scripts/notebook_tools/detect_blank_figures.py", ".github/workflows/degenerate-figure-gate.yml"]
+    blocking: true
+    iterates_paths: true
+    absorbed: true
+    warn_rc:
+      -
+        2
+  -
+    name: "Translation hot-drift (base vs PR, advisory)"
+    argv: ["python", "scripts/translation/check_pr_translation_drift.py", "{base_ref}"]
+    source: "translation-hot-drift-advisory.yml"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "translations/**/*.csv", "scripts/translation/check_pr_translation_drift.py", "scripts/translation/tests/test_check_pr_translation_drift.py", ".github/workflows/translation-hot-drift-advisory.yml"]
+    blocking: false
+    needs_base: true
+    absorbed: true
+    pre_argv: ["python", "scripts/translation/check_pr_translation_drift.py", "--self-test"]
