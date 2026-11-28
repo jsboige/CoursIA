@@ -63,6 +63,9 @@ jobs:
           # superficiel, cette lecture rendrait une liste tronquee -- et une
           # PR qui ecrit un carnet pourrait passer pour innocente.
           fetch-depth: 0
+          # Graphe de commits sans les blobs de l'historique : `git log
+          # --name-only` lit les arbres, pas les blobs (politique #26383).
+          filter: blob:none
 
       - uses: actions/setup-python@v5
         with:
