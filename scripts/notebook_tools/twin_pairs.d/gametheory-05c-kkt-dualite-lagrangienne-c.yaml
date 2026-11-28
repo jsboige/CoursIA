@@ -1,0 +1,8 @@
+- name: "GameTheory-05c-KKT-Dualite-Lagrangienne C#"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-05c-KKT-Dualite-Lagrangienne-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-05c-KKT-Dualite-Lagrangienne-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "2026-11-27 (myia-po-2028:claudish) : parity_level corrige de native-both a semantic (reserve c0165 de myia-ai-01:CoursIA) -- le niveau natif des deux cotes exige de nommer un moteur externe par cote (_schema.yaml) ; ici, lus dans les deux carnets : cote C# aucune directive #r, using System, System.Collections.Generic, System.Globalization, System.Linq, System.Text et Microsoft.DotNet.Interactive.Formatting (affichage seul) -- les problemes d'optimisation y sont reimplementes a la main ; cote Python numpy, scipy.optimize, sympy et matplotlib. Machinerie asymetrique, a voir lors d'un pont. Aucun verdict de pont n'est porte : il se juge sur le travail, pas sur l'inventaire des imports."
+    - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de GameTheory-05c-KKT-Dualite-Lagrangienne-Python.ipynb. Execution reelle sur kernel .net-csharp : 9 cellules, 0 erreur. Verification independente : approve. Premiere attestation ecrite par l'integration de livraison (check_twin_parity --update), en DERNIERE operation (cf #8957)."

@@ -81,9 +81,23 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
+        id: py
         with:
           python-version: '3.11'
-          cache: pip
+
+
+      # #27727 tranche 1 : pip cache « main-only save » (pattern
+      # #19658 des caches lake-*) : `cache: pip` ecrivait une entree
+      # de ~610 Mo par ref de PR (mesure 2026-11-21 : 6.1 Go du
+      # quota de 10 Go, dont 5.3 Go de duplication pure) et
+      # evictait les caches lake-* en quelques heures.
+      - name: Restore pip cache
+        id: pip-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-py${{ steps.py.outputs.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: pip-${{ runner.os }}-
 
       # Deps minimales : pytest + sympy (calcul algébrique) + z3-solver
       # (décision réelle — real_geometry_bridge.py importe z3 en dur,
@@ -92,6 +106,13 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pytest sympy z3-solver
+
+      - name: Save pip cache (main only)
+        if: github.ref == 'refs/heads/main' && steps.pip-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ steps.pip-cache.outputs.cache-primary-key }}
 
       - name: Run Geometry tests
         # working-directory = racine du dépôt : pytest.ini y est, donc le

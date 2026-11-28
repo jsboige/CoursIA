@@ -60,11 +60,15 @@ def test_unreadable_merge_base_refetches_exact_remote_tracking_ref(monkeypatch):
     monkeypatch.setattr(subprocess, "run", fake_run)
 
     assert ckd.resolve_base("origin/main") == "abc123"
+    # Les deux lectures `merge-base` passent par le helper `git()` de l'organe,
+    # qui force `-c core.quotePath=false` (les chemins non-ASCII ne doivent pas
+    # etre echappes par git -- voir #28632). Le refetch, lui, est lance en
+    # `subprocess.run` direct dans l'organe : il garde sa forme d'origine.
     assert calls == [
-        ["git", "merge-base", "origin/main", "HEAD"],
+        ["git", "-c", "core.quotePath=false", "merge-base", "origin/main", "HEAD"],
         ["git", "fetch", "--refetch", "--filter=blob:none", "origin",
          "+refs/heads/main:refs/remotes/origin/main"],
-        ["git", "merge-base", "origin/main", "HEAD"],
+        ["git", "-c", "core.quotePath=false", "merge-base", "origin/main", "HEAD"],
     ]
 
 

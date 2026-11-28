@@ -4,13 +4,19 @@ import Mathlib.Tactic.FieldSimp
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.Data.Nat.Choose.Basic
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+import Mathlib.AlgebraicGeometry.EllipticCurve.Weierstrass
 
 /-!
 # Algebraic certificate at the quarter point
 
 This layer derives the prefix identity from a local recurrence. The
 identification `tᵢ = (2i+1)aᵢ` is built into the summand. It does not
-formalize elliptic curves, Cartier operators or Frobenius.
+formalize Cartier operators or Frobenius.
+
+The P3+ brick (P2 candidate 3) adds the j=1728 base: the Weierstrass
+curve of invariant `j = 1728` via `WeierstrassCurve`, with the j-invariant
+established formally via `c₄^3 / Δ`.
+
 -/
 
 namespace CartierMiller_en
@@ -71,6 +77,50 @@ theorem quarter_point_identity (a : ℕ → F) (h : F) (n : ℕ)
     _ = 4 * (∑ i ∈ range n, a i) + (-2 * (n : F) * (2 * (n : F) + 5)) * a n := by
       rw [hp]; ring
     _ = _ := by rw [hq]
+
+/-!
+## The j=1728 base (P3+ brick, P2 candidate 3)
+
+Congruence (36) reads on the Weierstrass curve of invariant `j = 1728`.
+This base constructs that curve and formally establishes its j-invariant;
+branching the sequence `a_n` onto the Frobenius trace of this curve (and
+proving the congruence on it) is the continuation of the brick.
+-/
+
+/-- The short Weierstrass curve `y^2 = x^3 + x` (coefficient `a_4 = 1`).
+The five Weierstrass coefficients are `a₁ a₂ a₃ a₄ a₆`; here `a₄ = 1` and
+the rest are zero. -/
+abbrev E1728 (K : Type*) [Field K] : WeierstrassCurve K :=
+  ⟨(0 : K), (0 : K), (0 : K), (1 : K), (0 : K)⟩
+
+/-- The curve `y^2 = x^3 + x` is elliptic: its discriminant `Δ = -64` is
+nonzero, hence a unit, in a field of characteristic 0. -/
+theorem e1728_is_elliptic {K : Type*} [Field K] [CharZero K] :
+    WeierstrassCurve.IsElliptic (E1728 K) :=
+  ⟨by
+    have hne : (E1728 K).Δ ≠ 0 := by
+      simp only [WeierstrassCurve.Δ, WeierstrassCurve.b₂,
+        WeierstrassCurve.b₄, WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+      norm_num
+    exact isUnit_iff_ne_zero.mpr hne⟩
+
+/-- The j-invariant of the curve `y^2 = x^3 + x` is 1728.
+For `y^2 = x^3 + A x + B`, `c₄ = -48·A` and `Δ = -16·(4·A^3 + 27·B^2)`;
+with `A = 1`, `B = 0`, `c₄ = -48` and `Δ = -64`, and
+`j = c₄^3 / Δ = (-48)^3 / (-64) = 1728`. -/
+theorem e1728_j_is_1728 {K : Type*} [Field K] [CharZero K]
+    [WeierstrassCurve.IsElliptic (E1728 K)] :
+    (E1728 K).j = 1728 := by
+  have hc₄ : (E1728 K).c₄ = -48 := by
+    simp only [WeierstrassCurve.c₄, WeierstrassCurve.b₂,
+      WeierstrassCurve.b₄]
+    norm_num
+  have hΔ : (E1728 K).Δ = -64 := by
+    simp only [WeierstrassCurve.Δ, WeierstrassCurve.b₂,
+      WeierstrassCurve.b₄, WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+    norm_num
+  simp [WeierstrassCurve.j, WeierstrassCurve.coe_Δ', hΔ, hc₄]
+  norm_num
 
 instance : Fact (Nat.Prime 97) := ⟨by decide⟩
 

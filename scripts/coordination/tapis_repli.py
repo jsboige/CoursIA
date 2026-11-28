@@ -2,19 +2,13 @@
 """Le REPLI CHRONOLOGIQUE du tirage : hors reseau, le cache local fait foi.
 
 L'invariant I2 du contrat du picker (#28114) : « un repli chronologique ».
-Hors reseau, la voie legere (`tapis_leger`) ne rend **rien** -- la lecture de
-selection echoue et le point d'entree sort en 3. Ce module rend la main : il
-lit le **cache** local -- le meme fichier que le tirage rapide
-(`lecture-<N>j.json`, ecrit par `gh_cache_fichier.ecrire`) -- et sert le pool
-dans l'**ordre de creation**.
+Hors reseau, la voie legere (`tapis_leger`) ne rend **rien** -- la lecture echoue
+et le point d'entree sort en 3. Ce module rend la main : il lit le **cache** local
+(meme fichier que le tirage rapide, `lecture-<N>j.json`), dans l'**ordre de creation**.
 
-Le cache du repli peut etre **perime** : c'est la panne du reseau qui le rend
-seul disponible, et un pool d'il y a quelques heures vaut mieux qu'un tirage
-vide. Au-dela de `TTL_S`, il ne vaut plus rien : le repli rend alors l'echec
-de lecture, comme avant ce module.
-
-Le **curseur** du repli est persiste dans le dossier du cache : sans lui,
-chaque tour rendrait les memes grains et le pool ne serait jamais couvert.
+Le cache du repli peut etre **perime** : la panne du reseau le rend seul
+disponible. Le **curseur** est persiste dans le dossier du cache : sans lui,
+chaque tour rendrait les memes grains.
 """
 from __future__ import annotations
 
@@ -30,6 +24,7 @@ from coordination import (
     gh_selection,
     tapis_age,
     tapis_ancre,
+    tapis_borne,
     tapis_origami,
     tapis_rotation,
     tapis_universel,
@@ -101,19 +96,21 @@ def avancer(dossier: Path, lane: str, blocs: int) -> None:
 
 
 def replir(lane: str, grains: int, maintenant: datetime, jours: int, graine: str,
-           depot) -> tuple[dict, int]:
+           depot, echeance: float | None = None) -> tuple[dict, int]:
     """Le repli : (rapport, 0) -- ou l'echec de lecture, leve.
 
-    Sans cache local (absent, illisible, trop vieux), le repli est IMPOSSIBLE :
-    l'echec de lecture reste l'echec de lecture, comme avant ce module.
+    Cache absent, illisible ou trop vieux : le repli est IMPOSSIBLE. Il ne lit
+    **jamais** le reseau : pas de `run`, et le cap de livraisons y est INERTE
+    (`fetcher_hors_reseau`), temoin `mesure: false`.
 
-    Le repli ne lit **jamais** le reseau : il n'a pas de `run`. Le cap de
-    livraisons y est donc INERTE (`fetcher_hors_reseau`), temoin `mesure: false`.
-
-    Le service est **chronologique** : l'ordre de creation, la plus ancienne
-    d'abord, et le curseur fait defiler le pool de bloc en bloc -- des
-    tirages successifs couvrent le pool entier sans le repeter.
+    Le service est **chronologique** : la plus ancienne d'abord, le curseur
+    defile le pool de bloc en bloc. Les grains servis sont des **CANDIDATS DU
+    CACHE** : le fil n'a pas ete lu -- les lire avant le claim.
     """
+    # BORNE de commande (#28114, I6) : apres l'echeance, le repli ne sert RIEN.
+    if tapis_borne.expire(echeance):
+        raise gh_bulk.LectureIncomplete("selection", "repli",
+                                        "budget de commande epuise")
     dossier = gh_bulk.dossier_cache_defaut()
     cache = lire(dossier, jours)
     if not cache:
@@ -149,9 +146,9 @@ def replir(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     file, temoins_cap, cap_mesure = tapis_cap_livraisons.passer(
         file, grains_ + conteneurs, lane, maintenant, prs,
         run=tapis_cap_livraisons.fetcher_hors_reseau)
-    rapport = tapis_leger._rapport(lane, graine, maintenant, metas, 0.0, 0.0,
-                                   gh_selection.MUR_GLOBAL_S, etats_, file, prs,
-                                   origami, {"repli": True}, fenetre)
+    rapport = tapis_leger._rapport(
+        lane, graine, maintenant, metas, 0.0, 0.0, gh_selection.MUR_GLOBAL_S,
+        etats_, file, prs, origami, {"repli": True}, fenetre, fil_lu=False)
     rapport["voie"] = "repli"
     rapport["repli"] = {"cache": str(chemin_cache(dossier, jours)), "avance": avance,
                         "blocs": blocs, "servis": len(file), "curseur": servis}

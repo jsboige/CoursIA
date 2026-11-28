@@ -32,7 +32,12 @@ def git_blob(ref: str, path: str) -> bytes | None:
     if proc.returncode == 0:
         return proc.stdout
     listed = subprocess.run(
-        ["git", "ls-tree", "-r", "--name-only", ref, "--", path],
+        # `-c core.quotePath=false` : git cite les chemins non ASCII, et le
+        # chemin cite ne designe rien -- le repli declarait "aucun blob de
+        # base" pour un carnet qui en a un (faux vert). Precedent :
+        # `check_notebook_navlinks.py`.
+        ["git", "-c", "core.quotePath=false",
+         "ls-tree", "-r", "--name-only", ref, "--", path],
         capture_output=True, cwd=REPO_ROOT,
     )
     if listed.returncode:

@@ -45,13 +45,14 @@ REQUIRED_UNFILTERED_WORKFLOWS: set[str] = {
     # lane-claim-guard -- tous dormant) en un seul workflow non filtre qui
     # porte leurs organes metadata + le moteur fast-lane.
     "always-on-guards.yml",
-    # #22331 : le jumeau de body du split precedent. Meme contrat, meme
-    # raison de ne PAS porter de `paths:` -- `derive_always_on_jobs` derive
-    # la liste canari des workflows `pull_request` SANS filtre, et un filtre
-    # retirerait ce job du canari (une PR qui n'edite que son corps ne
-    # declencherait plus le workflow qui juge le corps). Le job est exige par
-    # le gate sous son propre nom, comme celui du contenu.
-    "always-on-guards-body.yml",
+    # #28534 : fusion des deux workflows de la classe `edited`
+    # (`always-on-metadata-guards.yml` + `always-on-guards-body.yml`) en UN
+    # workflow, UN job, UN checkout. Meme contrat que les deux sources :
+    # aucun `paths:` (canari `derive_always_on_jobs` + verrou #13232 : la
+    # surface nominale de ces organes est TOUTE PR), aucun filtre
+    # `branches:` (base-not-main doit voir les PR dont la base n'est PAS
+    # main, #10918).
+    "always-on-guards-edited.yml",
     # #22209 (tranche 1b) : l'emetteur des effets de bord de la voie rapide
     # (stickies + artefacts), extrait d'always-on-guards.yml en fichier
     # propre par le correctif de la PR #22244. Meme contrat que le jumeau de
@@ -72,10 +73,10 @@ REQUIRED_UNFILTERED_WORKFLOWS: set[str] = {
     # #14057 (Vague 2 tranche 1) : fusion des trois gardes metadata always-on
     # (base-not-main-advisory, stale-base-warning, concurrency-conj-guard --
     # tous dormant) en une seule umbrella non filtree qui porte leurs organes.
-    "always-on-metadata-guards.yml",
-    # Les workflows fusionnes ci-dessus sont DORMANTS (#13384, #14057 :
-    # declencheurs pull_request retires, jobs conserves en reference) :
-    # retires de cette liste, ils ne declenchent plus sur les PR.
+    # DORMANT depuis #28534 : `always-on-metadata-guards.yml` et
+    # `always-on-guards-body.yml` portent des declencheurs `pull_request`
+    # retires (patron #13384) -- ils sont retires de cette liste, ils ne
+    # declenchent plus sur les PR.
     # catalog-pr-guard.yml retire par #11012 : le workflow n'a jamais tourne sur
     # une PR (0 run pull_request), c'est catalog-drift.yml qui tient la ligne.
     # Secret scan (doit voir chaque PR)

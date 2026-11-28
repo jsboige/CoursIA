@@ -14,7 +14,7 @@ de `[ ]:` a `[n]:`.
 | `AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb` | 6 | 6 | 3 | 0 | 16.0 | 7.0 | **succes** |
 | `Quotients-Fibres-Recollement-Python.ipynb` | 9 | 9 | 9 | 0 | 23.7 | 7.0 | **succes** |
 | `Argumentation-01-Toulmin-Model-Python.ipynb` | 7 | 7 | 7 | 0 | 22.1 | 7.0 | **succes** |
-| `06-3-AudioDiffusion-Comparison-A-vs-B.ipynb` | 1 | 1 | 1 | 0 | 17.6 | 7.0 | **succes** |
+| `Audio-06-3-AudioDiffusion-Comparison-A-vs-B-Python.ipynb` | 1 | 1 | 1 | 0 | 17.6 | 7.0 | **succes** |
 
 ## `10-SIG-3D-Tiles-Python.ipynb`
 
@@ -288,7 +288,7 @@ Exercice 2 a completer.
 Exercice 3 a completer.
 ```
 
-## `06-3-AudioDiffusion-Comparison-A-vs-B.ipynb`
+## `Audio-06-3-AudioDiffusion-Comparison-A-vs-B-Python.ipynb`
 
 Verdict : **succes** · cellules executees 1/1 · duree 17.6 s · declenchement : `menu Run > Run All Cells`
 
