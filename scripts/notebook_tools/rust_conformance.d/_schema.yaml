@@ -45,8 +45,14 @@
 #                                    region a comparer (le groupe 0 si la
 #                                    regex n'a pas de groupe).
 #                        transform : `digits` (ne garder que les chiffres),
-#                                    `float`, `int` ou `text` (brut, sans
-#                                    espaces de bord).
+#                                    `float`, `int`, `text` (brut, sans
+#                                    espaces de bord), `text_lf` (brut, fins
+#                                    de ligne ramenees a LF : un carnet C#
+#                                    execute sous Windows stocke ses sorties
+#                                    en CRLF, rien d'autre n'est normalise) ou
+#                                    `labels` (ensemble d'etiquettes compare
+#                                    dans l'ordre trie : l'ordre de retour
+#                                    d'un core n'est pas une grandeur).
 #                      OU
 #                        absent    : motif de l'absence du cote. Un cote
 #                                    explicitement absent est signale dans le
