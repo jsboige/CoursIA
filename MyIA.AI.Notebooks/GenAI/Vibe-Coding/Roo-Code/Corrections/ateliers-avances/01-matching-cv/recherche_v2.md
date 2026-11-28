@@ -38,21 +38,31 @@ print(f"Génération de {len(embeddings)} embeddings.")
 
 ## 2. Génération de texte avec un LLM (Chat Completion)
 
-Pour des fonctionnalités futures (résumés, génération de texte, etc.), nous aurons besoin d'interagir avec un modèle de langage comme `gpt-4o-mini`.
+Pour des fonctionnalités futures (résumés, génération de texte, etc.), nous aurons besoin d'interagir avec un modèle de langage. La cible par défaut du dépôt (#22783) est le **vLLM local du cluster** (alias Swift) ; hors service local, le modèle de chat courant du mapping (`gpt-5.6-luna`). Le nom `gpt-4o-mini` est obsolète pour une exécution.
 
 ### Recommandation et exemple de code
 
-Comme pour les embeddings, nous utilisons la bibliothèque `openai`. Il faut veiller à utiliser la méthode `client.chat.completions.create`, car les anciennes méthodes sont obsolètes.
+Comme pour les embeddings, nous utilisons la bibliothèque `openai`. Il faut veiller à utiliser la méthode `client.chat.completions.create`, car les anciennes méthodes sont obsolètes. Le point d'entrée local est déclaré explicitement (`base_url`), et le repli distant doit être annoncé, jamais silencieux.
 
 ```python
 import os
 from openai import OpenAI
 
-client = OpenAI(api_key="YOUR_OPENAI_API_KEY")
+# Cible par défaut (#22783) : le vLLM local du cluster (alias Swift).
+LOCAL_BASE_URL = os.getenv("VLLM_BASE_URL", "http://192.168.0.47:5002/v1")
+LOCAL_MODEL = os.getenv("VLLM_MODEL_ID", "swift-1.5-27b")
+# Repli hors service local : le modèle de chat courant du mapping. Le passage
+# de LOCAL_MODEL à FALLBACK_MODEL doit être annoncé, jamais silencieux.
+FALLBACK_MODEL = "gpt-5.6-luna"
 
-def get_chat_completion(prompt: str, model="gpt-4o-mini"):
+client = OpenAI(
+    api_key=os.getenv("VLLM_API_KEY") or os.getenv("OPENAI_API_KEY", "YOUR_OPENAI_API_KEY"),
+    base_url=LOCAL_BASE_URL,
+)
+
+def get_chat_completion(prompt: str, model: str = LOCAL_MODEL):
     """
-    Obtient une complétion de chat à partir du modèle OpenAI spécifié.
+    Obtient une complétion de chat à partir du modèle spécifié.
     """
     messages = [{"role": "user", "content": prompt}]
     response = client.chat.completions.create(

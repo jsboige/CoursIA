@@ -2,6 +2,7 @@
   family: GameTheory/SocialChoice
   python: MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-05-Gibbard-Satterthwaite-Python.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-05-Gibbard-Satterthwaite-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-05-Gibbard-Satterthwaite-Rust.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Paire from-scratch/from-scratch sans lib-vs-lib (configuration SocialChoice-2) : le temoin de manipulation -- recherche exhaustive des bulletins derivants, decomptes Borda/pluralite, enumeration des profils par retour arriere -- EST l'objet pedagogique, implante idiomatiquement des deux cotes (stdlib Python vs BCL/LINQ C#, 0 NuGet), aucun moteur externe contourne : il n'existe pas de librairie canonique de recherche de manipulation Gibbard-Satterthwaite ni dans la stdlib Python ni dans la BCL .NET. Parite numerique complete verifiee ligne a ligne par la review du 2026-11-20 a la tete 39f8435dd4 : les douze lignes des deux tableaux recalculees independemment et exactes, sept cellules de code executees 1..7 sans erreur, stubs en 'return null; // TODO etudiant'. parity_level: semantic (meme contenu mathematique, API idiomatique differente)."
@@ -10,3 +11,4 @@
     - "Figures : le jumeau C# rend ses 2 figures en SVG display_data (image/svg+xml), le jumeau Python en PNG matplotlib -- contenu equivalent, format de sortie different."
     - "Le jumeau C# ajoute une boucle de verification supplementaire portant sur les trois votants (re-verification explicite V1/V2/V3) absente du Python."
     - "Formulation : le C# ecrit 'La comparaison donne donc, pour V3, Pluralite manipulable et Borda non manipulable sur ce profil precis' ou le Python ecrit la meme phrase sans la precision ', pour V3,' -- meme resultat, precision du votant ajoutee cote C#."
+    - "2026-11-27 (PR #28286, myia-po-2027:CoursIA) : troisime cote declare (`rust:` #27098 organe 1) -- jumeau Rust evcxr (cellule 18 reprise : un seul `root.present()` pour la figure a deux panneaux ; chaque appel fermait le document SVG et le panneau droit tombait apres `</svg>`). Re-execute par papermill (kernel rust, 26 cellules, compteurs 2..8, 0 erreur) ; les figures de sortie sont en SVG execute_result (plotters), comme le cote C#, contre PNG matplotlib cote Python. Les SHAs Python/C# restent ceux de l'audit 0003 (blobs inchanges)."
