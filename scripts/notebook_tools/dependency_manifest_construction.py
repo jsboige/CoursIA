@@ -87,8 +87,21 @@ def _record_service_calls(entry: Group, source: str) -> None:
 
 
 def _specifier_bounds(spec: str) -> dict:
-    """Decoupe un specification PEP 440 en bornes elementaires."""
-    bounds: dict = {"lower": "", "upper": "", "exact": "", "excludes": []}
+    """Decoupe un specification PEP 440 en bornes elementaires.
+
+    Les bornes gardent leur **exclusivite** : `>2.0` exclut 2.0, `<2.0`
+    aussi. Deux bornes egales dont l'une est exclusive ne laissent AUCUNE
+    version : `>=2.0` contre `<2.0` est un intervalle **vide**, pas un point
+    (mesure : #27544, la borne superieure exclusive se perdait).
+    """
+    bounds: dict = {
+        "lower": "",
+        "upper": "",
+        "exact": "",
+        "excludes": [],
+        "lower_inclusive": True,
+        "upper_inclusive": True,
+    }
     for part in (spec or "").split(","):
         part = part.strip()
         if not part:
@@ -102,12 +115,77 @@ def _specifier_bounds(spec: str) -> dict:
         elif operator == "!=":
             bounds["excludes"].append(version)
         elif operator in (">=", ">"):
-            bounds["lower"] = _max_version(bounds["lower"], version)
+            bounds["lower"], bounds["lower_inclusive"] = _tighter_lower(
+                bounds["lower"],
+                bounds["lower_inclusive"],
+                version,
+                operator == ">=",
+            )
         elif operator in ("<=", "<"):
-            bounds["upper"] = _min_version(bounds["upper"], version)
+            bounds["upper"], bounds["upper_inclusive"] = _tighter_upper(
+                bounds["upper"],
+                bounds["upper_inclusive"],
+                version,
+                operator == "<=",
+            )
         elif operator == "~=":
-            bounds["lower"] = _max_version(bounds["lower"], version)
+            bounds["lower"], bounds["lower_inclusive"] = _tighter_lower(
+                bounds["lower"], bounds["lower_inclusive"], version, True
+            )
     return bounds
+
+
+def _bounds_key(bound: dict) -> tuple:
+    """Cle d'equivalence de deux specifications : memes bornes EFFECTIVES.
+
+    La normalisation de version (`1.0` et `1.0.0`) vient de l'organe natif
+    (#23073) ; l'exclusivite des bornes en fait partie : `>=2.0` et `>2.0`
+    ne sont pas la meme contrainte.
+    """
+    return (
+        _norm_ver(bound["exact"]),
+        _norm_ver(bound["lower"]),
+        bound.get("lower_inclusive", True),
+        _norm_ver(bound["upper"]),
+        bound.get("upper_inclusive", True),
+        tuple(sorted(_norm_ver(item) for item in bound["excludes"])),
+    )
+
+
+def _tighter_lower(
+    current: str, current_inclusive: bool, candidate: str, candidate_inclusive: bool
+) -> tuple[str, bool]:
+    """La borne inferieure la plus stricte, exclusivite comprise.
+
+    A version egale, la borne **exclusive** l'emporte : `>2.0` est plus
+    stricte que `>=2.0`.
+    """
+    if not candidate:
+        return current, current_inclusive
+    if not current:
+        return candidate, candidate_inclusive
+    order = _compare(candidate, current)
+    if order > 0:
+        return candidate, candidate_inclusive
+    if order == 0 and not candidate_inclusive:
+        return current, False
+    return current, current_inclusive
+
+
+def _tighter_upper(
+    current: str, current_inclusive: bool, candidate: str, candidate_inclusive: bool
+) -> tuple[str, bool]:
+    """La borne superieure la plus stricte, exclusivite comprise."""
+    if not candidate:
+        return current, current_inclusive
+    if not current:
+        return candidate, candidate_inclusive
+    order = _compare(candidate, current)
+    if order < 0:
+        return candidate, candidate_inclusive
+    if order == 0 and not candidate_inclusive:
+        return current, False
+    return current, current_inclusive
 
 
 def _specifiers_compatible(left: dict, right: dict) -> bool:
@@ -115,14 +193,35 @@ def _specifiers_compatible(left: dict, right: dict) -> bool:
     if left["exact"] and right["exact"]:
         return _compare(left["exact"], right["exact"]) == 0
     exact = left["exact"] or right["exact"]
-    lower = max(filter(None, (left["lower"], right["lower"])), default="", key=_version_sort_key)
-    upper = min(filter(None, (left["upper"], right["upper"])), default="", key=_version_sort_key)
-    if lower and upper and _compare(lower, upper) > 0:
-        return False
+    lower, lower_inclusive = _tighter_lower(
+        left["lower"],
+        left.get("lower_inclusive", True),
+        right["lower"],
+        right.get("lower_inclusive", True),
+    )
+    upper, upper_inclusive = _tighter_upper(
+        left["upper"],
+        left.get("upper_inclusive", True),
+        right["upper"],
+        right.get("upper_inclusive", True),
+    )
+    if lower and upper:
+        order = _compare(lower, upper)
+        if order > 0:
+            return False
+        if order == 0 and not (lower_inclusive and upper_inclusive):
+            # Intervalle VIDE : `>=2.0` contre `<2.0` (ou `>2.0` contre
+            # `>=2.0`) ne laisse aucune version. C'est un conflit, pas un
+            # intervalle reduit a un point (#27544).
+            return False
     if exact:
         if lower and _compare(exact, lower) < 0:
             return False
         if upper and _compare(exact, upper) > 0:
+            return False
+        if lower and _compare(exact, lower) == 0 and not lower_inclusive:
+            return False
+        if upper and _compare(exact, upper) == 0 and not upper_inclusive:
             return False
         for excluded in left["excludes"] + right["excludes"]:
             if excluded == exact:
@@ -501,6 +600,10 @@ def build_manifest(repo_root: Path) -> dict:
             if requirement.spec:
                 specs[requirement.name].append(requirement)
     conflicts: list[dict] = []
+    # Arbitrages **declares** (politique versionnee) : ils ne s'appliquent
+    # qu'aux conflits que l'organe ne sait pas resoudre (aucune version
+    # commune). Chaque arbitrage porte son motif et sa source.
+    arbitrations = (policy.get("conflict_resolutions") or {}).get("entries") or {}
     for name in sorted(specs):
         by_spec: dict[str, list[Requirement]] = defaultdict(list)
         for requirement in specs[name]:
@@ -513,13 +616,7 @@ def build_manifest(repo_root: Path) -> dict:
         for spec in sorted(by_spec):
             bound = _specifier_bounds(spec)
             bounds[spec] = bound
-            key = (
-                _norm_ver(bound["exact"]),
-                _norm_ver(bound["lower"]),
-                _norm_ver(bound["upper"]),
-                tuple(sorted(_norm_ver(item) for item in bound["excludes"])),
-            )
-            by_bounds[key].append(spec)
+            by_bounds[_bounds_key(bound)].append(spec)
         if len(by_bounds) < 2:
             continue
         representatives = sorted(spells[0] for spells in by_bounds.values())
@@ -540,28 +637,12 @@ def build_manifest(repo_root: Path) -> dict:
             klass = "specifier_divergent"
         sources = []
         for spec in distinct:
-            spec_key = (
-                _norm_ver(bounds[spec]["exact"]),
-                _norm_ver(bounds[spec]["lower"]),
-                _norm_ver(bounds[spec]["upper"]),
-                tuple(sorted(_norm_ver(item) for item in bounds[spec]["excludes"])),
-            )
+            spec_key = _bounds_key(bounds[spec])
             equivalent = sorted(
                 spell
                 for spells in by_bounds.values()
                 for spell in spells
-                if (
-                    _norm_ver(_specifier_bounds(spell)["exact"]),
-                    _norm_ver(_specifier_bounds(spell)["lower"]),
-                    _norm_ver(_specifier_bounds(spell)["upper"]),
-                    tuple(
-                        sorted(
-                            _norm_ver(item)
-                            for item in _specifier_bounds(spell)["excludes"]
-                        )
-                    ),
-                )
-                == spec_key
+                if _bounds_key(_specifier_bounds(spell)) == spec_key
             )
             sources.append(
                 {
@@ -578,7 +659,9 @@ def build_manifest(repo_root: Path) -> dict:
                 "class": klass,
                 "specifiers": distinct,
                 "sources": sources,
-                "resolution": _propose_resolution(name, klass, bounds, distinct),
+                "resolution": _propose_resolution(
+                    name, klass, bounds, distinct, arbitrations.get(name)
+                ),
             }
         )
 
@@ -676,9 +759,30 @@ def build_manifest(repo_root: Path) -> dict:
 
 
 def _propose_resolution(
-    name: str, klass: str, bounds: dict[str, dict], distinct: list[str]
+    name: str,
+    klass: str,
+    bounds: dict[str, dict],
+    distinct: list[str],
+    declared: dict | None = None,
 ) -> dict:
-    """Propose une resolution de conflit, version par version."""
+    """Propose une resolution de conflit, version par version.
+
+    `declared` est l'arbitrage **declare** dans la politique versionnee du
+    manifeste (`conflict_resolutions`). Il ne vaut que pour un conflit que
+    l'organe ne sait pas resoudre lui-meme (aucune version commune aux
+    bornes declarees) : la resolution porte alors son **motif** et sa
+    **source**, et son origine (`declaration`) est tracee dans le manifeste.
+    Un arbitrage declare n'ecrase jamais une resolution que l'organe sait
+    calculer.
+    """
+    if declared and klass == "incompatible":
+        return {
+            "policy": "arbitrage declare (aucune version commune aux bornes declarees)",
+            "version": str(declared.get("spec") or ""),
+            "note": str(declared.get("motif") or ""),
+            "source": str(declared.get("source") or ""),
+            "origin": "declaration",
+        }
     if klass == "pin_exact_divergent":
         pins = sorted(
             {bounds[spec]["exact"] for spec in distinct}, key=_version_sort_key

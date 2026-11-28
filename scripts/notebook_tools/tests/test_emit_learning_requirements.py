@@ -165,3 +165,45 @@ def test_check_lock_detects_a_stale_lock(tmp_path: Path) -> None:
         f"# manifeste sha256 : {emitter._sha256(manifest_path)}\n", encoding="utf-8"
     )
     assert emitter.check_lock(lock_path, manifest_path) == 0
+
+
+def test_written_artifact_is_identical_on_every_platform(tmp_path: Path) -> None:
+    """L'artefact versionne ne doit pas dependre de la machine qui l'ecrit.
+
+    `Path.write_text` sans `newline` traduit en CRLF sous Windows : le
+    fichier versionne, et l'empreinte sha256 que le verrou en porte, alors
+    que le contenu etait le meme. L'organe ecrit donc en LF explicite --
+    comme le fait l'organe du manifeste (`dependency_manifest_cli.py`).
+    """
+    manifest_path = tmp_path / "manifeste-dependances.json"
+    manifest_path.write_text(
+        json.dumps(
+            _manifest([{"package": "numpy", "specs": [">=1.24"], "version": ""}])
+        ),
+        encoding="utf-8",
+    )
+    policy_path = tmp_path / "learning_image_policy.json"
+    policy_path.write_text(
+        json.dumps({"target": {"interpreter": "python3", "version": "3.12"}}),
+        encoding="utf-8",
+    )
+    out_path = tmp_path / "requirements-learning.txt"
+    assert (
+        emitter.main(
+            [
+                "--manifest",
+                str(manifest_path),
+                "--policy",
+                str(policy_path),
+                "--out",
+                str(out_path),
+                "--write",
+            ]
+        )
+        == 0
+    )
+    raw = out_path.read_bytes()
+    assert b"\r\n" not in raw
+    assert raw.endswith(b"\n")
+    assert b"numpy>=1.24" in raw
+
