@@ -2796,6 +2796,40 @@
     "scripts/tests/test_check_harness_weight_delta.py"
    ],
    "commenters": []
+  },
+  {
+   "name": "Rule inventory invariant (base vs PR, bloquant)",
+   "argv": [
+    "python",
+    "scripts/ci/check_rule_inventory.py",
+    "--base",
+    "{base_ref}"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "CLAUDE.md",
+    ".claude/rules/**",
+    "docs/reference/claude-code-config.md",
+    "scripts/ci/check_rule_inventory.py",
+    "scripts/tests/test_check_rule_inventory.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": true,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "scripts/ci/check_rule_inventory.py",
+    "--self"
+   ],
+   "commenters": []
   }
  ],
  "TRANCHE42": [

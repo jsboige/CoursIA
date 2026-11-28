@@ -16,3 +16,20 @@ guards:
     swap_paths: ["CLAUDE.md", ".claude/rules"]
     absorbed: true
     pre_argv: ["python", "-m", "pytest", "-q", "scripts/tests/test_check_harness_weight_delta.py"]
+  # Invariant d'inventaire des regles du harnais (#15204) : une regle
+  # path-gatee jamais annoncee dans le bloc "Regles modulaires" du
+  # CLAUDE.md, ou absente de la table d'inventaire de
+  # `docs/reference/claude-code-config.md`, redevient invisible pour tout
+  # agent qui lit le harnais. Verdict DELTA : la dette de `main` n'est pas
+  # rejouee sur une PR qui ne l'introduit pas (meme cliquet que le garde
+  # "path-length ratchet" de TRANCHE56).
+  -
+    name: "Rule inventory invariant (base vs PR, bloquant)"
+    argv: ["python", "scripts/ci/check_rule_inventory.py", "--base", "{base_ref}"]
+    source: "native"
+    paths: ["CLAUDE.md", ".claude/rules/**", "docs/reference/claude-code-config.md", "scripts/ci/check_rule_inventory.py", "scripts/tests/test_check_rule_inventory.py"]
+    blocking: true
+    needs_base: true
+    diff_bounded: true
+    absorbed: true
+    pre_argv: ["python", "scripts/ci/check_rule_inventory.py", "--self"]
