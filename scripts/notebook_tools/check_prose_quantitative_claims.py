@@ -808,6 +808,39 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
             "grille Sudoku 4x4 enseignee. Propriete du domaine."
         ),
     ),
+    # Meme grille, cote Rust : le jumeau Rust de Z3-18 porte la PROSE
+    # identique du jumeau Python (c'est la condition d'un jumeau : les
+    # contraintes enseignees sont les memes, donc les memes « 16 cellules »
+    # et « 4 cellules par rangee/colonne/bloc »). Sans ces deux entrees,
+    # `prose-counts` refuse le carnet NEUF alors qu'il accepte le jumeau
+    # Python deja en place : meme nombre, meme domaine, verdict oppose.
+    # Les motifs restent identiques a ceux du jumeau Python -- seule la
+    # clause de chemin change, et elle est exacte (jamais un glob).
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/"
+            "Z3-18-Sudoku-Modes-Rust.ipynb"
+        ),
+        motif=re.compile(r"(par \*\*16 cellules\*\*|ces 16 cellules)"),
+        raison=(
+            "« 16 cellules » = cases de la grille Sudoku 4x4 encodant le "
+            "probleme (4x4 = 16) ; deux modeles d'encodage de CES cases "
+            "sont compares. Cellules de grille, pas de carnet. Jumeau Rust "
+            "du fichier precedent, meme domaine, meme nombre."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/"
+            "Z3-18-Sudoku-Modes-Rust.ipynb"
+        ),
+        motif=re.compile(r"les 4 cellules de chaque (rangée|colonne|bloc)"),
+        raison=(
+            "« 4 cellules » par rangee/colonne/bloc 2x2 = structure de la "
+            "grille Sudoku 4x4 enseignee. Propriete du domaine. Jumeau Rust "
+            "du fichier precedent, meme domaine, meme nombre."
+        ),
+    ),
     ArtifactExemption(
         path=(
             "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/"
