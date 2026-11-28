@@ -28,6 +28,8 @@ Usage :
     py scripts/audit/measure_autoloaded_harness.py --ref origin/main
     py scripts/audit/measure_autoloaded_harness.py --self-check
     py scripts/audit/measure_autoloaded_harness.py --max-bytes 170000
+    py scripts/audit/measure_autoloaded_harness.py --with-machine
+    py scripts/audit/measure_autoloaded_harness.py --max-perimeter-bytes 157500
 
 Exit codes :
     0 -- mesure rendue (et sous le seuil si --max-bytes est passe)
@@ -36,6 +38,13 @@ Exit codes :
          --ref inatteignable, ratio invalide, ou seuil demande alors qu'une
          surface machine manque (une somme partielle ne certifie aucun budget)
 
+Deux nombres, jamais un seul (cf `acceptance_view`) :
+  - `autoloaded_total_bytes` -- tout ce qu'une session charge reellement,
+    rules globales de `~/.claude/rules/` comprises ;
+  - `acceptance.bytes` -- le PERIMETRE de la cible de #15204 (regles du
+    depot + CLAUDE.md du depot + MEMORY.md par machine + CLAUDE.md global).
+    C'est contre `acceptance.gap_bytes` que la cible se juge.
+
 Contrat du JSON (ce qu'un consommateur peut compter sur) :
   - chaque surface porte `bytes` ET `sha256` (empreinte du contenu) : c'est
     elle qui permet de distinguer une SUPPRESSION d'un renommage ;
@@ -43,6 +52,9 @@ Contrat du JSON (ce qu'un consommateur peut compter sur) :
     celles de la machine -- une absence se DIT, elle ne se compte pas zero ;
   - `measurement_complete` vaut vrai seulement si aucune surface demandee ne
     manque (depot ET machine) ;
+  - `acceptance.certified` vaut faux quand le perimetre n'est pas certifiable
+    (surfaces machine absentes ou non demandees) : alors `acceptance.bytes`
+    et `acceptance.satisfied` valent `null`, jamais zero ;
   - `ratio_bytes_per_token` est emis par la MESURE : un consommateur ne doit
     pas redoubler la constante (une constante dupliquee derive des que l'une
     des deux change).
@@ -72,6 +84,13 @@ PROJECT_ROOT_FILE = "CLAUDE.md"
 # tokens. A re-calibrer si le corpus change de nature (plus de code, plus
 # d'anglais, moins de liens) -- passer --ratio.
 DEFAULT_RATIO = 2.25
+
+# Cible d'acceptance de #15204 (mandat user 2026-09-08) : « redescendre en
+# dessous de 70 ktokens ». Au ratio calibre de 2,25 o/token, cela fait
+# 157 500 octets. La cible porte sur un PERIMETRE de surfaces, pas sur le
+# total de tout ce qui est charge : voir `acceptance_view`.
+ACCEPTANCE_TARGET_TOKENS = 70000
+ACCEPTANCE_TARGET_BYTES = 157500
 
 
 def is_path_gated(text):
@@ -223,8 +242,73 @@ def _sha(text):
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+def acceptance_view(auto, root_bytes, machine_included, complete,
+                    ratio, target_bytes=ACCEPTANCE_TARGET_BYTES):
+    """Perimetre d'acceptance de #15204, et ecart a la cible.
+
+    La cible (70k tokens = 157 500 o au ratio calibre) a ete fixee le
+    2026-09-08 sur un perimetre de QUATRE surfaces : les regles auto-chargees
+    du depot, le `CLAUDE.md` du depot, le `MEMORY.md` par machine et le
+    `CLAUDE.md` global de la machine. Les regles globales de
+    `~/.claude/rules/` n'existaient pas ce jour-la : elles sont
+    auto-chargees AUJOURD'HUI, mais hors du perimetre de la cible.
+
+    Additionner les deux familles donne un total qui n'est comparable a
+    rien : il depasse la cible de 21 190 o (mesure du 2026-11-28) sans
+    qu'aucune surface comptee n'appartienne au perimetre. L'organe rend
+    donc DEUX nombres distincts, jamais un seul :
+
+      - `bytes` -- le perimetre citable, comparable a la cible ;
+      - `excluded_surfaces` -- ce qu'une session charge reellement et qui ne
+        compte pas dans la cible.
+
+    Un perimetre non certifiable (surfaces machine absentes, ou option
+    machine non demandee) rend `bytes: null` et `satisfied: null` : une
+    absence se DIT, elle ne se compte pas zero.
+    """
+    repo_rules = [e for e in auto if e.get("surface") is None]
+    global_claude = [e for e in auto if e.get("surface") == "CLAUDE.md global"]
+    memory = [e for e in auto
+              if str(e.get("surface", "")).startswith("MEMORY.md")]
+    global_rules = [e for e in auto if e.get("surface") == "rule globale"]
+
+    surfaces = [
+        {"surface": "regles auto-chargees du depot",
+         "bytes": sum(e["bytes"] for e in repo_rules), "n": len(repo_rules)},
+        {"surface": "CLAUDE.md du depot",
+         "bytes": root_bytes, "n": 1 if root_bytes else 0},
+        {"surface": "MEMORY.md (par machine)",
+         "bytes": sum(e["bytes"] for e in memory), "n": len(memory)},
+        {"surface": "CLAUDE.md global",
+         "bytes": sum(e["bytes"] for e in global_claude), "n": len(global_claude)},
+    ]
+    excluded = [
+        {"surface": "regles globales (~/.claude/rules)",
+         "bytes": sum(e["bytes"] for e in global_rules),
+         "n": len(global_rules),
+         "reason": "hors du perimetre de la cible (mesure du 2026-09-08), "
+                   "mais auto-chargees a chaque session depuis leur de"},
+    ]
+
+    certified = bool(machine_included and complete)
+    perimeter = sum(s["bytes"] for s in surfaces) if certified else None
+    gap = (perimeter - target_bytes) if perimeter is not None else None
+    return {
+        "target_bytes": target_bytes,
+        "target_tokens": int(target_bytes / ratio),
+        "certified": certified,
+        "surfaces": surfaces,
+        "excluded_surfaces": excluded,
+        "bytes": perimeter,
+        "tokens_derived": round(perimeter / ratio) if perimeter is not None else None,
+        "gap_bytes": gap,
+        "gap_tokens_derived": round(gap / ratio) if gap is not None else None,
+        "satisfied": (gap <= 0) if gap is not None else None,
+    }
+
+
 def measure(root, ref=None, machine=False, memory_file=None,
-            ratio=DEFAULT_RATIO):
+            ratio=DEFAULT_RATIO, target_bytes=ACCEPTANCE_TARGET_BYTES):
     auto, gated = [], []
     root_file = None
     reader = _read_ref(root, ref) if ref else _read_worktree(root)
@@ -265,6 +349,9 @@ def measure(root, ref=None, machine=False, memory_file=None,
     gated_bytes = sum(e["bytes"] for e in gated)
     root_bytes = root_file["bytes"] if root_file else 0
     total = auto_bytes + root_bytes
+    complete = not missing and not machine_missing
+    acceptance = acceptance_view(auto, root_bytes, machine, complete, ratio,
+                                 target_bytes)
     return {
         "ref": ref or "(worktree)",
         "autoloaded_rules": auto,
@@ -285,6 +372,11 @@ def measure(root, ref=None, machine=False, memory_file=None,
         # ete lues -- celles du depot comme celles de la machine. La voie
         # repo-seule ne demande pas les secondes : elle reste complete.
         "measurement_complete": not missing and not machine_missing,
+        # Le perimetre d'acceptance de #15204, distinct du total ci-dessus :
+        # voir `acceptance_view`. C'est contre `acceptance.gap_bytes` que la
+        # cible de 157 500 o se juge -- pas contre `autoloaded_total_bytes`,
+        # qui compte des surfaces que la cible ne compte pas.
+        "acceptance": acceptance,
         # Le ratio est emis par la MESURE, pas reecrit chez le consommateur :
         # une constante dupliquee derive des que l'une des deux change.
         "ratio_bytes_per_token": ratio,
@@ -364,6 +456,33 @@ def render(m, top, ratio=DEFAULT_RATIO, budget_tokens=None):
                       % (delta, delta / ratio / 1000))
             print("      cible %d tok = %d o : %s"
                   % (budget_tokens, budget_bytes, verdict))
+    acc = m.get("acceptance") or {}
+    if acc:
+        print()
+        print("  Perimetre d'acceptance #15204 -- cible %d o (~%.1fk tok) :"
+              % (acc["target_bytes"], acc["target_bytes"] / ratio / 1000))
+        for s in acc["surfaces"]:
+            print("      %-32s %8d o" % (s["surface"], s["bytes"]))
+        if acc["certified"]:
+            print("      %-32s %8d o   ~%.1fk tok"
+                  % ("PERIMETRE", acc["bytes"], acc["bytes"] / ratio / 1000))
+            gap = acc["gap_bytes"]
+            if gap <= 0:
+                print("      cible : SOUS LA CIBLE de %d o (%.1fk tok de marge)"
+                      % (-gap, -gap / ratio / 1000))
+            else:
+                print("      cible : AU-DESSUS de %d o (%.1fk tok a retirer)"
+                      % (gap, gap / ratio / 1000))
+        else:
+            print("      %-32s %8s"
+                  % ("PERIMETRE", "NON CERTIFIE"))
+            print("      (surfaces machine absentes ou non demandees : le"
+                  " perimetre ne certifie rien)")
+        for s in acc["excluded_surfaces"]:
+            print("      hors perimetre, auto-charge : %7d o  %s"
+                  % (s["bytes"], s["surface"]))
+        print("      reellement charge par une session : %7d o"
+              % m["autoloaded_total_bytes"])
     print("      (total brut des rules  %8d o -- la valeur qu'on obtient en"
           " oubliant le gating)" % m["all_rules_bytes"])
     print()
@@ -402,6 +521,14 @@ def main():
     ap.add_argument("--budget-tokens", type=int,
                     help="exit 1 si le total derive depasse ce budget en tokens"
                          " -- jumeau de --max-bytes, dans l'unite du mandat")
+    ap.add_argument("--acceptance-target-tokens", type=int,
+                    default=ACCEPTANCE_TARGET_TOKENS,
+                    help="cible du perimetre d'acceptance #15204, en tokens"
+                         " (defaut : %d -- le mandat user du 2026-09-08)"
+                         % ACCEPTANCE_TARGET_TOKENS)
+    ap.add_argument("--max-perimeter-bytes", type=int,
+                    help="exit 1 si le PERIMETRE d'acceptance depasse ce seuil"
+                         " (exit 2 si le perimetre n'est pas certifiable)")
     args = ap.parse_args()
 
     if args.self_check:
@@ -411,9 +538,11 @@ def main():
         ap.error("--ratio doit etre strictement positif et fini")
 
     root = Path(args.root).resolve()
+    target_bytes = int(args.acceptance_target_tokens * args.ratio)
     try:
         m = measure(root, args.ref, machine=args.with_machine,
-                    memory_file=args.memory_file, ratio=args.ratio)
+                    memory_file=args.memory_file, ratio=args.ratio,
+                    target_bytes=target_bytes)
     except RefUnavailable as exc:
         print("ref %r inatteignable (%s) -- mesure impossible." % (args.ref, exc),
               file=sys.stderr)
@@ -449,6 +578,17 @@ def main():
             sys.stderr.write("\nDEPASSEMENT : %d o > budget %d tok = %d o\n"
                              % (m["autoloaded_total_bytes"], args.budget_tokens,
                                 budget_bytes))
+            return 1
+    if args.max_perimeter_bytes is not None:
+        acc = m["acceptance"]
+        if not acc["certified"]:
+            sys.stderr.write("\nPERIMETRE NON CERTIFIABLE : aucune surface"
+                             " machine lue -- seuil non juge\n")
+            return 2
+        if acc["bytes"] > args.max_perimeter_bytes:
+            sys.stderr.write("\nPERIMETRE AU-DESSUS : %d o > %d o (cible %d o)\n"
+                             % (acc["bytes"], args.max_perimeter_bytes,
+                                acc["target_bytes"]))
             return 1
     return 0
 

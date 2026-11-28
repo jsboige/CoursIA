@@ -445,5 +445,141 @@ def test_meme_memoire_absente_puis_presente_encadre_un_seuil(tmp_path):
     assert "DEPASSEMENT" in complete_guard.stderr
 
 
+# --- perimetre d'acceptance (#15204) : deux nombres, jamais un seul ----------
+
+
+def _accroche_home(tmp_path, monkeypatch, globales="# globale\n"):
+    """Une maison factice : CLAUDE.md global + rules globales."""
+    home = tmp_path / "home"
+    (home / ".claude" / "rules").mkdir(parents=True)
+    (home / ".claude" / "CLAUDE.md").write_text("# global\n", encoding="utf-8")
+    (home / ".claude" / "rules" / "globale.md").write_text(globales, encoding="utf-8")
+    monkeypatch.setattr(mah.os.path, "expanduser", lambda value: str(home))
+    return home
+
+
+def test_perimetre_exclut_les_rules_globales_qui_ne_sont_pas_dans_la_cible(
+        tmp_path, monkeypatch):
+    """Les rules globales de `~/.claude/rules/` sont auto-chargees, mais la
+    cible de #15204 ne les comptait pas.
+
+    La cible (157 500 o) a ete fixee le 2026-09-08 sur un perimetre de quatre
+    surfaces. Les rules globales n'existaient pas ce jour-la. Les additionner
+    au total rend le verdict indecidable : elles font grimper le chiffre sans
+    qu'aucune surface comptee n'appartienne au perimetre.
+    """
+    _accroche_home(tmp_path, monkeypatch)
+    root = _arbre(tmp_path / "repo", "# cible\n", "# autre\n")
+    memory = tmp_path / "machine" / "MEMORY.md"
+    memory.parent.mkdir(parents=True)
+    memory.write_text("# memoire\n", encoding="utf-8")
+
+    m = mah.measure(root, machine=True, memory_file=memory)
+    acc = m["acceptance"]
+
+    assert acc["certified"] is True
+    surfaces = {s["surface"]: s["bytes"] for s in acc["surfaces"]}
+    exclues = {s["surface"]: s["bytes"] for s in acc["excluded_surfaces"]}
+    assert "regles globales (~/.claude/rules)" not in surfaces
+    assert exclues["regles globales (~/.claude/rules)"] > 0
+    # Invariant : perimetre + surfaces hors perimetre = ce qu'une session
+    # charge reellement. Les deux nombres ne se recouvrent pas, ils se
+    # completent.
+    assert (acc["bytes"] + sum(s["bytes"] for s in acc["excluded_surfaces"])
+            == m["autoloaded_total_bytes"])
+
+
+def test_ecart_du_perimetre_ne_confond_pas_le_total_brut(tmp_path, monkeypatch):
+    """Le verdict de l'acceptance se juge sur le perimetre, pas sur le total.
+
+    Mesure du 2026-11-28 sur cette machine : total brut 192 895 o (ecart de
+    35 395 o) contre perimetre 171 705 o (ecart de 14 205 o). Se fier au
+    total brut triple l'ecart et fait porter aux lanes une dette qui n'est
+    pas la leur.
+    """
+    _accroche_home(tmp_path, monkeypatch, globales="# globale\n" + "x" * 4000)
+    root = _arbre(tmp_path / "repo", "# cible\n", "# autre\n")
+    memory = tmp_path / "machine" / "MEMORY.md"
+    memory.parent.mkdir(parents=True)
+    memory.write_text("# memoire\n", encoding="utf-8")
+
+    m = mah.measure(root, machine=True, memory_file=memory)
+    acc = m["acceptance"]
+    cible = mah.ACCEPTANCE_TARGET_BYTES
+
+    assert acc["bytes"] < m["autoloaded_total_bytes"]
+    assert acc["gap_bytes"] == acc["bytes"] - cible
+    assert acc["gap_bytes"] < m["autoloaded_total_bytes"] - cible
+    assert acc["satisfied"] is (acc["bytes"] <= cible)
+    assert acc["target_bytes"] == cible
+    assert acc["target_tokens"] == mah.ACCEPTANCE_TARGET_TOKENS
+
+
+def test_perimetre_non_certifie_sans_les_surfaces_machine(tmp_path):
+    """Hors `--with-machine`, le perimetre ne se calcule pas : il se DIT.
+
+    Une surface machine non lue ne se compte pas zero : elle rendrait un
+    perimetre trop petit, et un « objectif atteint » forge.
+    """
+    root = _arbre(tmp_path / "repo", "# cible\n", "# autre\n")
+    acc = mah.measure(root)["acceptance"]
+    assert acc["certified"] is False
+    assert acc["bytes"] is None
+    assert acc["gap_bytes"] is None
+    assert acc["satisfied"] is None
+
+
+def test_cible_de_l_acceptance_est_cellule_du_mandat():
+    """70k tokens au ratio calibre, soit 157 500 octets (mandat du 2026-09-08)."""
+    assert mah.ACCEPTANCE_TARGET_TOKENS == 70000
+    assert mah.ACCEPTANCE_TARGET_BYTES == 157500
+    assert mah.ACCEPTANCE_TARGET_BYTES == int(
+        mah.ACCEPTANCE_TARGET_TOKENS * mah.DEFAULT_RATIO)
+
+
+def test_max_perimeter_bytes_juge_le_perimetre_et_non_le_total(tmp_path):
+    """Les deux garde-fous ne jugent pas le meme nombre.
+
+    Un seuil pose entre le perimetre et le total brut passe sur l'un et
+    rouge sur l'autre : c'est la preuve qu'ils ne mesurent pas la meme chose.
+    """
+    root = _arbre(tmp_path / "repo", "# cible\n", "# autre\n")
+    home = tmp_path / "home"
+    (home / ".claude" / "rules").mkdir(parents=True)
+    (home / ".claude" / "CLAUDE.md").write_text("# global\n", encoding="utf-8")
+    (home / ".claude" / "rules" / "globale.md").write_text(
+        "# globale\n" + "x" * 5000, encoding="utf-8")
+    memory = tmp_path / "machine" / "MEMORY.md"
+    memory.parent.mkdir(parents=True)
+    memory.write_text("# memoire\n", encoding="utf-8")
+    env = os.environ.copy()
+    env["HOME"] = str(home)
+    env["USERPROFILE"] = str(home)
+
+    data = json.loads(_cli("--with-machine", "--memory-file", str(memory),
+                            "--json", root=root, env=env).stdout)
+    perimetre = data["acceptance"]["bytes"]
+    total = data["autoloaded_total_bytes"]
+    assert perimetre < total
+    seuil = (perimetre + total) // 2
+
+    r_perimetre = _cli("--with-machine", "--memory-file", str(memory),
+                       "--max-perimeter-bytes", str(seuil), "--json",
+                       root=root, env=env)
+    r_total = _cli("--with-machine", "--memory-file", str(memory),
+                   "--max-bytes", str(seuil), "--json", root=root, env=env)
+    assert r_perimetre.returncode == 0, r_perimetre.stderr
+    assert r_total.returncode == 1
+
+
+def test_max_perimeter_bytes_refuse_un_perimetre_non_certifiable(tmp_path):
+    root = _arbre(tmp_path / "repo", "# cible\n", "# autre\n")
+    absent = tmp_path / "absent" / "MEMORY.md"
+    r = _cli("--with-machine", "--memory-file", str(absent),
+             "--max-perimeter-bytes", "10000000", "--json", root=root)
+    assert r.returncode == 2
+    assert "NON CERTIFIABLE" in r.stderr
+
+
 if __name__ == "__main__":  # pragma: no cover
     raise SystemExit(pytest.main([__file__, "-v"]))
