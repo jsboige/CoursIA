@@ -1,0 +1,370 @@
+# Conformite DIFFERENTIELLE du triplet AgentSystems-01 (Python + Rust).
+#
+# Ce carnet est le jumeau RUST d'AgentSystems-01-Perception-Vers-Action-Python.
+# Les deux cotes ont la MEME structure de cellules (37 cellules, 14 de code,
+# memes index), donc la correspondance des grandeurs ci-dessous est directe :
+# chaque `cell` est l'index, dans le `.ipynb`, de la cellule de code qui porte
+# la grandeur — identique sur les deux cotes.
+#
+# Deux approximations du port Rust sont DECLAREES (elles ne se voient pas sur
+# les sorties, parce que les deux cotes testent les memes invariants) :
+#
+#   1. `zlib` : le port ecrit des blocs STORES (entete RFC 1950 `0x78 0x9C`,
+#      BTYPE=00, adler32 maison). Le flux est un zlib VALIDE — il se
+#      decompresse par le `zlib.decompress` de CPython — mais il ne COMPRESSE
+#      pas. Le carnet teste l'inversibilite, pas le taux de compression.
+#   2. `lzma` : le port est un STUB COPIE DECLARE (entete LZMA-alone de treize
+#      octets + charge utile recopiée). Le vrai LZMA1 (range coding) n'est pas
+#      reproductible avec la seule bibliotheque standard ; il faudrait une crate
+#      que le cahier des charges du portage exclut. Le stub remplit donc le
+#      contrat teste par le carnet, qui est l'inversibilite, et rien de plus.
+#
+# Ces deux points sont aussi ecrits dans le carnet Rust lui-meme (cellule de
+# lecture du resultat de la section 4) : la declaration est pedagogique, pas
+# seulement documentaire.
+#
+# Regle de comparaison : egalite STRICTE (`tolerance: 0`, `transform: text`)
+# sur des regions de texte. Les deux cotes produisent des sorties
+# BYTE-IDENTIQUES ; l'organe verifie ici des grandeurs REPRESENTATIVES de
+# cette identite, pas l'integralite du flux.
+
+- name: "AgentSystems-01 Perception vers Action"
+  family: "cross-series/AgentSystems"
+  python: MyIA.AI.Notebooks/cross-series/AgentSystems/AgentSystems-01-Perception-Vers-Action-Python.ipynb
+  rust: MyIA.AI.Notebooks/cross-series/AgentSystems/AgentSystems-01-Perception-Vers-Action-Rust.ipynb
+  measures:
+    - id: bandeau_imports
+      description: "Bandeau de la cellule d'import (reproduit verbatim : le port n'utilise que la bibliotheque standard)"
+      tolerance: 0
+      reference: python
+      sides:
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+        python:
+          cell: 1
+          pattern: "(Imports OK[^\\n]*)"
+          transform: text
+        rust:
+          cell: 1
+          pattern: "(Imports OK[^\\n]*)"
+          transform: text
+
+    - id: perception_signatures
+      description: "Les cinq signatures de structure percues (forme, json, csv, blocs_md, texte) sur les cinq segments du corpus"
+      tolerance: 0
+      reference: python
+      sides:
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+        python:
+          cell: 4
+          pattern: "((?:  [^\\n]*#0[^\\n]*\\n){5})"
+          transform: text
+        rust:
+          cell: 4
+          pattern: "((?:  [^\\n]*#0[^\\n]*\\n){5})"
+          transform: text
+
+    - id: corpus_heterogene
+      description: "Nombre de segments percus et de formes distinctes du corpus"
+      tolerance: 0
+      reference: python
+      sides:
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+        python:
+          cell: 4
+          pattern: "(corpus percu : [^\\n]*)"
+          transform: text
+        rust:
+          cell: 4
+          pattern: "(corpus percu : [^\\n]*)"
+          transform: text
+
+    - id: decisions_par_segment
+      description: "Les cinq decisions derivees de la forme (operation et mode/codec), segment par segment"
+      tolerance: 0
+      reference: python
+      sides:
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+        python:
+          cell: 7
+          pattern: "((?:  [^\\n]*-> [^\\n]*\\n){5})"
+          transform: text
+        rust:
+          cell: 7
+          pattern: "((?:  [^\\n]*-> [^\\n]*\\n){5})"
+          transform: text
+
+    - id: inferences_apercu
+      description: "Nombre d'inferences payees par l'apercu (une par segment)"
+      tolerance: 0
+      reference: python
+      sides:
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+        python:
+          cell: 7
+          pattern: "(inférences effectuees pour cet apercu : \\d+)"
+          transform: text
+        rust:
+          cell: 7
+          pattern: "(inférences effectuees pour cet apercu : \\d+)"
+          transform: text
+
+    - id: codecs_declares
+      description: "Liste des codecs de l'invariant d'inversibilite (trier : lzma, store, zlib)"
+      tolerance: 0
+      reference: python
+      sides:
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+        python:
+          cell: 10
+          pattern: "(codecs : [^\\n]*)"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "(codecs : [^\\n]*)"
+          transform: text
+
+    - id: codecs_inversibles_ok
+      description: "Temoignage de l'inversibilite des codecs et des decoupes/recolles"
+      tolerance: 0
+      reference: python
+      sides:
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+        python:
+          cell: 10
+          pattern: "(codecs inversibles : OK)"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "(codecs inversibles : OK)"
+          transform: text
+
+    - id: decouverte_inferences
+      description: "Nombre d'inferences payees par la decouverte (la politique est apprise)"
+      tolerance: 0
+      reference: python
+      sides:
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+        python:
+          cell: 16
+          pattern: "(   inférences effectuees : \\d+)"
+          transform: text
+        rust:
+          cell: 16
+          pattern: "(   inférences effectuees : \\d+)"
+          transform: text
+
+    - id: decouverte_catalogue
+      description: "Le catalogue amorti forme -> decision, dans l'ordre de premiere insertion"
+      tolerance: 0
+      reference: python
+      sides:
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+        python:
+          cell: 16
+          pattern: "((?:      \\w+ +-> [^\\n]*\\n){6})"
+          transform: text
+        rust:
+          cell: 16
+          pattern: "((?:      \\w+ +-> [^\\n]*\\n){6})"
+          transform: text
+
+    - id: decouverte_recette
+      description: "Nombre d'entrees de la recette (segments couverts)"
+      tolerance: 0
+      reference: python
+      sides:
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+        python:
+          cell: 16
+          pattern: "(   recette \\(segments couverts\\) : \\d+ entrees)"
+          transform: text
+        rust:
+          cell: 16
+          pattern: "(   recette \\(segments couverts\\) : \\d+ entrees)"
+          transform: text
+
+    - id: rejeu_entete
+      description: "En-tete du rejeu (2e corpus, une racine)"
+      tolerance: 0
+      reference: python
+      sides:
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+        python:
+          cell: 17
+          pattern: "(REJEU \\(2e corpus, \\d+ racine\\) :)"
+          transform: text
+        rust:
+          cell: 17
+          pattern: "(REJEU \\(2e corpus, \\d+ racine\\) :)"
+          transform: text
+
+    - id: rejeu_inferences
+      description: "Cout d'inference du rejeu : nul, le catalogue est consulte et pas le cerveau"
+      tolerance: 0
+      reference: python
+      sides:
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+        python:
+          cell: 17
+          pattern: "(   inférences effectuees : 0[^\\n]*)"
+          transform: text
+        rust:
+          cell: 17
+          pattern: "(   inférences effectuees : 0[^\\n]*)"
+          transform: text
+
+    - id: observation_amortissement
+      description: "L'observation d'amortissement : le cout discovery X fois, pas 1000 fois X"
+      tolerance: 0
+      reference: python
+      sides:
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+        python:
+          cell: 18
+          pattern: "(   -> sur 1000 corpus de meme forme[^\\n]*)"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "(   -> sur 1000 corpus de meme forme[^\\n]*)"
+          transform: text
+
+    - id: couverture_rejet
+      description: "L'invariant rejette le plan incomplet et nomme l'enfant orphelin"
+      tolerance: 0
+      reference: python
+      sides:
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+        python:
+          cell: 21
+          pattern: "(VÉRIFICATION : le plan incomplet est REJETE[^\\n]*)"
+          transform: text
+        rust:
+          cell: 21
+          pattern: "(VÉRIFICATION : le plan incomplet est REJETE[^\\n]*)"
+          transform: text
+
+    - id: couverture_acceptation
+      description: "Controle positif : le plan decouvert est complet, l'invariant le laisse passer"
+      tolerance: 0
+      reference: python
+      sides:
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+        python:
+          cell: 21
+          pattern: "(VÉRIFICATION : le plan decouvert est complet[^\\n]*)"
+          transform: text
+        rust:
+          cell: 21
+          pattern: "(VÉRIFICATION : le plan decouvert est complet[^\\n]*)"
+          transform: text
+
+    - id: safety_bound
+      description: "La safety bound arrete la decouverte divergente et nomme le point d'arret"
+      tolerance: 0
+      reference: python
+      sides:
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+        python:
+          cell: 24
+          pattern: "(SAFETY BOUND : [^\\n]*)"
+          transform: text
+        rust:
+          cell: 24
+          pattern: "(SAFETY BOUND : [^\\n]*)"
+          transform: text
+
+    - id: composition_deterministe
+      description: "Le squelette accepte un cerveau deterministe (contrainte de type)"
+      tolerance: 0
+      reference: python
+      sides:
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+        python:
+          cell: 27
+          pattern: "(   AgentTriage accepte un cerveau deterministe[^\\n]*)"
+          transform: text
+        rust:
+          cell: 27
+          pattern: "(   AgentTriage accepte un cerveau deterministe[^\\n]*)"
+          transform: text
+
+    - id: composition_llm
+      description: "Le squelette accepte un cerveau LLM (meme interface, cout different)"
+      tolerance: 0
+      reference: python
+      sides:
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+        python:
+          cell: 27
+          pattern: "(   AgentTriage accepte un cerveau LLM[^\\n]*)"
+          transform: text
+        rust:
+          cell: 27
+          pattern: "(   AgentTriage accepte un cerveau LLM[^\\n]*)"
+          transform: text
+
+    - id: exo1_attendu
+      description: "Ligne Attendu de l'exercice 1 (stub C.1 : la ligne fixe doit exister a l'identique)"
+      tolerance: 0
+      reference: python
+      sides:
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+        python:
+          cell: 31
+          pattern: "(Exercice 1 a completer : [^\\n]*)"
+          transform: text
+        rust:
+          cell: 31
+          pattern: "(Exercice 1 a completer : [^\\n]*)"
+          transform: text
+
+    - id: exo2_attendu
+      description: "Ligne Attendu de l'exercice 2 (stub C.1 : la ligne fixe doit exister a l'identique)"
+      tolerance: 0
+      reference: python
+      sides:
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+        python:
+          cell: 33
+          pattern: "(Exercice 2 a completer : [^\\n]*)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "(Exercice 2 a completer : [^\\n]*)"
+          transform: text
+
+    - id: exo3_attendu
+      description: "Ligne Attendu de l'exercice 3 (stub C.1 : la ligne fixe doit exister a l'identique)"
+      tolerance: 0
+      reference: python
+      sides:
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+        python:
+          cell: 35
+          pattern: "(Exercice 3 a completer : [^\\n]*)"
+          transform: text
+        rust:
+          cell: 35
+          pattern: "(Exercice 3 a completer : [^\\n]*)"
+          transform: text

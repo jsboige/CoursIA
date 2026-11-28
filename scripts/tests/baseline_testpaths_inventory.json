@@ -84,7 +84,6 @@
     "MyIA.AI.Notebooks/cross-series/matching-cv/tests/unit/test_persistence.py",
     "MyIA.AI.Notebooks/cross-series/matching-cv/tests/unit/test_semantic_performance.py",
     "MyIA.AI.Notebooks/cross-series/matching-cv/tests/unit/test_simple_matching.py",
-    "scripts/lean/test_check_grothendieck_readme.py",
     "scripts/tts_verification/test_mos_protocol.py",
     "scripts/tts_verification/test_syllable_variability.py"
   ],

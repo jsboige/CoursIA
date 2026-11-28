@@ -136,6 +136,30 @@ img { max-height: 110px !important; }
 ---
 
 
+# 1950 : ce que le texte de Turing propose
+
+Turing ne définit pas la pensée : il **remplace la question**.
+
+<div style="border-left:3px solid rgba(128,128,128,0.45); padding-left:0.6em; margin:0.35em 0; font-style:italic;">
+« I propose to consider the question, "Can machines think?" » … « Instead of attempting such a definition I shall replace the question by another. »
+</div>
+
+Deux programmes cohabitent dans le même article :
+
+- **simuler l'adulte** — la voie suivie jusqu'aux grands modèles de langue ;
+- **simuler l'enfant** (§7, <em>Learning Machines</em>) : « Instead of trying to produce a programme to simulate the adult mind, why not rather try to produce one which simulates the child's? »
+
+Il formule lui-même l'objection décisive — <em>Lady Lovelace's Objection</em> : « The Analytical Engine has no pretensions to originate anything. » Sa réponse n'est pas une preuve : c'est le programme de l'enfant.
+
+<div style="font-size:0.72em; opacity:0.85; margin-top:0.6em; border-top:1px solid rgba(128,128,128,0.4); padding-top:0.35em;">
+Regard contemporain — M. Gromov, entretien Jaimungal (<a href="https://www.youtube.com/watch?v=010zB6EpJYQ">010zB6EpJYQ</a>, 00:08:18–00:08:30) : « Mathematic of Turing, it's almost common sense, except that it's brought to fruition mathematically. »<br>
+Source : A. M. Turing, <em>Computing machinery and intelligence</em>, <em>Mind</em> 59 (1950), 433–460.
+</div>
+
+
+---
+
+
 # Etat de l'art
 
 - **1997** : Echecs - Deep Blue bat Garry Kasparov

@@ -1119,6 +1119,21 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/_tranche2_15002/
 /scratchpad/
 /canary.txt
 
+# Artefacts de scratch a la racine (famille mesuree le 2026-10-09 dans le clone
+# D:/Dev/CoursIA-3 : 23 fichiers non suivis, 29 286 258 octets, dont un
+# \pool_c422.json\ a 28 888 916 octets qu'aucun garde n'attrapait). Deux
+# familles :
+#   * \scratchpad_*\ -- dossiers de cycle ecrits dans le CWD faute de variable ;
+#   * un chemin ABSOLU aplati en nom de fichier -- les separateurs ont disparu et
+#     le \:\ a ete remplace par U+F03A (caractere d'usage prive), de sorte que le
+#     nom commence par la lettre de lecteur. Le marqueur conserve est le segment
+#     de chemin temporaire Windows (\AppDataLocalTemp\).
+# Motif \/[A-Z]*AppDataLocalTemp*\ : la lettre de lecteur ouvre, le segment temp
+# ferme -- \AppDataLocalTemp\ n'apparait qu'au milieu d'un chemin aplati. Pas de
+# joker \?\ ici : git le matche sur un OCTET, pas sur le caractere U+F03A.
+/scratchpad_*
+/[A-Z]*AppDataLocalTemp*
+
 # Harnais LLamaSharp bake-off (GenAI/Texte 10e, #15570) : artefacts locaux
 MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/models/
 MyIA.AI.Notebooks/GenAI/Texte/tools/llamasharp-bakeoff/publish/

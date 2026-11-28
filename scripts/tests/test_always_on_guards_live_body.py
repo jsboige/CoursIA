@@ -265,7 +265,9 @@ def test_bootstrap_multiline_body_survives_heredoc(tmp_path):
 
 @pytest.mark.parametrize("workflow,output_key,output_file", [
     ("always-on-guards.yml", "PR_BODY", "GITHUB_ENV"),
-    ("always-on-guards-body.yml", "PR_BODY", "GITHUB_ENV"),
+    # #28534 : le bloc de lecture live du body vit dans le workflow
+    # fusionne (les workflow de body et de metadonnees en un seul).
+    ("always-on-guards-edited.yml", "PR_BODY", "GITHUB_ENV"),
     ("always-on-commenters.yml", "pr_body", "GITHUB_OUTPUT"),
 ])
 @pytest.mark.parametrize("live,fail,expected", [
