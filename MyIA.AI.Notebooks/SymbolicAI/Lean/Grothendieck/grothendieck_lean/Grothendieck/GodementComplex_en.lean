@@ -236,7 +236,7 @@ variable {X : TopCat.{u}}
 -- **Not posed** — the named frontier: the degreewise SES of the canonical
 -- complexes themselves (a `ShortExact` of complexes, not of presheaf
 -- sections at one open); it needs the flabby lifting
--- (`epi_of_shortExact_of_isFlasqueSieves`, Part 94) or the separatedness
+-- (`epi_of_shortExact_of_isFlasqueSieves`, Part 82) or the separatedness
 -- ladder — tranche 2, feeding Part 99 (long exact sequence assembly).
 --
 -- **Part 99, the pointwise exactness bridge and rank 0 landed in the FR

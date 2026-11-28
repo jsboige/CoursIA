@@ -678,7 +678,7 @@ def _keys_lost_by_rename(
     """Renames that DROPPED a baseline key instead of moving it (#16122).
 
     The regression the #15917 incident produced: ``02-7-Song-Generation.ipynb``
-    was renamed to ``02-7-YuE2-Song-Generation.ipynb`` and its key was deleted
+    was renamed to ``Audio-02-7-YuE2-Song-Generation-Python.ipynb`` and its key was deleted
     rather than moved -- the check-run stayed green and the ratchet silently
     lost its reference (count 811 -> 810). A rename that MOVES its key (what the
     renumber waves do) is not a finding.

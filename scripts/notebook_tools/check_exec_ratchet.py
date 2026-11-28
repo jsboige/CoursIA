@@ -71,10 +71,17 @@ class InstrumentUnavailable(RuntimeError):
 def git(*args, cwd=None):
     """Run a git command, returning stdout (utf-8), None on git-level
     failure (returncode != 0), or raising InstrumentUnavailable when the
-    spawn itself failed after bounded fork retries (#16217 primitive)."""
+    spawn itself failed after bounded fork retries (#16217 primitive).
+
+    ``-c core.quotePath=false`` : sans ce drapeau, git cite les chemins non
+    ASCII et le chemin cite n'existe pas sur le disque -- le ratchet lisait
+    alors un carnet introuvable, le prenait pour un carnet ajoute, et
+    annoncait un verdict faux (#28632). Precedent dans le depot :
+    ``check_notebook_navlinks.py``, ``check_notebook_nav_chain.py``."""
     try:
         out = run_with_fork_retry(
-            ["git", *args], cwd=cwd, capture_output=True,
+            ["git", "-c", "core.quotePath=false", *args], cwd=cwd,
+            capture_output=True,
             encoding="utf-8", errors="replace", check=False)
     except OSError as exc:
         raise InstrumentUnavailable(exc) from exc
