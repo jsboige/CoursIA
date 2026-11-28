@@ -1,17 +1,17 @@
 {
   "schema_version": 2,
-  "generated_from": "351d2e840d99f3c7fd8ad09143a05a634216f9fc",
+  "generated_from": "3a96d684435bbd8422519444cf83d153d8945235",
   "policy": "scripts/notebook_tools/dependency_manifest_policy.json",
   "counts": {
-    "tracked_files": 18110,
-    "notebooks": 1996,
-    "dependency_files": 45,
-    "curriculum_dependency_files": 38,
+    "tracked_files": 19758,
+    "notebooks": 2261,
+    "dependency_files": 52,
+    "curriculum_dependency_files": 45,
     "infra_dependency_files": 7,
-    "groups": 283,
-    "series": 15,
-    "included": 72,
-    "conflicts": 47,
+    "groups": 292,
+    "series": 16,
+    "included": 77,
+    "conflicts": 48,
     "version_normalization_fallbacks": 0
   },
   "groups": [
@@ -55,11 +55,78 @@
       "packages": []
     },
     {
+      "group": "MyIA.AI.Notebooks/BioMedecine/Dynamiques",
+      "series": "BioMedecine",
+      "subseries": "Dynamiques",
+      "kernel_families": [
+        "Python"
+      ],
+      "kernel_families_source": "direct",
+      "kernelspecs": {
+        "python3": 1
+      },
+      "notebook_count": 1,
+      "dependency_files": [],
+      "package_count": 0,
+      "requires_python": "",
+      "requires_python_source": "",
+      "requires_python_constraints": [],
+      "needs": {
+        "gpu": false,
+        "gpu_notebooks": [],
+        "api_key_count": 0,
+        "network_services": [],
+        "local_endpoints": [],
+        "service_call_count": 0,
+        "dynamic_service_calls": 0,
+        "companion_files": []
+      },
+      "verdict": "inclus",
+      "service_optionnel": false,
+      "motifs": [],
+      "gaps": [],
+      "packages": []
+    },
+    {
+      "group": "MyIA.AI.Notebooks/BioMedecine/Structures",
+      "series": "BioMedecine",
+      "subseries": "Structures",
+      "kernel_families": [
+        "Python"
+      ],
+      "kernel_families_source": "direct",
+      "kernelspecs": {
+        "python3": 3
+      },
+      "notebook_count": 3,
+      "dependency_files": [],
+      "package_count": 0,
+      "requires_python": "",
+      "requires_python_source": "",
+      "requires_python_constraints": [],
+      "needs": {
+        "gpu": false,
+        "gpu_notebooks": [],
+        "api_key_count": 0,
+        "network_services": [],
+        "local_endpoints": [],
+        "service_call_count": 0,
+        "dynamic_service_calls": 0,
+        "companion_files": []
+      },
+      "verdict": "inclus",
+      "service_optionnel": false,
+      "motifs": [],
+      "gaps": [],
+      "packages": []
+    },
+    {
       "group": "MyIA.AI.Notebooks/CaseStudies",
       "series": "CaseStudies",
       "subseries": "",
       "kernel_families": [
-        "Python"
+        "Python",
+        ".NET"
       ],
       "kernel_families_source": "herite",
       "kernelspecs": {},
@@ -353,13 +420,15 @@
       "series": "CaseStudies",
       "subseries": "Reseau-Electrique-Intelligent",
       "kernel_families": [
+        ".NET",
         "Python"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
+        ".net-csharp": 1,
         "python3": 1
       },
-      "notebook_count": 1,
+      "notebook_count": 2,
       "dependency_files": [],
       "package_count": 9,
       "requires_python": "",
@@ -409,14 +478,14 @@
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        ".net-csharp": 46,
+        ".net-csharp": 59,
         "coursia-ml-training": 3,
         "gametheory-wsl": 2,
         "lean4-wsl": 10,
         "python3": 65,
-        "rust": 4
+        "rust": 14
       },
-      "notebook_count": 130,
+      "notebook_count": 153,
       "dependency_files": [
         "MyIA.AI.Notebooks/GameTheory/requirements.txt"
       ],
@@ -487,14 +556,16 @@
       "subseries": "Coalitions",
       "kernel_families": [
         "Python",
+        "Rust",
         "autre"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
         "lean4-wsl": 1,
-        "python3": 4
+        "python3": 4,
+        "rust": 1
       },
-      "notebook_count": 5,
+      "notebook_count": 6,
       "dependency_files": [],
       "package_count": 20,
       "requires_python": "",
@@ -551,12 +622,12 @@
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        ".net-csharp": 7,
+        ".net-csharp": 9,
         "lean4-wsl": 2,
         "python3": 11,
-        "rust": 1
+        "rust": 5
       },
-      "notebook_count": 21,
+      "notebook_count": 27,
       "dependency_files": [],
       "package_count": 20,
       "requires_python": "",
@@ -613,15 +684,17 @@
       "subseries": "Metajeux",
       "kernel_families": [
         ".NET",
-        "Python"
+        "Python",
+        "Rust"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        ".net-csharp": 2,
+        ".net-csharp": 6,
         "coursia-ml-training": 1,
-        "python3": 6
+        "python3": 6,
+        "rust": 4
       },
-      "notebook_count": 9,
+      "notebook_count": 17,
       "dependency_files": [],
       "package_count": 20,
       "requires_python": "",
@@ -678,13 +751,13 @@
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        ".net-csharp": 6,
+        ".net-csharp": 10,
         "lean4-wsl": 1,
         "python3": 11,
         "python3-wsl": 1,
-        "rust": 2
+        "rust": 4
       },
-      "notebook_count": 21,
+      "notebook_count": 27,
       "dependency_files": [],
       "package_count": 20,
       "requires_python": "",
@@ -796,7 +869,8 @@
       "kernel_families": [
         "Python",
         "autre",
-        ".NET"
+        ".NET",
+        "Rust"
       ],
       "kernel_families_source": "herite",
       "kernelspecs": {},
@@ -1042,9 +1116,9 @@
       "kernel_families_source": "direct",
       "kernelspecs": {
         "gsplat310": 2,
-        "python3": 7
+        "python3": 8
       },
-      "notebook_count": 9,
+      "notebook_count": 10,
       "dependency_files": [],
       "package_count": 79,
       "requires_python": "",
@@ -1279,11 +1353,12 @@
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
+        "coursia-genai-audio": 2,
         "dia-tts": 1,
-        "python3": 10,
+        "python3": 11,
         "rvc-wsl": 1
       },
-      "notebook_count": 12,
+      "notebook_count": 15,
       "dependency_files": [],
       "package_count": 79,
       "requires_python": "",
@@ -1292,16 +1367,16 @@
       "needs": {
         "gpu": true,
         "gpu_notebooks": [
+          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb",
           "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-1-Chatterbox-TTS-Python.ipynb",
           "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-10-Effets-Sonores-AudioLDM2-Python.ipynb",
           "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-11-Text-to-Audio-Bruitages-Python.ipynb",
           "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-12-SVS-Singing-Voice-RVC-Python.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-6-MIDI-Generation-Python.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-7-YuE2-Song-Generation-Python.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb"
+          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-13-Audio-LLM-Omni-Modal-Qwen2Audio-Python.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-14-Transcription-Audio-Qwen3-Python.ipynb"
         ],
         "api_key_count": 4,
         "network_services": [
@@ -1327,7 +1402,7 @@
         {
           "origin": "mesure",
           "policy": "gpu",
-          "text": "GPU requis : marqueur mesure dans 11 carnet(s) de la serie"
+          "text": "GPU requis : marqueur mesure dans 14 carnet(s) de la serie"
         },
         {
           "origin": "declaration",
@@ -1560,9 +1635,9 @@
       "needs": {
         "gpu": true,
         "gpu_notebooks": [
-          "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/Audio-04-14-VoiceLeading-Rendu-GenAI-Python.ipynb",
           "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-2-Transcription-Pipeline.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-Music-Composition-Workflow.ipynb"
+          "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-Music-Composition-Workflow.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/Audio-04-14-VoiceLeading-Rendu-GenAI-Python.ipynb"
         ],
         "api_key_count": 4,
         "network_services": [
@@ -2388,9 +2463,9 @@
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        "python3": 1
+        "python3": 2
       },
-      "notebook_count": 1,
+      "notebook_count": 2,
       "dependency_files": [],
       "package_count": 79,
       "requires_python": "",
@@ -2699,9 +2774,9 @@
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        "python3": 1
+        "python3": 2
       },
-      "notebook_count": 1,
+      "notebook_count": 2,
       "dependency_files": [],
       "package_count": 79,
       "requires_python": "",
@@ -2895,13 +2970,15 @@
       "series": "GenAI",
       "subseries": "FineTuning",
       "kernel_families": [
+        ".NET",
         "Python"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
+        ".net-csharp": 2,
         "python3": 20
       },
-      "notebook_count": 20,
+      "notebook_count": 22,
       "dependency_files": [],
       "package_count": 79,
       "requires_python": "",
@@ -3599,13 +3676,15 @@
       "series": "GenAI",
       "subseries": "Image",
       "kernel_families": [
-        "Python"
+        "Python",
+        ".NET"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
+        ".net-csharp": 2,
         "python3": 8
       },
-      "notebook_count": 8,
+      "notebook_count": 10,
       "dependency_files": [],
       "package_count": 79,
       "requires_python": "",
@@ -3624,6 +3703,7 @@
         "service_call_count": 0,
         "dynamic_service_calls": 0,
         "companion_files": [
+          "MyIA.AI.Notebooks/GenAI/Image/05-History/symmetry_art.py",
           "MyIA.AI.Notebooks/InformationCalcul/Compression/symbol_codec_bridge.py"
         ]
       },
@@ -6036,11 +6116,11 @@
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        ".net-csharp": 1,
+        ".net-csharp": 3,
         "coursia-ml-training": 14,
         "python3": 12
       },
-      "notebook_count": 27,
+      "notebook_count": 29,
       "dependency_files": [
         "MyIA.AI.Notebooks/GenAI/PostTraining/requirements.txt"
       ],
@@ -7052,16 +7132,18 @@
       "subseries": "Texte",
       "kernel_families": [
         "Python",
-        ".NET"
+        ".NET",
+        "Rust"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 4,
         "coursia-ml-training": 2,
-        "python3": 38,
-        "python3-coursia2": 1
+        "python3": 39,
+        "python3-coursia2": 1,
+        "rust": 1
       },
-      "notebook_count": 45,
+      "notebook_count": 47,
       "dependency_files": [
         "MyIA.AI.Notebooks/GenAI/Texte/requirements-structured-outputs.txt"
       ],
@@ -7206,13 +7288,15 @@
       "series": "GenAI",
       "subseries": "Texte",
       "kernel_families": [
+        ".NET",
         "Python"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
+        ".net-csharp": 2,
         "python3": 7
       },
-      "notebook_count": 7,
+      "notebook_count": 9,
       "dependency_files": [],
       "package_count": 85,
       "requires_python": "",
@@ -7752,9 +7836,9 @@
       "needs": {
         "gpu": true,
         "gpu_notebooks": [
-          "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-5-AnimateDiff-Introduction.ipynb"
+          "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Comprehension-Video-Locale.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-5-Generation-Text-to-Video-Intro.ipynb"
         ],
         "api_key_count": 1,
         "network_services": [],
@@ -8388,18 +8472,20 @@
       "kernel_families": [
         "autre",
         "Python",
-        ".NET"
+        ".NET",
+        "Rust"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        ".net-csharp": 1,
-        "ict-py313": 2,
+        ".net-csharp": 6,
+        "ict-py313": 4,
         "inconnu": 4,
         "py310-gpu": 1,
         "pyphi-iit": 3,
-        "python3": 58
+        "python3": 59,
+        "rust": 1
       },
-      "notebook_count": 69,
+      "notebook_count": 78,
       "dependency_files": [
         "MyIA.AI.Notebooks/IIT/ICT-Series/requirements-torchlens.txt"
       ],
@@ -8630,17 +8716,17 @@
       "series": "IIT",
       "subseries": "ICT-Series",
       "kernel_families": [
-        "Python",
         ".NET",
+        "Python",
         "autre"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        ".net-csharp": 1,
+        ".net-csharp": 9,
         "inconnu": 1,
         "python3": 11
       },
-      "notebook_count": 13,
+      "notebook_count": 21,
       "dependency_files": [],
       "package_count": 7,
       "requires_python": "",
@@ -8660,11 +8746,11 @@
           "MyIA.AI.Notebooks/IIT/ICT-Series/ict/basin_geometry.py",
           "MyIA.AI.Notebooks/IIT/ICT-Series/ict/basin_landscape2d.py",
           "MyIA.AI.Notebooks/IIT/ICT-Series/ict/bridge_testing.py",
+          "MyIA.AI.Notebooks/IIT/ICT-Series/ict/causal_emergence.py",
           "MyIA.AI.Notebooks/IIT/ICT-Series/ict/cech_obstruction.py",
           "MyIA.AI.Notebooks/IIT/ICT-Series/ict/free_energy.py",
           "MyIA.AI.Notebooks/IIT/ICT-Series/ict/meta_proxy.py",
-          "MyIA.AI.Notebooks/IIT/ICT-Series/ict/nerve_discriminant.py",
-          "MyIA.AI.Notebooks/IIT/ICT-Series/ict/reaction_diffusion.py"
+          "MyIA.AI.Notebooks/IIT/ICT-Series/ict/nerve_discriminant.py"
         ]
       },
       "verdict": "inclus",
@@ -8803,6 +8889,41 @@
       ]
     },
     {
+      "group": "MyIA.AI.Notebooks/InformationCalcul/Automata",
+      "series": "InformationCalcul",
+      "subseries": "Automata",
+      "kernel_families": [
+        ".NET",
+        "Python"
+      ],
+      "kernel_families_source": "direct",
+      "kernelspecs": {
+        ".net-csharp": 2,
+        "python3": 2
+      },
+      "notebook_count": 4,
+      "dependency_files": [],
+      "package_count": 0,
+      "requires_python": "",
+      "requires_python_source": "",
+      "requires_python_constraints": [],
+      "needs": {
+        "gpu": false,
+        "gpu_notebooks": [],
+        "api_key_count": 0,
+        "network_services": [],
+        "local_endpoints": [],
+        "service_call_count": 0,
+        "dynamic_service_calls": 0,
+        "companion_files": []
+      },
+      "verdict": "inclus",
+      "service_optionnel": false,
+      "motifs": [],
+      "gaps": [],
+      "packages": []
+    },
+    {
       "group": "MyIA.AI.Notebooks/InformationCalcul/Complexity",
       "series": "InformationCalcul",
       "subseries": "Complexity",
@@ -8813,13 +8934,13 @@
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        ".net-csharp": 17,
+        ".net-csharp": 28,
         "coursia-ml-training": 1,
         "coursia-py313": 1,
-        "python3": 26,
-        "rust": 1
+        "python3": 30,
+        "rust": 7
       },
-      "notebook_count": 46,
+      "notebook_count": 67,
       "dependency_files": [],
       "package_count": 0,
       "requires_python": "",
@@ -8834,6 +8955,7 @@
         "service_call_count": 0,
         "dynamic_service_calls": 0,
         "companion_files": [
+          "MyIA.AI.Notebooks/Config/PythonNetLoader.cs",
           "MyIA.AI.Notebooks/IIT/ICT-Series/ict/goedel_machine.py",
           "MyIA.AI.Notebooks/IIT/ICT-Series/ict/wolfram_step.py"
         ]
@@ -8854,10 +8976,10 @@
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        ".net-csharp": 5,
+        ".net-csharp": 8,
         "python3": 13
       },
-      "notebook_count": 18,
+      "notebook_count": 21,
       "dependency_files": [],
       "package_count": 0,
       "requires_python": "",
@@ -8896,9 +9018,9 @@
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        "lean4-wsl": 1
+        "lean4-wsl": 2
       },
-      "notebook_count": 1,
+      "notebook_count": 2,
       "dependency_files": [],
       "package_count": 0,
       "requires_python": "",
@@ -8927,6 +9049,45 @@
       "packages": []
     },
     {
+      "group": "MyIA.AI.Notebooks/InformationCalcul/Cryptography",
+      "series": "InformationCalcul",
+      "subseries": "Cryptography",
+      "kernel_families": [
+        ".NET"
+      ],
+      "kernel_families_source": "direct",
+      "kernelspecs": {
+        ".net-csharp": 2
+      },
+      "notebook_count": 2,
+      "dependency_files": [],
+      "package_count": 0,
+      "requires_python": "",
+      "requires_python_source": "",
+      "requires_python_constraints": [],
+      "needs": {
+        "gpu": false,
+        "gpu_notebooks": [],
+        "api_key_count": 0,
+        "network_services": [],
+        "local_endpoints": [],
+        "service_call_count": 0,
+        "dynamic_service_calls": 0,
+        "companion_files": []
+      },
+      "verdict": "exclu",
+      "service_optionnel": false,
+      "motifs": [
+        {
+          "origin": "mesure",
+          "policy": "kernel_family",
+          "text": "noyau non-Python (.NET) : hors image CPU Python"
+        }
+      ],
+      "gaps": [],
+      "packages": []
+    },
+    {
       "group": "MyIA.AI.Notebooks/InformationCalcul/InformationTheory",
       "series": "InformationCalcul",
       "subseries": "InformationTheory",
@@ -8935,9 +9096,42 @@
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        "python3": 2
+        "python3": 3
       },
-      "notebook_count": 2,
+      "notebook_count": 3,
+      "dependency_files": [],
+      "package_count": 0,
+      "requires_python": "",
+      "requires_python_source": "",
+      "requires_python_constraints": [],
+      "needs": {
+        "gpu": false,
+        "gpu_notebooks": [],
+        "api_key_count": 0,
+        "network_services": [],
+        "local_endpoints": [],
+        "service_call_count": 0,
+        "dynamic_service_calls": 0,
+        "companion_files": []
+      },
+      "verdict": "inclus",
+      "service_optionnel": false,
+      "motifs": [],
+      "gaps": [],
+      "packages": []
+    },
+    {
+      "group": "MyIA.AI.Notebooks/InformationCalcul/SignalProcessing",
+      "series": "InformationCalcul",
+      "subseries": "SignalProcessing",
+      "kernel_families": [
+        "Python"
+      ],
+      "kernel_families_source": "direct",
+      "kernelspecs": {
+        "python3": 4
+      },
+      "notebook_count": 4,
       "dependency_files": [],
       "package_count": 0,
       "requires_python": "",
@@ -8999,17 +9193,19 @@
       "kernel_families": [
         "Python",
         ".NET",
+        "Rust",
         "autre"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        ".net-csharp": 10,
+        ".net-csharp": 12,
         "coursia-drift": 1,
-        "coursia-ml-training": 4,
+        "coursia-ml-training": 5,
         "lean4-wsl": 3,
-        "python3": 31
+        "python3": 31,
+        "rust": 4
       },
-      "notebook_count": 49,
+      "notebook_count": 56,
       "dependency_files": [
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/requirements.txt"
       ],
@@ -9032,6 +9228,7 @@
         "companion_files": [
           "MyIA.AI.Notebooks/Config/PythonNetLoader.cs",
           "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/run_pipeline.py",
+          "MyIA.AI.Notebooks/IIT/ICT-Series/ict/sae_dictionary.py",
           "MyIA.AI.Notebooks/ML/DataScienceWithAgents/auto_evaluation.py"
         ]
       },
@@ -9081,12 +9278,12 @@
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        ".net-csharp": 4,
+        ".net-csharp": 5,
         "coursia-ml-training": 5,
         "python3": 21,
         "python3-coursia2": 1
       },
-      "notebook_count": 31,
+      "notebook_count": 32,
       "dependency_files": [],
       "package_count": 0,
       "requires_python": "",
@@ -9998,9 +10195,9 @@
       "kernelspecs": {
         ".net-csharp": 15,
         "coursia-ml-training": 1,
-        "python3": 13
+        "python3": 14
       },
-      "notebook_count": 29,
+      "notebook_count": 30,
       "dependency_files": [],
       "package_count": 0,
       "requires_python": "",
@@ -10073,19 +10270,60 @@
       "packages": []
     },
     {
+      "group": "MyIA.AI.Notebooks/NLP/gateway",
+      "series": "NLP",
+      "subseries": "gateway",
+      "kernel_families": [
+        "Python"
+      ],
+      "kernel_families_source": "direct",
+      "kernelspecs": {
+        "python3": 1
+      },
+      "notebook_count": 1,
+      "dependency_files": [
+        "MyIA.AI.Notebooks/NLP/gateway/requirements.txt"
+      ],
+      "package_count": 1,
+      "requires_python": "",
+      "requires_python_source": "",
+      "requires_python_constraints": [],
+      "needs": {
+        "gpu": false,
+        "gpu_notebooks": [],
+        "api_key_count": 0,
+        "network_services": [],
+        "local_endpoints": [],
+        "service_call_count": 0,
+        "dynamic_service_calls": 0,
+        "companion_files": [
+          "MyIA.AI.Notebooks/NLP/gateway/hmm_viterbi_core.py"
+        ]
+      },
+      "verdict": "inclus",
+      "service_optionnel": false,
+      "motifs": [],
+      "gaps": [],
+      "packages": [
+        "jupyter-kernel-gateway"
+      ]
+    },
+    {
       "group": "MyIA.AI.Notebooks/Physique/Chaines",
       "series": "Physique",
       "subseries": "Chaines",
       "kernel_families": [
         "Python",
-        ".NET"
+        ".NET",
+        "Rust"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        ".net-csharp": 3,
-        "python3": 11
+        ".net-csharp": 11,
+        "python3": 16,
+        "rust": 7
       },
-      "notebook_count": 14,
+      "notebook_count": 34,
       "dependency_files": [],
       "package_count": 0,
       "requires_python": "",
@@ -10112,13 +10350,17 @@
       "series": "Physique",
       "subseries": "Constructeur",
       "kernel_families": [
-        "Python"
+        ".NET",
+        "Python",
+        "Rust"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        "python3": 1
+        ".net-csharp": 1,
+        "python3": 1,
+        "rust": 1
       },
-      "notebook_count": 1,
+      "notebook_count": 3,
       "dependency_files": [],
       "package_count": 0,
       "requires_python": "",
@@ -10145,13 +10387,15 @@
       "series": "Physique",
       "subseries": "InformationQuantique",
       "kernel_families": [
+        ".NET",
         "Python"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        "python3": 1
+        ".net-csharp": 1,
+        "python3": 2
       },
-      "notebook_count": 1,
+      "notebook_count": 3,
       "dependency_files": [],
       "package_count": 0,
       "requires_python": "",
@@ -10178,13 +10422,15 @@
       "series": "Physique",
       "subseries": "Integrales",
       "kernel_families": [
+        ".NET",
         "Python"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
+        ".net-csharp": 4,
         "python3": 4
       },
-      "notebook_count": 4,
+      "notebook_count": 8,
       "dependency_files": [],
       "package_count": 0,
       "requires_python": "",
@@ -10211,13 +10457,15 @@
       "series": "Physique",
       "subseries": "Jauge",
       "kernel_families": [
+        ".NET",
         "Python"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        "python3": 4
+        ".net-csharp": 3,
+        "python3": 5
       },
-      "notebook_count": 4,
+      "notebook_count": 8,
       "dependency_files": [],
       "package_count": 0,
       "requires_python": "",
@@ -10246,13 +10494,15 @@
       "series": "Physique",
       "subseries": "Numerique",
       "kernel_families": [
+        ".NET",
         "Python"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        "python3": 2
+        ".net-csharp": 1,
+        "python3": 3
       },
-      "notebook_count": 2,
+      "notebook_count": 4,
       "dependency_files": [],
       "package_count": 0,
       "requires_python": "",
@@ -10295,7 +10545,7 @@
       "dependency_files": [
         "MyIA.AI.Notebooks/Probas/requirements.txt"
       ],
-      "package_count": 13,
+      "package_count": 14,
       "requires_python": "",
       "requires_python_source": "",
       "requires_python_constraints": [],
@@ -10321,6 +10571,7 @@
       "gaps": [],
       "packages": [
         "arviz",
+        "causal-learn",
         "dowhy",
         "hmmlearn",
         "matplotlib",
@@ -10348,7 +10599,7 @@
       },
       "notebook_count": 4,
       "dependency_files": [],
-      "package_count": 13,
+      "package_count": 14,
       "requires_python": "",
       "requires_python_source": "",
       "requires_python_constraints": [],
@@ -10374,6 +10625,7 @@
       "gaps": [],
       "packages": [
         "arviz",
+        "causal-learn",
         "dowhy",
         "hmmlearn",
         "matplotlib",
@@ -10403,7 +10655,7 @@
       },
       "notebook_count": 8,
       "dependency_files": [],
-      "package_count": 13,
+      "package_count": 14,
       "requires_python": "",
       "requires_python_source": "",
       "requires_python_constraints": [],
@@ -10429,6 +10681,7 @@
       "gaps": [],
       "packages": [
         "arviz",
+        "causal-learn",
         "dowhy",
         "hmmlearn",
         "matplotlib",
@@ -10457,7 +10710,7 @@
       },
       "notebook_count": 12,
       "dependency_files": [],
-      "package_count": 13,
+      "package_count": 14,
       "requires_python": "",
       "requires_python_source": "",
       "requires_python_constraints": [],
@@ -10499,6 +10752,7 @@
       "gaps": [],
       "packages": [
         "arviz",
+        "causal-learn",
         "dowhy",
         "hmmlearn",
         "matplotlib",
@@ -10526,7 +10780,7 @@
       },
       "notebook_count": 1,
       "dependency_files": [],
-      "package_count": 13,
+      "package_count": 14,
       "requires_python": "",
       "requires_python_source": "",
       "requires_python_constraints": [],
@@ -10552,6 +10806,7 @@
       "gaps": [],
       "packages": [
         "arviz",
+        "causal-learn",
         "dowhy",
         "hmmlearn",
         "matplotlib",
@@ -10571,15 +10826,17 @@
       "series": "Probas",
       "subseries": "DecisionTheory",
       "kernel_families": [
+        ".NET",
         "Python"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
+        ".net-csharp": 2,
         "python3": 5
       },
-      "notebook_count": 5,
+      "notebook_count": 7,
       "dependency_files": [],
-      "package_count": 13,
+      "package_count": 14,
       "requires_python": "",
       "requires_python_source": "",
       "requires_python_constraints": [],
@@ -10591,7 +10848,9 @@
         "local_endpoints": [],
         "service_call_count": 0,
         "dynamic_service_calls": 0,
-        "companion_files": []
+        "companion_files": [
+          "MyIA.AI.Notebooks/Config/PythonNetLoader.cs"
+        ]
       },
       "verdict": "exclu",
       "service_optionnel": false,
@@ -10605,6 +10864,7 @@
       "gaps": [],
       "packages": [
         "arviz",
+        "causal-learn",
         "dowhy",
         "hmmlearn",
         "matplotlib",
@@ -10636,7 +10896,7 @@
       },
       "notebook_count": 12,
       "dependency_files": [],
-      "package_count": 13,
+      "package_count": 14,
       "requires_python": "",
       "requires_python_source": "",
       "requires_python_constraints": [],
@@ -10665,6 +10925,7 @@
       "gaps": [],
       "packages": [
         "arviz",
+        "causal-learn",
         "dowhy",
         "hmmlearn",
         "matplotlib",
@@ -10692,7 +10953,7 @@
       },
       "notebook_count": 8,
       "dependency_files": [],
-      "package_count": 13,
+      "package_count": 14,
       "requires_python": "",
       "requires_python_source": "",
       "requires_python_constraints": [],
@@ -10720,6 +10981,7 @@
       "gaps": [],
       "packages": [
         "arviz",
+        "causal-learn",
         "dowhy",
         "hmmlearn",
         "matplotlib",
@@ -10749,7 +11011,7 @@
       },
       "notebook_count": 4,
       "dependency_files": [],
-      "package_count": 13,
+      "package_count": 14,
       "requires_python": "",
       "requires_python_source": "",
       "requires_python_constraints": [],
@@ -10775,6 +11037,7 @@
       "gaps": [],
       "packages": [
         "arviz",
+        "causal-learn",
         "dowhy",
         "hmmlearn",
         "matplotlib",
@@ -10804,7 +11067,7 @@
       },
       "notebook_count": 22,
       "dependency_files": [],
-      "package_count": 13,
+      "package_count": 14,
       "requires_python": "",
       "requires_python_source": "",
       "requires_python_constraints": [],
@@ -10834,6 +11097,7 @@
       "gaps": [],
       "packages": [
         "arviz",
+        "causal-learn",
         "dowhy",
         "hmmlearn",
         "matplotlib",
@@ -10859,7 +11123,7 @@
       "dependency_files": [
         "MyIA.AI.Notebooks/Probas/Infer/gateway/requirements.txt"
       ],
-      "package_count": 15,
+      "package_count": 16,
       "requires_python": "",
       "requires_python_source": "",
       "requires_python_constraints": [],
@@ -10890,6 +11154,7 @@
       "gaps": [],
       "packages": [
         "arviz",
+        "causal-learn",
         "dowhy",
         "hmmlearn",
         "jupyter-kernel-gateway",
@@ -10917,7 +11182,7 @@
       "dependency_files": [
         "MyIA.AI.Notebooks/Probas/Infer/scripts/requirements.txt"
       ],
-      "package_count": 17,
+      "package_count": 18,
       "requires_python": "",
       "requires_python_source": "",
       "requires_python_constraints": [],
@@ -10948,6 +11213,7 @@
       "gaps": [],
       "packages": [
         "arviz",
+        "causal-learn",
         "dowhy",
         "hmmlearn",
         "jupyter",
@@ -10979,7 +11245,7 @@
       },
       "notebook_count": 20,
       "dependency_files": [],
-      "package_count": 13,
+      "package_count": 14,
       "requires_python": "",
       "requires_python_source": "",
       "requires_python_constraints": [],
@@ -11008,6 +11274,7 @@
       "gaps": [],
       "packages": [
         "arviz",
+        "causal-learn",
         "dowhy",
         "hmmlearn",
         "matplotlib",
@@ -11027,9 +11294,9 @@
       "series": "QuantConnect",
       "subseries": "",
       "kernel_families": [
+        ".NET",
         "Python",
-        "autre",
-        ".NET"
+        "autre"
       ],
       "kernel_families_source": "herite",
       "kernelspecs": {},
@@ -11058,6 +11325,101 @@
           "origin": "declaration",
           "policy": "heavy_distributions",
           "text": "taille : distribution(s) lourde(s) hors image CPU legere (TensorFlow)"
+        }
+      ],
+      "gaps": [],
+      "packages": [
+        "anthropic",
+        "arch",
+        "black",
+        "catboost",
+        "cloudpickle",
+        "cvxpy",
+        "empyrical",
+        "flake8",
+        "gymnasium",
+        "ipykernel",
+        "ipywidgets",
+        "joblib",
+        "jupyter",
+        "jupyterlab",
+        "keras",
+        "langchain",
+        "langchain-openai",
+        "lightgbm",
+        "loguru",
+        "matplotlib",
+        "newsapi-python",
+        "numpy",
+        "openai",
+        "pandas",
+        "pandas-ta",
+        "plotly",
+        "pydantic",
+        "pydantic-settings",
+        "pyfolio",
+        "pyportfolioopt",
+        "pytest",
+        "python-dotenv",
+        "quantconnect-lean",
+        "quantconnect-stubs",
+        "requests",
+        "scikit-learn",
+        "scipy",
+        "seaborn",
+        "shimmy",
+        "spacy",
+        "stable-baselines3",
+        "ta-lib",
+        "tensorflow",
+        "tensorflow-probability",
+        "textblob",
+        "tqdm",
+        "transformers",
+        "vadersentiment",
+        "xgboost",
+        "yfinance"
+      ]
+    },
+    {
+      "group": "MyIA.AI.Notebooks/QuantConnect/CSharp",
+      "series": "QuantConnect",
+      "subseries": "CSharp",
+      "kernel_families": [
+        ".NET"
+      ],
+      "kernel_families_source": "direct",
+      "kernelspecs": {
+        ".net-csharp": 1
+      },
+      "notebook_count": 1,
+      "dependency_files": [],
+      "package_count": 50,
+      "requires_python": "",
+      "requires_python_source": "",
+      "requires_python_constraints": [],
+      "needs": {
+        "gpu": false,
+        "gpu_notebooks": [],
+        "api_key_count": 0,
+        "network_services": [],
+        "local_endpoints": [],
+        "service_call_count": 0,
+        "dynamic_service_calls": 0,
+        "companion_files": []
+      },
+      "verdict": "exclu",
+      "service_optionnel": false,
+      "motifs": [
+        {
+          "origin": "declaration",
+          "policy": "heavy_distributions",
+          "text": "taille : distribution(s) lourde(s) hors image CPU legere (TensorFlow)"
+        },
+        {
+          "origin": "mesure",
+          "policy": "kernel_family",
+          "text": "noyau non-Python (.NET) : hors image CPU Python"
         }
       ],
       "gaps": [],
@@ -17072,6 +17434,96 @@
       ]
     },
     {
+      "group": "MyIA.AI.Notebooks/QuantConnect/projects/OvernightAnomaly-QC",
+      "series": "QuantConnect",
+      "subseries": "projects",
+      "kernel_families": [
+        "Python"
+      ],
+      "kernel_families_source": "direct",
+      "kernelspecs": {
+        "python3": 1
+      },
+      "notebook_count": 1,
+      "dependency_files": [],
+      "package_count": 50,
+      "requires_python": "",
+      "requires_python_source": "",
+      "requires_python_constraints": [],
+      "needs": {
+        "gpu": false,
+        "gpu_notebooks": [],
+        "api_key_count": 0,
+        "network_services": [],
+        "local_endpoints": [],
+        "service_call_count": 0,
+        "dynamic_service_calls": 0,
+        "companion_files": []
+      },
+      "verdict": "exclu",
+      "service_optionnel": false,
+      "motifs": [
+        {
+          "origin": "declaration",
+          "policy": "heavy_distributions",
+          "text": "taille : distribution(s) lourde(s) hors image CPU legere (TensorFlow)"
+        }
+      ],
+      "gaps": [],
+      "packages": [
+        "anthropic",
+        "arch",
+        "black",
+        "catboost",
+        "cloudpickle",
+        "cvxpy",
+        "empyrical",
+        "flake8",
+        "gymnasium",
+        "ipykernel",
+        "ipywidgets",
+        "joblib",
+        "jupyter",
+        "jupyterlab",
+        "keras",
+        "langchain",
+        "langchain-openai",
+        "lightgbm",
+        "loguru",
+        "matplotlib",
+        "newsapi-python",
+        "numpy",
+        "openai",
+        "pandas",
+        "pandas-ta",
+        "plotly",
+        "pydantic",
+        "pydantic-settings",
+        "pyfolio",
+        "pyportfolioopt",
+        "pytest",
+        "python-dotenv",
+        "quantconnect-lean",
+        "quantconnect-stubs",
+        "requests",
+        "scikit-learn",
+        "scipy",
+        "seaborn",
+        "shimmy",
+        "spacy",
+        "stable-baselines3",
+        "ta-lib",
+        "tensorflow",
+        "tensorflow-probability",
+        "textblob",
+        "tqdm",
+        "transformers",
+        "vadersentiment",
+        "xgboost",
+        "yfinance"
+      ]
+    },
+    {
       "group": "MyIA.AI.Notebooks/QuantConnect/projects/PairsTrading",
       "series": "QuantConnect",
       "subseries": "projects",
@@ -19454,10 +19906,10 @@
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        ".net-csharp": 4,
+        ".net-csharp": 11,
         "python3": 28
       },
-      "notebook_count": 32,
+      "notebook_count": 39,
       "dependency_files": [
         "MyIA.AI.Notebooks/RL/requirements.txt"
       ],
@@ -19476,7 +19928,9 @@
         "local_endpoints": [],
         "service_call_count": 0,
         "dynamic_service_calls": 0,
-        "companion_files": []
+        "companion_files": [
+          "MyIA.AI.Notebooks/Config/PythonNetLoader.cs"
+        ]
       },
       "verdict": "exclu",
       "service_optionnel": false,
@@ -19649,12 +20103,12 @@
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        ".net-csharp": 28,
+        ".net-csharp": 30,
         "lean4-wsl": 1,
-        "python3": 28,
+        "python3": 29,
         "rust": 3
       },
-      "notebook_count": 60,
+      "notebook_count": 63,
       "dependency_files": [
         "MyIA.AI.Notebooks/Search/Part1-Foundations/requirements-automata.txt"
       ],
@@ -19752,6 +20206,7 @@
         "service_call_count": 2,
         "dynamic_service_calls": 2,
         "companion_files": [
+          "MyIA.AI.Notebooks/Probas/Infer/SvgChartHelper.cs",
           "MyIA.AI.Notebooks/Search/search_helpers.py",
           "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3NativeLoader.cs"
         ]
@@ -19797,14 +20252,16 @@
       "subseries": "Part3-Cas-pratiques",
       "kernel_families": [
         ".NET",
-        "Python"
+        "Python",
+        "Rust"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        ".net-csharp": 24,
-        "python3": 30
+        ".net-csharp": 25,
+        "python3": 30,
+        "rust": 5
       },
-      "notebook_count": 54,
+      "notebook_count": 60,
       "dependency_files": [],
       "package_count": 22,
       "requires_python": "",
@@ -19865,10 +20322,10 @@
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        ".net-csharp": 24,
+        ".net-csharp": 26,
         "python3": 2
       },
-      "notebook_count": 26,
+      "notebook_count": 28,
       "dependency_files": [
         "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/requirements-mgs-tsp.txt"
       ],
@@ -19929,13 +20386,15 @@
       "series": "Search",
       "subseries": "Part4-Metaheuristics",
       "kernel_families": [
-        ".NET"
+        ".NET",
+        "Rust"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        ".net-csharp": 10
+        ".net-csharp": 10,
+        "rust": 1
       },
-      "notebook_count": 10,
+      "notebook_count": 11,
       "dependency_files": [],
       "package_count": 26,
       "requires_python": "",
@@ -19960,7 +20419,7 @@
         {
           "origin": "mesure",
           "policy": "kernel_family",
-          "text": "noyau non-Python (.NET) : hors image CPU Python"
+          "text": "noyau non-Python (.NET, Rust) : hors image CPU Python"
         }
       ],
       "gaps": [],
@@ -19998,15 +20457,17 @@
       "series": "Search",
       "subseries": "Part5-Frontieres",
       "kernel_families": [
+        ".NET",
         "Python",
-        ".NET"
+        "Rust"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        ".net-csharp": 2,
-        "python3": 13
+        ".net-csharp": 9,
+        "python3": 13,
+        "rust": 1
       },
-      "notebook_count": 15,
+      "notebook_count": 23,
       "dependency_files": [],
       "package_count": 22,
       "requires_python": "",
@@ -20021,6 +20482,7 @@
         "service_call_count": 0,
         "dynamic_service_calls": 0,
         "companion_files": [
+          "MyIA.AI.Notebooks/Config/PythonNetLoader.cs",
           "MyIA.AI.Notebooks/GameTheory/examples/vcg_auction.py"
         ]
       },
@@ -20124,9 +20586,9 @@
         ".net-csharp": 20,
         "lean4-wsl": 1,
         "python3": 21,
-        "rust": 4
+        "rust": 9
       },
-      "notebook_count": 46,
+      "notebook_count": 51,
       "dependency_files": [
         "MyIA.AI.Notebooks/Sudoku/requirements.txt"
       ],
@@ -20149,6 +20611,7 @@
           "MyIA.AI.Notebooks/Probas/Infer/SvgChartHelper.cs",
           "MyIA.AI.Notebooks/Sudoku/dlx_certificates.py",
           "MyIA.AI.Notebooks/Sudoku/scripts/generate_certified_corpus.py",
+          "MyIA.AI.Notebooks/Sudoku/scripts/inference_trace.py",
           "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3NativeLoader.cs"
         ]
       },
@@ -20234,14 +20697,18 @@
       "series": "SymbolicAI",
       "subseries": "ArgumentAnalysis",
       "kernel_families": [
-        "Python"
+        "Python",
+        ".NET",
+        "Rust"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
+        ".net-csharp": 13,
         "coursia-py313-argu": 1,
-        "python3": 38
+        "python3": 38,
+        "rust": 5
       },
-      "notebook_count": 39,
+      "notebook_count": 57,
       "dependency_files": [
         "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/requirements.txt"
       ],
@@ -20258,9 +20725,10 @@
           "127.0.0.1:5002",
           "localhost:11434"
         ],
-        "service_call_count": 11,
-        "dynamic_service_calls": 11,
+        "service_call_count": 12,
+        "dynamic_service_calls": 12,
         "companion_files": [
+          "MyIA.AI.Notebooks/Config/PythonNetLoader.cs",
           "MyIA.AI.Notebooks/IIT/ICT-Series/ict/collective_adoption.py",
           "MyIA.AI.Notebooks/IIT/ICT-Series/ict/concept_inoculation.py",
           "MyIA.AI.Notebooks/IIT/ICT-Series/ict/inhibited_invention.py",
@@ -20269,8 +20737,7 @@
           "MyIA.AI.Notebooks/IIT/ICT-Series/ict/truth_maintenance.py",
           "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/_dated_graphs_mod.py",
           "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/argumentation_lib/_config.py",
-          "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/argumentation_lib/_dialogue_handler.py",
-          "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/argumentation_lib/_jvm_compat.py"
+          "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/argumentation_lib/_dialogue_handler.py"
         ]
       },
       "verdict": "inclus",
@@ -20279,7 +20746,7 @@
         {
           "origin": "mesure",
           "policy": "dynamic_service_calls",
-          "text": "appel(s) de service dont l'URL n'est pas lisible sur la ligne de l'appel : 11"
+          "text": "appel(s) de service dont l'URL n'est pas lisible sur la ligne de l'appel : 12"
         }
       ],
       "gaps": [
@@ -20396,20 +20863,25 @@
       "subseries": "Lean",
       "kernel_families": [
         "Python",
-        "autre"
+        "autre",
+        ".NET",
+        "Rust"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
+        ".net-csharp": 4,
         "global-3.13": 1,
         "lean4-wsl": 16,
         "lean4-wsl-conway": 1,
         "lean4-wsl-groth16200": 1,
+        "lean4-wsl-linear": 1,
         "leandojo-v2": 1,
-        "python3": 18,
-        "python3-lean": 7,
-        "python3-wsl": 3
+        "python3": 20,
+        "python3-lean": 8,
+        "python3-wsl": 3,
+        "rust": 2
       },
-      "notebook_count": 48,
+      "notebook_count": 58,
       "dependency_files": [
         "MyIA.AI.Notebooks/SymbolicAI/Lean/requirements.txt"
       ],
@@ -20455,7 +20927,7 @@
       ]
     },
     {
-      "group": "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE",
+      "group": "MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse",
       "series": "SymbolicAI",
       "subseries": "Lean",
       "kernel_families": [
@@ -20466,12 +20938,12 @@
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        ".net-csharp": 1,
+        ".net-csharp": 4,
         "lean4-wsl": 5,
         "python3": 18,
-        "rust": 1
+        "rust": 3
       },
-      "notebook_count": 25,
+      "notebook_count": 30,
       "dependency_files": [],
       "package_count": 6,
       "requires_python": "",
@@ -20501,7 +20973,7 @@
       ]
     },
     {
-      "group": "MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS",
+      "group": "MyIA.AI.Notebooks/SymbolicAI/Lean/Galois",
       "series": "SymbolicAI",
       "subseries": "Lean",
       "kernel_families": [
@@ -20549,111 +21021,19 @@
       ]
     },
     {
-      "group": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL",
-      "series": "SymbolicAI",
-      "subseries": "Lean",
-      "kernel_families": [
-        "Python",
-        "autre"
-      ],
-      "kernel_families_source": "direct",
-      "kernelspecs": {
-        "lean4-wsl": 4,
-        "python3": 6,
-        "python3-lean": 2
-      },
-      "notebook_count": 12,
-      "dependency_files": [],
-      "package_count": 6,
-      "requires_python": "",
-      "requires_python_source": "",
-      "requires_python_constraints": [],
-      "needs": {
-        "gpu": false,
-        "gpu_notebooks": [],
-        "api_key_count": 0,
-        "network_services": [],
-        "local_endpoints": [],
-        "service_call_count": 4,
-        "dynamic_service_calls": 4,
-        "companion_files": [
-          "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/scripts/hashlife.py",
-          "MyIA.AI.Notebooks/SymbolicAI/Lean/lean_notebook_utils.py"
-        ]
-      },
-      "verdict": "inclus",
-      "service_optionnel": false,
-      "motifs": [
-        {
-          "origin": "mesure",
-          "policy": "dynamic_service_calls",
-          "text": "appel(s) de service dont l'URL n'est pas lisible sur la ligne de l'appel : 4"
-        }
-      ],
-      "gaps": [],
-      "packages": [
-        "anthropic",
-        "matplotlib",
-        "nest-asyncio",
-        "openai",
-        "python-dotenv",
-        "semantic-kernel"
-      ]
-    },
-    {
-      "group": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH",
-      "series": "SymbolicAI",
-      "subseries": "Lean",
-      "kernel_families": [
-        "autre",
-        "Python"
-      ],
-      "kernel_families_source": "direct",
-      "kernelspecs": {
-        "lean4-wsl": 4,
-        "python3": 2
-      },
-      "notebook_count": 6,
-      "dependency_files": [],
-      "package_count": 6,
-      "requires_python": "",
-      "requires_python_source": "",
-      "requires_python_constraints": [],
-      "needs": {
-        "gpu": false,
-        "gpu_notebooks": [],
-        "api_key_count": 0,
-        "network_services": [],
-        "local_endpoints": [],
-        "service_call_count": 0,
-        "dynamic_service_calls": 0,
-        "companion_files": []
-      },
-      "verdict": "inclus",
-      "service_optionnel": false,
-      "motifs": [],
-      "gaps": [],
-      "packages": [
-        "anthropic",
-        "matplotlib",
-        "nest-asyncio",
-        "openai",
-        "python-dotenv",
-        "semantic-kernel"
-      ]
-    },
-    {
       "group": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry",
       "series": "SymbolicAI",
       "subseries": "Lean",
       "kernel_families": [
-        "Python"
+        "Python",
+        ".NET"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
+        ".net-csharp": 1,
         "python3": 8
       },
-      "notebook_count": 8,
+      "notebook_count": 9,
       "dependency_files": [],
       "package_count": 6,
       "requires_python": "",
@@ -20685,18 +21065,17 @@
       ]
     },
     {
-      "group": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS",
+      "group": "MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck",
       "series": "SymbolicAI",
       "subseries": "Lean",
       "kernel_families": [
-        "Python",
-        ".NET"
+        "autre",
+        "Python"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        ".net-csharp": 1,
-        "python3": 5,
-        "python3-lean": 1
+        "lean4-wsl": 4,
+        "python3": 3
       },
       "notebook_count": 7,
       "dependency_files": [],
@@ -20717,6 +21096,104 @@
       "verdict": "inclus",
       "service_optionnel": false,
       "motifs": [],
+      "gaps": [],
+      "packages": [
+        "anthropic",
+        "matplotlib",
+        "nest-asyncio",
+        "openai",
+        "python-dotenv",
+        "semantic-kernel"
+      ]
+    },
+    {
+      "group": "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie",
+      "series": "SymbolicAI",
+      "subseries": "Lean",
+      "kernel_families": [
+        "Python",
+        "autre"
+      ],
+      "kernel_families_source": "direct",
+      "kernelspecs": {
+        "lean4-wsl": 4,
+        "python3": 6,
+        "python3-lean": 2
+      },
+      "notebook_count": 12,
+      "dependency_files": [],
+      "package_count": 6,
+      "requires_python": "",
+      "requires_python_source": "",
+      "requires_python_constraints": [],
+      "needs": {
+        "gpu": false,
+        "gpu_notebooks": [],
+        "api_key_count": 0,
+        "network_services": [],
+        "local_endpoints": [],
+        "service_call_count": 4,
+        "dynamic_service_calls": 4,
+        "companion_files": [
+          "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/scripts/hashlife.py",
+          "MyIA.AI.Notebooks/SymbolicAI/Lean/lean_notebook_utils.py"
+        ]
+      },
+      "verdict": "inclus",
+      "service_optionnel": false,
+      "motifs": [
+        {
+          "origin": "mesure",
+          "policy": "dynamic_service_calls",
+          "text": "appel(s) de service dont l'URL n'est pas lisible sur la ligne de l'appel : 4"
+        }
+      ],
+      "gaps": [],
+      "packages": [
+        "anthropic",
+        "matplotlib",
+        "nest-asyncio",
+        "openai",
+        "python-dotenv",
+        "semantic-kernel"
+      ]
+    },
+    {
+      "group": "MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR",
+      "series": "SymbolicAI",
+      "subseries": "Lean",
+      "kernel_families": [
+        "autre"
+      ],
+      "kernel_families_source": "direct",
+      "kernelspecs": {
+        "lean4-wsl-linear": 2
+      },
+      "notebook_count": 2,
+      "dependency_files": [],
+      "package_count": 6,
+      "requires_python": "",
+      "requires_python_source": "",
+      "requires_python_constraints": [],
+      "needs": {
+        "gpu": false,
+        "gpu_notebooks": [],
+        "api_key_count": 0,
+        "network_services": [],
+        "local_endpoints": [],
+        "service_call_count": 0,
+        "dynamic_service_calls": 0,
+        "companion_files": []
+      },
+      "verdict": "exclu",
+      "service_optionnel": false,
+      "motifs": [
+        {
+          "origin": "mesure",
+          "policy": "kernel_family",
+          "text": "noyau non-Python (autre) : hors image CPU Python"
+        }
+      ],
       "gaps": [],
       "packages": [
         "anthropic",
@@ -20812,6 +21289,61 @@
       ]
     },
     {
+      "group": "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds",
+      "series": "SymbolicAI",
+      "subseries": "Lean",
+      "kernel_families": [
+        "Python",
+        ".NET"
+      ],
+      "kernel_families_source": "direct",
+      "kernelspecs": {
+        ".net-csharp": 1,
+        "python3": 6,
+        "python3-lean": 1
+      },
+      "notebook_count": 8,
+      "dependency_files": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/KNOTS-02-Invariants-Python-requirements-legacy.txt",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/KNOTS-02-Invariants-Python-requirements.txt",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/KNOTS-04-Geometrie-Hyperbolique-Python-requirements.txt",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/KNOTS-05-Dynamique-Tresses-Python-requirements.txt",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/KNOTS-06-Empilements-Cercles-Python-requirements.txt",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/KNOTS-07-Feuilletages-Godbillon-Vey-Python-requirements.txt"
+      ],
+      "package_count": 20,
+      "requires_python": "",
+      "requires_python_source": "",
+      "requires_python_constraints": [],
+      "needs": {
+        "gpu": false,
+        "gpu_notebooks": [],
+        "api_key_count": 0,
+        "network_services": [],
+        "local_endpoints": [],
+        "service_call_count": 0,
+        "dynamic_service_calls": 0,
+        "companion_files": []
+      },
+      "verdict": "inclus",
+      "service_optionnel": false,
+      "motifs": [],
+      "gaps": [],
+      "packages": [
+        "anthropic",
+        "matplotlib",
+        "mpmath",
+        "nest-asyncio",
+        "numpy",
+        "openai",
+        "python-dotenv",
+        "scipy",
+        "semantic-kernel",
+        "snappy",
+        "sympy"
+      ]
+    },
+    {
       "group": "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200",
       "series": "SymbolicAI",
       "subseries": "Lean",
@@ -20820,9 +21352,9 @@
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        "python3": 13
+        "python3": 16
       },
-      "notebook_count": 13,
+      "notebook_count": 16,
       "dependency_files": [],
       "package_count": 6,
       "requires_python": "",
@@ -20993,7 +21525,8 @@
       "kernel_families": [
         "Python",
         ".NET",
-        "autre"
+        "autre",
+        "Rust"
       ],
       "kernel_families_source": "herite",
       "kernelspecs": {},
@@ -21169,15 +21702,17 @@
       "kernel_families": [
         ".NET",
         "Python",
-        "autre"
+        "autre",
+        "Rust"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 3,
         "lean4-wsl": 1,
-        "python3": 4
+        "python3": 4,
+        "rust": 1
       },
-      "notebook_count": 8,
+      "notebook_count": 9,
       "dependency_files": [],
       "package_count": 9,
       "requires_python": "",
@@ -21242,10 +21777,10 @@
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        ".net-csharp": 3,
+        ".net-csharp": 4,
         "python3": 4
       },
-      "notebook_count": 7,
+      "notebook_count": 8,
       "dependency_files": [],
       "package_count": 9,
       "requires_python": "",
@@ -21265,6 +21800,7 @@
         "dynamic_service_calls": 3,
         "companion_files": [
           "MyIA.AI.Notebooks/Config/PythonNetLoader.cs",
+          "MyIA.AI.Notebooks/SymbolicAI/Planners/FastDownwardBackend.cs",
           "MyIA.AI.Notebooks/SymbolicAI/Planners/fast_downward_backend.py"
         ]
       },
@@ -21305,13 +21841,15 @@
       "series": "SymbolicAI",
       "subseries": "Planners",
       "kernel_families": [
-        "Python"
+        "Python",
+        ".NET"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
+        ".net-csharp": 1,
         "python3": 4
       },
-      "notebook_count": 4,
+      "notebook_count": 5,
       "dependency_files": [],
       "package_count": 9,
       "requires_python": "",
@@ -21327,7 +21865,9 @@
         "local_endpoints": [],
         "service_call_count": 0,
         "dynamic_service_calls": 0,
-        "companion_files": []
+        "companion_files": [
+          "MyIA.AI.Notebooks/Config/PythonNetLoader.cs"
+        ]
       },
       "verdict": "exclu",
       "service_optionnel": false,
@@ -21418,14 +21958,16 @@
       "subseries": "SMT",
       "kernel_families": [
         ".NET",
-        "Python"
+        "Python",
+        "Rust"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        ".net-csharp": 16,
-        "python3": 25
+        ".net-csharp": 24,
+        "python3": 25,
+        "rust": 4
       },
-      "notebook_count": 41,
+      "notebook_count": 53,
       "dependency_files": [
         "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/requirements.txt"
       ],
@@ -21513,9 +22055,9 @@
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        ".net-csharp": 20
+        ".net-csharp": 19
       },
-      "notebook_count": 20,
+      "notebook_count": 19,
       "dependency_files": [],
       "package_count": 0,
       "requires_python": "",
@@ -21556,14 +22098,16 @@
       "subseries": "SemanticWeb",
       "kernel_families": [
         ".NET",
-        "Python"
+        "Python",
+        "Rust"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        ".net-csharp": 13,
-        "python3": 15
+        ".net-csharp": 15,
+        "python3": 15,
+        "rust": 2
       },
-      "notebook_count": 28,
+      "notebook_count": 32,
       "dependency_files": [
         "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/requirements.txt"
       ],
@@ -21669,7 +22213,9 @@
       "subseries": "SmartContracts",
       "kernel_families": [
         "Python",
-        "autre"
+        ".NET",
+        "autre",
+        "Rust"
       ],
       "kernel_families_source": "herite",
       "kernelspecs": {},
@@ -21751,6 +22297,7 @@
         "service_call_count": 0,
         "dynamic_service_calls": 0,
         "companion_files": [
+          "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/sc2b_analyse.py",
           "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/web3_tx.py"
         ]
       },
@@ -21783,13 +22330,15 @@
       "series": "SymbolicAI",
       "subseries": "SmartContracts",
       "kernel_families": [
+        ".NET",
         "Python"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
+        ".net-csharp": 2,
         "python3": 4
       },
-      "notebook_count": 4,
+      "notebook_count": 6,
       "dependency_files": [],
       "package_count": 17,
       "requires_python": "",
@@ -22007,14 +22556,16 @@
       "subseries": "SmartContracts",
       "kernel_families": [
         "Python",
-        "autre"
+        "autre",
+        "Rust"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 4,
+        "rust": 2,
         "smartcontracts": 1
       },
-      "notebook_count": 5,
+      "notebook_count": 7,
       "dependency_files": [],
       "package_count": 17,
       "requires_python": "",
@@ -22069,13 +22620,15 @@
       "series": "SymbolicAI",
       "subseries": "SmartContracts",
       "kernel_families": [
-        "Python"
+        "Python",
+        "Rust"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        "python3": 5
+        "python3": 5,
+        "rust": 1
       },
-      "notebook_count": 5,
+      "notebook_count": 6,
       "dependency_files": [],
       "package_count": 17,
       "requires_python": "",
@@ -22148,10 +22701,10 @@
       "needs": {
         "gpu": true,
         "gpu_notebooks": [
-          "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12-DifferentiableLogicGateNetworks.ipynb",
-          "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-14-AIFeynman-Discover-Equations.ipynb",
-          "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP.ipynb",
-          "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-7-NeuroSymbolic.ipynb"
+          "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-06-ModernILP-Python.ipynb",
+          "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-07-NeuroSymbolic-Python.ipynb",
+          "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12-DifferentiableLogicGateNetworks-Python.ipynb",
+          "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-14-AIFeynman-Discover-Equations-Python.ipynb"
         ],
         "api_key_count": 1,
         "network_services": [],
@@ -22465,13 +23018,17 @@
       "series": "cross-series",
       "subseries": "AgentSystems",
       "kernel_families": [
-        "Python"
+        "Python",
+        "Rust",
+        ".NET"
       ],
       "kernel_families_source": "direct",
       "kernelspecs": {
-        "python3": 2
+        ".net-csharp": 1,
+        "python3": 2,
+        "rust": 2
       },
-      "notebook_count": 2,
+      "notebook_count": 5,
       "dependency_files": [],
       "package_count": 0,
       "requires_python": "",
@@ -22677,8 +23234,8 @@
             ">=0.18.0"
           ],
           "file": "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
-          "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline",
-          "occurrences": 92
+          "series": "MyIA.AI.Notebooks/QuantConnect/CSharp",
+          "occurrences": 94
         },
         {
           "spec": ">=0.20.0",
@@ -22686,8 +23243,8 @@
             ">=0.20.0"
           ],
           "file": "MyIA.AI.Notebooks/SymbolicAI/Lean/requirements.txt",
-          "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE",
-          "occurrences": 13
+          "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse",
+          "occurrences": 14
         },
         {
           "spec": ">=0.21.0",
@@ -22846,8 +23403,8 @@
             ">=24.0.0"
           ],
           "file": "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
-          "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline",
-          "occurrences": 92
+          "series": "MyIA.AI.Notebooks/QuantConnect/CSharp",
+          "occurrences": 94
         }
       ],
       "resolution": {
@@ -22870,8 +23427,8 @@
             ">=1.4.0"
           ],
           "file": "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
-          "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline",
-          "occurrences": 92
+          "series": "MyIA.AI.Notebooks/QuantConnect/CSharp",
+          "occurrences": 94
         },
         {
           "spec": ">=1.5",
@@ -23054,8 +23611,8 @@
             ">=7.0.0"
           ],
           "file": "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
-          "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline",
-          "occurrences": 92
+          "series": "MyIA.AI.Notebooks/QuantConnect/CSharp",
+          "occurrences": 94
         }
       ],
       "resolution": {
@@ -23120,8 +23677,8 @@
             ">=6.29.0"
           ],
           "file": "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
-          "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline",
-          "occurrences": 92
+          "series": "MyIA.AI.Notebooks/QuantConnect/CSharp",
+          "occurrences": 94
         }
       ],
       "resolution": {
@@ -23145,7 +23702,7 @@
           ],
           "file": "MyIA.AI.Notebooks/GameTheory/requirements.txt",
           "series": "MyIA.AI.Notebooks/GameTheory/Coalitions",
-          "occurrences": 165
+          "occurrences": 167
         },
         {
           "spec": ">=8.1",
@@ -23210,8 +23767,8 @@
             ">=0.1.0"
           ],
           "file": "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
-          "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline",
-          "occurrences": 92
+          "series": "MyIA.AI.Notebooks/QuantConnect/CSharp",
+          "occurrences": 94
         },
         {
           "spec": ">=0.3.0",
@@ -23243,8 +23800,8 @@
             ">=0.0.5"
           ],
           "file": "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
-          "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline",
-          "occurrences": 92
+          "series": "MyIA.AI.Notebooks/QuantConnect/CSharp",
+          "occurrences": 94
         },
         {
           "spec": ">=0.2.0",
@@ -23268,7 +23825,8 @@
       "specifiers": [
         ">=3.5",
         ">=3.7",
-        ">=3.7,<3.11"
+        ">=3.7,<3.11",
+        ">=3.8"
       ],
       "sources": [
         {
@@ -23288,7 +23846,7 @@
           ],
           "file": "MyIA.AI.Notebooks/CaseStudies/requirements.txt",
           "series": "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution",
-          "occurrences": 44
+          "occurrences": 46
         },
         {
           "spec": ">=3.7,<3.11",
@@ -23298,12 +23856,21 @@
           "file": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/requirements.txt",
           "series": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning",
           "occurrences": 3
+        },
+        {
+          "spec": ">=3.8",
+          "equivalent_spellings": [
+            ">=3.8"
+          ],
+          "file": "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/KNOTS-06-Empilements-Cercles-Python-requirements.txt",
+          "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds",
+          "occurrences": 2
         }
       ],
       "resolution": {
         "policy": "retenir l'intersection des bornes (la plus stricte)",
-        "version": ">=3.7,<3.11",
-        "note": "bornes communes : lower=3.7 upper=3.11"
+        "version": ">=3.8,<3.11",
+        "note": "bornes communes : lower=3.8 upper=3.11"
       }
     },
     {
@@ -23362,8 +23929,8 @@
             ">=1.6.0"
           ],
           "file": "MyIA.AI.Notebooks/SymbolicAI/Lean/requirements.txt",
-          "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE",
-          "occurrences": 13
+          "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse",
+          "occurrences": 14
         }
       ],
       "resolution": {
@@ -23407,11 +23974,12 @@
     },
     {
       "package": "numpy",
-      "class": "specifier_divergent",
+      "class": "incompatible",
       "specifiers": [
         ">=1.21,<2.0",
         ">=1.24",
-        ">=1.24,<2.5"
+        ">=1.24,<2.5",
+        ">=2.0"
       ],
       "sources": [
         {
@@ -23431,7 +23999,7 @@
           ],
           "file": "MyIA.AI.Notebooks/CaseStudies/requirements.txt",
           "series": "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution",
-          "occurrences": 38
+          "occurrences": 40
         },
         {
           "spec": ">=1.24,<2.5",
@@ -23441,12 +24009,23 @@
           "file": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/requirements.txt",
           "series": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning",
           "occurrences": 3
+        },
+        {
+          "spec": ">=2.0",
+          "equivalent_spellings": [
+            ">=2.0"
+          ],
+          "file": "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/KNOTS-05-Dynamique-Tresses-Python-requirements.txt",
+          "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds",
+          "occurrences": 2
         }
       ],
       "resolution": {
-        "policy": "retenir l'intersection des bornes (la plus stricte)",
+        "policy": "arbitrage declare (aucune version commune aux bornes declarees)",
         "version": ">=1.24,<2.0",
-        "note": "bornes communes : lower=1.24 upper=2.0"
+        "note": "Intersection vide entre `numpy>=1.21,<2.0` (serie IIT) et `numpy>=2.0` (carnets KNOTS-05 et KNOTS-07 de `SymbolicAI/Lean/Noeuds`). La borne `<2.0` de la serie IIT est DELIBEREE : le wheel `pyemd 0.5.1` (cp39) est compile contre numpy 1.x, et la serie le dit dans son requirements.txt (« numpy.dtype size changed » a l'import avec numpy 2.x). L'intervalle retenu est le plus strict qui satisfait toutes les autres bornes declarees du corpus (IIT `>=1.21,<2.0`, SymbolicLearning `>=1.24,<2.5`, et les `>=1.24` des autres series) : l'image reste sur numpy 1.26.4, avec scipy 1.17.1, matplotlib 3.10.9 et sympy 1.15.0rc3, combinaison resolue et installable. CET ARBITRAGE NE MASQUE RIEN : l'image d'apprentissage ne satisfait PAS `numpy>=2.0` pour KNOTS-05 et KNOTS-07, dont le carnet KNOTS-07 consigne son execution mesuree sous numpy 2.5.2. Le choix entre les trois voies (aligner la serie sur numpy 1.x, sortir la serie de l'image CPU, ou lever la borne IIT) appartient a la lane qui porte la serie.",
+        "source": "MyIA.AI.Notebooks/IIT/requirements.txt ; MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/KNOTS-05-Dynamique-Tresses-Python-requirements.txt ; MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/KNOTS-07-Feuilletages-Godbillon-Vey-Python-requirements.txt ; issue #29054 (decision de la serie Lean/Noeuds)",
+        "origin": "declaration"
       }
     },
     {
@@ -23519,7 +24098,7 @@
           ],
           "file": "MyIA.AI.Notebooks/GenAI/requirements.txt",
           "series": "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment",
-          "occurrences": 159
+          "occurrences": 161
         },
         {
           "spec": ">=1.55,<3",
@@ -23669,8 +24248,8 @@
             ">=2.6.0"
           ],
           "file": "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
-          "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline",
-          "occurrences": 92
+          "series": "MyIA.AI.Notebooks/QuantConnect/CSharp",
+          "occurrences": 94
         },
         {
           "spec": ">=2.7,<3",
@@ -23711,8 +24290,8 @@
             ">=2.1.0"
           ],
           "file": "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
-          "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline",
-          "occurrences": 92
+          "series": "MyIA.AI.Notebooks/QuantConnect/CSharp",
+          "occurrences": 94
         }
       ],
       "resolution": {
@@ -23777,8 +24356,8 @@
             ">=8.0.0"
           ],
           "file": "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
-          "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline",
-          "occurrences": 93
+          "series": "MyIA.AI.Notebooks/QuantConnect/CSharp",
+          "occurrences": 95
         }
       ],
       "resolution": {
@@ -23982,7 +24561,8 @@
         ">=0.13.3",
         ">=1.10",
         ">=1.11,<1.19",
-        ">=1.11.0"
+        ">=1.11.0",
+        ">=1.13"
       ],
       "sources": [
         {
@@ -24030,12 +24610,21 @@
           "file": "MyIA.AI.Notebooks/GenAI/requirements-audio.txt",
           "series": "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment",
           "occurrences": 67
+        },
+        {
+          "spec": ">=1.13",
+          "equivalent_spellings": [
+            ">=1.13"
+          ],
+          "file": "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/KNOTS-07-Feuilletages-Godbillon-Vey-Python-requirements.txt",
+          "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds",
+          "occurrences": 1
         }
       ],
       "resolution": {
         "policy": "retenir l'intersection des bornes (la plus stricte)",
-        "version": ">=1.11,<1.19",
-        "note": "bornes communes : lower=1.11 upper=1.19"
+        "version": ">=1.13,<1.19",
+        "note": "bornes communes : lower=1.13 upper=1.19"
       }
     },
     {
@@ -24062,8 +24651,8 @@
             ">=1.39.0"
           ],
           "file": "MyIA.AI.Notebooks/SymbolicAI/Lean/requirements.txt",
-          "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE",
-          "occurrences": 13
+          "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse",
+          "occurrences": 14
         }
       ],
       "resolution": {
@@ -24095,14 +24684,47 @@
             ">=2.2.0"
           ],
           "file": "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
-          "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline",
-          "occurrences": 92
+          "series": "MyIA.AI.Notebooks/QuantConnect/CSharp",
+          "occurrences": 94
         }
       ],
       "resolution": {
         "policy": "retenir l'intersection des bornes (la plus stricte)",
         "version": ">=2.2.0",
         "note": "bornes communes : lower=2.2.0 upper=-"
+      }
+    },
+    {
+      "package": "sympy",
+      "class": "specifier_divergent",
+      "specifiers": [
+        ">=1.12",
+        ">=1.14"
+      ],
+      "sources": [
+        {
+          "spec": ">=1.12",
+          "equivalent_spellings": [
+            ">=1.12"
+          ],
+          "file": "MyIA.AI.Notebooks/GameTheory/requirements.txt",
+          "series": "MyIA.AI.Notebooks/GameTheory/Coalitions",
+          "occurrences": 6
+        },
+        {
+          "spec": ">=1.14",
+          "equivalent_spellings": [
+            ">=1.14"
+          ],
+          "file": "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/KNOTS-07-Feuilletages-Godbillon-Vey-Python-requirements.txt",
+          "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds",
+          "occurrences": 1
+        }
+      ],
+      "resolution": {
+        "policy": "retenir l'intersection des bornes (la plus stricte)",
+        "version": ">=1.14",
+        "note": "bornes communes : lower=1.14 upper=-"
       }
     },
     {
@@ -24227,7 +24849,7 @@
           ],
           "file": "MyIA.AI.Notebooks/GenAI/requirements.txt",
           "series": "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment",
-          "occurrences": 159
+          "occurrences": 161
         }
       ],
       "resolution": {
@@ -24262,8 +24884,8 @@
             ">=4.37.0"
           ],
           "file": "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
-          "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline",
-          "occurrences": 92
+          "series": "MyIA.AI.Notebooks/QuantConnect/CSharp",
+          "occurrences": 94
         },
         {
           "spec": ">=4.40.0",
@@ -24355,8 +24977,8 @@
             ">=0.2.36"
           ],
           "file": "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
-          "series": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline",
-          "occurrences": 92
+          "series": "MyIA.AI.Notebooks/QuantConnect/CSharp",
+          "occurrences": 94
         }
       ],
       "resolution": {
@@ -24419,14 +25041,14 @@
         ">=0.25.0"
       ],
       "groups": [
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Galois",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/VERIF",
@@ -24772,6 +25394,7 @@
       ],
       "groups": [
         "MyIA.AI.Notebooks/GameTheory/gateway",
+        "MyIA.AI.Notebooks/NLP/gateway",
         "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway"
       ],
       "conflict": true
@@ -24970,6 +25593,7 @@
       "specs": [
         ">=3.7.0",
         ">=3.7",
+        ">=3.8",
         ">=3.5"
       ],
       "groups": [
@@ -25000,14 +25624,14 @@
         "MyIA.AI.Notebooks/Search/Part4-Metaheuristics",
         "MyIA.AI.Notebooks/Search/Part5-Frontieres",
         "MyIA.AI.Notebooks/Search/_archive",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Galois",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/VERIF",
@@ -25061,6 +25685,17 @@
       "conflict": false
     },
     {
+      "package": "mpmath",
+      "version": "",
+      "specs": [
+        ">=1.3"
+      ],
+      "groups": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds"
+      ],
+      "conflict": false
+    },
+    {
       "package": "mpyc",
       "version": "",
       "specs": [
@@ -25104,14 +25739,14 @@
         "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis",
         "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/_archive",
         "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/groupe-I2-contre-arguments-aspic",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Galois",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/VERIF",
@@ -25150,7 +25785,8 @@
       "specs": [
         ">=1.24.0",
         ">=1.21,<2.0",
-        ">=1.24"
+        ">=1.24",
+        ">=2.0"
       ],
       "groups": [
         "MyIA.AI.Notebooks/GameTheory/Coalitions",
@@ -25180,6 +25816,7 @@
         "MyIA.AI.Notebooks/Search/Part4-Metaheuristics",
         "MyIA.AI.Notebooks/Search/Part5-Frontieres",
         "MyIA.AI.Notebooks/Search/_archive",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Agents-de-Donnees",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents",
         "MyIA.AI.Notebooks/Search",
@@ -25221,14 +25858,14 @@
         "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis",
         "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/_archive",
         "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/groupe-I2-contre-arguments-aspic",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Galois",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/VERIF",
@@ -25709,14 +26346,14 @@
         "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis",
         "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/_archive",
         "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/groupe-I2-contre-arguments-aspic",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Galois",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/VERIF",
@@ -25870,7 +26507,8 @@
       "specs": [
         ">=1.10.0",
         ">=0.13.3",
-        ">=1.10"
+        ">=1.10",
+        ">=1.13"
       ],
       "groups": [
         "MyIA.AI.Notebooks/GameTheory/Coalitions",
@@ -25889,6 +26527,7 @@
         "MyIA.AI.Notebooks/Search/Part4-Metaheuristics",
         "MyIA.AI.Notebooks/Search/Part5-Frontieres",
         "MyIA.AI.Notebooks/Search/_archive",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds",
         "MyIA.AI.Notebooks/Search"
       ],
       "conflict": true
@@ -25933,14 +26572,14 @@
         "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis",
         "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/_archive",
         "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/groupe-I2-contre-arguments-aspic",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Galois",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/VERIF",
@@ -25948,6 +26587,17 @@
         "MyIA.AI.Notebooks/cross-series/matching-cv"
       ],
       "conflict": true
+    },
+    {
+      "package": "snappy",
+      "version": "",
+      "specs": [
+        ">=3.2"
+      ],
+      "groups": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds"
+      ],
+      "conflict": false
     },
     {
       "package": "sparqlwrapper",
@@ -25964,7 +26614,8 @@
       "package": "sympy",
       "version": "",
       "specs": [
-        ">=1.12"
+        ">=1.12",
+        ">=1.14"
       ],
       "groups": [
         "MyIA.AI.Notebooks/GameTheory/Coalitions",
@@ -25972,9 +26623,10 @@
         "MyIA.AI.Notebooks/GameTheory",
         "MyIA.AI.Notebooks/GameTheory/Metajeux",
         "MyIA.AI.Notebooks/GameTheory/SocialChoice",
-        "MyIA.AI.Notebooks/GameTheory/gateway"
+        "MyIA.AI.Notebooks/GameTheory/gateway",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds"
       ],
-      "conflict": false
+      "conflict": true
     },
     {
       "package": "tabulate",
@@ -26193,39 +26845,7 @@
           },
           {
             "version": "8.15.0",
-            "count": 25,
-            "decision": "canonique"
-          }
-        ]
-      },
-      {
-        "library": "Microsoft.ML",
-        "canonical": "5.0.0",
-        "versions": [
-          {
-            "version": "4.0.2",
-            "count": 1,
-            "decision": "to_converge"
-          },
-          {
-            "version": "5.0.0",
-            "count": 12,
-            "decision": "canonique"
-          }
-        ]
-      },
-      {
-        "library": "dotNetRDF",
-        "canonical": "3.5.2",
-        "versions": [
-          {
-            "version": "3.4.1",
-            "count": 13,
-            "decision": "to_converge"
-          },
-          {
-            "version": "3.5.2",
-            "count": 2,
+            "count": 26,
             "decision": "canonique"
           }
         ]
@@ -26236,18 +26856,13 @@
         "versions": [
           {
             "version": "3.0.5",
-            "count": 26,
+            "count": 5,
             "decision": "to_converge"
           },
           {
             "version": "3.1.0",
-            "count": 28,
+            "count": 64,
             "decision": "canonique"
-          },
-          {
-            "version": "3.2.1",
-            "count": 1,
-            "decision": "to_converge"
           }
         ]
       }
