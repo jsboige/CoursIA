@@ -12,7 +12,7 @@ Le parcours s'adresse aux étudiants en biologie, médecine, mathématiques appl
 
 Le principe [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) distingue entrée dans le sujet, approfondissements et recherche.
 
-- **Vous découvrez** : choisissez une question dans la table du parcours principal. [Dynamiques](Dynamiques/README.md) offre la première expérience concrète — trois modèles classiques, trois contrôles indépendants, un contre-témoin qui doit échouer.
+- **Vous découvrez** : choisissez une question dans la table du parcours principal. [Dynamiques](Dynamiques/README.md) offre la première expérience concrète — trois modèles classiques, trois contrôles indépendants, un contre-témoin qui doit échouer. [Structures](Structures/README.md) part de l'autre bout, la molécule : une chaîne peptidique construite à la main, sa liaison hydrogène, et la carte des hélices régulières ; son second carnet pose la même chaîne, réduite à deux espèces de résidus, sur un réseau carré, et en énumère toutes les conformations ; un troisième transporte le comptage des paires sur un ARN circulaire, où aucune base n'a de côté libre.
 - **Vous approfondissez** : la section « Sous-séries » dit ce que contient chaque dossier et ce qui reste à écrire. Les plis sont indépendants ; les numéros des carnets décrivent une progression à l'intérieur d'un pli.
 - **Vous explorez des fondements** : chaque carnet sépare par écrit ce qui est **mesuré** dans le carnet, ce qui est **cité** d'une source et ce qui reste **ouvert**. Cette séparation est le cœur de la méthode, plus encore que les résultats.
 
@@ -42,7 +42,7 @@ Deux règles s'y ajoutent :
 | Comment l'évolution se calcule-t-elle ? | Évolution — à venir | Hardy-Weinberg, Wright-Fisher et Moran, probabilité de fixation, coalescent, reconstruction phylogénétique, jeux évolutionnaires. | Licence : probabilités, génétique de population élémentaire. | La dynamique des réplicateurs de `GameTheory/Dynamics/`, qui est la même mécanique. |
 | Comment un réseau de gènes produit-il un comportement ? | Réseaux du vivant — à venir | Action de masse, Michaelis-Menten, Hill, interrupteur bistable, répressilateur, motifs de Turing. | Licence avancée : cinétique chimique, équations différentielles. | Les motifs de réaction-diffusion de `IIT/ICT-Series/`. |
 | Comment un neurone émet-il un potentiel d'action ? | Neurones — à venir | Hodgkin-Huxley, FitzHugh-Nagumo, intègre-et-tire, plan de phase et excitabilité. | Licence avancée : équations différentielles, analyse qualitative. | La réduction de FitzHugh-Nagumo confrontée au modèle complet. |
-| Comment une molécule se replie-t-elle ? | Structures — à venir | Repliement d'ARN par Nussinov puis par énergie minimale, modèle HP de protéines sur réseau. | Licence avancée : algorithmique, optimisation combinatoire. | Les solveurs de contraintes de `Search/` et de `SymbolicAI/`. |
+| Comment une molécule se replie-t-elle ? | [Structures](Structures/README.md) → [Liaisons hydrogène et squelette protéique](Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb) | Géométrie du squelette peptidique et de la liaison hydrogène, carte des couples d'angles dièdres et familles d'hélices. Second carnet : une chaîne de résidus hydrophobes et polaires sur un réseau carré, son espace de conformations énuméré en entier, deux bornes sur le nombre de contacts, et la loi de long terme de la marche qui cherche le pli. Troisième carnet : le comptage des paires sur un ARN circulaire, par énumération exhaustive et par programme linéaire en nombres entiers, et le constat qu'à neuf bases aucun repliement n'est unique. En suite du pli, repliement d'ARN par énergie minimale. | Licence avancée : géométrie dans l'espace, algorithmique, optimisation combinatoire, marche aléatoire sur un graphe. | Les solveurs de contraintes de `Search/` et de `SymbolicAI/`. |
 | Comment reconstruit-on une image ou une grandeur à partir de mesures indirectes ? | Mesure médicale — à venir | Transformée de Radon et rétroprojection filtrée, espace $k$ de l'IRM, pharmacocinétique compartimentaire, tests diagnostiques imparfaits, analyse de survie. | Master : algèbre linéaire, probabilités, statistique. | L'inférence bayésienne de `Probas/Infer/` pour l'état caché. |
 
 Les plis marqués « à venir » sont décrits dans l'Epic de la série et se déploient une feuille à la fois. Ils n'apparaissent ici que pour situer la première sous-série dans un ensemble plus large ; aucun carnet n'est annoncé avant d'exister.
@@ -55,9 +55,19 @@ Les plis marqués « à venir » sont décrits dans l'Epic de la série et se d�
 
 La sous-série s'étendra à l'épidémie sur réseau de contacts simulée par agents, à la simulation stochastique de Gillespie comparée à l'équation déterministe, et à l'inférence des paramètres d'un modèle mécaniste.
 
-### Les six autres plis
+### Structures — Licence avancée
 
-Séquences, Évolution, Réseaux du vivant, Neurones, Structures et Mesure médicale sont décrits dans la table du parcours principal. Leurs carnets ne sont pas encore écrits ; leurs dossiers apparaîtront avec leur première feuille, et non avant.
+[Structures](Structures/README.md) commence par ce qui rend un repliement calculé vérifiable : la géométrie. [Structures-01](Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb) construit une chaîne peptidique à partir de paramètres déclarés, mesure la vis d'une hélice et la compare à sa formule analytique, retrouve l'hélice $\alpha$ par un critère de liaison hydrogène à quatre conditions, et balaie la carte des couples $(\varphi,\psi)$ : `154` cases sur `5184`, en deux régions miroir, une famille d'hélices de `3,5099` à `4,1289` résidus par tour. Ses contre-témoins disent aussi ce que ce modèle ne peut pas : il est achiral, et sa liaison hydrogène n'a que des bornes supérieures de distance.
+
+[Structures-02](Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb) passe au pli lui-même, sur le plus petit modèle qui se calcule en entier : une chaîne de résidus hydrophobes et polaires sur un réseau carré, dont l'énergie compte les contacts entre hydrophobes. Il énumère toutes les conformations — `4067` à dix résidus, `30 073` à douze, comptées par deux algorithmes indépendants — démontre deux bornes sur le nombre de contacts et les éprouve sur les `1024` séquences de dix résidus, décrit le paysage d'énergie d'une séquence, `92` minima locaux dont `90` hors du pli natif, et calcule exactement la loi de long terme de la marche biaisée, qui n'est pas la loi de Gibbs.
+
+[Structures-03](Structures/Structures-03-ARN-Circulaire-Repliement-Paires-Python.ipynb) change de molécule : l'ARN circulaire, la forme sous laquelle se répliquent les viroïdes. La récurrence de comptage de Nussinov y est transportée sur le cercle, où la boucle minimale s'applique aussi à la paire qui enjambe l'origine. Le carnet démontre ce que le cercle change à l'optimum, le mesure par énumération exhaustive et par programme linéaire en nombres entiers, et établit qu'un nombre de structures ne désigne pas une structure : à neuf bases, aucune des 510 séquences A/U n'admet de repliement unique.
+
+La sous-série s'étendra au repliement d'ARN par minimisation d'une énergie, et à l'apprentissage sur des graphes de protéines.
+
+### Les cinq autres plis
+
+Séquences, Évolution, Réseaux du vivant, Neurones et Mesure médicale sont décrits dans la table du parcours principal. Leurs carnets ne sont pas encore écrits ; leurs dossiers apparaîtront avec leur première feuille, et non avant.
 
 ## Liens avec les autres séries
 
@@ -69,7 +79,7 @@ Séquences, Évolution, Réseaux du vivant, Neurones, Structures et Mesure médi
 
 ## Installation — pratique, tous niveaux
 
-Le carnet de Dynamiques tourne sur le noyau `python3`, sans GPU, et est livré avec ses sorties. NumPy, SciPy et Matplotlib suffisent.
+Les carnets de Dynamiques et de Structures tournent sur le noyau `python3`, sans GPU, et sont livrés avec leurs sorties. NumPy, SciPy et Matplotlib suffisent.
 
 Depuis la racine du dépôt :
 
@@ -79,6 +89,9 @@ source .venv-biomedecine/bin/activate
 python -m pip install jupyterlab ipykernel numpy scipy matplotlib
 python -m ipykernel install --user --name coursia-biomedecine --display-name "Python — Bio & Médecine"
 jupyter lab MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb
+jupyter lab MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb
+jupyter lab MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb
+jupyter lab MyIA.AI.Notebooks/BioMedecine/Structures/Structures-03-ARN-Circulaire-Repliement-Paires-Python.ipynb
 ```
 
 Sous Windows, activer l'environnement avec `.\.venv-biomedecine\Scripts\Activate.ps1`. Sélectionner le noyau « Python — Bio & Médecine », puis exécuter les cellules dans l'ordre. Les [commandes communes](../../docs/reference/common-commands.md) complètent l'aide à l'environnement.

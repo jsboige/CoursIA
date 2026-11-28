@@ -39,7 +39,6 @@ name: testpaths-coverage-guard
 # dossier entre dans les testpaths : plus de marqueur, le dossier est cable.
 # CI-EXCLUDED: MyIA.AI.Notebooks/Probas/DecisionTheory/voi/tests — 34/36 verts ; les 2 echecs executent pymc_voi.py en sous-processus, pymc absent de l'env — installer pymc puis cabler (T1 #25366)
 # CI-EXCLUDED: MyIA.AI.Notebooks/QuantConnect/projects/AdaptiveAssetAllocation/tests — tests hypothesis verts (FuturesTrend temoin 94/94 sous PYTHONNOUSERSITE=1) mais l'overlay user-site pytest+hypothesis de la machine de mesure fait echouer le hook terminal_summary en mode defaut (T1 #25366)
-# CI-EXCLUDED: MyIA.AI.Notebooks/QuantConnect/projects/BitcoinRegimeGate-QC/tests — classe hypothesis : verts sous PYTHONNOUSERSITE=1, crash terminal_summary de l'overlay user-site local en mode defaut (T1 #25366)
 # CI-EXCLUDED: MyIA.AI.Notebooks/QuantConnect/projects/Crypto-MultiCanal/tests — test_visualize_channels.py exige yfinance, non resolvable dans l'env de mesure au moment du tri — installer yfinance dans l'env cible puis cabler (T1 #25366)
 # CI-EXCLUDED: MyIA.AI.Notebooks/QuantConnect/projects/Filing-Language-Stability/tests — regex (?>...) (groupe atomique, Python >= 3.11) a l'import des tests ; env de mesure 3.10 — cabler avec un runner Python >= 3.11 (T1 #25366)
 # CI-EXCLUDED: MyIA.AI.Notebooks/QuantConnect/projects/FuturesTrend/tests — 94/94 verts sous PYTHONNOUSERSITE=1 (hypothesis cote env) ; crash terminal_summary de l'overlay user-site local en mode defaut (T1 #25366)

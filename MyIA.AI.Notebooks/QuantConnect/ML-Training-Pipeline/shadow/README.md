@@ -84,6 +84,7 @@ QC ne garde que dix séries tracées par backtest, tous graphiques confondus, et
 - le graphique porte plus de points d'équité que le backtest n'a de dates de données (`tradeableDates`) : une barre recopiée par remplissage vers l'avant en est une cause mesurée (#24153) ;
 - le dernier point de `fees` ou de `turnover` n'est pas sur la dernière séance ;
 - le dossier du plan n'a pas de `benchmark.json`, ou son graphique `Benchmark` s'arrête avant la dernière clôture d'équité : sans ce témoin entier, la publication des dernières séances ne se lit pas ;
+- le graphique `Benchmark` vaut 0.0 sur tous ses points et aucun témoin n'est donné. C'est le graphique de tout projet qui fixe le modèle de courtage IB sans appeler `set_benchmark` : mesure du 2026-11-27 sur `fs774`, `splits-lo`, `levetf-base`, `levetf-postfix` et `x775-lev1` ; `halloween-v2`, gelée avant #28893, est dans le même cas. Sans cotation, chaque séance se lirait figée. Le témoin est alors le dossier d'une autre candidate de la même passe (`--witness-dir`), dont le graphique `Benchmark` cote le marché. Son backtest est terminé, porte le nom prévu par son plan et a été lancé au plus tard en même temps que celui de la candidate (champ `created` de `read_backtest`) : une barre publiée quand le témoin l'a lue l'était encore pour la candidate lancée après lui. Les deux contrôles suivants se lisent alors sur le graphique du témoin. Un témoin donné à une candidate qui cote elle-même le marché est refusé : il n'y a qu'une lecture par passage ;
 - les barres du benchmark des dernières séances n'étaient pas publiées au passage (à partir de deux séances de suite). Chaque point du graphique `Benchmark` porte la clôture de la séance de la veille, un point par jour de calendrier ; un point de jour de semaine qui répète celui de la veille dit que cette barre n'est pas arrivée et que Lean l'a recopiée. L'équité, elle, ne distingue pas une séance plate d'un portefeuille en liquidités. Une seule séance répétée reste admise : c'est aussi la forme d'un jour de marché fermé la veille du passage (backtest `273d04de`, #27482) ;
 - le témoin de ces barres est incomplet. Un jour de semaine sans point autour des dernières séances est une rupture de couverture, pas un week-end : un écart qui ne laisse passer que des samedis et des dimanches garde la suite. De part et d'autre d'un trou, le graphique ne lit que le groupe — clôtures égales, toutes les séances du trou étaient figées ; clôtures différentes, au moins une était publiée, sans dire laquelle. Les séances du trou ne se comptent jamais avec celles d'avant. Le passage est refusé quand un scénario possible atteint deux séances de suite ; un graphique `Benchmark` qui s'arrête avant la date du passage laisse de même sa dernière séance sans lecture.
 
@@ -129,6 +130,14 @@ Entre `plan-qc` et `ingest-qc`, l'opérateur passe par le MCP QuantConnect (l'AP
 # Relire le passage et ajouter sa ligne
 python scripts/shadow_replay.py --registry shadow/registry.json --csv shadow/passes.csv \
   ingest-qc --plan-dir <dossier hors dépôt>/<identifiant> --series-dir <dossier hors dépôt>
+```
+
+Une candidate dont le graphique `Benchmark` vaut 0.0 partout se rejoue **après** une candidate de la même passe qui cote le marché. Son passage se relit avec le dossier de celle-ci en témoin :
+
+```bash
+python scripts/shadow_replay.py --registry shadow/registry.json --csv shadow/passes.csv \
+  ingest-qc --plan-dir <dossier hors dépôt>/<identifiant> \
+  --witness-dir <dossier hors dépôt>/<témoin> --series-dir <dossier hors dépôt>
 ```
 
 Un backtest à la fois, annoncé sur le tableau de bord de coordination : le quota d'appels QC est partagé par toute la flotte.

@@ -39,7 +39,7 @@ par un gate qui bloque tout le monde.
 
 La comparaison ajoute/ajoute manquait (#22059). Mesure sur la collision `04-17` de
 `GenAI/Audio/04-Applications` : deux carnets neufs y prennent le meme index dans la
-meme fenetre de diff -- `04-17-MIR-Classique` et `04-17-Basic-Pitch-Transcription` --
+meme fenetre de diff -- `Audio-04-17-MIR-Classique-Python` et `04-17-Basic-Pitch-Transcription` --
 et l'organe rendait `collisions: 0`. Chacun etait libre dans la base ; aucun ne voyait
 l'autre. L'organe frere `check_slot_reservation.py` documentait deja ce trou (defaut 4
 de #15489) et le couvre en PREFLIGHT ; un preflight ne remplace pas un gate, parce
@@ -284,8 +284,8 @@ def perimeter_line(per):
 _CASES = [
     ("3.1-Retropropagation.ipynb", "3.1"),
     ("3.1-Retropropagation-From-Scratch.ipynb", "3.1"),
-    ("04-13-Audiobook-FishAudio-S2Pro.ipynb", "4.13"),
-    ("04-1-Educational-Audio-Content.ipynb", "4.1"),
+    ("Audio-04-13-Audiobook-FishAudio-S2Pro-Python.ipynb", "4.13"),
+    ("Audio-04-1-Educational-Audio-Content-Python.ipynb", "4.1"),
     ("22_Evaluating_Generated_Text.ipynb", "22"),
     ("22_TensorSharp_DotNet_Inference.ipynb", "22"),
     ("ChoixSocial-01-Arrow-Impossibility-Theorem-Python.ipynb", "1"),
@@ -312,7 +312,7 @@ _SCENARIOS = [
      ["g/Texte/22_Evaluating_Generated_Text.ipynb"], 1),
     ("FAUX POSITIF  serie a deux niveaux 04-1 vs 04-2",
      ["g/Audio/04-2-Transcription-Pipeline.ipynb"],
-     ["g/Audio/04-1-Educational-Audio-Content.ipynb"], 0),
+     ["g/Audio/Audio-04-1-Educational-Audio-Content-Python.ipynb"], 0),
     ("FAUX POSITIF  paire de langue Csharp",
      ["s/ChoixSocial-01-Arrow-Impossibility-Theorem-CSharp.ipynb"],
      ["s/ChoixSocial-01-Arrow-Impossibility-Theorem-Python.ipynb"], 0),
@@ -336,7 +336,7 @@ _SCENARIOS = [
     # --- ajoute contre ajoute (#22059) : la base ne porte AUCUN des deux index
     # en conflit, c'est la fenetre de diff elle-meme qui les met face a face.
     ("VRAI POSITIF  deux AJOUTS, meme index, meme repertoire",
-     ["g/Audio/04-17-MIR-Classique.ipynb",
+     ["g/Audio/Audio-04-17-MIR-Classique-Python.ipynb",
       "g/Audio/04-17-Basic-Pitch-Transcription.ipynb"],
      ["g/Audio/04-16-SheetSage2.ipynb"], 1),
     ("FAUX POSITIF  deux ajouts, meme index, repertoires differents",

@@ -155,6 +155,66 @@ def test_read_with_claim_before_the_untagged_pr_stays_clear(monkeypatch, capsys)
     assert data["my_active_claim"] is True
 
 
+# --- (c-bis) une lane TIERCE lisible occupe le grain a TOUTE date ------------
+
+# La forme de la mesure du 25/11 14:42:43Z : la PR porte un tag de lane LISIBLE
+# et distinct de l'appelante, et elle a ete ouverte APRES son claim.
+_PR_28250 = {
+    "number": 28250,
+    "title": "Add(rust,#27130): lot 2 -- 5 jumeaux Rust executes",
+    "headRefName": "feature/27130-lot2-rust-graphes",
+    "body": "See #26597 -- porte par lane myia-ai-01:CoursIA-2",
+    "files": [{"path": "MyIA.AI.Notebooks/Search/Part1-Foundations/"
+                       "Search-11-Metaheuristics-Rust.ipynb"}],
+    "additions": 3100,
+    "deletions": 0,
+    "created_at": "2026-11-23T10:00:00Z",
+}
+
+
+def test_read_with_a_tagged_third_lane_pr_after_the_claim_is_implicit(
+        monkeypatch, capsys):
+    # Le filtre chronologique de #26751 laissait passer toute PR POSTERIEURE au
+    # claim de l'appelante, y compris celle d'une AUTRE lane : rc=0,
+    # `implicit_occupation: []` au-dessus de #28250. Or
+    # `_find_open_prs_referencing_issue` exclut deja les PR de l'appelante :
+    # une lane tierce LISIBLE occupe le grain, quelle que soit sa date.
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [_PR_28250])
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2028:claudish -- lot 2",
+        "2026-11-22T09:00:00Z"), number=26597)
+
+    rc = clc._run_check(p, "myia-po-2028:claudish", check_open_pr_paths=True)
+
+    assert rc == 3
+    captured = capsys.readouterr()
+    assert "IMPLICIT:" in captured.out
+    assert "#28250" in captured.out
+    brace = captured.out.find("{")
+    data, _ = json.JSONDecoder().raw_decode(captured.out[brace:])
+    assert [f["number"] for f in data["implicit_occupation"]] == [28250]
+    assert data["implicit_occupation"][0]["lane"] == "myia-ai-01:CoursIA-2"
+    assert data["my_active_claim"] is True
+
+
+def test_read_with_a_tagged_third_lane_pr_before_the_claim_is_implicit(
+        monkeypatch, capsys):
+    # Le cas d'avant : une lane tierce lisible ANTERIEURE au claim occupait deja
+    # le grain -- il doit continuer de le faire.
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [_PR_28250])
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2028:claudish -- lot 2",
+        "2026-11-24T09:00:00Z"), number=26597)
+
+    rc = clc._run_check(p, "myia-po-2028:claudish", check_open_pr_paths=True)
+
+    assert rc == 3
+    captured = capsys.readouterr()
+    brace = captured.out.find("{")
+    data, _ = json.JSONDecoder().raw_decode(captured.out[brace:])
+    assert [f["number"] for f in data["implicit_occupation"]] == [28250]
+
+
 # --- (d) `--from-json` reste hors reseau ------------------------------------
 
 def test_from_json_stays_off_network_on_the_write_path(monkeypatch, capsys, tmp_path):
