@@ -10,6 +10,18 @@
 # divergence est un écart d'API documenté : le fichier n'est jamais
 # réécrit par l'outil une fois présent.
 #
+# CORRECTION À LA MAIN du 2026-11-28 (lane myia-po-2028:claudish), mesures c4/c6/c8/c10/c12/c13 :
+# la génération avait produit des mesures À LA CELLULE — « texte identique au jumeau
+# Python » — alors que les deux carnets n'impriment ni les mêmes moteurs ni les mêmes
+# libellés : c8_text, c10_text et c12_text divergeaient sur le contenu même, et c13_seg1 /
+# c13_seg2 ne pouvaient que rendre « motif absent » (le carnet Rust n'a pas de ligne
+# « C# : … ms total »). Réécrites au grain de la GRANDEUR, sur la doctrine du jumeau de
+# la même famille MGS-29 : ce qui relève du PROTOCOLE (budgets d'évaluations, contrôle
+# croisé du coût, verdict IDENTIQUE, déterminisme, catalogue et gel) est comparé
+# STRICTEMENT ; ce qui mesure le TROISIÈME moteur (scores de conflits, médianes) est borné
+# par la tolérance de 12 que le carnet déclare lui-même ; ce que l'autre côté ne mesure
+# pas est déclaré `absent` avec son motif.
+#
 # Cellules non mesurées (motif relevé à la génération) :
 #   - c6: sortie riche côté Python (figure/HTML), non mesurée
 - name: "MGS-28-BareBonesPSO-vs-Mealpy"
@@ -30,70 +42,229 @@
           cell: 2
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
-    - id: c8_text
-      description: "Sortie de la cellule 8, texte identique au jumeau Python"
+    - id: c4_budget_temoin
+      description: "Budget d'évaluations du témoin de la cellule 4 (graine 7) : grandeur de PROTOCOLE, 8000 des deux côtés, égalité stricte. La durée en ms qui suit dépend de la machine : elle n'est pas une grandeur de conformité."
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "\\(graine\\ 7,\\ témoin\\)\\ :\\ \\d+\\ conflits,\\ (\\d+)\\ évaluations"
+          transform: int
+        rust:
+          cell: 4
+          pattern: "\\(graine\\ 7,\\ témoin\\)\\ :\\ \\d+\\ conflits,\\ (\\d+)\\ évaluations"
+          transform: int
+    - id: c4_conflits_temoin
+      description: "Conflits du témoin de la cellule 4 : 29 côté Python (MGS), 24 côté Rust (noyau) — écart 5, dans la tolérance de 12 que le carnet déclare lui-même côté Rust (« Référence .NET : 29 conflits … (tolérance 12) -> CONFORME »). Grandeur du TROISIÈME moteur : bornée, pas comparée à l'égalité (doctrine MGS-29)."
+      tolerance: 12
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "\\(graine\\ 7,\\ témoin\\)\\ :\\ (\\d+)\\ conflits"
+          transform: int
+        rust:
+          cell: 4
+          pattern: "\\(graine\\ 7,\\ témoin\\)\\ :\\ (\\d+)\\ conflits"
+          transform: int
+    - id: c4_checkpoint_temoin
+      description: "Premier checkpoint (25 %) du témoin de la cellule 4 : 29 côté Python, 24 côté Rust — écart 5, dans la tolérance déclarée. Les quatre checkpoints valent 29/29/29/29 d'un côté et 24/24/24/24 de l'autre."
+      tolerance: 12
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "checkpoints[ ]25/50/75/100[ ]%[ ]=[ ](\\d+)/"
+          transform: int
+        rust:
+          cell: 4
+          pattern: "checkpoints[ ]25/50/75/100[ ]%[ ]=[ ](\\d+)/"
+          transform: int
+    - id: c6_sanity_valeurs
+      description: "Triple de coût du sanity check de la cellule 6 (67,71,60) : c'est la FONCTION DE COÛT elle-même, identique des deux côtés. Les libellés diffèrent légitimement (« C# / Python » contre « Rust A / Rust B ») et ne sont pas comparés ; la valeur, elle, doit l'être."
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "Sanity check cout : .*?(\\d+,\\d+,\\d+)"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "Sanity check cout : .*?(\\d+,\\d+,\\d+)"
+          transform: text
+    - id: c6_sanity_verdict
+      description: "Verdict du sanity check (« -> IDENTIQUE ») : cohérence de la fonction de coût entre les deux voies de chaque côté, elle doit être identique."
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "->[ ]*(\\w+)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "->[ ]*(\\w+)\\s*\\Z"
+          transform: text
+    - id: c8_catalogue_originalpso
+      description: "Première entrée du catalogue PSO mealpy de la cellule 8 : le catalogue est la MÊME référence des deux côtés. L'en-tête diffère (« d'où le subclass » côté Python, « référence du carnet d'origine » côté Rust) — c'est de la prose ; les PARAMÈTRES, eux, sont la donnée."
       tolerance: 0
       reference: python
       sides:
         python:
           cell: 8
-          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          pattern: "(?m:^(OriginalPSO[^\\n]*)$)"
           transform: text
         rust:
           cell: 8
-          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          pattern: "(?m:^(OriginalPSO[^\\n]*)$)"
           transform: text
-    - id: c10_text
-      description: "Sortie de la cellule 10, texte identique au jumeau Python (segment 1/1 ; durées murales en présence seule, valeurs jamais comparées)"
+    - id: c8_gel_valeurs
+      description: "Vecteur de gel de la cellule 8 (« normal(loc, std=0) -> [[3.5, 7.25] … ] ») : la VALEUR est identique des deux côtés (numpy côté Python, implementation Rust côté port) ; seule la ligne qui l'annonce change de libellé."
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "normal\\(loc, std=0\\)[ ]->[ ](\\[[^\\n]*\\])"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "normal\\(loc, std=0\\)[ ]->[ ](\\[[^\\n]*\\])"
+          transform: text
+    - id: c10_budget_port
+      description: "Budget d'évaluations du port en cellule 10 : 8050 des deux côtés — grandeur de PROTOCOLE (les deux ports évaluent leur population initiale en plus des epochs) ; elle doit être strictement égale."
       tolerance: 0
       reference: python
       sides:
         python:
           cell: 10
-          pattern: "\\A(?:.*?)(?m:^mealpy\\ BBPSO\\-kennedy\\ \\(graine\\ 7,\\ témoin\\)\\ :\\ 26\\ conflits,\\ 8050\\ évaluations,\\ \\d+(?:[.,]\\d+)?\\ ms\\.\\r?$)(?:.*?)(?m:^mealpy\\ BBPSO\\-mgs\\ \\(graine\\ 7,\\ témoin\\)\\ :\\ 26\\ conflits,\\ 8050\\ évaluations,\\ \\d+(?:[.,]\\d+)?\\ ms\\.\\r?$)\\s*(.*?)\\s*\\Z"
+          pattern: "\\(graine\\ 7,\\ témoin\\)\\ :\\ \\d+\\ conflits,\\ (\\d+)\\ évaluations"
+          transform: int
+        rust:
+          cell: 10
+          pattern: "\\(graine\\ 7,\\ témoin\\)\\ :\\ \\d+\\ conflits,\\ (\\d+)\\ évaluations"
+          transform: int
+    - id: c10_conflits_port
+      description: "Conflits du témoin de la cellule 10 : 26 côté Python (mealpy-kennedy), 25 côté Rust (port-littéral) — écart 1, dans la tolérance de 12 que le carnet déclare côté Rust (« Score : calculé 25 | référence mealpy 26 | écart absolu 1 (tolérance 12) -> CONFORME »). Troisième moteur : borné."
+      tolerance: 12
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "\\(graine\\ 7,\\ témoin\\)\\ :\\ (\\d+)\\ conflits"
+          transform: int
+        rust:
+          cell: 10
+          pattern: "\\(graine\\ 7,\\ témoin\\)\\ :\\ (\\d+)\\ conflits"
+          transform: int
+    - id: c10_contre_verif
+      description: "Verdict de la contre-vérification croisée de la cellule 10 (« -> IDENTIQUE ») : cohérence interne de chaque côté (le coût du meilleur candidat, recalculé par l'autre voie, rend le même nombre). Le libellé diffère (« coût C# du meilleur mealpy-kennedy » contre « coût du meilleur port-aligné ») et n'est pas comparé."
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "->[ ]*(\\w+)\\s*\\Z"
           transform: text
         rust:
           cell: 10
-          pattern: "\\A(?:.*?)(?m:^mealpy\\ BBPSO\\-kennedy\\ \\(graine\\ 7,\\ témoin\\)\\ :\\ 26\\ conflits,\\ 8050\\ évaluations,\\ \\d+(?:[.,]\\d+)?\\ ms\\.\\r?$)(?:.*?)(?m:^mealpy\\ BBPSO\\-mgs\\ \\(graine\\ 7,\\ témoin\\)\\ :\\ 26\\ conflits,\\ 8050\\ évaluations,\\ \\d+(?:[.,]\\d+)?\\ ms\\.\\r?$)\\s*(.*?)\\s*\\Z"
+          pattern: "->[ ]*(\\w+)\\s*\\Z"
           transform: text
-    - id: c12_text
-      description: "Sortie de la cellule 12, texte identique au jumeau Python"
+    - id: c12_evals_noyau
+      description: "Colonne « evals » du bras noyau de la cellule 12 : 8000 des deux côtés — grandeur de protocole, strictement égale (le noyau compte l'initialisation dans ses générations)."
       tolerance: 0
       reference: python
       sides:
         python:
           cell: 12
-          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          pattern: "(?m:^MGS[ \\t]+(?:\\d+)[ \\t]+(?:\\d+)[ \\t]+(\\d+))"
+          transform: int
+        rust:
+          cell: 12
+          pattern: "(?m:^noyau[ \\t]+(?:\\d+)[ \\t]+(?:\\d+)[ \\t]+(\\d+))"
+          transform: int
+    - id: c12_evals_port
+      description: "Colonne « evals » des bras port de la cellule 12 : 8050 des deux côtés (population initiale + epochs)."
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "(?m:^mealpy-mgs[ \\t]+(?:\\d+)[ \\t]+(?:\\d+)[ \\t]+(\\d+))"
+          transform: int
+        rust:
+          cell: 12
+          pattern: "(?m:^port-aligné[ \\t]+(?:\\d+)[ \\t]+(?:\\d+)[ \\t]+(\\d+))"
+          transform: int
+    - id: c12_conflits_noyau_mediane
+      description: "Médiane de conflits du bras noyau de la cellule 12 : 35,0 côté Rust, 30,5 côté Python (MGS) — écart 4,5, dans la tolérance de 12 déclarée. Grandeur du troisième moteur : bornée, pas comparée à l'égalité."
+      tolerance: 12
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "MGS[ \\t]*:[ \\t]*médiane[ \\t]+conflits[ \\t]+(\\d+(?:[.,]\\d+)?)"
+          transform: float
+        rust:
+          cell: 12
+          pattern: "noyau[ \\t]*:[ \\t]*médiane[ \\t]+conflits[ \\t]+(\\d+(?:[.,]\\d+)?)"
+          transform: float
+    - id: c12_conflits_port_mediane
+      description: "Médiane de conflits du bras port de la cellule 12 : 25,0 côté Rust (port-aligné), 25,5 côté Python (mealpy-mgs) — écart 0,5, dans la tolérance déclarée. Même doctrine que c12_conflits_noyau_mediane."
+      tolerance: 12
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "(?m:^mealpy-mgs[ \\t]*:[ \\t]*médiane[ \\t]+conflits[ \\t]+(\\d+(?:[.,]\\d+)?))"
+          transform: float
+        rust:
+          cell: 12
+          pattern: "(?m:^port-aligné[ \\t]*:[ \\t]*médiane[ \\t]+conflits[ \\t]+(\\d+(?:[.,]\\d+)?))"
+          transform: float
+    - id: c12_determinisme
+      description: "Déterminisme du banc de la cellule 12 : 12/12 paires bras-graine stables des deux côtés — grandeur de protocole, strictement égale."
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "Déterminisme[ ]\\([^)]*\\)[ ]*:[ ]*(\\d+/\\d+)"
           transform: text
         rust:
           cell: 12
-          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          pattern: "Déterminisme[ ]\\([^)]*\\)[ ]*:[ ]*(\\d+/\\d+)"
           transform: text
-    - id: c13_seg1
-      description: "Sortie de la cellule 13, texte identique au jumeau Python (segment 1/2 ; durées murales en présence seule, valeurs jamais comparées)"
+    - id: c13_entete
+      description: "En-tête de la cellule 13 — la ligne qui introduit la mesure « Fitness seule, 500 vecteurs identiques » : texte identique des deux côtés. Les durées qui suivent mesurent des moteurs différents (C# et Python d'un côté, deux voies Rust de l'autre) : elles ne sont pas comparées, ni ligne à ligne ni par leur rapport."
       tolerance: 0
       reference: python
       sides:
         python:
           cell: 13
-          pattern: "\\A\\s*(.*?)\\s*(?m:^\\ \\ C\\#\\ \\ \\ \\ \\ :\\ \\d+(?:[.,]\\d+)?\\ ms\\ total\\ \\->\\ \\d+(?:[.,]\\d+)?\\ ms/éval\\r?$)"
+          pattern: "(?m:^(Fitness seule[^\\n]*)$)"
           transform: text
         rust:
           cell: 13
-          pattern: "\\A\\s*(.*?)\\s*(?m:^\\ \\ C\\#\\ \\ \\ \\ \\ :\\ \\d+(?:[.,]\\d+)?\\ ms\\ total\\ \\->\\ \\d+(?:[.,]\\d+)?\\ ms/éval\\r?$)"
+          pattern: "(?m:^(Fitness seule[^\\n]*)$)"
           transform: text
-    - id: c13_seg2
-      description: "Sortie de la cellule 13, texte identique au jumeau Python (segment 2/2 ; durées murales en présence seule, valeurs jamais comparées)"
+    - id: c13_accord_couts
+      description: "Accord des coûts du banc de fitness de la cellule 13 : 500/500 vecteurs de coût identique, écart maximal 0. Cette ligne n'existe que côté Rust (le port compare deux voies Rust entre elles) ; côté Python elle est absente — absence DÉCLARÉE, pas mesurée : exiger un « accord des coûts » du carnet Python obligerait le jumeau à faire ce contrôle qu'il ne fait pas."
       tolerance: 0
-      reference: python
+      reference: rust
       sides:
         python:
-          cell: 13
-          pattern: "\\A(?:.*?)(?m:^\\ \\ C\\#\\ \\ \\ \\ \\ :\\ \\d+(?:[.,]\\d+)?\\ ms\\ total\\ \\->\\ \\d+(?:[.,]\\d+)?\\ ms/éval\\r?$)(?:.*?)(?m:^\\ \\ Python\\ :\\ \\d+(?:[.,]\\d+)?\\ ms\\ total\\ \\->\\ \\d+(?:[.,]\\d+)?\\ ms/éval\\r?$)\\s*(.*?)\\s*\\Z"
-          transform: text
+          absent: >-
+            Le carnet Python n'imprime pas de ligne « Accord des couts » : son
+            banc de fitness chronometre C# et Python sans controle croise
+            d'egalite des couts. Declare ABSENT, pas mesure — l'accord des
+            couts est une propriete du port Rust (deux voies Rust face a
+            face), que le jumeau n'a pas a reproduire.
         rust:
           cell: 13
-          pattern: "\\A(?:.*?)(?m:^\\ \\ C\\#\\ \\ \\ \\ \\ :\\ \\d+(?:[.,]\\d+)?\\ ms\\ total\\ \\->\\ \\d+(?:[.,]\\d+)?\\ ms/éval\\r?$)(?:.*?)(?m:^\\ \\ Python\\ :\\ \\d+(?:[.,]\\d+)?\\ ms\\ total\\ \\->\\ \\d+(?:[.,]\\d+)?\\ ms/éval\\r?$)\\s*(.*?)\\s*\\Z"
+          pattern: "Accord des co[ûu]ts[ ]*:[ ]*(\\d+/\\d+)"
           transform: text
     - id: c16_text
       description: "Sortie de la cellule 16, texte identique au jumeau Python"

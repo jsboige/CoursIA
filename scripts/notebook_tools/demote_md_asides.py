@@ -103,6 +103,14 @@ def _matches_target(text):
     if stem == 'Notes techniques':
         return True
 
+    # 7. "Note de parité et de reproductibilité" (jumeau Rust MGS-28, #28852).
+    #    Le titre porte une note d'un seul côté de la série ; le scanner
+    #    HINT-AS-HEADING le voyait, l'outil de démotion ne le connaissait pas :
+    #    la cible est ajoutée ici, plutôt qu'une démotion à la main dans le
+    #    carnet.
+    if stem == 'Note de parité et de reproductibilité':
+        return True
+
     return False
 
 
