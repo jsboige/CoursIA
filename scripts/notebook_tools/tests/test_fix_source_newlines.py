@@ -50,7 +50,7 @@ def _make_nb(sources_by_cell):
 def test_detect_single_collapsed_heading():
     """A single-element list with no '\\n' and a heading prefix is flagged."""
     nb = _make_nb([
-        "# CSP-9-Distributed : CSP Distribués (DisCSP)**Navigation** : [<< CSP-8-Temporal](CSP-8-Temporal.ipynb)",
+        "# CSP-09-Distributed-Python : CSP Distribués (DisCSP)**Navigation** : [<< CSP-08-Temporal-Python](CSP-08-Temporal-Python.ipynb)",
     ])
     defects = find_source_newline_defects(nb)
     assert len(defects) == 1
@@ -253,8 +253,8 @@ def test_apply_and_detect_clean(tmp_path):
     # Build a defective cell that the detector flags AND the fixer can split.
     p = tmp_path / "nb.ipynb"
     bad_source = (
-        "# CSP-9-Distributed : CSP Distribués (DisCSP)**Navigation** : "
-        + "[<< CSP-8-Temporal](CSP-8-Temporal.ipynb) " * 8
+        "# CSP-09-Distributed-Python : CSP Distribués (DisCSP)**Navigation** : "
+        + "[<< CSP-08-Temporal-Python](CSP-08-Temporal-Python.ipynb) " * 8
     )
     _write_nb_file(p, [bad_source])
 

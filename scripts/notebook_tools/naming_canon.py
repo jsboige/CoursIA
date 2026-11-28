@@ -14,7 +14,7 @@ Il couvre les formes **reellement en service** dans le depot, telles que les deu
 organes les traitent aujourd'hui :
 
     GameTheory-04c-NashExistence-CSharp.ipynb   serie + numero + accretion + langue
-    04-1-Educational-Audio-Content.ipynb        index a deux niveaux (categorie.item)
+    Audio-04-1-Educational-Audio-Content-Python.ipynb        index a deux niveaux (categorie.item)
     2.3b-Naive-Bayes-Generatif.ipynb            index decimal + lettre de variante
     22_Evaluating_Generated_Text.ipynb          index nu, separateur underscore
     MGS-26-EquilibriumOptimizer-vs-Mealpy.ipynb serie a prefixe alphabetique

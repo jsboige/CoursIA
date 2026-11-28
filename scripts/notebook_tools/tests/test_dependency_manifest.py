@@ -159,3 +159,49 @@ def test_render_markdown_mentions_origine_des_motifs(fake_repo: Path):
     markdown = dm.render_markdown(manifest)
     assert "Origine des motifs" in markdown
     assert "mesure" in markdown and "declaration" in markdown
+
+
+@pytest.mark.parametrize(
+    ("name", "seen"),
+    [
+        # convention de serie : le comportement d'origine est conserve
+        ("requirements.txt", True),
+        ("requirements-learning.lock.txt", True),
+        ("environment.yml", True),
+        ("environment-cpu.yaml", True),
+        # convention de carnet `<Carnet>-requirements.txt` (#28878)
+        ("KNOTS-02-Invariants-Python-requirements.txt", True),
+        ("KNOTS-02-Invariants-Python-requirements-legacy.txt", True),
+        ("KNOTS-04-Geometrie-Hyperbolique-Python-environment.yml", True),
+        # rien d'autre n'est un fichier de dependances
+        ("KNOTS-02-Invariants-Python.ipynb", False),
+        ("KNOTS-02-Invariants-Python.py", False),
+        ("requirements.md", False),
+        ("requirements.txt.bak", False),
+    ],
+)
+def test_is_dependency_file_reads_both_naming_conventions(name: str, seen: bool):
+    path = f"MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/{name}"
+    assert dm.is_dependency_file(path) is seen
+
+
+def test_end_to_end_reads_notebook_prefixed_requirements(fake_repo: Path):
+    """Un fichier `<Carnet>-requirements.txt` entre dans la table (#28878)."""
+    prefixed = "MyIA.AI.Notebooks/Search/A-01-requirements.txt"
+    _write(fake_repo / prefixed, "snappy>=3.2\n")
+    subprocess.run(["git", "add", "-A"], cwd=fake_repo, check=True)
+    subprocess.run(
+        ["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "carnet"],
+        cwd=fake_repo,
+        check=True,
+    )
+
+    manifest = dm.build_manifest(fake_repo)
+
+    search = {group["group"]: group for group in manifest["groups"]}[
+        "MyIA.AI.Notebooks/Search"
+    ]
+    assert prefixed in search["dependency_files"]
+    assert "snappy" in search["packages"]
+    consolidated = {record["package"] for record in manifest["consolidated_manifest"]}
+    assert "snappy" in consolidated

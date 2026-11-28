@@ -19,9 +19,9 @@ se font candidate par candidate. D'ou l'ordre du plan :
 1. ``replay-local`` : toutes les locales dues, aucun appel QC ;
 2. ``plan-qc`` : extraction au SHA gele de toutes les QC dues, aucun appel QC ;
 3. pour chaque candidate QC, une ``qc-passage`` (pousser les fichiers, compiler, lancer le
-   backtest, attendre ``completed: true``, lire backtest et graphique -- **MCP uniquement**,
-   coute ``QC_CALLS_PER_PASS`` appels) puis son ``ingest-qc`` ; deux ``qc-passage`` sont
-   espacees de ``min_interval_min`` minutes.
+   backtest, attendre ``completed: true``, lire backtest et ses deux graphiques -- **MCP
+   uniquement**, coute ``QC_CALLS_PER_PASS`` appels) puis son ``ingest-qc`` ; deux
+   ``qc-passage`` sont espacees de ``min_interval_min`` minutes.
 
 ``qc_rate`` refuse un espacement dont le debit moyen depasserait le budget partage.
 
@@ -41,7 +41,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from shadow_replay import due, load_registry, load_rows, qc_entrypoint, validate  # noqa: E402
 
 TZ = ZoneInfo("Europe/Paris")
-QC_CALLS_PER_PASS = 5
+# Pousser les fichiers, compiler, lancer, relire le backtest, lire le graphique `shadow` et
+# le graphique `Benchmark` (temoin de la publication des seances, #27482).
+QC_CALLS_PER_PASS = 6
 FLEET_BUDGET_PER_MIN = 10
 DEFAULT_INTERVAL_MIN = 10
 DEFAULT_HOUR = (9, 17)  # heure de depart des marches, hors des minutes pleines
@@ -137,8 +139,9 @@ def plan_pass(
                               qc_project=project, out_dir=str(out_dir),
                               note="MCP uniquement : pousser les fichiers du dossier au SHA gele, "
                                    "create_compile, create_backtest, attendre completed:true, "
-                                   "read_backtest + read_backtest_chart vers out_dir ; "
-                                   "annoncer le backtest sur le dashboard avant de lancer"))
+                                   "read_backtest, puis read_backtest_chart du graphique shadow "
+                                   "(chart.json) et du graphique Benchmark (benchmark.json) vers "
+                                   "out_dir ; annoncer le backtest sur le dashboard avant de lancer"))
             slot += dt.timedelta(minutes=min_interval_min)
             steps.append(step(slot, "ingest-qc", c["id"], 0,
                               command=_base_command(registry_path, csv_path, "ingest-qc",

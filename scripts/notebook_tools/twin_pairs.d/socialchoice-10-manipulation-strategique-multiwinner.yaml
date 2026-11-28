@@ -1,0 +1,13 @@
+- name: "SocialChoice-10 Manipulation-Strategique-MultiWinner"
+  family: GameTheory/SocialChoice
+  python: MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-10-Manipulation-Strategique-MultiWinner-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-10-Manipulation-Strategique-MultiWinner-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Paire native-both : les DEUX jumeaux passent par un moteur Z3 natif pour le controle symbolique des deviations gagnantes (section 7) et sa concordance avec la force brute (section 8) — cote Python `z3` (z3-solver), cote C# `Microsoft.Z3` 4.12.2 via une cellule `#r \"nuget: Microsoft.Z3, 4.12.2\"` dediee. Les regles a comite (plurality, Borda, Chamberlin-Courant, Monroe, STV) et l'enumeration exhaustive restent from-scratch des deux cotes (BCL/LINQ vs stdlib Python) : c'est le sujet du carnet, pas une asymetrie de machinerie."
+
+  known_differences:
+    - "2026-11-25 (myia-po-2027:CoursIA) creation de la paire, PR du grain #27108 (EPIC #26534) : les trois stubs d'exercices C# (cellules sc10cs-ex1/2/3) portaient la valeur neutre et le message console mais pas le jeton `// TODO etudiant` — ajoute en tete du corps de chaque stub (convention des jumeaux SC-05/SC-09), sans toucher a la semantique des cellules."
+    - "Reference Z3 : le jumeau C# charge le moteur par une cellule `#r \"nuget: Microsoft.Z3, 4.12.2\"` dediee (cellule 1) ; le jumeau Python importe `z3` depuis son outillage. Divergence de forme (deploiement du paquet), pas de fond : les deux cotes interrogent le meme solveur."
+    - "Idiomes framework : Python stdlib ; C# BCL .NET 9 + LINQ (0 NuGet hors Microsoft.Z3). Stubs d'exercices en convention C.1 (`// TODO etudiant` + message console + valeur neutre), carnet executable de bout en bout."
+    - "2026-11-26 (myia-po-2023:CoursIA-2, PR CoursIA #28605) : la ligne Navigation du jumeau C# gagne le lien sortant [>> ChoixSocial-11 (suivant)] vers le nouveau carnet ChoixSocial-11-Vote-Par-Approbation-CSharp ; le jumeau Python ne peut pas le porter (il n'existe pas de ChoixSocial-11 en Python, la chaine Python s'arrete a 10). Edition metadata-only de la cellule de titre, aucun changement de cellule de code ni de sortie, 0 execution_count deplace. Precedent de meme forme : complexity-03-finite-time-hierarchy (PR #27311)."

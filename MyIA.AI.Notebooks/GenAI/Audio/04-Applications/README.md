@@ -4,9 +4,9 @@
 
 Ce module présente des cas d'usage concrets et des workflows de production pour l'audio génératif.
 
-**Fil rouge podcast** : [04-1](04-1-Educational-Audio-Content.ipynb) automatise la narration de cours. [04-2](04-2-Transcription-Pipeline.ipynb) gère la transcription batch avec sous-titres SRT. [04-3](04-3-Music-Composition-Workflow.ipynb) compose des bandes sonores. [04-4](04-4-Audio-Video-Sync.ipynb) synchronise l'audio avec la vidéo.
+**Fil rouge podcast** : [04-1](Audio-04-1-Educational-Audio-Content-Python.ipynb) automatise la narration de cours. [04-2](04-2-Transcription-Pipeline.ipynb) gère la transcription batch avec sous-titres SRT. [04-3](04-3-Music-Composition-Workflow.ipynb) compose des bandes sonores. [04-4](04-4-Audio-Video-Sync.ipynb) synchronise l'audio avec la vidéo.
 
-**Fil rouge audiobook (Epic #1028)** : [04-6](04-Audiobook/04-6-Audiobook-Pipeline.ipynb) a [04-12](04-Audiobook/04-12-Compilation-Audio.ipynb) forment un pipeline agentique 5-pass complet : benchmark des voix, analyse littéraire, casting vocal, annotation prosodique, génération TTS et compilation finale. [04-13](04-Audiobook/04-13-Audiobook-FishAudio-S2Pro.ipynb) étend le pipeline avec FishAudio S2-Pro, 29 tags prosodiques officiels et validation WER.
+**Fil rouge audiobook (Epic #1028)** : [04-6](04-Audiobook/Audio-04-6-Audiobook-Pipeline-Python.ipynb) a [04-12](04-Audiobook/Audio-04-12-Compilation-Audio-Python.ipynb) forment un pipeline agentique 5-pass complet : benchmark des voix, analyse littéraire, casting vocal, annotation prosodique, génération TTS et compilation finale. [04-13](04-Audiobook/Audio-04-13-Audiobook-FishAudio-S2Pro-Python.ipynb) étend le pipeline avec FishAudio S2-Pro, 29 tags prosodiques officiels et validation WER.
 
 
 ## Trois sous-séries
@@ -56,11 +56,11 @@ Les sections de cet index sont **thématiques** : deux carnets peuvent y voisine
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 1 | [04-1-Educational-Audio-Content](04-1-Educational-Audio-Content.ipynb) | Narration automatique de cours | Mixed | ~10 GB |
+| 1 | [Audio-04-1-Educational-Audio-Content-Python](Audio-04-1-Educational-Audio-Content-Python.ipynb) | Narration automatique de cours | Mixed | ~10 GB |
 | 2 | [04-2-Transcription-Pipeline](04-2-Transcription-Pipeline.ipynb) | Batch transcription, sous-titres SRT | Mixed | ~12 GB |
 | 3 | [04-3-Music-Composition-Workflow](04-3-Music-Composition-Workflow.ipynb) | Création musicale multi-étapes | Local GPU | ~14 GB |
 | 4 | [04-4-Audio-Video-Sync](04-4-Audio-Video-Sync.ipynb) | Synchronisation audio-video | Mixed | ~10 GB |
-| 5 | [04-5-LiveCoding-LLM-Music](04-5-LiveCoding-LLM-Music.ipynb) | Strudel.cc + LLM, live coding musical | OpenAI API | 0 |
+| 5 | [Audio-04-5-LiveCoding-LLM-Music-Python](Audio-04-5-LiveCoding-LLM-Music-Python.ipynb) | Strudel.cc + LLM, live coding musical | OpenAI API | 0 |
 
 ### Pipeline Audiobook Agentique (Epic #1028)
 
@@ -68,29 +68,29 @@ Pipeline complet pour générer un audiobook à partir d'un texte littéraire, a
 
 | # | Notebook | Pass | Contenu | Service | VRAM |
 | --- | ---------- | ------ | --------- | --------- | ------ |
-| 6 | [04-6-Audiobook-Pipeline](04-Audiobook/04-6-Audiobook-Pipeline.ipynb) | P0 | Pipeline audiobook orchestrateur | Mixed | ~5 GB |
+| 6 | [Audio-04-6-Audiobook-Pipeline-Python](04-Audiobook/Audio-04-6-Audiobook-Pipeline-Python.ipynb) | P0 | Pipeline audiobook orchestrateur | Mixed | ~5 GB |
 | 7 | [04-7-TTS-Voice-Benchmark](04-Voix/04-7-TTS-Voice-Benchmark.ipynb) | P0 | Benchmark comparatif des modèles TTS | Kokoro + Qwen3 TTS + OpenAI | ~2 GB |
 | 8 | [04-8-Lecture-Analytique](04-Audiobook/04-8-Lecture-Analytique.ipynb) | P1 | Analyse littéraire, segmentation dialogues/narration | OpenAI API | 0 |
 | 9 | [04-9-Voice-Casting](04-Voix/04-9-Voice-Casting.ipynb) | P2 | Attribution de voix par personnage, casting vocal | OpenAI API | 0 |
-| 10 | [04-10-Annotation-Prosodique](04-Audiobook/04-10-Annotation-Prosodique.ipynb) | P3 | Tags prosodiques FishAudio S2-Pro | OpenAI API | 0 |
+| 10 | [Audio-04-10-Annotation-Prosodique-Python](04-Audiobook/Audio-04-10-Annotation-Prosodique-Python.ipynb) | P3 | Tags prosodiques FishAudio S2-Pro | OpenAI API | 0 |
 | 11 | [04-11-Generation-TTS](04-Audiobook/04-11-Generation-TTS.ipynb) | P4 | Génération audio Kokoro multi-voix | Kokoro TTS | ~2 GB |
-| 12 | [04-12-Compilation-Audio](04-Audiobook/04-12-Compilation-Audio.ipynb) | P5 | Concaténation FFmpeg + normalisation loudness | FFmpeg | 0 |
-| 13 | [04-13-Audiobook-FishAudio-S2Pro](04-Audiobook/04-13-Audiobook-FishAudio-S2Pro.ipynb) | Full | Pipeline v4 FishAudio S2-Pro, 29 tags prosodiques, validation WER | FishAudio + Whisper | ~6 GB |
+| 12 | [Audio-04-12-Compilation-Audio-Python](04-Audiobook/Audio-04-12-Compilation-Audio-Python.ipynb) | P5 | Concaténation FFmpeg + normalisation loudness | FFmpeg | 0 |
+| 13 | [Audio-04-13-Audiobook-FishAudio-S2Pro-Python](04-Audiobook/Audio-04-13-Audiobook-FishAudio-S2Pro-Python.ipynb) | Full | Pipeline v4 FishAudio S2-Pro, 29 tags prosodiques, validation WER | FishAudio + Whisper | ~6 GB |
 
 ### Hommage Munkres — musique et mathématiques
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 14 | [04-14-VoiceLeading-Rendu-GenAI](04-14-VoiceLeading-Rendu-GenAI.ipynb) | Rendu audio intelligent du voice leading App-21 : baseline téléphone vs MusicGen-melody (3 styles H1), spectrogrammes mesurés | MusicGen-melody (GPU local) | ~6 GB |
+| 14 | [Audio-04-14-VoiceLeading-Rendu-GenAI-Python](Audio-04-14-VoiceLeading-Rendu-GenAI-Python.ipynb) | Rendu audio intelligent du voice leading App-21 : baseline téléphone vs MusicGen-melody (3 styles H1), spectrogrammes mesurés | MusicGen-melody (GPU local) | ~6 GB |
 
 ### Famille YuE2 — compréhension et transcription musicales
 
-Trois satellites : la **compréhension** (MERT2, 04-15), la **génération** ([YuE2, 02-7](../02-Advanced/02-7-YuE2-Song-Generation.ipynb)) et la **transcription** (SheetSage2, 04-16).
+Trois satellites : la **compréhension** (MERT2, 04-15), la **génération** ([YuE2, 02-7](../02-Advanced/Audio-02-7-YuE2-Song-Generation-Python.ipynb)) et la **transcription** (SheetSage2, 04-16).
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 15 | [04-15-MERT2-Music-Understanding](04-Musique/04-15-MERT2-Music-Understanding.ipynb) | Embeddings MERT2 (632 M, self-supervised, poids CC BY-NC 4.0) : corpus contrôlé 3 motifs × 4 timbres × 2 transpositions, similarité cosinus, retrieval contexte long FullSong (medley 120 s), sondes linéaires LOO motif vs timbre sur couches L1/L23/L24 | Local GPU (kernel `mert2-gpu`, pins torch 2.6.0 / transformers 4.53.2) | ~4 GB |
-| 16 | [04-16-SheetSage2-Audio-To-Score](04-Musique/04-16-SheetSage2-Audio-To-Score.ipynb) | Transcription audio vers partition éditable : SheetSage2 (677 M, base MERT-v2-FullSong + adaptateurs), cinq têtes (mélodie, accords, temps forts, tonalité, structure), artefacts ABC/MIDI/événements horodatés, comparaison à vérité-terrain connue par construction, cycle symbolique→audio→symbolique mesuré | Local GPU (kernel `sheetsage2-gpu`) ; poids CC BY-NC 4.0 (usage commercial interdit) | ~8 GB |
+| 15 | [Audio-04-15-MERT2-Music-Understanding-Python](04-Musique/Audio-04-15-MERT2-Music-Understanding-Python.ipynb) | Embeddings MERT2 (632 M, self-supervised, poids CC BY-NC 4.0) : corpus contrôlé 3 motifs × 4 timbres × 2 transpositions, similarité cosinus, retrieval contexte long FullSong (medley 120 s), sondes linéaires LOO motif vs timbre sur couches L1/L23/L24 | Local GPU (kernel `mert2-gpu`, pins torch 2.6.0 / transformers 4.53.2) | ~4 GB |
+| 16 | [Audio-04-16-SheetSage2-Audio-To-Score-Python](04-Musique/Audio-04-16-SheetSage2-Audio-To-Score-Python.ipynb) | Transcription audio vers partition éditable : SheetSage2 (677 M, base MERT-v2-FullSong + adaptateurs), cinq têtes (mélodie, accords, temps forts, tonalité, structure), artefacts ABC/MIDI/événements horodatés, comparaison à vérité-terrain connue par construction, cycle symbolique→audio→symbolique mesuré | Local GPU (kernel `sheetsage2-gpu`) ; poids CC BY-NC 4.0 (usage commercial interdit) | ~8 GB |
 
 ### Transcription note à note — basic-pitch
 
@@ -98,7 +98,7 @@ Là où SheetSage2 (04-16) produit une partition symbolique globale, la **transc
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 18 | [04-18-Basic-Pitch-Transcription](04-Musique/04-18-Basic-Pitch-Transcription.ipynb) | Transcription note à note : basic-pitch (ICASSP 2022, ONNX) sur vérité terrain synthétique (11 notes à onsets exacts) et trois accords (9 notes superposées) ; rappel/précision/écart d'onset mesurés, piano-roll vérité vs détection, balayage des seuils du décodeur (onset et frame), trois exercices | CPU local (kernel `basicpitch-t4`, onnxruntime) | 0 (CPU) |
+| 18 | [Audio-04-18-Basic-Pitch-Transcription-Python](04-Musique/Audio-04-18-Basic-Pitch-Transcription-Python.ipynb) | Transcription note à note : basic-pitch (ICASSP 2022, ONNX) sur vérité terrain synthétique (11 notes à onsets exacts) et trois accords (9 notes superposées) ; rappel/précision/écart d'onset mesurés, piano-roll vérité vs détection, balayage des seuils du décodeur (onset et frame), trois exercices | CPU local (kernel `basicpitch-t4`, onnxruntime) | 0 (CPU) |
 
 > **Note (consolidation #13741)** : un sibling pédagogique plus minimal (re-voicing CP-SAT + MIDI synthèse, version allégée du canonique) a été archivé sous [`MyIA.AI.Notebooks/GenAI/Audio/_archive/04-14-VoiceLeading-RenduGenAI.ipynb`](../_archive/04-14-VoiceLeading-RenduGenAI.ipynb) pour éliminer le doublon de slot 04-14. Le contenu reste préservé (re-voicing, synthèse MIDI, MusicGen, spectrogrammes, export WAV) ; ce notebook canonique `Rendu-GenAI` (version complète re-exécutée #13398) reste la référence.
 
@@ -108,7 +108,7 @@ Le socle DSP et statistique sous les approches neuronales de la famille YuE2 : l
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 17 | [04-17-MIR-Classique](04-Musique/04-17-MIR-Classique.ipynb) | MIR classique librosa : beat tracking + tempo (enveloppe d'onsets, dynamic programming), tonalité Krumhansl–Schmuckler sur chroma CQT, grille d'accords par templates triades — validés sur vérité terrain synthétique (100 BPM, Do majeur, C–Am–F–G) puis vraie musique (exemples librosa brahms/nutcracker), 3 exercices (tempo 140 BPM, tonalité en mode mineur, banque étendue aux accords de septième) | librosa (CPU local) | 0 |
+| 17 | [Audio-04-17-MIR-Classique-Python](04-Musique/Audio-04-17-MIR-Classique-Python.ipynb) | MIR classique librosa : beat tracking + tempo (enveloppe d'onsets, dynamic programming), tonalité Krumhansl–Schmuckler sur chroma CQT, grille d'accords par templates triades — validés sur vérité terrain synthétique (100 BPM, Do majeur, C–Am–F–G) puis vraie musique (exemples librosa brahms/nutcracker), 3 exercices (tempo 140 BPM, tonalité en mode mineur, banque étendue aux accords de septième) | librosa (CPU local) | 0 |
 
 **Flux du pipeline audiobook** :
 
@@ -123,7 +123,7 @@ Un rating subjectif n'est interprétable qu'accompagné de son protocole : dans 
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 19 | [04-19-Evaluation-MOS](04-Voix/04-19-Evaluation-MOS.ipynb) | Protocole d'écoute subjective (ITU-T P.800) et agrégateur (ITU-R P.808) : lecture de la rubrique depuis le `04-7`, liste d'essais rejouable, fiche de notation pré-remplie, MOS + IC 95 % + rejet des auditeurs aberrants, proxies (SNR, SI-SDR, LSD, STOI) sur référence source-filtre et dégradations maîtrisées, 3 exercices | CPU local (numpy, scipy, torchmetrics, pystoi) | 0 |
+| 19 | [Audio-04-19-Evaluation-MOS-Python](04-Voix/Audio-04-19-Evaluation-MOS-Python.ipynb) | Protocole d'écoute subjective (ITU-T P.800) et agrégateur (ITU-R P.808) : lecture de la rubrique depuis le `04-7`, liste d'essais rejouable, fiche de notation pré-remplie, MOS + IC 95 % + rejet des auditeurs aberrants, proxies (SNR, SI-SDR, LSD, STOI) sur référence source-filtre et dégradations maîtrisées, 3 exercices | CPU local (numpy, scipy, torchmetrics, pystoi) | 0 |
 
 ### Séparation avancée — qualité mesurée
 
@@ -131,15 +131,15 @@ Là où [02-4](../02-Advanced/02-4-Demucs-Source-Separation.ipynb) sépare un m�
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 20 | [04-20-Separation-Avancee-Qualite](04-Musique/04-20-Separation-Avancee-Qualite.ipynb) | Trois modèles Demucs sur deux générations (hdemucs_mmi v3, htdemucs v4, htdemucs_ft) comparés sur piste MUSDB18 avec stems de référence, puis BS-RoFormer (architecture 2024) mesuré face à htdemucs : SDR par stem, témoin négatif, cohérence d'énergie, mini-benchmark médian 3 pistes, 3 exercices | Local GPU (demucs 4.1.0 + audio-separator, HuggingFace streaming) | ~6 GB |
+| 20 | [Audio-04-20-Separation-Avancee-Qualite-Python](04-Musique/Audio-04-20-Separation-Avancee-Qualite-Python.ipynb) | Trois modèles Demucs sur deux générations (hdemucs_mmi v3, htdemucs v4, htdemucs_ft) comparés sur piste MUSDB18 avec stems de référence, puis BS-RoFormer (architecture 2024) mesuré face à htdemucs : SDR par stem, témoin négatif, cohérence d'énergie, mini-benchmark médian 3 pistes, 3 exercices | Local GPU (demucs 4.1.0 + audio-separator, HuggingFace streaming) | ~6 GB |
 
 ### Étalonner la métrique — SI-SDR à vérité exacte
 
-[04-20](04-Musique/04-20-Separation-Avancee-Qualite.ipynb) compare des moteurs face à une référence studio ; ce carnet pose la question en aval : **que vaut le zéro de la métrique elle-même ?** Le mélange est fabriqué depuis les stems (`0,62 × voix + 0,48 × accompagnement`), donc la vérité de chaque tige est exacte par construction — ce qui donne un lot de contrôle qu'aucune piste réelle ne fournit (le mélange rendu tel quel comme estimateur) et un levier qu'aucune piste réelle ne donne : déplacer le ratio d'énergie entre tiges et regarder le point zéro bouger.
+[04-20](04-Musique/Audio-04-20-Separation-Avancee-Qualite-Python.ipynb) compare des moteurs face à une référence studio ; ce carnet pose la question en aval : **que vaut le zéro de la métrique elle-même ?** Le mélange est fabriqué depuis les stems (`0,62 × voix + 0,48 × accompagnement`), donc la vérité de chaque tige est exacte par construction — ce qui donne un lot de contrôle qu'aucune piste réelle ne fournit (le mélange rendu tel quel comme estimateur) et un levier qu'aucune piste réelle ne donne : déplacer le ratio d'énergie entre tiges et regarder le point zéro bouger.
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 21 | [04-21-SI-SDR-Contre-Epreuve](04-Musique/04-21-SI-SDR-Contre-Epreuve.ipynb) | SI-SDR à vérité exacte : mélange fabriqué depuis les stems MUSDB18, invariance d'échelle vérifiée, lot de contrôle (le mélange comme estimateur : +1,14 dB voix / −1,13 dB accompagnement sur l'extrait), balayage du ratio d'énergie (le point zéro parcourt ~24 dB), trois moteurs (htdemucs, MDX23C, BS-RoFormer) replacés en écart au zéro avec durées mesurées, classement transposé aux leaderboards publics, 3 exercices | Local GPU (demucs 4.1.0 + audio-separator, HuggingFace streaming) | ~6 GB |
+| 21 | [Audio-04-21-SI-SDR-Contre-Epreuve-Python](04-Musique/Audio-04-21-SI-SDR-Contre-Epreuve-Python.ipynb) | SI-SDR à vérité exacte : mélange fabriqué depuis les stems MUSDB18, invariance d'échelle vérifiée, lot de contrôle (le mélange comme estimateur : +1,14 dB voix / −1,13 dB accompagnement sur l'extrait), balayage du ratio d'énergie (le point zéro parcourt ~24 dB), trois moteurs (htdemucs, MDX23C, BS-RoFormer) replacés en écart au zéro avec durées mesurées, classement transposé aux leaderboards publics, 3 exercices | Local GPU (demucs 4.1.0 + audio-separator, HuggingFace streaming) | ~6 GB |
 
 ## Prérequis
 
@@ -176,7 +176,7 @@ Audio brut -> STT -> Correction -> Enhance -> TTS -> Podcast final
 ### Musique
 
 ```text
-Texte -> MusicGen -> Édition MIDI -> Voice leading optimal ([App-21 Search](../../../Search/Part3-Cas-pratiques/App-21-VoiceLeading-Python.ipynb)) -> Rendu audio intelligent ([04-14](04-14-VoiceLeading-Rendu-GenAI.ipynb)) -> Post-production -> Export
+Texte -> MusicGen -> Édition MIDI -> Voice leading optimal ([App-21 Search](../../../Search/Part3-Cas-pratiques/App-21-VoiceLeading-Python.ipynb)) -> Rendu audio intelligent ([04-14](Audio-04-14-VoiceLeading-Rendu-GenAI-Python.ipynb)) -> Post-production -> Export
 ```
 
 ### Audiobook Agentique (Epic #1028)
@@ -194,6 +194,6 @@ Texte littéraire -> Benchmark voix (P0)
 ## Ressources
 
 - [Documentation Audio principale](../README.md)
-- [Live Coding Guide](04-5-LiveCoding-LLM-Music.ipynb)
+- [Live Coding Guide](Audio-04-5-LiveCoding-LLM-Music-Python.ipynb)
 - [GenAI Services Documentation](../../../../docs/genai/genai-services.md)
 

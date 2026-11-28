@@ -1,0 +1,7 @@
+- name: "GameTheory-17f-Market-to-Balance-Sheet C#"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-17f-Market-to-Balance-Sheet-CSharp.ipynb
+  parity_level: native-both
+  known_differences:
+    - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb. Execution reelle sur kernel `.net-csharp` (.NET (C#)) : 10 cellules de code sur 27, compteurs 1 a 10 sans trou, 0 erreur. Verification independante : verdict `approve` du verificateur `critic-terra` du harnais (sk-agent `nb-luna-oai`), 0 constat, deux tours de revision (3 puis 1 constat), chacun reexecute en noyau neuf ; trace `d3f594af-9569-4ca2-8cb3-c347a2998872`. Attestation ecrite par l'integration de livraison (check_twin_parity --update) puis rescellee apres le merge de main -- 0001 du 2026-11-23 et 0002 du 2026-11-24 -- en DERNIERE operation (cf #8957)."
