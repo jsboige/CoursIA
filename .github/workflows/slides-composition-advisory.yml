@@ -37,6 +37,30 @@ name: Slides Composition Advisory
 # historique (slide 5 S3-acculturation @ 6cabc826b via
 # run_composition_control.py) reste valable : il vérifie en plus le rendu
 # du thème réel sur un deck de production au commit fondateur.
+#
+# #24171 — MESURE ÉPINGLÉE (`--pin-fonts`, les deux invocations) : les
+# compteurs dérivent des largeurs de glyphes et des hauteurs de ligne, donc des
+# polices SYSTÈME de la machine qui mesure. Un Linux n'a ni Segoe UI, ni
+# Calibri, ni Consolas : sans pin, le même deck n'y est pas mesuré dans les
+# mêmes conditions que sur un siège Windows (mesuré sur un deck de 30 slides,
+# même Chromium, ubuntu 24.04 en conteneur contre Windows 11 : `line-height:
+# normal` sur la pile du thème 18 px contre 21 px ; l'échantillon monospace
+# mesure 408,07 px contre 373,87 px). Les quatre compteurs de constat de ce
+# deck y tombent à zéro des deux côtés — une propriété du deck (il ne déborde
+# pas), pas une preuve de comparabilité ; le cinquième les départage : 8
+# chevauchements éteints sur le siège Windows, 0 dans le conteneur (8 et 8 sous
+# pin). Un compteur n'est opposable qu'entre conditions égales. Le pin
+# remplace les familles système par des polices LIVRÉES
+# (scripts/notebook_tools/fonts/, OFL/DejaVu), réglées sur la référence Windows,
+# et le navigateur est lancé sans hinting (`--font-render-hinting=none` : sous
+# Linux il arrondirait les avancées au pixel, de −2,1 % à +8,7 % sur une même
+# police livrée). Deux machines qui exécutent ce workflow mesurent alors le
+# même rendu — mêmes compteurs, mêmes empreintes — et les sièges peuvent
+# opposer leur mesure locale à la CI. Ce n'est PAS la mesure d'avant (les blocs
+# de texte sont plus hauts qu'en DejaVu) : c'est un nouveau point de
+# comparaison, identique partout. Exit 3 du scanner = pin inapplicable (polices
+# absentes ou altérées, feuille non adoptée, face non chargée) = meta-failure,
+# jamais un vert muet.
 
 on:
   schedule:
@@ -215,6 +239,7 @@ jobs:
             python scripts/notebook_tools/scan_slidev_composition.py \
               --url "http://localhost:$CTRL_PORT/" \
               --slides-md "$CTRL_DIR/slides.md" \
+              --pin-fonts \
               --baseline-slide 2 --baseline-commit fixture \
               --out "$COMP_OUT_DIR/_positive_control.json" > /tmp/scan_$CTRL_PORT.log 2>&1
             CTRL_SCAN_EXIT=$?
@@ -291,6 +316,7 @@ jobs:
             python scripts/notebook_tools/scan_slidev_composition.py \
               --url "http://localhost:$PORT/" \
               --slides-md "$MD" \
+              --pin-fonts \
               --github-annotations \
               --out "$DECK_REPORT" > /tmp/scan_$PORT.log 2>&1
             SCAN_EXIT=$?
@@ -301,6 +327,20 @@ jobs:
             # grep APRES l'affectation de SCAN_EXIT : un pipe rendrait le statut du
             # dernier maillon, pas celui du scanner.
             grep -E '^::(warning|error) ' "/tmp/scan_$PORT.log" || true
+            # #24171 — exit 3 = pin de polices inapplicable : le deck n'a PAS été
+            # mesuré dans les conditions de la flotte. Meta-failure au même titre
+            # qu'un serveur jamais prêt (#8807 trap 1) : un advisory vert sur une
+            # mesure non épinglée serait de nouveau inopposable d'une machine à
+            # l'autre — exactement ce que le pin existe pour empêcher.
+            if [ "$SCAN_EXIT" -eq 3 ]; then
+              echo "::error title=Composition gate meta-failure::$MD mesuré SANS pin de polices (scanner exit 3) -- mesure non reproductible"
+              echo "Pin de polices inapplicable (scanner exit 3) -- deck NON MESURE dans les conditions de la flotte (meta-défaillance)." >> "$GITHUB_STEP_SUMMARY"
+              tail -20 "/tmp/scan_$PORT.log" 2>/dev/null || true
+              META_FAIL=1
+              # Pas d'entrée de manifeste : le scanner rend 3 AVANT d'écrire un
+              # rapport, le deck n'a pas été mesuré.
+              rm -f "$DIR/dev.md"; kill "$SLIDEV_PID" 2>/dev/null || true; continue
+            fi
             # Manifeste deck→report : le PR-relay peut ainsi résoudre un deck
             # touché par le diff vers son verdict persisté sans connaître le port.
             printf '%s\t%s\n' "$MD" "${SAFE_STEM}.json" >> "$MANIFEST"
