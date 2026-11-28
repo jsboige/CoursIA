@@ -1,0 +1,12 @@
+- name: "Complexity-08d Independance Prouvee BusyBeaver Covering"
+  family: Complexity
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08d-IndependanceProuvee-BusyBeaver-Covering-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08d-IndependanceProuvee-BusyBeaver-Covering-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Aucun moteur externe n'est sautable ici : le sujet EST le calcul elementaire (combinatoire entiere exacte, table de verite de la conjonction, comparaison de deux constantes flottantes). Il n'existe ni solveur ni bibliotheque dont la substitution aurait un sens, et les deux cotes recalculent depuis zero, bibliotheque standard seule."
+  known_differences:
+    - "Le cote C# ajoute, apres chaque mesure, des assertions executables qui confrontent les valeurs calculees a celles du papier (1771/286 -> 7, exces 2, 22 points de degre 11, 3 relations, Schonheim 34, rapport kappa / 2^-34 = 1.43) ; le cote Python les imprime seules. Les valeurs affichees sont identiques des deux cotes."
+    - "Format scientifique : .NET n'emet pas d'exposant a deux chiffres (E3 rend 8.300E-011). La fonction Sci reproduit la notation du carnet Python (8.300e-11 et 5.821e-11) et chaque ToString porte la culture invariante, donc le rendu ne depend pas de la locale de la machine."
+    - "Parite de structure : 21 cellules et 6 cellules de code de part et d'autre, meme ordre, memes titres, memes trois exercices en stubs executes. Les cellules de lecture C# ajoutent un paragraphe sur ce que cette version verifie en plus du carnet Python ; d'ou parity_level semantic."
+    - "2026-11-26 (myia-po-2027:CoursIA) creation de la paire avec le jumeau C# (#28645) : re-execution reelle 6/6 cellules de code, 0 erreur, bannieres probe et discovery retirees. --update en DERNIERE operation (cf #8957)."
