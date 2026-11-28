@@ -13,7 +13,7 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean` | 100 | 98 | declare | couverte | 1 hors site (4 carnets) | - | 2026-05-31 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean` | 58 | 42 | declare | couverte | 1 hors site (9 carnets) | 2 / 2 | 2026-05-28 |
 | `MyIA.AI.Notebooks/GameTheory/game_theory_lean` | 47 | 28 | declare | couverte | ok (4) | 3 / 3 | 2026-07-10 |
-| `MyIA.AI.Notebooks/Search/discrepancy_lean` | 34 | 26 | declare | couverte | ok (1) | - | 2026-08-25 |
+| `MyIA.AI.Notebooks/Search/discrepancy_lean` | 35 | 27 | declare | couverte | ok (1) | - | 2026-08-25 |
 | `MyIA.AI.Notebooks/ML/learning_theory_lean` | 32 | 30 | declare | couverte | 1 hors site (5 carnets) | - | 2026-06-25 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/knot_lean` | 25 | 24 | declare | couverte | non consomme | - | 2026-10-08 |
 | `MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean` | 16 | 2 | declare | couverte | ok (2) | - | 2026-10-12 |
