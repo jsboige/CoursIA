@@ -16,7 +16,16 @@ cursus:NotebookShape a sh:NodeShape ;
     sh:property [ sh:path cursus:requiresCloud ; sh:maxCount 1 ; sh:datatype xsd:boolean ] ;
     sh:property [ sh:path cursus:requiresWSL ; sh:maxCount 1 ; sh:datatype xsd:boolean ] ;
     sh:property [ sh:path cursus:estimatedDuration ; sh:maxCount 1 ; sh:datatype rdf:langString ] ;
-    sh:property [ sh:path cursus:status ; sh:maxCount 1 ; sh:datatype rdf:langString ] .
+    sh:property [ sh:path cursus:status ; sh:maxCount 1 ; sh:datatype rdf:langString ] ;
+    # Qualifications du cursus (#29007) : un niveau au plus par axe, dans
+    # l'échelle du manifeste (docs/curriculum/qualification/). Un niveau hors
+    # échelle est refusé, jamais laissé passer ; un carnet non qualifié ne
+    # porte ni l'un ni l'autre. L'échelle de chaque axe vit aussi dans
+    # curriculum_qualification.py : un test les tient égales.
+    sh:property [ sh:path cursus:difficulte ; sh:maxCount 1 ; sh:datatype xsd:string ;
+        sh:in ( "D1" "D2" "D3" "D4" ) ] ;
+    sh:property [ sh:path cursus:dimensionRecherche ; sh:maxCount 1 ; sh:datatype xsd:string ;
+        sh:in ( "R0" "R1" "R2" "R3" ) ] .
 
 cursus:SeriesShape a sh:NodeShape ;
     sh:targetClass cursus:Series ;

@@ -78,13 +78,20 @@ fraîcheur — pas le jugement.
 | #24995 | taxonomies des carnets et des concepts | `myia-po-2023:CoursIA-2` |
 | **#24996** | **difficulté et dimension recherche** (ce répertoire) | `myia-po-2028:CoursIA-2` |
 | #24997 | concepts cartographiés sur AIMA | `myia-po-2028:CoursIA-2` |
+| **#29007** | **projection des deux axes dans l'export RDF** (formes SHACL comprises) | `myia-po-2023:CoursIA` |
 
-Le crochet du générateur — « le catalogue affiche les deux champs, et le statut
-recherche cesse de dépendre du seul chemin » — est **la suite de #24994** : le
-fichier `generate_catalog.py` est claimé par une autre lane. L'organe expose
-déjà l'API dont ce crochet a besoin (`load_manifest()`, `qualification_for()`),
-pour qu'il n'y ait pas de seconde source de vérité ; il ne modifie pas le
-catalogue.
+Le crochet du générateur est **livré** (#24996) : `generate_catalog.py` lit le
+manifeste par `qualification_for()` et écrit trois champs par entrée —
+`difficulte`, `recherche`, `qualification_justification` — sans second état, le
+manifeste restant la seule source. L'export RDF les projette ensuite en deux
+prédicats ([#29007](https://github.com/jsboige/CoursIA/issues/29007)) : le graphe
+ne porte que les niveaux, la justification reste ici, et un niveau hors échelle
+est refusé par les formes SHACL.
+
+Ce que le crochet ne fait **pas**, et c'est voulu : `status` reste dérivé du
+chemin (`_is_research_path`). Les deux axes sont déclarés **indépendants** de ce
+statut historique — un carnet `RESEARCH` peut n'être que `R1`, un carnet sans
+statut peut toucher `R3` — et aucun des deux ne réécrit `status`.
 
 ## Les signaux déjà mesurés sont des **entrées**, pas des verdicts
 
