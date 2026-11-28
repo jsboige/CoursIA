@@ -23,6 +23,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -214,13 +215,18 @@ def test_surface_machine_absente_est_rendue_manquante_pas_zero(tmp_path):
 
 
 def test_root_relatif_est_resolu_avant_slug_memoire(tmp_path, monkeypatch):
-    """Le slug mémoire dépend de la racine absolue, jamais de ``Path('.')``."""
+    """Le slug mémoire dépend de la racine absolue, jamais de ``Path('.')``.
+
+    Le slug est le CHEMIN DU PROJET entier, pas le nom de son dernier
+    dossier : la convention reelle de Claude Code (mesuree sur les
+    repertoires de la machine le 2026-11-28) transforme chaque caractere qui
+    n'est ni alphanumerique ni `-` en `-`, sur le chemin complet.
+    """
     repo = tmp_path / "CoursIA"
     repo.mkdir()
     home = tmp_path / "home"
-    drive = repo.resolve().drive[:1].lower()
-    expected = (home / ".claude" / "projects" / (drive + "--CoursIA")
-                / "memory" / "MEMORY.md")
+    slug = re.sub(r"[^A-Za-z0-9-]", "-", os.path.abspath(str(repo)))
+    expected = (home / ".claude" / "projects" / slug / "memory" / "MEMORY.md")
     expected.parent.mkdir(parents=True)
     expected.write_text("# mémoire\n", encoding="utf-8")
     (home / ".claude" / "CLAUDE.md").write_text("# global\n", encoding="utf-8")
@@ -233,6 +239,66 @@ def test_root_relatif_est_resolu_avant_slug_memoire(tmp_path, monkeypatch):
 
     assert not missing
     assert str(expected) in {e["path"] for e in entries}
+    # Le slug porte le CHEMIN, pas le seul nom de dossier : c'est precisement
+    # ce qui manquait (un projet a chemin imbrique n'etait jamais trouve).
+    assert slug != repo.name
+    assert slug.endswith("-CoursIA")
+
+
+@pytest.mark.skipif(os.name != "nt",
+                    reason="convention de slug mesuree sur la machine Windows")
+def test_slug_memoire_porte_le_chemin_complet_et_non_la_feuille():
+    """Un projet a chemin imbrique doit produire un slug de chemin complet.
+
+    L'ancienne derivation (lettre de lecteur + `--` + NOM DU DERNIER
+    DOSSIER) ne couvrait que les projets poses a la racine d'un lecteur :
+    sur `d:\\Dev\\CoursIA-3` elle rendait `d--CoursIA-3`, un repertoire qui
+    n'existe pas. La surface `MEMORY.md` etait alors declaree MANQUANTE sur
+    tout projet a chemin imbrique, et le budget de #15204 ne pouvait jamais
+    etre certifie.
+    """
+    slug = mah.memory_slug(Path("d:/Dev/CoursIA-3"))
+    assert slug.startswith("d--Dev-"), slug
+    assert slug.endswith("CoursIA-3"), slug
+    assert "-" in slug[len("d--"):], "le chemin complet est dans le slug"
+
+
+@pytest.mark.skipif(os.name != "nt",
+                    reason="convention de slug mesuree sur la machine Windows")
+def test_slug_memoire_conforme_aux_repertoires_reels_de_la_machine():
+    """La convention est MESUREE, pas deduite : on la fige sur des reels.
+
+    Les entrees attendues sont les repertoires qui existent reellement sous
+    `~/.claude/projects/` sur cette machine. Une convention derivee « au
+    feeling » ne serait pas verifiee par ce test.
+    """
+    attendu = {
+        "d:\\Dev\\CoursIA-3":
+            "d--Dev-CoursIA-3",
+        "d:\\Dev\\CoursIA-2":
+            "d--Dev-CoursIA-2",
+        "C:\\dev\\claudish":
+            "C--dev-claudish",
+        ("C:\\dev\\roo-extensions\\.claude\\worktrees\\wt-13089"
+         "\\myia-po-2026\\20260831-212600"):
+            ("C--dev-roo-extensions--claude-worktrees-wt-13089"
+             "-myia-po-2026-20260831-212600"),
+    }
+    for chemin, slug in attendu.items():
+        assert mah.memory_slug(Path(chemin)) == slug, chemin
+
+
+@pytest.mark.skipif(os.name != "nt",
+                    reason="convention de slug mesuree sur la machine Windows")
+def test_slug_memoire_conserve_la_casse_de_la_lettre_du_lecteur():
+    """`resolve()` met la lettre du lecteur en majuscule, `abspath` non.
+
+    `d--Dev-CoursIA-3` est le repertoire REEL de ce projet. Une normalisation
+    de casse ici rendrait la surface introuvable — silencieusement, comme
+    l'ancien bug.
+    """
+    assert mah.memory_slug(Path("d:/Dev/CoursIA-3")) == "d--Dev-CoursIA-3"
+    assert mah.memory_slug(Path("D:/Dev/CoursIA-3")) == "D--Dev-CoursIA-3"
 
 
 def test_mesure_complete_reflete_les_surfaces_manquantes(tmp_path):

@@ -57,6 +57,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -132,6 +133,34 @@ def _read_ref(root, ref):
         pass
 
 
+def memory_slug(root):
+    """Slug du repertoire de memoire associe a un chemin de projet.
+
+    La convention est MESUREE sur les repertoires reels de la machine (le
+    2026-11-28), et non deduite : chaque caractere qui n'est ni
+    alphanumerique ni `-` devient `-`, le reste du chemin est conserve tel
+    quel (casse comprise).
+
+        C:\\dev\\roo-extensions\\.claude\\worktrees\\wt-13089\\myia-po-2026\\20260831-212600
+            -> C--dev-roo-extensions--claude-worktrees-wt-13089-myia-po-2026-20260831-212600
+        d:\\Dev\\CoursIA-3
+            -> d--Dev-CoursIA-3
+
+    La lettre du lecteur garde la casse **ecrite** : `resolve()` la passe en
+    majuscule (`d:` -> `D:`) et produirait un slug introuvable, alors que
+    `abspath` la conserve (`d--Dev-CoursIA-3` est le repertoire reel).
+
+    L'ancienne derivation (lettre de lecteur + `--` + NOM DU REPEROIRE
+    FINAL) ne couvrait que les projets poses a la racine d'un lecteur : sur
+    `d:\\Dev\\CoursIA-3` elle rendait `d--CoursIA-3`, un repertoire qui
+    n'existe pas -- la surface `MEMORY.md` etait donc declaree MANQUANTE sur
+    tout projet a chemin imbrique, et le budget de #15204 ne pouvait jamais
+    etre certifie (le total etait mesure sans la surface machine, sans le
+    dire).
+    """
+    return re.sub(r"[^A-Za-z0-9-]", "-", os.path.abspath(str(root)))
+
+
 def machine_surfaces(root, memory_file=None):
     """Surfaces auto-chargees qui vivent HORS du depot, sur la machine.
 
@@ -175,9 +204,8 @@ def machine_surfaces(root, memory_file=None):
         # Le repertoire de memoire est nomme d'apres le chemin du PROJET, pas
         # d'apres le worktree courant : mesurer depuis /d/wt<N> chercherait un
         # slug qui n'existe pas. --memory-file leve l'ambiguite.
-        drive = (root.drive[:1].lower() if root.drive else "")
-        slug = drive + "--" + root.name
-        memory_file = home / ".claude" / "projects" / slug / "memory" / "MEMORY.md"
+        memory_file = home / ".claude" / "projects" / memory_slug(root) \
+            / "memory" / "MEMORY.md"
     take("MEMORY.md (par machine)", Path(memory_file))
 
     return entries, missing
