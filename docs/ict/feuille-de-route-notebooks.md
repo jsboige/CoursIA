@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-25
+> REFERENCE — vivante — dernière révision 2026-11-28
 
 # Feuille de route des notebooks ICT
 

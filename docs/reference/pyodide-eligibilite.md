@@ -7,7 +7,7 @@ La famille Python se lit sur la langue declaree (`language_info.name`), le nom d
 noyau ne servant que de repli : un carnet sans langue ni noyau Python n'est pas
 compte -- le census ne suppose pas Python par defaut. Le compte d'une serie peut
 donc etre inferieur au nombre de fichiers `.ipynb` qu'elle contient.
-Census : **1487** carnets Python, **587** eligibles, **900** refuses.
+Census : **1488** carnets Python, **588** eligibles, **900** refuses.
 
 Source de verite des paquets : `pyodide-lock.json` (ABI 2026_0, Python 3.14.2, wasm32, emscripten_5_0_3 ; 357 paquets),
 commite avec le rapport (`docs/reference/pyodide-lock.json`), ainsi que le cache des sondes
@@ -127,7 +127,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | Security | 11 | 4 | 7 | 3 | 3 | 4 | 0 | 1 |
 | SemanticKernel | 18 | 2 | 16 | 0 | 11 | 8 | 3 | 16 |
 | SemanticWeb | 15 | 1 | 14 | 0 | 1 | 5 | 3 | 13 |
-| SignalProcessing | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 0 |
+| SignalProcessing | 4 | 4 | 0 | 0 | 0 | 0 | 0 | 0 |
 | SmartContracts | 31 | 10 | 21 | 0 | 3 | 17 | 19 | 17 |
 | SocialChoice | 12 | 6 | 6 | 0 | 0 | 0 | 5 | 1 |
 | Structures | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -166,7 +166,7 @@ disait. Le comptage avant/apres est donc sur la meme population :
 
 | Mesure | Avant | Apres |
 |---|---:|---:|
-| Carnets eligibles | 794 | 587 |
+| Carnets eligibles | 795 | 588 |
 
 Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suffisance`).
 
@@ -706,6 +706,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-16-ProofCarryingOntologies-Python.ipynb` | SemanticWeb | python3 | - | - |
 | `MyIA.AI.Notebooks/InformationCalcul/SignalProcessing/SignalProcessing-01-Le-Signal-Dans-Le-Domaine-Frequentiel.ipynb` | SignalProcessing | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/InformationCalcul/SignalProcessing/SignalProcessing-02-Convolution-Et-Filtrage-Python.ipynb` | SignalProcessing | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/InformationCalcul/SignalProcessing/SignalProcessing-03-Quantification-Python.ipynb` | SignalProcessing | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/InformationCalcul/SignalProcessing/SignalProcessing-04-Le-Signal-Dans-Le-Canal-Python.ipynb` | SignalProcessing | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb` | SmartContracts | python3 | pycryptodome==3.23.0 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/SC-01-Setup-Foundry-Python.ipynb` | SmartContracts | python3 | - | - |
