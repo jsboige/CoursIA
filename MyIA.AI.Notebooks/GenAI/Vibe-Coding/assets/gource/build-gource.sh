@@ -10,8 +10,11 @@
 #   libpcre2-dev libglew-dev libglm-dev libboost-filesystem-dev libboost-system-dev
 #   libpng-dev libsdl2-dev libsdl2-image-dev
 #
-# Les options ajoutees par 0002-dir-name-labels.patch sont inactives par defaut : sans
-# aucune d'elles, le binaire rend le meme flux PPM que Gource 0.53 d'origine.
+# Les options ajoutees par 0002-dir-name-labels.patch et 0003-dir-name-decollide.patch
+# sont inactives par defaut : sans aucune d'elles, le binaire rend le meme flux PPM
+# que Gource 0.53 d'origine. --dir-label-boxes ecrit, pour chaque top retenu, le haut
+# et la hauteur de la ligne telle qu'elle est dessinee, et un identifiant stable du
+# nom d'un top a l'autre.
 set -euo pipefail
 
 VERSION=0.53
@@ -75,4 +78,5 @@ mkdir -p "$prefix"
 
 echo "--- binaire : $prefix/bin/gource"
 echo "--- options ajoutees :"
-"$prefix/bin/gource" -H | grep -- '--dir-name-\(time\|direct\|hubs\|hub-alpha\)'
+"$prefix/bin/gource" -H | grep -E -- \
+  '--dir-name-(time|direct|hubs|hub-alpha|decollide|gap|max)|--dir-label-boxes'

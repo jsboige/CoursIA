@@ -1,10 +1,12 @@
 """Analyse du TSV produit par `ocr_trames.ps1` sur les trames d'un film Gource.
 
-Trois mesures, une seule passe :
+Quatre mesures, une seule passe :
   1. la courbe date <-> temps (bandeau du haut, y + h/2 < 130 px en 4K) ;
   2. le nombre d'etiquettes de repertoire par trame, bandeau exclu -- c'est le
      controle sur trames intermediaires ;
-  3. la duree de vie de quelques noms (nombre de trames, plus longue serie).
+  3. la duree de vie de quelques noms (nombre de trames, plus longue serie) ;
+  4. le nombre de paires de boites qui se chevauchent, par trame -- la mesure
+     lue dans les pixels livres, a opposer au comptage du moteur.
 
 Sortie texte sur stdout, a rediriger vers un fichier.
 
@@ -27,6 +29,10 @@ from collections import Counter
 from pathlib import Path
 
 BANNER_Y = 130  # en 3840x2160, le bandeau de date tient dans les 130 premiers pixels
+
+# Une boite qui touche une autre sans la recouvrir n'est pas un chevauchement.
+# On compte donc une paire quand l'intersection fait plus de 1 px sur chaque axe.
+OVERLAP_EPS = 1.0
 
 MONTHS = {
     # francais
@@ -86,6 +92,25 @@ def longest_run(hit: set[int], first: int, last: int) -> int:
     return best
 
 
+Box = tuple[float, float, float, float, str]  # x, y, largeur, hauteur, texte
+
+
+def overlapping_pairs(boxes: list[Box]) -> list[tuple[Box, Box]]:
+    """Paires de boites dont l'intersection depasse OVERLAP_EPS sur chaque axe."""
+    found = []
+    for a, (xa, ya, wa, ha, ta) in enumerate(boxes):
+        for xb, yb, wb, hb, tb in boxes[a + 1:]:
+            ox = min(xa + wa, xb + wb) - max(xa, xb)
+            oy = min(ya + ha, yb + hb) - max(ya, yb)
+            if ox > OVERLAP_EPS and oy > OVERLAP_EPS:
+                found.append(((xa, ya, wa, ha, ta), (xb, yb, wb, hb, tb)))
+    return found
+
+
+def count_overlapping_pairs(boxes: list[Box]) -> int:
+    return len(overlapping_pairs(boxes))
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print("usage: analyse_etiquettes.py <tsv> [trame ...]", file=sys.stderr)
@@ -94,19 +119,20 @@ def main() -> int:
     focus = {int(a) for a in sys.argv[2:]}
 
     banner: dict[int, list[str]] = {}
-    labels: dict[int, list[tuple[float, float, str]]] = {}
+    labels: dict[int, list[tuple[float, float, float, float, str]]] = {}
     for raw in tsv.read_text(encoding="utf-8", errors="replace").splitlines():
         if raw.startswith("#") or not raw.strip():
             continue
         parts = raw.split("\t")
         if len(parts) != 7:
             continue
-        _, idx_s, x_s, y_s, _w, h_s, text = parts
+        _, idx_s, x_s, y_s, w_s, h_s, text = parts
         idx, x, y = int(idx_s), float(x_s), float(y_s)
-        if y + float(h_s) / 2 < BANNER_Y:
+        w, h = float(w_s), float(h_s)
+        if y + h / 2 < BANNER_Y:
             banner.setdefault(idx, []).append(text)
         else:
-            labels.setdefault(idx, []).append((x, y, text))
+            labels.setdefault(idx, []).append((x, y, w, h, text))
 
     frames = sorted(set(banner) | set(labels))
     if not frames:
@@ -179,7 +205,7 @@ def main() -> int:
 
     freq = Counter()
     for i in frames:
-        for _x, _y, t in labels.get(i, []):
+        for _x, _y, _w, _h, t in labels.get(i, []):
             freq[t] += 1
     print("\n  quarante textes les plus frequents :")
     for text, n in freq.most_common(40):
@@ -191,15 +217,52 @@ def main() -> int:
     first, last = frames[0], frames[-1]
     for name, pattern in LIFETIMES:
         rx = re.compile(pattern, re.IGNORECASE)
-        hit = {i for i in frames if any(rx.search(t) for _x, _y, t in labels.get(i, []))}
+        hit = {i for i in frames if any(rx.search(t) for _x, _y, _w, _h, t in labels.get(i, []))}
         part = 100.0 * len(hit) / len(frames)
         print("  %-38s %5d %7.1f%% %6d"
               % (name, len(hit), part, longest_run(hit, first, last)))
 
     for i in sorted(focus & set(frames)):
         print(f"\n  trame {i} : {counts[i]} etiquettes")
-        for x, y, t in sorted(labels.get(i, []), key=lambda r: (r[1], r[0])):
-            print(f"    y={y:6.0f} x={x:6.0f}  {t}")
+        for x, y, w, h, t in sorted(labels.get(i, []), key=lambda r: (r[1], r[0])):
+            print(f"    y={y:6.0f} x={x:6.0f} {w:4.0f}x{h:3.0f}  {t}")
+
+    # --- 4. paires de boites qui se chevauchent ---------------------------
+    # Comptage cote pixels, sur les trames elles-memes : deux etiquettes lues
+    # par l'OCR dont les boites se recouvrent de plus d'un pixel sur chaque axe.
+    # Le moteur, lui, compte avant et apres sa selection (journal de boites) ;
+    # ce compte-ci dit ce qu'il en reste dans l'image livree.
+    print("\n## Paires de boites qui se chevauchent, par trame (bandeau exclu)")
+    pairs = {i: count_overlapping_pairs(labels.get(i, [])) for i in frames}
+    total_pairs = sum(pairs.values())
+    with_pairs = [i for i in frames if pairs[i] > 0]
+    pair_series = [pairs[i] for i in frames]
+    print(f"total des paires    : {total_pairs}")
+    print(f"moyenne par trame   : {total_pairs / len(frames):.2f}")
+    print(f"mediane             : {sorted(pair_series)[len(pair_series) // 2]}")
+    print(f"trames avec >= 1 paire : {len(with_pairs)} sur {len(frames)} "
+          f"({100.0 * len(with_pairs) / len(frames):.1f}%)")
+    if with_pairs:
+        worst = max(frames, key=lambda i: pairs[i])
+        print(f"maximum             : {pairs[worst]} (trame {worst})")
+        top_pairs = sorted(frames, key=lambda i: -pairs[i])[:12]
+        print("\n  douze trames les plus chevauchees :")
+        for i in top_pairs:
+            print(f"    trame {i:4d}  {pairs[i]:3d} paires  {counts[i]:3d} etiquettes")
+        print("\n  detail des paires des trames demandees :")
+        for i in sorted(focus & set(with_pairs)):
+            for (xa, ya, wa, ha, ta), (xb, yb, wb, hb, tb) in overlapping_pairs(labels[i]):
+                ox = min(xa + wa, xb + wb) - max(xa, xb)
+                oy = min(ya + ha, yb + hb) - max(ya, yb)
+                print(f"    trame {i}: [{ta}] x [{tb}]  recouvrement {ox:.0f}x{oy:.0f} px")
+
+    print("\n  profil par tranches de 10 s (moyenne des paires par trame) :")
+    for start in range(0, frames[-1] + 1, 10):
+        window = [pairs[i] for i in range(start, min(start + 10, frames[-1] + 1)) if i in pairs]
+        if window:
+            nz = sum(1 for v in window if v > 0)
+            print(f"    {start:3d}-{start + 9:3d} s  moy {sum(window) / len(window):5.2f}  "
+                  f"max {max(window):3d}  trames concernees {nz:2d}")
 
     return 0
 

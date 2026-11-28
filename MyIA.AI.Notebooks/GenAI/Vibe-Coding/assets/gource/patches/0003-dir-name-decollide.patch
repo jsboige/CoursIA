@@ -1,0 +1,465 @@
+--- a/src/dirnode.cpp
++++ b/src/dirnode.cpp
+@@ -17,6 +17,10 @@
+ 
+ #include "dirnode.h"
+ 
++#include <algorithm>
++#include <fstream>
++#include <vector>
++
+ float gGourceMinDirSize   = 15.0;
+ 
+ float gGourceForceGravity = 10.0;
+@@ -933,6 +937,274 @@
+     since_last_node_change += dt;
+ }
+ 
++// ---------------------------------------------------------------------------
++// Etiquettes de repertoires : une boite ecran par etiquette, un choix sans
++// recouvrement (--dir-name-decollide) et un journal des boites
++// (--dir-label-boxes). Les deux sont inactifs par defaut et ne changent rien
++// au dessin d'origine.
++//
++// Le nom est dessine sous push2D(), en pixels ecran, avec la police des
++// repertoires (couleur et alpha par etiquette, coordonnees non arrondies) :
++// l'ancre spline.getLabelPos() et les metriques de FXFont sont donc dans le
++// meme repere, et la boite du texte est exacte sans transformation.
++//
++// Priorite du choix : alpha decroissant (ce qui vient de changer passe avant
++// un nom de hub), puis profondeur croissante (un repertoire general passe
++// avant ses descendants), puis le texte pour un ordre total et reproductible.
++// Une exception a l'alpha : le nom d'un descendant cede a celui du hub qui
++// le contient, pour qu'un nom de hub ne clignote pas a chaque modification
++// de son sous-arbre ; ailleurs, un nom en changement passe bien avant un hub.
++// ---------------------------------------------------------------------------
++
++struct DirLabel {
++    const RDirNode* node;
++    std::string     text;
++    float           alpha;
++    float           x;         // ancre ecran (pixels)
++    float           y;
++    float           w;         // largeur du texte
++    float           asc;       // ascender (positif)
++    float           desc;      // descender (negatif ou nul)
++    float           top;       // haut de la ligne telle qu'elle est dessinee
++    float           bottom;    // bas de cette meme ligne
++    int             depth;
++    int             id;        // identite stable du nom d'un top a l'autre
++    int             prev_rank; // rang retenu au top precedent, -1 si nouveau
++    bool            hub;       // nom tenu par --dir-name-hubs
++    int             group;     // 0 : en changement hors hub, 1 : hub, 2 : sous un hub
++    std::vector<const RDirNode*> ancestors;
++    bool            kept;
++    int             kept_after; // etiquette retenue qui a bloque celle-ci, -1 sinon
++};
++
++namespace {
++
++    std::vector<DirLabel> gDirLabels;
++    std::ofstream         gDirLabelLog;
++    int                   gDirLabelFrame = 0;
++
++    // Identite d'un nom d'un top a l'autre. La cle est le noeud ; le texte et
++    // la profondeur la valident, pour qu'un noeud detruit puis recree a la
++    // meme adresse ne prenne pas l'identite de son predecesseur.
++    struct DirLabelIdentity {
++        DirLabelIdentity() : depth(-1), rank(-1), id(0) {}
++
++        std::string text;
++        int         depth;
++        int         rank;  // rang parmi les noms retenus du dernier top, -1 sinon
++        int         id;    // numero attribue a la premiere apparition
++    };
++
++    std::map<const RDirNode*, DirLabelIdentity> gDirLabelIdentities;
++    int gDirLabelNextId = 0;
++
++    DirLabelIdentity& dirLabelIdentity(const DirLabel& label) {
++        DirLabelIdentity& entree = gDirLabelIdentities[label.node];
++
++        if(entree.depth != label.depth || entree.text != label.text) {
++            entree.text  = label.text;
++            entree.depth = label.depth;
++            entree.rank  = -1;
++            entree.id    = ++gDirLabelNextId;
++        }
++
++        return entree;
++    }
++
++    // La boite de a est agrandie de gap de chaque cote, celle de b ne l'est pas :
++    // deux etiquettes retenues finissent donc separees d'au moins gap pixels.
++    bool dirLabelOverlap(const DirLabel& a, const DirLabel& b, float gap) {
++        // Les boites sont celles que la police dessine reellement : draw(x, y)
++        // pose la ligne de base a y + getHeight() (align_top), donc le haut du
++        // texte est getHeight() - asc sous y, pas asc au-dessus.
++        float a_left   = a.x - gap;
++        float a_right  = a.x + a.w + gap;
++        float a_top    = a.top - gap;
++        float a_bottom = a.bottom + gap;
++
++        float b_left   = b.x;
++        float b_right  = b.x + b.w;
++        float b_top    = b.top;
++        float b_bottom = b.bottom;
++
++        return a_left < b_right && b_left < a_right && a_top < b_bottom && b_top < a_bottom;
++    }
++
++    // Priorite : le groupe, puis le nom deja retenu au top precedent (a son
++    // rang), puis seulement la fraicheur. Sans cette preseance, un nom cede sa
++    // place des qu'un voisin est modifie, alors qu'il est encore candidat :
++    // le jeu retenu clignotait a la cadence des commits.
++    bool dirLabelFirst(const DirLabel& a, const DirLabel& b) {
++        if(a.group != b.group) return a.group < b.group;
++
++        bool a_garde = a.prev_rank >= 0;
++        bool b_garde = b.prev_rank >= 0;
++
++        if(a_garde != b_garde) return a_garde;
++        if(a_garde && a.prev_rank != b.prev_rank) return a.prev_rank < b.prev_rank;
++
++        if(a.alpha != b.alpha) return a.alpha > b.alpha;
++        if(a.depth != b.depth) return a.depth < b.depth;
++        return a.text < b.text;
++    }
++
++    // Trois groupes : ce qui change hors des hubs, les hubs, puis ce qui
++    // change dans le sous-arbre d'un hub nomme.
++    void groupDirLabels() {
++        std::set<const RDirNode*> hubs;
++
++        for(size_t i = 0; i < gDirLabels.size(); i++) {
++            if(gDirLabels[i].hub) hubs.insert(gDirLabels[i].node);
++        }
++
++        for(size_t i = 0; i < gDirLabels.size(); i++) {
++            DirLabel& label = gDirLabels[i];
++
++            bool sous_hub = false;
++            for(size_t k = 0; k < label.ancestors.size(); k++) {
++                if(hubs.count(label.ancestors[k]) != 0) { sous_hub = true; break; }
++            }
++
++            label.group = label.hub ? 1 : (sous_hub ? 2 : 0);
++        }
++    }
++
++    void selectDirLabels(float gap, int max_labels) {
++        // Les rangs du top precedent sont lus ici, puis remis a -1 pour tous :
++        // seuls les noms retenus a ce top en porteront un, et un nom qui
++        // disparait du jeu un seul top n'en retrouve pas un plus tard.
++        for(size_t i = 0; i < gDirLabels.size(); i++) {
++            DirLabelIdentity& entree = dirLabelIdentity(gDirLabels[i]);
++            gDirLabels[i].id        = entree.id;
++            gDirLabels[i].prev_rank = entree.rank;
++        }
++
++        for(std::map<const RDirNode*, DirLabelIdentity>::iterator it = gDirLabelIdentities.begin();
++            it != gDirLabelIdentities.end(); ++it) {
++            it->second.rank = -1;
++        }
++
++        groupDirLabels();
++        std::stable_sort(gDirLabels.begin(), gDirLabels.end(), dirLabelFirst);
++
++        std::vector<size_t> kept;
++
++        for(size_t i = 0; i < gDirLabels.size(); i++) {
++            DirLabel& candidate = gDirLabels[i];
++
++            candidate.kept = false;
++            candidate.kept_after = -1;
++
++            bool blocked = false;
++
++            if(max_labels > 0 && (int)kept.size() >= max_labels) {
++                blocked = true;
++            } else {
++                for(size_t k = 0; k < kept.size(); k++) {
++                    if(dirLabelOverlap(candidate, gDirLabels[kept[k]], gap)) {
++                        blocked = true;
++                        candidate.kept_after = (int)k;
++                        break;
++                    }
++                }
++            }
++
++            if(blocked) continue;
++
++            candidate.kept = true;
++            kept.push_back(i);
++        }
++
++        for(size_t k = 0; k < kept.size(); k++) {
++            dirLabelIdentity(gDirLabels[kept[k]]).rank = (int)k;
++        }
++    }
++
++    int countDirLabelPairs(bool kept_only) {
++        int pairs = 0;
++
++        for(size_t i = 0; i < gDirLabels.size(); i++) {
++            if(kept_only && !gDirLabels[i].kept) continue;
++            for(size_t j = i + 1; j < gDirLabels.size(); j++) {
++                if(kept_only && !gDirLabels[j].kept) continue;
++                if(dirLabelOverlap(gDirLabels[i], gDirLabels[j], 0.0f)) pairs++;
++            }
++        }
++
++        return pairs;
++    }
++
++    void logDirLabels() {
++        if(!gDirLabelLog.is_open()) return;
++
++        int kept = 0;
++        for(size_t i = 0; i < gDirLabels.size(); i++) if(gDirLabels[i].kept) kept++;
++
++        gDirLabelLog << "F\t" << gDirLabelFrame << "\t" << (int)gDirLabels.size() << "\t" << kept
++                     << "\t" << countDirLabelPairs(false) << "\t" << countDirLabelPairs(true) << "\n";
++
++        // Detail de l'index, par defaut une lecture sur trente tops, soit une
++        // par demi-seconde de film. L'index compte les ticks de simulation, pas
++        // les images : a -r 30, Gource simule a 60 Hz et n'exporte qu'une image
++        // sur deux (Gource::setFrameExporter), donc l'image k tombe au top 2k.
++        // Une image tiree par ffmpeg a une image par seconde pour la seconde s
++        // n'est pas le top 60*s : c'est l'image 30*s+14, soit le top 60*s+28
++        // (mesure sur le film v3, ou la trame 152 est l'image 4544).
++        int every = gGourceSettings.dir_label_boxes_every > 0
++                        ? gGourceSettings.dir_label_boxes_every : 30;
++
++        if((gDirLabelFrame % every) == 0) {
++            for(size_t i = 0; i < gDirLabels.size(); i++) {
++                const DirLabel& label = gDirLabels[i];
++
++                gDirLabelLog << "L\t" << gDirLabelFrame << "\t" << label.text
++                             << "\t" << label.depth
++                             << "\t" << label.alpha
++                             << "\t" << label.x
++                             << "\t" << label.top
++                             << "\t" << label.w
++                             << "\t" << (label.bottom - label.top)
++                             << "\t" << (label.kept ? 1 : 0)
++                             << "\t" << (label.kept_after >= 0 ? gDirLabels[label.kept_after].text : "-")
++                             << "\t" << label.group
++                             << "\t" << label.id
++                             << "\n";
++            }
++        }
++
++        gDirLabelLog.flush();
++        gDirLabelFrame++;
++    }
++
++    // Appelee une fois par trame, apres le parcours de l'arbre : choisit les
++    // etiquettes a garder, journalise, puis les dessine.
++    void drawDirLabels(FXFont& dirfont) {
++        if(gGourceSettings.dir_name_decollide) {
++            selectDirLabels((float)gGourceSettings.dir_name_gap, gGourceSettings.dir_name_max);
++        } else {
++            // Journal seul : le dessin d'origine a deja eu lieu pour chacune.
++            for(size_t i = 0; i < gDirLabels.size(); i++) gDirLabels[i].kept = true;
++        }
++
++        if(!gGourceSettings.dir_label_boxes_file.empty()) {
++            if(!gDirLabelLog.is_open()) {
++                gDirLabelLog.open(gGourceSettings.dir_label_boxes_file.c_str());
++            }
++            logDirLabels();
++        }
++
++        if(!gGourceSettings.dir_name_decollide) return;
++
++        for(size_t i = 0; i < gDirLabels.size(); i++) {
++            const DirLabel& label = gDirLabels[i];
++            if(!label.kept) continue;
++
++            dirfont.setAlpha(label.alpha);
++            dirfont.draw(label.x, label.y, label.text);
++        }
++    }
++}
++
+ void RDirNode::drawDirName(FXFont& dirfont) const{
+     if(parent==0) return;
+     if(gGourceSettings.hide_dirnames) return;
+@@ -960,6 +1232,42 @@
+ 
+     vec2 label_pos = spline.getLabelPos();
+ 
++    if(gGourceSettings.dir_name_decollide || !gGourceSettings.dir_label_boxes_file.empty()) {
++        DirLabel label;
++
++        label.node       = this;
++        label.text       = path_token;
++        label.alpha      = alpha;
++        label.x          = label_pos.x;
++        label.y          = label_pos.y;
++        label.w          = dirfont.getWidth(path_token);
++        label.asc        = dirfont.getAscender();
++        label.desc       = dirfont.getDescender();
++        // draw(x, y) ajoute getHeight() a y avant de dessiner (align_top), et
++        // getHeight() vaut ceil(asc + desc) : la ligne part de la ligne de base
++        // y + getHeight(), son haut est donc getHeight() - asc sous y.
++        float baseline   = label.y + dirfont.getHeight();
++        label.top        = baseline - label.asc;
++        label.bottom     = baseline - label.desc;
++        label.depth      = depth;
++        label.hub        = isNameHub();
++        label.group      = 0;
++        label.id         = 0;
++        label.prev_rank  = -1;
++        label.kept       = false;
++        label.kept_after = -1;
++
++        for(const RDirNode* p = parent; p != 0; p = p->parent) {
++            label.ancestors.push_back(p);
++        }
++
++        gDirLabels.push_back(label);
++
++        // Avec --dir-name-decollide le dessin attend le choix ; avec le seul
++        // journal, on continue sur le dessin d'origine.
++        if(gGourceSettings.dir_name_decollide) return;
++    }
++
+     dirfont.setAlpha(alpha);
+     dirfont.draw(label_pos.x, label_pos.y, path_token);
+ }
+@@ -998,6 +1306,12 @@
+ 
+ void RDirNode::drawNames(FXFont& dirfont) {
+ 
++    // La racine ouvre et ferme la trame : les etiquettes sont collectees dans
++    // l'ordre du parcours, puis choisies et dessinees une fois l'arbre vu.
++    if(parent==0) {
++        gDirLabels.clear();
++    }
++
+     if(!gGourceSettings.hide_dirnames && isVisible()) {
+         drawDirName(dirfont);
+     }
+@@ -1017,6 +1331,10 @@
+         RDirNode* node = (*it);
+         node->drawNames(dirfont);
+     }
++
++    if(parent==0 && (gGourceSettings.dir_name_decollide || !gGourceSettings.dir_label_boxes_file.empty())) {
++        drawDirLabels(dirfont);
++    }
+ }
+ 
+ void RDirNode::checkFrustum(const Frustum& frustum) {
+--- a/src/gource_settings.cpp
++++ b/src/gource_settings.cpp
+@@ -178,7 +178,14 @@
+     printf("  --dir-name-direct        Name only the directories a change touches directly,\n");
+     printf("                            not their parents\n");
+     printf("  --dir-name-hubs N        Keep a dim name on directories holding N files or more\n");
+-    printf("  --dir-name-hub-alpha FLOAT Alpha of those names (default: 0.5)\n\n");
++    printf("  --dir-name-hub-alpha FLOAT Alpha of those names (default: 0.5)\n");
++    printf("  --dir-name-decollide     Drop the names whose box would overlap a more\n");
++    printf("                            visible one (default: off)\n");
++    printf("  --dir-name-gap INT        Margin in pixels between two kept names (default: 4)\n");
++    printf("  --dir-name-max INT        Keep at most INT names per frame, most visible first\n");
++    printf("                            (default: 0, no limit)\n");
++    printf("  --dir-label-boxes FILE    Log the label boxes of every frame to FILE\n");
++    printf("  --dir-label-boxes-every N  Write that log every N frames (default: 30)\n\n");
+ 
+     printf("  --filename-time SECONDS  Duration to keep filenames on screen (default: 4.0)\n\n");
+ 
+@@ -369,6 +376,11 @@
+     arg_types["dir-name-time"]      = "float";
+     arg_types["dir-name-hub-alpha"] = "float";
+     arg_types["dir-name-direct"]    = "bool";
++    arg_types["dir-name-decollide"] = "bool";
++    arg_types["dir-name-gap"]       = "int";
++    arg_types["dir-name-max"]       = "int";
++    arg_types["dir-label-boxes"]    = "string";
++    arg_types["dir-label-boxes-every"] = "int";
+ }
+ 
+ void GourceSettings::setGourceDefaults() {
+@@ -466,6 +478,12 @@
+     dir_name_hubs      = 0;
+     dir_name_hub_alpha = 0.5f;
+ 
++    dir_name_decollide    = false;
++    dir_name_gap          = 4;
++    dir_name_max          = 0;
++    dir_label_boxes_file  = "";
++    dir_label_boxes_every = 30;
++
+     elasticity = 0.0f;
+ 
+     git_branch = "";
+@@ -1668,6 +1686,50 @@
+         }
+     }
+ 
++    if(gource_settings->getBool("dir-name-decollide")) {
++        dir_name_decollide = true;
++    }
++
++    if((entry = gource_settings->getEntry("dir-name-gap")) != 0) {
++
++        if(!entry->hasValue()) conffile.entryException(entry, "specify dir-name-gap (int)");
++
++        dir_name_gap = entry->getInt();
++
++        if(dir_name_gap < 0 || dir_name_gap > 200) {
++            conffile.entryException(entry, "dir-name-gap outside of range 0 - 200 (inclusive)");
++        }
++    }
++
++    if((entry = gource_settings->getEntry("dir-name-max")) != 0) {
++
++        if(!entry->hasValue()) conffile.entryException(entry, "specify dir-name-max (int)");
++
++        dir_name_max = entry->getInt();
++
++        if(dir_name_max < 0) {
++            conffile.entryException(entry, "dir-name-max outside of range 0 or more");
++        }
++    }
++
++    if((entry = gource_settings->getEntry("dir-label-boxes")) != 0) {
++
++        if(!entry->hasValue()) conffile.entryException(entry, "specify dir-label-boxes (filename)");
++
++        dir_label_boxes_file = entry->getString();
++    }
++
++    if((entry = gource_settings->getEntry("dir-label-boxes-every")) != 0) {
++
++        if(!entry->hasValue()) conffile.entryException(entry, "specify dir-label-boxes-every (int)");
++
++        dir_label_boxes_every = entry->getInt();
++
++        if(dir_label_boxes_every < 1) {
++            conffile.entryException(entry, "dir-label-boxes-every outside of range 1 or more");
++        }
++    }
++
+     //validate path
+     if(gource_settings->hasValue("path")) {
+         path = gource_settings->getString("path");
+--- a/src/gource_settings.h
++++ b/src/gource_settings.h
+@@ -149,6 +149,13 @@
+     int dir_name_hubs;
+     float dir_name_hub_alpha;
+ 
++    bool dir_name_decollide;
++    int dir_name_gap;
++    int dir_name_max;
++
++    std::string dir_label_boxes_file;
++    int dir_label_boxes_every;
++
+     std::vector<std::string> highlight_users;
+     std::vector<std::string> follow_users;
+     std::vector<Regex*> file_filters;
