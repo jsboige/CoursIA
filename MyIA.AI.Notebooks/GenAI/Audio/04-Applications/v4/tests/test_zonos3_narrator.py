@@ -21,7 +21,6 @@ Run from the v4 directory:
 """
 from __future__ import annotations
 
-import io
 import sys
 from pathlib import Path
 from unittest import mock
@@ -40,6 +39,50 @@ def _build_seg(*, speaker: str, text: str = "x"):
         type="narration" if speaker == "narrateur" else "dialogue",
         text=text,
         annotated_text=text,
+    )
+
+
+# The served steering payload, captured from the delivered service.  The
+# resolver and the seam are tested against this shape, never a made-up
+# one: the previous ``{"mood": [...]}`` stand-in advertised directions the
+# server never had and hid the drift for the whole seam.
+_FIXTURE = (
+    Path(__file__).resolve().parent
+    / "fixtures"
+    / "zonos3_controls_studio_mect60k_x10.json"
+)
+
+
+def _controls_index() -> dict:
+    """The ``GET /v2/controls`` payload the delivered service answers
+    (captured 2026-11-27 — see ``fixtures/README.md``)."""
+    import json
+
+    return json.loads(_FIXTURE.read_text(encoding="utf-8"))
+
+
+def _without(controls_index: dict, *directions: str) -> dict:
+    """A copy of the served payload with some directions removed — the
+    bundle of another checkpoint, which does not expose them."""
+    import copy
+
+    clone = copy.deepcopy(controls_index)
+    for direction in directions:
+        clone["directions"].pop(direction, None)
+    return clone
+
+
+def _annot(axis: str, value, span=None, **kw):
+    from v4.schemas import Zonos3Annotation
+
+    span_start, span_end = span if span else (None, None)
+    return Zonos3Annotation(
+        segment_id=1,
+        span_start=span_start,
+        span_end=span_end,
+        axis=axis,
+        value=value,
+        **kw,
     )
 
 
@@ -273,6 +316,7 @@ def _render_zonos3(*, seed_used, duration, text="Un texte de test.",
     pydub_ctx = (mock.patch.dict(sys.modules, {"pydub": None})
                  if pydub_absent else mock.MagicMock())
     with pydub_ctx, \
+         mock.patch("v4.zonos3_client.zonos3_ensure_up", return_value=True), \
          mock.patch("v4.zonos3_client.zonos3_tts",
                     return_value=(b"FAKEWAV", seed_used)), \
          mock.patch("v4.zonos3_client.audio_duration_wav",
@@ -324,41 +368,205 @@ def test_synthesize_narrator_zonos3_wav_fallback_path_in_result():
     assert Path(result.mp3_path).name == "zone_render_test.wav"
 
 
+def test_synthesize_narrator_zonos3_wakes_the_service_first():
+    """The container is started on demand and a cold pipeline meets it
+    stopped.  When the wake fails the seam raises before any render — it
+    never falls back to another engine (#15002 acceptance 6)."""
+    import v4.p5_tts as p5_tts
+
+    seg = _build_seg(speaker="narrateur", text="Un texte.")
+    with mock.patch("v4.zonos3_client.zonos3_ensure_up", return_value=False), \
+         mock.patch("v4.zonos3_client.zonos3_tts") as tts:
+        try:
+            p5_tts._synthesize_narrator_zonos3(
+                seg=seg,
+                fishaudio_text="Un texte.",
+                mp3_path=Path("/tmp/zone_never_written.mp3"),
+                seed=42,
+                text_hash="deadbeef",
+            )
+        except p5_tts.NarratorZonos3Unavailable:
+            tts.assert_not_called()
+            return
+    raise AssertionError("a failed wake did not raise")
+
+
+def test_synthesize_narrator_zonos3_rejects_a_cut_render():
+    """The server cuts a render at its frame budget without any signal
+    (measured 2026-11-27: 1 991 audio frames = 132.733 s, and a longer
+    text lands exactly there).  A render at the ceiling is a cut render:
+    it raises instead of shipping a truncated segment."""
+    from v4.p5_tts import NarratorZonos3Unavailable
+    from v4.zonos3_client import MAX_RENDER_SECONDS
+
+    assert round(MAX_RENDER_SECONDS, 3) == 132.733  # (2000 - 9) / 15
+    try:
+        _render_zonos3(seed_used=42, duration=MAX_RENDER_SECONDS)
+    except NarratorZonos3Unavailable as exc:
+        assert "ceiling" in str(exc)
+        return
+    raise AssertionError("a render at the one-request ceiling was accepted")
+
+
+def test_synthesize_narrator_zonos3_accepts_a_render_under_the_ceiling():
+    """The ceiling guard rejects the cut render only: one frame under the
+    ceiling is a complete render."""
+    from v4.zonos3_client import FRAME_SECONDS, MAX_RENDER_SECONDS
+
+    result = _render_zonos3(
+        seed_used=42, duration=MAX_RENDER_SECONDS - 3 * FRAME_SECONDS
+    )
+    assert result.status == "generated"
+
+
+def _drive_zonos3(*, annotations, controls_index, fishaudio_text="Un texte agite."):
+    """Run _synthesize_narrator_zonos3 with the service stubbed and the
+    request captured. Returns what the seam passed to zonos3_tts (the text
+    and its keyword arguments) plus the warning lines it logged."""
+    import v4.p5_tts as p5_tts
+
+    seen: dict = {}
+
+    def _capture(text, **kwargs):
+        seen["text"] = text
+        seen.update(kwargs)
+        return b"FAKEWAV", 42
+
+    with mock.patch("v4.zonos3_client.zonos3_ensure_up", return_value=True), \
+         mock.patch("v4.zonos3_client.zonos3_tts", side_effect=_capture), \
+         mock.patch("v4.zonos3_client.audio_duration_wav", return_value=2.0), \
+         mock.patch("v4.zonos3_client.zonos3_controls",
+                    return_value=controls_index), \
+         mock.patch.object(p5_tts, "_zonos3_annotations_for_segment",
+                           return_value=annotations), \
+         mock.patch.object(p5_tts, "logger") as log:
+        p5_tts._synthesize_narrator_zonos3(
+            seg=_build_seg(speaker="narrateur", text="Un texte agite."),
+            fishaudio_text=fishaudio_text,
+            mp3_path=Path("/tmp/zone_render_test.mp3"),
+            seed=42,
+            text_hash="deadbeef",
+        )
+    seen["warnings"] = [
+        call.args[0] % tuple(call.args[1:])
+        for call in log.warning.call_args_list
+    ]
+    return seen
+
+
+def test_synthesize_narrator_zonos3_never_writes_bracket_tags_into_the_text():
+    """ZONOS3 reads the request text literally: the FishAudio tags are
+    stripped, and an axis that cannot be steered is reported in the log,
+    never re-injected as a tag (measured: a bracketed prefix lengthened
+    the render by 0.87 s at the same seed)."""
+    # dominance is not served by this bundle: its "angry" intent must
+    # stay out of the text.
+    seen = _drive_zonos3(
+        annotations=[_annot("arousal", 0.6), _annot("dominance", 0.6)],
+        controls_index=_without(_controls_index(), "mood.dominance"),
+        fishaudio_text="[excited] Un texte agite.",
+    )
+    assert seen["text"] == "Un texte agite."
+    assert seen["controls"] == {"mood.arousal": 6.4}
+    assert seen["control_spans"] is None
+    # The unserved axis is reported, with the tag its intent is left to.
+    assert any(
+        "dominance" in line and "[angry]" in line for line in seen["warnings"]
+    )
+
+
+def test_synthesize_narrator_zonos3_unreadable_index_still_renders():
+    """Without the controls index no axis can be verified as served: the
+    render goes on un-steered, and the log says so."""
+    seen = _drive_zonos3(annotations=[_annot("arousal", 0.6)], controls_index={})
+    assert seen["controls"] is None
+    assert seen["control_spans"] is None
+    assert any("unreadable" in line for line in seen["warnings"])
+
+
+def test_narrator_zonos3_default_speaker_is_the_served_french_voice():
+    """The default reference is the only French voice the pinned
+    checkpoint serves (``GET /v2/speakers``, measured 2026-11-27:
+    ``default_517319c805b927e9``), and the cache sentinel names the v2
+    request: an MP3 cached under v1 was rendered by a request the server
+    refused or steered differently (#19692)."""
+    from v4 import p5_tts
+
+    assert p5_tts._ZONOS3_DEFAULT_SPEAKER_ID == "default_517319c805b927e9"
+    assert p5_tts._NARRATOR_ENGINE_REFERENCE_IDS["zonos3"].endswith("-v2")
+
+
+def test_synthesize_narrator_zonos3_sends_the_served_steering():
+    """What the resolver produces against the served bundle is what the
+    request carries: the tag ``[excited]`` becomes a centred dose on
+    ``mood.arousal``, nothing else."""
+    from v4 import p5_tts
+    from v4.zonos3_steering import annotations_from_tags
+
+    seen = _drive_zonos3(
+        annotations=annotations_from_tags(1, ["excited"]),
+        controls_index=_controls_index(),
+    )
+    assert seen["controls"] == {"mood.arousal": 6.4}  # 4.0 + 0.6 * 4.0
+    assert seen["control_spans"] is None
+    assert seen["reference_id"] == p5_tts._ZONOS3_DEFAULT_SPEAKER_ID
+
+
 # ---------------------------------------------------------------------------
 # Steering resolver (v4/zonos3_steering.py)
 # ---------------------------------------------------------------------------
 
-def _annot(axis: str, value, span=None, **kw):
-    from v4.schemas import Zonos3Annotation
-
-    span_start, span_end = span if span else (None, None)
-    return Zonos3Annotation(
-        segment_id=1,
-        span_start=span_start,
-        span_end=span_end,
-        axis=axis,
-        value=value,
-        **kw,
-    )
-
-
-def _served(*directions) -> dict:
-    """Build a minimal GET /v2/controls payload advertising a direction set."""
-    return {"mood": [list(directions)]}
-
-
 def test_resolve_steering_translates_sidecar_to_controls():
     """A sidecar axis whose direction the bundle serves becomes a
-    controls entry at the declared dose (value * dose_scale)."""
+    controls entry at a dose CENTRED ON THE SERVED NEUTRAL (measured
+    2026-11-27: mood.arousal and mood.valence are neutral at 4.0, and the
+    server never applies that calibration itself)."""
     from v4.zonos3_steering import resolve_steering
 
     anns = [_annot("arousal", 0.5), _annot("valence", -0.5)]
-    res = resolve_steering(anns, _served("mood.arousal", "mood.valence"))
-    # dose = 0.5 * 3.2 = 1.6 for both mood-bundle axes (scale 3.2).
-    assert res.controls == {"mood.arousal": 1.6, "mood.valence": -1.6}
+    res = resolve_steering(anns, _controls_index())
+    # dose = neutral 4.0 + ratio * span 4.0 -> 6.0 and 2.0.
+    assert res.controls == {"mood.arousal": 6.0, "mood.valence": 2.0}
     assert res.has_steering is True
     assert res.is_degraded is False
     assert res.fallback_tags == []
+
+
+def test_resolve_steering_follows_the_published_control_windows():
+    """Each axis follows the control the studio publishes for it, with
+    its own window and its own neutral (``ui.controls`` of the served
+    payload): ``pace`` is ``delivery.tempo`` (window [-2, 2], no
+    calibration), ``projection`` is one direction per sign, ``emphasis``
+    moves two directions at once, ``lively`` is ``expressive.expressive``."""
+    from v4.zonos3_steering import resolve_steering
+
+    def _controls(axis, value):
+        return resolve_steering([_annot(axis, value)], _controls_index()).controls
+
+    assert _controls("arousal", 1.0) == {"mood.arousal": 8.0}
+    assert _controls("arousal", 0.0) == {"mood.arousal": 4.0}  # ratio 0 = neutral
+    assert _controls("pace", -0.5) == {"delivery.tempo": -1.0}
+    assert _controls("projection", 0.6) == {"delivery.loud": 1.2}
+    assert _controls("projection", -0.6) == {"delivery.whisper": 0.9}
+    assert _controls("projection", 0.0) == {}  # one-sided: nothing to ask
+    assert _controls("clarity", 0.4) == {
+        "emphasis_nv_nodur.emphasis": 9.6,
+        "mood.arousal": 6.4,
+    }
+    assert _controls("liveliness", 0.5) == {"expressive.expressive": 4.0}
+    assert _controls("dominance", 0.6) == {"mood.dominance": 6.4}
+
+
+def test_resolve_steering_does_not_invert_a_one_sided_ask():
+    """``emphasis`` is a positive-only control: asking for less clarity
+    must not be rendered as more of it — the axis degrades to its tag."""
+    from v4.zonos3_steering import resolve_steering
+
+    res = resolve_steering([_annot("clarity", -0.4)], _controls_index())
+    assert res.controls == {}
+    assert res.is_degraded is True
+    assert res.fallback_tags == ["emphasis"]
+    assert ("clarity", "sens non exprimable par ce bundle") in res.degraded_axes
 
 
 def test_resolve_steering_degrades_unserved_axis_to_tag():
@@ -367,26 +575,135 @@ def test_resolve_steering_degrades_unserved_axis_to_tag():
     silently dropped, never steered on a direction the server lacks."""
     from v4.zonos3_steering import resolve_steering
 
-    # Only mood.arousal is served; dominance is not.
+    # Only mood.dominance is missing from this bundle.
     anns = [_annot("arousal", 0.5), _annot("dominance", 0.6)]
-    res = resolve_steering(anns, _served("mood.arousal"))
-    assert res.controls == {"mood.arousal": 1.6}
+    res = resolve_steering(anns, _without(_controls_index(), "mood.dominance"))
+    assert res.controls == {"mood.arousal": 6.0}
     assert res.is_degraded is True
     # degraded_axes records (axis, REASON) — the tag lives in fallback_tags.
     assert any(axis == "dominance" for axis, _reason in res.degraded_axes)
     assert "angry" in res.fallback_tags
 
 
+def test_resolve_steering_degrades_a_half_served_two_direction_control():
+    """A two-direction control is steered only whole: when the bundle
+    serves one of its directions and not the other, the axis degrades
+    rather than moving half of what the studio defines."""
+    from v4.zonos3_steering import resolve_steering
+
+    anns = [_annot("clarity", 0.4)]
+    res = resolve_steering(
+        anns, _without(_controls_index(), "emphasis_nv_nodur.emphasis")
+    )
+    assert res.controls == {}
+    assert res.is_degraded is True
+    assert "emphasis" in res.fallback_tags
+
+
 def test_resolve_steering_produces_control_spans():
     """A span-scoped annotation (span_start < span_end) on a served axis
-    contributes a control_spans entry with the character range."""
+    contributes a control_spans entry, in the list shape the server
+    reads, and nothing in the whole-segment controls."""
     from v4.zonos3_steering import resolve_steering
 
     anns = [_annot("pace", -0.5, span=(4, 20))]
-    res = resolve_steering(anns, _served("mood.tempo"))
-    assert res.control_spans == {"mood.tempo": [[4, 20]]}
-    # The whole-segment dose is also present (span + whole are independent).
-    assert res.controls == {"mood.tempo": -1.0}
+    res = resolve_steering(anns, _controls_index())
+    assert res.control_spans == [
+        {"start": 4, "end": 20, "controls": {"delivery.tempo": -1.0}}
+    ]
+    # The two channels compose on the server (measured), so a span never
+    # also sets the global control of its direction.
+    assert res.controls == {}
+    assert res.has_steering is True
+
+
+def test_resolve_steering_merges_axes_annotated_on_the_same_span():
+    """Two axes annotated on the same range are carried by one server
+    span, not by two overlapping ones."""
+    from v4.zonos3_steering import resolve_steering
+
+    anns = [
+        _annot("arousal", 0.5, span=(4, 20)),
+        _annot("valence", -0.5, span=(4, 20)),
+        _annot("pace", -0.5, span=(30, 40)),
+    ]
+    res = resolve_steering(anns, _controls_index())
+    assert res.control_spans == [
+        {"start": 4, "end": 20,
+         "controls": {"mood.arousal": 6.0, "mood.valence": 2.0}},
+        {"start": 30, "end": 40, "controls": {"delivery.tempo": -1.0}},
+    ]
+    assert res.controls == {}
+
+
+def test_served_directions_reads_the_directions_object():
+    """Discovery reads ``directions``, the object the server fills with
+    every direction it serves.  The ``ui`` section names directions too,
+    but only in the maps of its 25 studio controls: mined (the previous
+    behaviour), it saw 42 names and only 2 of the 7 mapped ones."""
+    from v4.zonos3_steering import AXIS_MAPPINGS, served_directions
+
+    index = _controls_index()
+    served = served_directions(index)
+    assert len(index["directions"]) == 65
+    assert len(served) == 65
+    mapped = {d.direction for m in AXIS_MAPPINGS for d in m.doses}
+    assert len(mapped) == 8
+    assert mapped <= served  # 8/8 served by the delivered bundle
+    # A payload carrying only the studio's ui section advertises nothing.
+    assert served_directions({"ui": index["ui"]}) == set()
+    assert served_directions({}) == set()
+    assert served_directions(None) == set()
+
+
+def test_served_neutral_dose_reads_the_calibration():
+    """The neutral is the served calibration's default per axis — 4.0 on
+    the mood axes, 2.0 on loudness and clarity — and 0.0 for a set the
+    bundle does not calibrate (delivery, expressive), or without an
+    index."""
+    from v4.zonos3_steering import served_neutral_dose
+
+    index = _controls_index()
+    assert served_neutral_dose("mood.arousal", index) == 4.0
+    assert served_neutral_dose("mood.loudness", index) == 2.0
+    assert served_neutral_dose("mood.clarity", index) == 2.0
+    assert served_neutral_dose("delivery.tempo", index) == 0.0
+    assert served_neutral_dose("expressive.expressive", index) == 0.0
+    assert served_neutral_dose("mood.arousal", None) == 0.0
+
+
+def test_axis_mapping_uses_the_windows_the_studio_publishes():
+    """Every declared direction, span and unit is the one the served
+    ``ui.controls`` publishes for that control: the table cannot drift
+    from the bundle without this test failing."""
+    index = _controls_index()
+    by_id = {entry["id"]: entry for entry in index["ui"]["controls"]}
+    controls = {
+        "arousal": "arousal",
+        "valence": "valence",
+        "pace": "pace",
+        "projection": "projection",
+        "clarity": "emphasis",
+        "liveliness": "lively",
+    }
+    from v4.zonos3_steering import AXIS_TO_MAPPING
+
+    for axis, control_id in controls.items():
+        entry = by_id[control_id]
+        safe = entry["safe"]
+        for dose in AXIS_TO_MAPPING[axis].doses:
+            assert dose.direction in {
+                name for branch in entry["map"].values() for name in branch
+            }, (axis, dose.direction)
+            if dose.sign >= 0:
+                assert dose.span == safe[1], (axis, dose.direction)
+            if dose.sign <= 0:
+                assert dose.span == -safe[0], (axis, dose.direction)
+            for branch in entry["map"].values():
+                if dose.direction in branch:
+                    assert dose.unit == abs(branch[dose.direction]), (
+                        axis, dose.direction
+                    )
 
 
 def test_resolve_steering_degrades_all_when_bundle_unreadable():
@@ -417,7 +734,7 @@ def test_resolve_steering_unknown_axis_degrades_without_guessing():
         span_start = None
         span_end = None
 
-    res = resolve_steering([_Ann()], _served("mood.arousal"))
+    res = resolve_steering([_Ann()], _controls_index())
     assert res.controls == {}
     assert ("not_an_axis", "axe inconnu du mapping") in res.degraded_axes
 
@@ -494,19 +811,25 @@ def _fake_response(content=b"FAKEWAV", json_data=None, headers=None):
 
 
 def test_zonos3_tts_builds_generate_payload():
-    """zonos3_tts POSTs to /v2/generate with the steering controls and
-    spans in the payload, and the reference clip base64 when given a
+    """zonos3_tts POSTs to /v2/generate with the wire shape the server
+    reads (measured 2026-11-27): a listed language code, a non-streaming
+    WAV request, steering controls, control spans as a LIST of
+    {start, end, controls}, and the reference clip base64 when given a
     path. requests is mocked: no network, no service."""
     import v4.zonos3_client as client
 
     with mock.patch.object(client, "requests") as req:
-        req.post.return_value = _fake_response(content=b"XYZ", headers={"X-Seed": "77"})
+        req.post.return_value = _fake_response(
+            content=b"XYZ", headers={"X-Seed": "77", "X-Control-Span-Follow": "rate"}
+        )
         audio, seed_used = client.zonos3_tts(
             "Un texte de test.",
             reference_id="emb-1",
             seed=7,
-            controls={"mood.arousal": 1.6},
-            control_spans={"mood.tempo": [[0, 5]]},
+            controls={"mood.arousal": 6.0},
+            control_spans=[
+                {"start": 0, "end": 5, "controls": {"delivery.tempo": -1.0}}
+            ],
         )
 
     assert audio == b"XYZ"
@@ -518,11 +841,222 @@ def test_zonos3_tts_builds_generate_payload():
     payload = kwargs["json"]
     assert payload["text"] == "Un texte de test."
     assert payload["seed"] == 7
-    assert payload["controls"] == {"mood.arousal": 1.6}
-    assert payload["control_spans"] == {"mood.tempo": [[0, 5]]}
+    assert payload["controls"] == {"mood.arousal": 6.0}
+    assert payload["control_spans"] == [
+        {"start": 0, "end": 5, "controls": {"delivery.tempo": -1.0}}
+    ]
+    # ``fr`` is answered 400 Unsupported language code.
+    assert payload["language"] == "fr_fr"
+    # format=wav needs stream=false; the server default is stream=true.
+    assert payload["format"] == "wav"
+    assert payload["stream"] is False
+    assert "max_tokens" not in payload  # the server default keeps the ceiling
     # A reference id without a clip is sent as an embedding id.
     assert payload["speaker_embedding_id"] == "emb-1"
     assert "speaker_audio_base64" not in payload
+
+
+def test_zonos3_tts_logs_the_body_of_a_refusal():
+    """A refusal is diagnosed by its body: the server names the clause
+    the request broke there (measured: ``400 Unsupported language code:
+    'fr'``).  The status alone cannot tell a wrong language code from a
+    malformed span."""
+    import v4.zonos3_client as client
+
+    resp = _fake_response(content=b"")
+    resp.text = '{"detail":"Unsupported language code: \'fr\'."}'
+    resp.raise_for_status.side_effect = client.requests.HTTPError(
+        "400 Client Error: Bad Request", response=resp
+    )
+    # Only ``post`` is patched: replacing the whole ``requests`` module
+    # would also replace ``requests.RequestException``, which the client's
+    # ``except`` clause needs to be a real class.
+    with mock.patch.object(client.requests, "post") as post, mock.patch.object(
+        client, "logger"
+    ) as log:
+        post.return_value = resp
+        audio, seed_used = client.zonos3_tts("Un texte", language="fr")
+
+    assert audio is None
+    assert seed_used is None
+    log.error.assert_called_once()
+    template, error, detail = log.error.call_args.args
+    assert "ZONOS3 TTS error" in template
+    assert "400" in str(error)
+    assert "Unsupported language code: 'fr'" in detail
+
+
+def test_zonos3_tts_never_sends_the_dict_span_form():
+    """control_spans as a per-direction dict is answered 422 by the server
+    (measured): the client refuses that shape locally rather than losing
+    the request to it."""
+    import v4.zonos3_client as client
+
+    with mock.patch.object(client, "requests") as req:
+        req.post.return_value = _fake_response(content=b"X")
+        client.zonos3_tts("Un texte", control_spans={"delivery.tempo": [[0, 5]]})
+    assert "control_spans" not in req.post.call_args[1]["json"]
+
+
+def test_zonos3_tts_drops_the_spans_the_server_would_refuse():
+    """A span outside the request text is answered 400 for the WHOLE
+    request (measured: ``control span [a, b) is outside the text``), so
+    one stale sidecar offset would cost the segment.  The client drops
+    the offending spans and keeps the valid ones."""
+    import v4.zonos3_client as client
+
+    valid = {"start": 0, "end": 5, "controls": {"delivery.tempo": -1.0}}
+    with mock.patch.object(client, "requests") as req:
+        req.post.return_value = _fake_response(
+            content=b"X", headers={"X-Control-Span-Follow": "rate"}
+        )
+        client.zonos3_tts(
+            "court",  # 5 code points
+            control_spans=[
+                valid,
+                # past the end
+                {"start": 0, "end": 6, "controls": {"delivery.tempo": -1.0}},
+                # reversed
+                {"start": 5, "end": 2, "controls": {"delivery.tempo": -1.0}},
+                {"start": 0, "end": 5, "controls": {}},  # nothing to apply
+                # unreadable dose
+                {"start": 0, "end": 5, "controls": {"delivery.tempo": "x"}},
+                "not a span",
+            ],
+        )
+    assert req.post.call_args[1]["json"]["control_spans"] == [valid]
+
+
+def test_zonos3_tts_sends_the_bearer_token_only_when_armed():
+    """With ZONOS3_ACCESS_TOKEN armed on the server every route answers
+    403 without the header (measured).  The client presents the token
+    when one is configured and sends no Authorization header otherwise."""
+    import v4.zonos3_client as client
+
+    with mock.patch.object(client, "requests") as req, \
+         mock.patch.object(client, "ZONOS3_ACCESS_TOKEN", "placeholder-token"):
+        req.post.return_value = _fake_response(content=b"X")
+        req.get.return_value = _fake_response(json_data={"directions": {}})
+        client.zonos3_tts("t")
+        client.zonos3_controls()
+        bearer = {"Authorization": "Bearer placeholder-token"}
+        assert req.post.call_args[1]["headers"] == bearer
+        assert req.get.call_args[1]["headers"] == bearer
+
+    with mock.patch.object(client, "requests") as req, \
+         mock.patch.object(client, "ZONOS3_ACCESS_TOKEN", ""):
+        req.post.return_value = _fake_response(content=b"X")
+        client.zonos3_tts("t")
+    assert req.post.call_args[1]["headers"] == {}
+
+
+def test_zonos3_tts_warns_when_its_spans_were_not_followed():
+    """The server answers a request that had spans with
+    ``X-Control-Span-Follow``; a 200 without it means no span was
+    applied, which must be said rather than taken for a steered render."""
+    import v4.zonos3_client as client
+
+    span = [{"start": 0, "end": 5, "controls": {"delivery.tempo": -1.0}}]
+    with mock.patch.object(client, "requests") as req, \
+         mock.patch.object(client, "logger") as log:
+        req.post.return_value = _fake_response(content=b"X", headers={})
+        client.zonos3_tts("court", control_spans=span)
+    assert any(
+        "X-Control-Span-Follow" in call.args[0]
+        for call in log.warning.call_args_list
+    )
+
+    with mock.patch.object(client, "requests") as req, \
+         mock.patch.object(client, "logger") as log:
+        req.post.return_value = _fake_response(
+            content=b"X", headers={"X-Control-Span-Follow": "rate"}
+        )
+        client.zonos3_tts("court", control_spans=span)
+    assert not any(
+        "X-Control-Span-Follow" in call.args[0]
+        for call in log.warning.call_args_list
+    )
+
+
+def test_zonos3_tts_forwards_an_explicit_frame_budget():
+    """``max_tokens`` is the server's own frame budget: it is forwarded
+    when given and capped by the server at MAX_AUDIO_FRAMES."""
+    import v4.zonos3_client as client
+
+    with mock.patch.object(client, "requests") as req:
+        req.post.return_value = _fake_response(content=b"X")
+        client.zonos3_tts("t", max_tokens=1000)
+    assert req.post.call_args[1]["json"]["max_tokens"] == 1000
+
+
+def test_request_ceiling_is_the_measured_cut_value():
+    """The ceiling constants encode the measured contract: the budget is
+    2 000 frames, the prompt takes a constant 9, one frame is 1/15 s —
+    so one request renders at most 1 991 frames = 132.733 s."""
+    from v4.zonos3_client import (
+        FRAME_SECONDS,
+        MAX_AUDIO_FRAMES,
+        MAX_RENDER_SECONDS,
+        PROMPT_FRAME_OVERHEAD,
+    )
+
+    assert (MAX_AUDIO_FRAMES, PROMPT_FRAME_OVERHEAD) == (2000, 9)
+    assert round(FRAME_SECONDS, 6) == round(2940 / 44100, 6)
+    assert round(MAX_RENDER_SECONDS / FRAME_SECONDS) == 1991
+    assert round(MAX_RENDER_SECONDS, 3) == 132.733
+
+
+def test_zonos3_ensure_up_skips_a_remote_host():
+    """Waking is only this machine's container to do: a ZONOS3_URL on
+    another host is used, never woken — it returns True without probing
+    or starting anything."""
+    import v4.zonos3_client as client
+
+    with mock.patch.object(client, "ZONOS3_URL", "http://gpu-node:1919"), \
+         mock.patch.object(client, "requests") as req, \
+         mock.patch.object(client, "_import_ensure_service_up") as organ:
+        assert client.zonos3_ensure_up() is True
+    organ.assert_not_called()
+    req.get.assert_not_called()
+
+
+def test_zonos3_ensure_up_goes_through_the_shared_organ_on_loopback():
+    """On loopback the wake is the shared organ's (``service_wake
+    .ensure_service_up``): this module does not carry a second
+    implementation of probe-then-docker-start-then-poll."""
+    import v4.zonos3_client as client
+
+    organ = mock.Mock(return_value=True)
+    with mock.patch.object(client, "ZONOS3_URL", "http://127.0.0.1:1919"), \
+         mock.patch.object(client, "ZONOS3_ACCESS_TOKEN", "placeholder-token"), \
+         mock.patch.object(client, "_import_ensure_service_up", return_value=organ):
+        assert client.zonos3_ensure_up(timeout=5, poll_interval=1) is True
+    organ.assert_called_once_with(
+        "tts-zonos3",
+        "http://127.0.0.1:1919/v2/health",
+        api_key="placeholder-token",
+        timeout=5,
+        poll_interval=1,
+    )
+
+
+def test_zonos3_ensure_up_reports_a_failure_without_raising():
+    """A service that cannot be brought up yields False — the seam raises
+    its typed error; the wake itself never raises.  Without the organ
+    only an already-running service can answer, and then the plain probe
+    decides."""
+    import v4.zonos3_client as client
+
+    with mock.patch.object(client, "ZONOS3_URL", "http://127.0.0.1:1919"), \
+         mock.patch.object(client, "_import_ensure_service_up",
+                           return_value=mock.Mock(return_value=False)):
+        assert client.zonos3_ensure_up() is False
+
+    with mock.patch.object(client, "ZONOS3_URL", "http://127.0.0.1:1919"), \
+         mock.patch.object(client, "_import_ensure_service_up", return_value=None), \
+         mock.patch.object(client, "_probe_health", return_value=False) as probe:
+        assert client.zonos3_ensure_up() is False
+    probe.assert_called_once_with("http://127.0.0.1:1919/v2/health")
 
 
 def test_zonos3_tts_reference_clip_base64():
