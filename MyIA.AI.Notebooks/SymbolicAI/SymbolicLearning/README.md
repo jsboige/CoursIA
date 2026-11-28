@@ -9,232 +9,171 @@ breakdown: SymbolicLearning=28
 maturity: BETA=26, ALPHA=2
 -->
 
-## Présentation
+## Découverte — apprendre à partir de connaissances, pas seulement de données
 
-Comment un agent peut-il apprendre à partir de connaissances existantes plutôt que de données brutes ? Cette série explore l'apprentissage symbolique tel que décrit dans le chapitre 19 d'AIMA (Russell & Norvig), depuis l'apprentissage inductif pur (CBH, Version Space) jusqu'aux méthodes guidées par la connaissance (EBL, RBL).
+Comment un agent peut-il apprendre à partir de connaissances existantes plutôt que de données brutes ? C'est la question du chapitre 19 d'AIMA (Russell et Norvig), *Knowledge in Learning*. La série la déroule jusqu'aux travaux de recherche : apprendre un concept dans un espace d'hypothèses, guider l'apprentissage par une théorie du domaine (EBL, RBL), induire des programmes logiques et faire tourner les moteurs réels, rendre la logique différentiable, miner des règles sur un graphe de connaissances, faire proposer des règles par un LLM puis les vérifier, apprendre un automate par requêtes, assembler ces briques dans un capstone, puis des carnets de recherche.
 
-Le premier notebook pose les bases : représentation d'hypothèses comme conjonctions de contraintes, algorithmes Current-Best-Hypothesis et Candidate Elimination (Version Space), et leurs limites face au bruit et aux concepts disjonctifs. Le second notebook montre comment la connaissance du domaine accélère l'apprentissage : l'apprentissage basé sur les explications (EBL) compile les théories en heuristiques opérationnelles, et l'apprentissage basé sur la pertinence (RBL) identifie les attributs déterminant via les déterminations. Le troisième notebook approfondit le RBL avec le treillis des déterminations, l'algorithme MINIMAL-CONSISTENT-DET et une comparaison avec sklearn. Le quatrième notebook couvre la programmation logique inductive (ILP) : l'algorithme FOIL (top-down), les opérateurs de résolution inverse (bottom-up) et la connexion avec les knowledge graphs, jusqu'à l'ILP moderne (Popper, Learning From Failures). SL-05 reprend et mène à terme la voie bottom-up esquissée en SL-04 (LGG de Plotkin, theta-subsomption, clause bottom par entailment inverse et recherche à la Progol), faisant directement suite à FOIL. SL-06 met quatre moteurs ILP *réels* face à face — Aleph, Metagol, Popper et ∂ILP (Lernd) — sur une même tâche récursive (`ancestor/2`), pour comparer leurs machineries (entailment inverse, MIL, Learning From Failures, gradient différentiable).
-
-Les notebooks SL-07 à SL-09 ouvrent ensuite vers des méthodes contemporaines : SL-07 introduit le neuro-symbolique (T-norms différentiables, Logic Tensor Networks, DeepProbLog) ; SL-08 outille la découverte de règles sur knowledge graphs réels avec rdflib et AMIE rule mining ; SL-09 boucle LLM et vérification symbolique pour fiabiliser le raisonnement formel guidé par modèles de langage.
-
-Enfin, deux notebooks concluent la série : SL-10 change de paradigme avec l'apprentissage *actif* (l'algorithme L* d'Angluin interroge un oracle au lieu de subir un échantillon, et apprend des automates finis avec garanties de minimalité) ;
-
-SL-11 est le capstone qui assemble toute la série en un pipeline neuro-symbolique de bout en bout — du texte brut aux faits découverts, avec un LLM réel (Gemini 3.5 Flash) aux deux extrémités et le symbolique comme colonne vertébrale.
-
-SL-12, ajouté à la série, explore un autre registre du neuro-symbolique : les *réseaux de portes logiques differentiables* (difflogic, Petersen NeurIPS 2022) — un modèle qui apprend des combinaisons de portes logiques par descente de gradient, puis se discretise en un circuit 100% booleen, interpretable-par-construction et ultra-rapide a l'inference.
-
-SL-12b prolonge SL-12 par l'autre versant du registre discret : la **synthèse logique spectrale** (Pavlov, arXiv 2601.13953, digestion EPIC #14366 grain G2) — Fourier booléen exact (FWHT), poids ternaires de PTF, routage Sinkhorn sans surclaim, quantification puis recherche discrète (Metropolis, parallel tempering) avec oracle exact et vérité terrain exhaustive. **SL-12c** complète SL-12b par la **tranche de recherche G1** du même EPIC : reproduction bornée Phase 1+2 du claim Pavlov, mesure de discrimination linéaire signé vs Sinkhorn-constrained routing, verdict honnête sur 27 opérations.
-
-SL-13 ferme la phase 5 par un **diagnostic DISCOVER léger** (McCoy et al. arXiv:2608.29530, digestion EPIC #14366 grain G6) — un GRU 1 couche (contrôle : Transformer 2 couches) entraîné sur copy/reverse/interleave est-il porteur d'une structure *Tensor Product Representation* (TPR) approximative ? Factorisation role × filler par moindres carrés alternés, réinjection dans le décodeur, constituent surgery, contrôle *white-box TPR vs embeddings atomiques*, balayage de capacité et régularisation L2,1 — le tout CPU-only, avec une conclusion bornée (la structure est *approximative*, pas une implémentation symbolique exacte).
-
-SL-13b confronte la lecture TPR de SL-13 à une **seconde lecture concurrente des mêmes états cachés** : un dictionnaire creux (SAE top-k sur-complet) entraîné par le **vrai organe** `ict/sae_dictionary.py` de la série ICT (prolongement des insights McCoy proposé en commentaire de l'EPIC #14366). Sur le même GRU copy que SL-13 (protocole de décodage à BOS : chaque position est une cible de prédiction), le notebook mesure quatre confrontations falsifiables : sélectivité des features aux 40 facteurs (position, symbole) contre un null apparié en effectifs, concentration de rang 1 des atomes dédiés dans le découpage TPR (prédiction géométrique du pont role ⊗ filler — non soutenue à ces effectifs, résultat négatif rapporté tel quel, sans inférence formelle), double perturbation (permutation de blocs de coordonnées du découpage TPR — contrôle structurel, pas une intervention sur des rôles appris — contre ablation SAE dirigée, chacune contre son contrôle apparié en activité), et généralisation train → val du dictionnaire (encode-only) contre la TPR partagée. CPU borné, conclusion bornée ; trois exercices non résolus (contraste sur reverse, ablation dirigée par symbole, sur-complétude 32/64/128).
-
-SL-14 ouvre un registre que la série n'avait pas encore visité : la **découverte d'équations** — la régression symbolique d'AI Feynman 2.0 (Udrescu, Tan, Feng, Neto, Wu, Tegmark, NeurIPS 2020, arXiv:2006.10782 ; digestion Epic #16741 grain T4). Le **vrai outil** `aifeynman` est exécuté sur le cas d'école du papier, l'énergie cinétique relativiste, et le notebook ouvre ses trois idées : symétries lues dans les gradients d'un réseau (la séparabilité E(m,v) = g(m)·h(v) détectée par le score S[f] sans chercher aucune formule), critère de description en bits (le MEDL ignore les outliers là où la MSE se fait traîner), et front de Pareto complexité–précision (mv²/2 à 13,6 bits cohabite avec la forme exacte d'Einstein) — plus la leçon transversale : « simple » dépend du langage de description. Le paquet (figé en 2021, extensions Fortran) s'exécute dans le conteneur `aifeynman:sl14-py313` construit par `assets/Dockerfile.aifeynman-py313` (CPython 3.13 + NumPy 2 + gfortran + torch CPU) : le `setup.py` du sdist importe `numpy.distutils`, retiré de NumPy 2, donc l'image reconstruit les sept extensions Fortran avec le f2py de NumPy 2. L'image fondatrice `aifeynman:sl14` (`assets/Dockerfile.aifeynman`, Python 3.9 + NumPy 1.26) reste la référence historique.
-
-## À qui s'adresse cette série
+### À qui cette série s'adresse
 
 Étudiants en IA, informaticiens intéressés par le raisonnement symbolique, et chercheurs en apprentissage automatique souhaitant comprendre les approches non-statistiques.
 
-## Prérequis et dépendances
+Trois connaissances suffisent pour entrer : Python de base (fonctions, classes, tuples, dictionnaires) ; logique propositionnelle (conjonctions, prédicats) ; notions d'apprentissage supervisé (classification binaire). Une familiarité avec la logique propositionnelle suffit pour les carnets 01 à 06 et 10 ; les carnets 07, 09 et 11 supposent une intuition des réseaux de neurones et des LLM.
 
-Les notebooks (~22h50 total — 17 Python + 8 jumeaux C# marathon parité #4956 + 1 compagnon Lean natif) se répartissent ainsi :
+Plusieurs carnets ont un jumeau C# (.NET Interactive) : mêmes algorithmes, plus un pont vers un moteur de production ou un solveur de référence. Les jumeaux figurent sur la ligne de leur carnet dans le parcours ; ce qu'ils ajoutent est détaillé en [Jumeaux C#](#jumeaux-c).
 
-- **Track Python** : Python 3.10+ standard library suffit, sauf SL-03 (scikit-learn + numpy pour la comparaison RBL / information mutuelle), SL-04 (Popper + `janus_swi` + SWI-Prolog, kernel Linux/WSL), SL-06 (moteurs ILP réels : SWI-Prolog, Popper, Lernd), SL-07 (`torch` + `LTNtorch` pour les Logic Tensor Networks), SL-08 (`rdflib` + `clingo` pour les knowledge graphs et l'ASP), SL-12 (difflogic + torch), SL-12b (numpy + matplotlib pour la synthèse spectrale), SL-12c (numpy seul CPU pour la reproduction Pavlov DLS), SL-13 (`torch` CPU + numpy pour le diagnostic DISCOVER), SL-15 (`ortools` 9.15 + `scikit-learn` 1.6, CPU seul — CP-SAT joue l'oracle) et SL-14 (conteneur Docker `aifeynman:sl14-py313` — le paquet `aifeynman` figé en 2021 n'est pas installable sous 3.13 (`numpy.distutils` retiré de NumPy 2) ; l'image reconstruit ses sept extensions Fortran avec le f2py de NumPy 2 ; construction : `docker build -f assets/Dockerfile.aifeynman-py313 -t aifeynman:sl14-py313 assets/`, puis exécution papermill dans le conteneur) ; SL-09 et SL-11 acceptent une clé OpenRouter optionnelle (fichier `.env`) pour des appels LLM réels, avec un simulateur déterministe en repli.
-- **Compagnon Lean** : SL-01b s'exécute sur le kernel Lean 4 `lean4-wsl` (lake `learning_theory_lean`, Mathlib).
-- **Jumeaux C#** : les 8 jumeaux (.NET Interactive 1.4+, `Microsoft.dotnet-interactive`) sont des ré-implémentations from-scratch en C# pur des mêmes algorithmes, sans dépendance externe ML.
-- **Niveau requis** : une familiarité avec la logique propositionnelle suffit pour SL-01 à SL-06 et SL-10 ; SL-07, SL-09 et SL-11 supposent une intuition des réseaux de neurones et des LLMs.
+### Pourquoi une série sur l'apprentissage symbolique
 
-## Parité .NET ⇄ Python
-
-Le notebook [SL-01-LogicalLearning-CSharp.ipynb](SL-01-LogicalLearning-CSharp.ipynb) est le jumeau C# (.NET Interactive) de SL-01 — implémentation from-scratch des mêmes algorithmes (CBH + Candidate Elimination) en C# pur (type system + `HashSet<>`, pas de lib externe). Marathon parité .NET ⇄ Python (#4956).
-
-## Compagnon Lean natif
-
-Le notebook [SL-01b-LogicalLearning-Lean.ipynb](SL-01b-LogicalLearning-Lean.ipynb) exécute le lake [`learning_theory_lean`](../../ML/learning_theory_lean/README.md) (théorie PAC + perceptron de Novikoff, 0-sorry) directement dans le kernel Lean 4 `lean4-wsl` : `#check` des théorèmes du lake (borne de Valiant classe finie, généralisation agnostique, concentration de Hoeffding-Chernoff, convergence et serrage du perceptron), une distribution construite à la main, et 3 exercices de preuve. C'est le pendant formel de l'inductif de SL-01 — là où SL-01 *implémente* l'apprentissage inductif, SL-01b *prouve* ses garanties d'échantillonnage (See #11703).
-
-## Séries connexes
-
-Les notebooks de la série constituent un complément théorique aux séries :
-
-- [Tweety](../Tweety/README.md) — argumentation computationnelle
-- [SemanticWeb](../SemanticWeb/README.md) — représentation de connaissances
-- [ML](../../ML/README.md) — apprentissage statistique (contraste avec l'inductif symbolique)
-
-## Pourquoi cette série
-
-L'apprentissage symbolique représente la contrepartie théorique du machine learning statistique. Tandis que les méthodes modernes (deep learning, ensembles d'arbres) excellent à extraire des patterns de grandes masses de données, elles souffrent de trois limites fondamentales que l'approche symbolique adresse directement :
+Trois situations où les données seules ne suffisent pas :
 
 - **Peu de données disponibles** : les méthodes symboliques comme Candidate Elimination ou FOIL apprennent à partir de quelques exemples, voire d'un seul (EBL). Quand la collecte de données est coûteuse ou impossible (diagnostic médical rare, validation formelle), l'induction pure ne fonctionne pas.
-- **Interprétabilité requise** : une règle logique `IF temperature > 38 AND toux THEN infection` est compréhensible par un humain. Un réseau de neurones de 100M de paramètres ne l'est pas. Pour les applications critiques ou réglementées (médecine, finance, justice), l'interprétabilité n'est pas un luxe — c'est une exigence.
-- **Intégration avec la connaissance existante** : les méthodes symboliques combinent examples ET théorie du domaine. EBL compile un exemple prouvé en une règle opérationnelle générale ; RBL identifie les attributs déterminants via des contraintes formelles. Aucune méthode statistique ne peut exploiter cette connaissance a priori de la même façon.
+- **Interprétabilité requise** : une règle logique `IF temperature > 38 AND toux THEN infection` est compréhensible par un humain. Un réseau de neurones de cent millions de paramètres ne l'est pas. Pour les applications critiques ou réglementées (médecine, finance, justice), l'interprétabilité n'est pas un luxe, c'est une exigence.
+- **Intégration avec la connaissance existante** : les méthodes symboliques combinent exemples ET théorie du domaine. EBL compile un exemple prouvé en une règle opérationnelle générale ; RBL identifie les attributs déterminants par des contraintes formelles. Aucune méthode statistique n'exploite cette connaissance a priori de la même façon.
 
-Cette série montre que les deux approches ne s'opposent pas — elles se **complémentent**. La phase finale (SL-07 à SL-09) explore explicitement cette intégration : T-norms différentiables pour rendre la logique compatible avec l'entraînement neuronal, rule mining sur knowledge graphs réels, et boucles de vérification symbolique pour fiabiliser les sorties LLM.
+Le fil rouge de la série : l'apprentissage symbolique réussit là où les données seules échouent, non pas en ignorant la connaissance, mais en l'écrivant explicitement, en l'induisant des exemples, puis en la réconciliant avec le connexionnisme. Le geste profond : transformer une théorie du domaine (une détermination, une preuve, une ontologie) en un programme qui apprend, et montrer au capstone que l'on peut tenir les deux bouts, LLM et logique, dans une même boucle où chacun corrige l'autre.
 
 ## Objectifs d'apprentissage
 
-À l'issue de cette série, vous serez capable de :
+À l'issue de la série, un lecteur sait faire ce qui suit. Les objectifs sont groupés par nature : les gestes techniques, la méthode qui rend leurs résultats croyables, et les situations où ils s'appliquent.
 
-1. **Implémenter** les algorithmes d'apprentissage inductif de base (CBH, Candidate Elimination, Version Space)
-2. **Compiler** des preuves en heuristiques opérationnelles via EBL, et **identifier** les attributs déterminants via RBL et les déterminations
-3. **Construire** le treillis des déterminations et appliquer MINIMAL-CONSISTENT-DET pour la sélection guidée d'attributs
-4. **Apprendre** des règles logiques (clauses Horn) à partir d'exemples avec FOIL et la résolution inverse
-5. **Construire** la chaîne bottom-up de l'ILP : LGG de Plotkin, theta-subsomption, clause bottom et recherche de clause à la Progol
-6. **Comparer** quatre moteurs ILP modernes réels — Aleph (entailment inverse), Metagol (MIL), Popper (LFF) et ∂ILP (différentiable) — sur une même tâche récursive
-7. **Intégrer** logique et apprentissage neuronal via T-norms, Logique Tensorielle, et DeepProbLog
-8. **Extraire** des règles de knowledge graphs réels avec rdflib et AMIE, et **effectuer** la complétion de graphes
-9. **Concevoir** une boucle LLM-symbolique : extraction de règles IF-THEN depuis du texte, vérification de cohérence formelle, feedback pour l'amélioration
-10. **Implémenter** l'algorithme L* d'Angluin : table d'observation, requêtes d'appartenance et d'équivalence, apprentissage actif d'automates minimaux
-11. **Assembler** un pipeline neuro-symbolique complet : extraction LLM, oracle de validation type, mining de règles, chaînage avant avec provenance, et confrontation LLM vs KG
-12. **Calculer** le spectre de Fourier exact d'une fonction booléenne (FWHT), le distinguer des poids ternaires d'un PTF, et conduire une recherche discrète bornée (Metropolis, parallel tempering) contre un oracle exact
+### Techniques — implémenter, pas seulement reconnaître
 
-13. **Diagnostiquer** la structure interne d'un GRU 1 couche entraîné sur tâches symboliques de séquence via DISCOVER (TPR par ALS, R² sur l'approximation, réinjection decoder, constituent surgery, contrôle *white-box TPR vs embeddings atomiques*), et **conclure de façon bornée** sur la nature approximative vs exacte de la structure TPR observée
+1. **Implémenter** l'apprentissage inductif d'un espace d'hypothèses conjonctives — Current-Best-Hypothesis, Candidate Elimination — et lire un espace de versions par ses bornes G et S (carnet 01).
+2. **Compiler** un exemple résolu en règle opérationnelle par EBL (expliquer, variabiliser, extraire, simplifier), et **trouver** les attributs déterminants d'un problème par le treillis des déterminations et MINIMAL-CONSISTENT-DET (carnets 02 et 03).
+3. **Apprendre** des clauses de Horn récursives par les deux voies de l'ILP : FOIL et son gain en top-down ; résolution inverse, LGG de Plotkin, clause bottom et recherche à la Progol en bottom-up (carnets 04 et 05).
+4. **Faire tourner** quatre moteurs ILP réels sur une même tâche et **distinguer** leurs machineries : entailment inverse (Aleph), méta-interprétation (Metagol), contraintes (Popper), descente de gradient (∂ILP) (carnet 06).
+5. **Rendre la logique différentiable** — t-normes, prédicats neuronaux, DeepProbLog minimal puis LTNtorch, la satisfaction des formules se lisant dans la perte (carnet 07) — et **discrétiser** un réseau de portes logiques appris par gradient en un circuit booléen (carnet 12).
+6. **Extraire** des règles d'un graphe RDF (support, confiance, confiance PCA), les appliquer pour compléter le graphe, et **recouper** la complétion par un chaînage avant Datalog sous clingo (carnet 08).
+7. **Apprendre un automate par requêtes** : table d'observation fermée et cohérente, requêtes d'appartenance et d'équivalence, convergence vers l'automate minimal de Myhill-Nerode, puis oracle bruité (carnet 10).
+8. **Calculer** le spectre de Walsh-Hadamard exact d'une fonction booléenne, le **distinguer** des poids ternaires d'un PTF, et conduire une recherche discrète bornée contre un oracle exact (carnet 12b).
+9. **Proposer des conjectures à un solveur** : fixations de variables pour CP-SAT, détection de leurs conflits, réparation, et mesure du gain par conjecture prise isolément (carnet 15).
 
-## Vue d'ensemble
+### Méthodologiques — ce qui rend le résultat croyable
 
-| Statistique | Valeur |
-|-------------|--------|
-| Notebooks | 26 (17 Python canoniques + 8 jumeaux C# marathon parité #4956 + 1 compagnon Lean natif) |
-| Exercices (table de pioche) | 61 |
-| Kernel | Python 3 + .NET Interactive (jumeaux C#) + lean4-wsl (compagnon Lean) + conteneur aifeynman:sl14 (SL-14) |
-| Durée estimée | ~1370 min (~22 h 50 : Python 15 h 20 + compagnon Lean 40 min + jumeaux C# 6 h 50) |
-| Prérequis | Python 3.10+ (standard library + sklearn + numpy pour SL-03 seulement ; SL-04 relève de SWI-Prolog/Popper via kernel Linux/WSL ; rdflib+clingo pour SL-08 ; torch+LTNtorch pour SL-07 ; difflogic+torch pour SL-12 ; numpy+matplotlib pour SL-12b ; numpy seul CPU pour SL-12c ; torch CPU + numpy pour SL-13 ; ortools + scikit-learn pour SL-15 ; conteneur Docker aifeynman:sl14 pour SL-14 ; clé OpenRouter optionnelle pour SL-09/SL-11) + .NET Interactive 1.4+ pour les 8 jumeaux C# + kernel lean4-wsl (lake `learning_theory_lean`) pour SL-01b |
+10. **Concevoir une boucle générateur/oracle** : un LLM propose des règles, un vérificateur formel les accepte ou les rejette, l'erreur retourne au générateur (carnet 09).
+11. **Confronter une implémentation artisanale à une référence** : parité de FOIL et de Progol avec clingo et SWI-Prolog, parité des jumeaux C# avec leur carnet Python, et repérage du point où deux implémentations divergent (carnets 04, 05, 06 et leurs jumeaux).
+12. **Borner une conclusion de recherche** : distinguer une structure *approximative* d'une structure *exacte* (carnets 13 et 13b), un résultat négatif d'une réfutation (carnet 12c), un gain mesuré sur un budget d'un gain général (carnet 14).
+13. **Mesurer contre un contrôle apparié** : null de même effectif pour la sélectivité des atomes, substitution atomique pour la TPR, ablation dirigée pour le dictionnaire creux (carnets 13 et 13b).
 
-## Parcours d'apprentissage
+### Applicatifs — où le geste sert
 
-Le parcours progresse en sept phases où **chacune répond à une limite de la précédente** — le bruit motive le recours à la connaissance, la rigidité logique motive la différentiabilité, l'opacité motive la provenance (thèse détaillée en conclusion) :
+14. **Assembler un pipeline neuro-symbolique de bout en bout** — extraction, oracle, graphe, mining, chaînage avant avec provenance, confrontation du LLM seul au graphe raisonné — et **classer les défenses par étage** quand un fait faux entre (carnet 11).
+15. **Choisir la méthode selon la contrainte du terrain** : peu d'exemples (EBL, Candidate Elimination), interprétabilité exigée (règles, circuits booléens), connaissance du domaine déjà écrite (déterminations, ontologie).
+16. **Retrouver une formule fermée à partir des données** : séparabilité lue dans les gradients d'un réseau, longueur de description en bits, front de Pareto complexité-précision (carnet 14).
 
-```mermaid
-flowchart TD
-    P1["<b>Phase 1 · Inductif pur</b><br/>SL-01 · CBH · Version Space<br/>apprendre d'exemples"]
-    P2["<b>Phase 2 · Guidé par la connaissance</b><br/>SL-02/3 · EBL · RBL · déterminations<br/>la connaissance accélère"]
-    P3["<b>Phase 3 · Programmes logiques</b><br/>SL-04/5 · FOIL · résolution inverse · Progol<br/>clauses Horn + récursion"]
-    P4["<b>Phase 4 · Moteurs ILP réels</b><br/>SL-06 · Aleph · Metagol · Popper · ∂ILP<br/>4 machineries comparées"]
-    P5["<b>Phase 5 · Neuro-symbolique</b><br/>SL-07/8/9/13/15 · T-norms · KG mining · boucle LLM · diagnostic TPR · conjectures/oracle<br/>différentiable + vérifiable + structurelle"]
-    P6(("<b>Phase 6 · Capstone</b><br/>SL-10/11/12/12b/12c · L* actif · pipeline 6 étages · portes differentiables · synthèse spectrale + reproduction Pavlov<br/>LLM ↔ logique en boucle"))
-    P7["<b>Phase 7 · Découvrir l'équation</b><br/>SL-14 · AI Feynman · gradients + MDL + Pareto<br/>du réseau à la formule fermée"]
-    P1 -->|"bruit + disjonction<br/>non représentables"| P2
-    P2 -->|"passer des attributs<br/>aux programmes"| P3
-    P3 -->|"comparer les machineries<br/>sur une même tâche"| P4
-    P4 -->|"rigidité logique<br/>→ différentiabilité"| P5
-    P5 -->|"opacité neuronale<br/>→ provenance"| P6
-    P6 -->|"langages et circuits fixés<br/>→ découvrir la formule"| P7
-```
+## Comment lire ce README
 
-### Phase 1 : Fondations inductives (SL-01, ~50 min)
+Un README de série se lit à plusieurs vitesses : le parcours par les numéros nus, l'approfondissement par les lettres, puis les carnets de recherche et les ressources. Le principe est exposé à la racine du dépôt, dans [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture).
 
-Le parcours commence par l'apprentissage inductif pur : un agent doit découvrir une règle cachée à partir d'exemples. SL-01 présente les algorithmes fondamentaux — Current-Best-Hypothesis (ajuste une seule hypothèse incrémentalement) et Candidate Elimination (maintient l'ensemble complet des hypothèses consistantes, le "Version Space"). Vous expérimentez leurs limites face au bruit et aux concepts disjonctifs, ce qui motive naturellement les approches plus riches introduites ensuite.
+- **Vous découvrez** : suivez le [parcours principal](#parcours-principal), du carnet 01 au carnet 11 ; les carnets 12 à 15 sont des carnets de recherche, à lire après.
+- **Vous creusez un palier** : les extensions lettrées vivent en [Approfondissements](#approfondissements), sous le numéro qu'elles prolongent ; elles ne sont pas une autre version du carnet principal.
+- **Vous cherchez la recherche en cours** : [Questions de recherche ouvertes](#questions-de-recherche-ouvertes), [Ce que les carnets mesurent](#ce-que-les-carnets-mesurent), puis [Ressources](#ressources).
 
-### Phase 2 : Apprentissage basé sur la connaissance (SL-02 a SL-03, ~95 min)
+## Parcours principal
 
-La deuxième phase introduit l'idée centrale que **la connaissance accélère l'apprentissage**. EBL (SL-02) montre comment compiler un exemple prouvé en une règle opérationnelle générale, en quatre étapes : expliquer, variabiliser, extraire, simplifier. RBL (introduit en SL-02, approfondi en SL-03) explore une autre facette : identifier les attributs qui déterminent vraiment la cible via le formalisme des déterminations et le treillis des sous-ensembles d'attributs. La comparaison avec sklearn (information mutuelle) montre quand la connaissance du domaine bat la statistique brute.
-
-### Phase 3 : Programmation logique inductive (SL-04 a SL-05, ~115 min)
-
-SL-04 fait le pont entre apprentissage automatique et intelligence artificielle symbolique classique en couvrant l'ILP : apprentissage de programmes logiques (clauses Horn) à partir d'exemples. L'algorithme FOIL (top-down) et la résolution inverse (bottom-up) sont implémentés de zéro, puis appliqués aux knowledge graphs — avec extraction de règles AMIE et requêtes SPARQL CONSTRUCT. La section finale confronte le FOIL artisanal à l'ILP moderne : **Popper** (Learning From Failures) retrouve le programme récursif `ancestor` optimal sur les mêmes données, démontre l'apport de la récursion par ablation, et le programme appris est vérifié indépendamment en SWI-Prolog. SL-05 reprend la promesse bottom-up esquissée en SL-04 et la mène à terme : LGG de Plotkin, theta-subsomption, clause bottom par entailment inverse, et recherche de clause à la Progol qui retrouve la définition de `grandfather/2` parmi 56 candidats.
-
-### Phase 4 : Moteurs ILP modernes (SL-06, ~65 min)
-
-Après avoir construit FOIL et Progol *de zéro*, SL-06 met quatre moteurs ILP **réels** face à face sur une même tâche récursive (`ancestor/2`, la clôture transitive de `parent`) : **Aleph** (entailment inverse, la lignée Progol), **Metagol** (Meta-Interpretive Learning, avec invention de prédicats), **Popper** (Learning From Failures) et **∂ILP** (ILP différentiable via Lernd). Chaque moteur apprend le même concept par une machinerie différente — recherche symbolique exacte, métarègles, contraintes ASP, descente de gradient — ce qui rend visibles leurs forces et leurs angles morts (sensibilité à la direction des modes, invention de prédicats, tolérance au bruit). Le ∂ILP différentiable amorce naturellement la phase neuro-symbolique suivante.
-
-*Les quatre moteurs ILP (Aleph, Metagol, Popper, ∂ILP) sont comparés textuellement dans la cellule 21 du notebook — chacun y apprend le même concept `ancestor/2` par une machinerie distincte (recherche symbolique exacte, métarègles avec invention de prédicats, contraintes ASP, descente de gradient), et leurs clauses apprises, scores et temps sont tabulés. Aucune figure illustrative n'est embarquée ici : la comparaison vit dans le notebook, où chaque moteur peut être inspecté dans son contexte d'exécution.*
-
-### Phase 5 : Intégration neuro-symbolique (SL-07 à SL-09, SL-13 et SL-15, ~225 min)
-
-Cette phase explore les méthodes contemporaines à l'intersection du symbolique et du connexionniste. SL-07 introduit les T-norms différentiables, les prédicats neuronaux et les Logics Tensor Networks qui rendent la logique opérationnelle dans un gradient descent. SL-08 passe à l'échelle avec le rule mining réel sur des knowledge graphs construits avec rdflib (AMIE, complétion de graphes). SL-09 ferme la boucle avec LLMs : extraction de règles depuis du texte naturel, vérification symbolique des sorties, et boucles de rétroaction pour fiabiliser le raisonnement. **SL-13 complète la phase 5** en se demandant si la structure TPR (Tensor Product Representation, `sum_t role_pos(t) ⊗ filler_symbole(x_t)`) émerge *organiquement* dans un GRU 1 couche entraîné sur des tâches symboliques de séquence. Le diagnostic DISCOVER (McCoy et al., arXiv:2608.29530) procède par factorisation role × filler (ALS), réinjection dans le décodeur, constituent surgery et contrôle white-box TPR versus embeddings atomiques — sur architectures CPU petites, avec une conclusion *bornée* : la structure est approximative et fonctionnellement exploitée, mais pas une implémentation symbolique exacte. **SL-15 prolonge la boucle générateur/oracle de SL-09 sur un oracle d'optimisation réel** : un MLP entraîné à imiter les solutions sœurs propose des *conjectures* (fixations de variables) à CP-SAT sur la coloration de graphe, et le notebook mesure ce que le benchmark agrégé ne peut pas voir — le sort de **chaque conjecture prise isolément**. Verdict mesuré : le hint complet réduit la médiane de 18 % malgré ~25 % d'arêtes conflictuelles (42 sur ~168), mais chaque conjecture *individuelle* en fait ~62 % — **l'empilement dilue le signal** ; la boucle conjecture → réfutation → réparation est exécutée de bout en bout.
-
-### Phase 6 : Apprentissage actif et capstone (SL-10 à SL-12c, ~295 min)
-
-Cinq notebooks concluent la série.
-
-**SL-10 — Apprentissage actif d'automates** inverse le rapport de l'apprenant aux données : au lieu de subir un échantillon, L* d'Angluin *choisit* ses questions (requêtes d'appartenance et d'équivalence à un oracle MAT) et apprend des automates finis déterministes prouvablement minimaux — le cadre théorique (Myhill-Nerode, fermeture et cohérence de la table d'observation) est implémenté et vérifié de zéro. Le notebook explore aussi la version bruitée du problème (oracle bruité + vote majoritaire type Rivest-Schapire + agrégation d'évidence forward sum-product), montrant que la garantie de minimalité tient tant que le ratio signal/bruit reste favorable.
+| # | Notebook | Ce qu'on y apprend | Public et prérequis | Pour approfondir |
+|---|----------|--------------------|----------------------|------------------|
+| 01 | [Apprentissage logique : CBH Search et Version Space](SL-01-LogicalLearning-Python.ipynb) · [jumeau C#](SL-01-LogicalLearning-CSharp.ipynb) | Sur le problème du restaurant d'AIMA, représenter une hypothèse comme une conjonction de contraintes sur les attributs, l'apprendre par Current-Best-Hypothesis puis par Candidate Elimination et son espace de versions (bornes G et S), lire les limites de ce cadre face au bruit et aux disjonctions, et confronter l'implémentation à la référence aima-python. | Découverte · logique propositionnelle | [Compagnon Lean](#autour-de-01--compagnon-lean-et-note-de-lecture) |
+| 02 | [Apprentissage et connaissance (EBL & RBL)](SL-02-KnowledgeBasedLearning-Python.ipynb) · [jumeau C#](SL-02-KnowledgeBasedLearning-CSharp.ipynb) | Compiler un exemple résolu en règle réutilisable par Explanation-Based Learning et ses quatre étapes (expliquer, variabiliser, extraire, simplifier), sur l'exemple de Zog et sur l'arithmétique ; mesurer ce que les règles économisent en étapes et ce qu'elles coûtent en temps ; introduire Relevance-Based Learning et les déterminations, approfondies au carnet 03. | Découverte · carnet 01, logique du premier ordre | — |
+| 03 | [Apprentissage basé sur la pertinence](SL-03-RelevanceLearning-Python.ipynb) · [jumeau C#](SL-03-RelevanceLearning-CSharp.ipynb) | Chercher les attributs pertinents par la logique plutôt que par les statistiques : déterminations et treillis des déterminations, algorithme MINIMAL-CONSISTENT-DET, et comparaison avec une sélection par information mutuelle (scikit-learn). | Licence · carnets 01 et 02 | — |
+| 04 | [Programmation logique inductive (ILP)](SL-04-InductiveLogicProgramming-Python.ipynb) · [jumeau C#](SL-04-InductiveLogicProgramming-CSharp.ipynb) | Apprendre des clauses de Horn récursives : clauses et unification, FOIL et son gain, résolution inverse (bottom-up) et ses opérateurs V et W ; confronter FOIL au moteur Popper (Learning From Failures) et faire le pont vers les règles AMIE sur les graphes de connaissances (règle de Horn et `CONSTRUCT` SPARQL). | Licence · carnets 01 à 03 | — |
+| 05 | [Résolution inverse et Progol (ILP bottom-up)](SL-05-InverseResolution-Python.ipynb) · [jumeau C#](SL-05-InverseResolution-CSharp.ipynb) | Pousser la voie bottom-up jusqu'à Progol : généralisation la moins générale (LGG) de Plotkin et son inflation, θ-subsomption, clause bottom par entailment inverse, recherche de la meilleure clause consistante ; la mise en œuvre de référence, Aleph, tourne sous SWI-Prolog. | Licence · carnet 04 | — |
+| 06 | [Moteurs ILP modernes : Aleph, Metagol, Popper et dILP](SL-06-ModernILP-Python.ipynb) · [jumeau C#](SL-06-ModernILP-CSharp.ipynb) | Faire tourner les moteurs réels sur une même tâche récursive, distinguer leurs paradigmes (entailment inverse, méta-interprétation, contraintes, descente de gradient), lire l'invention de prédicats auxiliaires, et choisir un moteur selon la tâche (exactitude symbolique ou robustesse au bruit). | Licence · carnet 04 | — |
+| 07 | [Intégration neuro-symbolique](SL-07-NeuroSymbolic-Python.ipynb) | Rendre la logique différentiable : t-normes et t-conormes, prédicats neuronaux, un mini DeepProbLog, puis la vraie bibliothèque LTNtorch ; les règles guident l'entraînement et la satisfaction des formules se lit dans la perte. | Licence · carnets 01 à 05, intuition des réseaux de neurones | — |
+| 08 | [ILP moderne et knowledge graphs](SL-08-KnowledgeGraphs-ILP-Python.ipynb) · [jumeau C#](SL-08-KnowledgeGraphs-ILP-CSharp.ipynb) | Extraire des règles d'un graphe de connaissances RDF (rdflib) à la manière d'AMIE (support, confiance, confiance PCA), les valider, les appliquer pour compléter le graphe, et recouper le résultat par un chaînage avant Datalog sous clingo. | Licence · carnet 04, rudiments de RDF | — |
+| 09 | [LLMs et apprentissage symbolique : génération et vérification d'hypothèses](SL-09-LLM-SymbolicLearning-Python.ipynb) | Utiliser un LLM comme proposeur d'hypothèses : vérification formelle des règles proposées, retour des erreurs pour une nouvelle génération, pipeline complet des exemples aux règles validées ; comparer le prompt direct au raisonnement pas à pas et mesurer la stabilité des règles d'une exécution à l'autre. | Licence · carnets 01 à 04, notions de LLM | — |
+| 10 | [Apprentissage actif d'automates (L* d'Angluin)](SL-10-ActiveAutomataLearning-Python.ipynb) · [jumeau C#](SL-10-ActiveAutomataLearning-CSharp.ipynb) | Apprendre un automate sans voir sa table : L* pose des requêtes d'appartenance et d'équivalence à un oracle, tient une table d'observation fermée et consistante et converge vers l'automate minimal (Myhill-Nerode) ; variations Maler-Pnueli et Rivest-Schapire, puis oracle bruité, où l'agrégation de plusieurs observations récupère le langage. | Licence · carnets 01 et 03 | — |
+| 11 | [Capstone : un pipeline neuro-symbolique de bout en bout](SL-11-Capstone-NeuroSymbolic-Python.ipynb) | Assembler la série en un pipeline : extraction de triplets par un LLM, oracle de validation symbolique, graphe de connaissances, mining de règles, chaînage avant avec provenance, confrontation du LLM seul au graphe raisonné. Un exercice rejoue le poison, un fait faux accepté par l'oracle, et le bloque par une contrainte de cardinalité. | Licence · carnets 01 à 10 | — |
+| 12 | [Differentiable Logic Gate Networks](SL-12-DifferentiableLogicGateNetworks-Python.ipynb) | Remplacer les neurones par des portes logiques différentiables (bibliothèque difflogic), entraîner par descente de gradient, discrétiser en un circuit booléen pur et l'évaluer sur MNIST en 20 × 20 pixels. | Recherche · PyTorch | [Synthèse spectrale, reproduction](#autour-de-12--synthèse-spectrale-et-reproduction) |
+| 13 | [DISCOVER léger : diagnostic de structure TPR émergente](SL-13-Discover-TPR-Python.ipynb) | Demander si un GRU à une couche, entraîné sur des tâches symboliques de séquence (copie, renversement, entrelacement), porte une structure de produit tensoriel (rôle × contenu) : remplacer l'état caché par son approximation et mesurer la perte, avec un contrôle contre des embeddings atomiques. Le périmètre est borné : une structure approximative, pas un produit tensoriel exact. | Recherche · PyTorch, CPU suffisant | [Dictionnaire creux, exécutions conservées](#autour-de-13--dictionnaire-creux-et-exécutions-conservées) |
+| 14 | [AI Feynman : découvrir des équations](SL-14-AIFeynman-Discover-Equations-Python.ipynb) | Retrouver une équation à partir de données seules avec AI Feynman 2.0 : tests de séparabilité par les dérivées d'un réseau, longueur de description en bits, front de Pareto complexité-précision, sur l'énergie relativiste E(m, v). | Recherche · conteneur dédié (voir Installation) | — |
+| 15 | [Conjectures apprises pour un vérificateur symbolique](SL-15-LearnedConjectures-Solver-Python.ipynb) | Transposer la boucle générateur/oracle du carnet 09 à un solveur CP-SAT : un modèle appris propose des fixations de variables (indications, ou hints) pour la coloration de graphe, le solveur les prend comme point de départ et signale leurs conflits, et la boucle apprend à les réparer ; une seconde famille (couverture d'ensemble) montre que le mécanisme se transporte, mais pas le geste de réparation. | Recherche · carnet 09 | — |
 
 ![Automate fini déterministe à 4 états (ee/oe/oo/eo) cible de l'algorithme L* d'Angluin : chaque état code une classe de parité (mod 2 × mod 2) sur la suite de symboles `a`/`b` lue](assets/readme/sl10-dfa-target.png)
-*L'automate cible de la tâche `parity2(a,b)` : quatre états étiquetés par la parité du nombre de `a` et du nombre de `b` lus jusqu'ici. `ee` (vert) est à la fois l'état initial et l'état acceptant ; chaque symbole `a` ou `b` flippe la parité correspondante. Le théorème de Myhill-Nerode assure que cet automate à 4 états est *minimal* — toute DFA équivalente en comporte au moins autant. C'est l'objet que l'algorithme L* d'Angluin reconstruit par requêtes d'appartenance et d'équivalence à l'oracle MAT (cellules 20-30 du notebook) ; la version bruitée et l'agrégation bayésienne de preuves sont étudiées dans la cellule 33.*
 
-**SL-11 — Capstone neuro-symbolique** assemble toute la série en un pipeline en 6 étages (extraction LLM -> oracle de validation -> knowledge graph -> mining de règles -> chainage avant avec provenance -> confrontation LLM vs KG) qui exécute avec de vrais appels Gemini 3.5 Flash, ou chaque étage mobilise un notebook antérieur de la série — y compris une leçon d'architecture découverte dans les sorties réelles : le chaînage avant peut violer les contraintes que l'oracle impose en amont.
+*L'automate cible du carnet 10, que l'apprenant ne voit pas : quatre états, un seul acceptant (`ee`), un par classe de parité. Rendu du bloc `mermaid stateDiagram-v2` du carnet ; provenance et contenu de l'image documentés dans [MANIFEST.md](assets/readme/MANIFEST.md).*
 
-**SL-12 — Réseaux de portes logiques différentiables** explore un autre angle du neuro-symbolique : les *réseaux de portes logiques differentiables* (difflogic, Petersen NeurIPS 2022) apprennent des combinaisons de portes logiques par descente de gradient sur MNIST 20×20, puis se discretisent en un circuit 100% booleen, interpretable-par-construction et ultra-rapide a l'inference.
+### Pourquoi cet ordre ?
 
-*Les courbes d'entraînement MNIST 20×20 d'un réseau de portes logiques différentiables — CrossEntropyLoss chutant de 2,3 à ~1,2 en 600 itérations, accuracy train à ~0,74 et test (pointillés rouges) à 0,79 — sont produites par la cellule 11 du notebook. Le circuit booléen final discrétisé, lui — l'objet conceptuel du notebook, le réseau de portes logiques interprétable-par-construction — est visualisable via la cellule 13 (histogramme de la distribution des prédictions après discrétisation) ; la figure de structure du circuit n'est pas embarquée ici car elle exige la ré-exécution de l'environnement difflogic pour rendre la topologie exacte des portes apprises (rendu Netzvis).*
+Sept paliers, et chacun répond à une limite que le précédent a rendue visible. L'ordre n'est pas chronologique ni thématique : il est motivé.
 
-**SL-12b — Synthèse logique spectrale** prend l'autre versant du registre discret : au lieu de portes locales apprises par gradient sur un câblage fixe, il représente les fonctions booléennes dans la base de Fourier — transformée de Walsh-Hadamard **exacte** (papillon O(n·2^n), reconstruction vérifiée au bit près), coefficients exacts explicitement distingués des poids ternaires {−1,0,+1} d'un PTF, routage Sinkhorn mesuré sans jamais surclaimer une permutation sous ex-aequo, puis quantification (perte mesurée : 8/16 fonctions préservées sur n=2) et recherche discrète — Metropolis et parallel tempering à budget égal, avec rapport d'acceptation exact, oracle déterministe et vérité terrain exhaustive 3^11 = 177 147. Le pont final avec SL-12 : le spectre du circuit AND(OR(x1,x2), XNOR(x3,x4)) rend visible ce que la composition de portes locales fabrique (degré 4, coefficient dominant χ_{3,4} = +0,75).
+**Palier 1 — l'induction pure (01).** Un agent reçoit des exemples et doit deviner la règle. Candidate Elimination tient l'ensemble entier des hypothèses consistantes ; Current-Best-Hypothesis n'en tient qu'une. Le carnet mesure les deux et expose la limite qui commande la suite : le bruit casse la cohérence, et une disjonction n'entre pas dans une conjonction de contraintes.
 
-**SL-12c — Reproduction Pavlov DLS (recherche)** complète SL-12b par la **mesure de discrimination** au cœur du claim Pavlov (EPIC #14366 G1) : on reproduit Phase 1 (16 opérations n=2) et Phase 2 (11 opérations temporelles n=4) avec un **routeur linéaire signé** (modèle simple) vs un **routeur Sinkhorn-constrained** (proxy du papier Pavlov). Mesure multi-seed (4 seeds Phase 1, 3 seeds Phase 2) sur 27 opérations. **Verdict honnête** : le linéaire signé atteint **100% sur les 27 opérations** ; notre proxy Sinkhorn reste à 0-25% — défaut de gradient proxy, **pas** une réfutation du claim Pavlov original. C'est une **tranche de recherche bornée** (CPU-only, NumPy seul) qui pose la borne inférieure et identifie la dette (gradient exact du Sinkhorn-Knopp) pour une tranche ultérieure.
+**Palier 2 — la connaissance comme accélérateur (02, 03).** Si l'espace d'hypothèses est trop pauvre, on n'élargit pas l'espace : on apporte une théorie du domaine. EBL compile une preuve en règle réutilisable ; RBL cherche les attributs qui déterminent la cible, d'abord par le treillis, ensuite par un test statistique. La comparaison avec l'information mutuelle montre *quand* la connaissance du domaine bat la statistique — et le carnet 02 mesure aussi le cas inverse, où les règles coûtent plus qu'elles ne rapportent.
 
-### Phase 7 : Découvrir l'équation (SL-14, ~75 min)
+**Palier 3 — passer des attributs aux programmes (04, 05).** Les carnets 02 et 03 apprennent des *classes* ; un programme logique apprend une *relation récursive*. FOIL descend, la résolution inverse remonte, la clause bottom de Progol borne la recherche. Les deux voies sont écrites de zéro avant d'être confrontées à un moteur.
 
-**SL-14 — AI Feynman : découvrir des équations** inverse la question de toute la série : au lieu d'apprendre des règles ou des circuits *dans un langage donné*, peut-on retrouver la **formule fermée** qui engendre les données ? Le vrai outil `aifeynman` (AI Feynman 2.0, NeurIPS 2020) est exécuté sur le cas d'école du papier — l'énergie cinétique relativiste — où le front de Pareto complexité–précision fait cohabiter mv²/2 (13,6 bits, erronée aux hautes vitesses) et la forme exacte E = mc²(1/√(1−v²/c²) − 1). Les trois leviers de l'algorithme sont ouverts un à un : **symétries lues dans les gradients** d'un NN 128/128/64/64 tanh (le score S[f] de l'Eq. 6 détecte que E(m,v) = g(m)·h(v) sans chercher aucune formule — et explique le choix de tanh plutôt que ReLU), **MEDL** (description en bits des résidus : les outliers coûtent logarithmiquement, la démo Fig. 4 retrouvée), et **le biais du langage de description** (cos(cos θ) préféré à cos²θ, tanh indécouvrable hors base — compteur RPN à l'appui). Le budget d'exécution est volontairement borné et confronté honnêtement aux résultats du papier. Environnement : conteneur `aifeynman:sl14-py313` (paquet PyPI figé en 2021, sept extensions Fortran reconstruites avec le f2py de NumPy 2 — construction documentée dans `assets/Dockerfile.aifeynman-py313` ; l'image fondatrice 3.9 reste dans `assets/Dockerfile.aifeynman`).
+**Palier 4 — comparer les machineries (06).** Une fois les algorithmes écrits, la question devient « laquelle, quand ? ». Quatre moteurs réels apprennent la même clôture transitive par quatre mécanismes différents, et le carnet rend visibles leurs angles morts : sensibilité à la direction des modes, invention de prédicats, tolérance au bruit. Le ∂ILP différentiable ouvre la porte du palier suivant.
+
+**Palier 5 — différentiable, minier, vérifiable (07, 08, 09, 13, 13b, 15).** La rigidité logique motive de rendre la logique différentiable (07) ; les graphes réels motivent le passage à l'échelle du mining (08) ; l'opacité d'un LLM motive la vérification formelle de ce qu'il propose (09). Deux carnets de recherche sondent le même soupçon par deux lectures concurrentes des mêmes états cachés (13, 13b), et un troisième transporte la boucle générateur/oracle du carnet 09 vers un solveur CP-SAT, où le verdict est plus fin : le mécanisme se transporte, le geste de réparation non (15).
+
+**Palier 6 — apprendre sans échantillon, puis assembler (10, 11, 12, 12b, 12c).** L* renverse le rapport aux données : l'apprenant choisit ses questions et obtient des garanties de minimalité. Le capstone assemble alors les briques des paliers 1 à 5 en un pipeline où chaque étage est un carnet antérieur, et où la leçon vient des sorties réelles : le chaînage avant peut violer les contraintes que l'oracle imposait en amont. Les trois carnets 12 prennent l'autre versant du neuro-symbolique — un circuit discret appris par gradient, son spectre de Fourier exact, et la reproduction bornée d'une revendication de la littérature.
+
+**Palier 7 — changer de question (14).** Tous les paliers précédents apprennent *dans un langage donné* : clauses, règles, circuits, portes. AI Feynman demande si l'on peut retrouver la formule elle-même, et enseigne la leçon transversale de la série : « simple » dépend du langage de description.
+
+Les durées par carnet et le total de la série vivent dans le [catalogue généré](../../../COURSE_CATALOG.generated.md), qui les tient à jour ; les budgets indicatifs ci-dessous sont des ordres de grandeur de lecture, pas des mesures.
 
 ### Parcours alternatifs
 
-#### Parcours rapide (SL-01 + SL-07 + SL-09 + SL-11, ~4h)
+Cinq entrées dans la série, selon ce que le lecteur vient chercher. Les budgets sont des ordres de grandeur de lecture, les durées mesurées vivant dans le catalogue généré.
 
-Pour ceux qui veulent saisir l'essence sans suivre toute la progression : les fondements inductifs (SL-01), l'intégration neuro-symbolique (SL-07), la vérification LLM (SL-09) et le capstone qui assemble le tout (SL-11). Donne une vue d'ensemble du spectre, de l'inductif pur au pipeline neuro-symbolique complet.
+- **Parcours rapide** — carnets 01, 07, 09 et 11 (~4 h) : le fil complet en quatre étapes, de l'espace d'hypothèses conjonctives au pipeline où un LLM et un vérificateur se corrigent l'un l'autre. C'est le parcours à conseiller avant une séance de restitution.
+- **ILP approfondi** — carnets 01 à 06 (~5 h 30) : les deux voies de l'induction de programmes, puis les quatre moteurs réels. Le lecteur y apprend autant par les algorithmes écrits de zéro que par l'écart mesuré avec Aleph, Popper ou clingo.
+- **Théorie des langages** — carnets 01 et 10 (~2 h) : de l'espace d'hypothèses conjonctives à l'automate minimal appris par requêtes, avec la garantie de Myhill-Nerode comme fil.
+- **Graphes de connaissances** — carnets 02, 03, 04 et 08 (~3 h 30) : EBL et déterminations, puis clauses de Horn et mining AMIE sur un graphe RDF ; une familiarité avec RDF et SPARQL aide.
+- **Neuro-symbolique et recherche** — carnets 07, 09, 13 et 15 (~5 h) : rendre la logique différentiable, faire vérifier les propositions d'un LLM, puis sonder la structure interne d'un réseau et les conjectures qu'il donne à un solveur.
 
-#### Parcours ILP approfondi (SL-01 a SL-06, ~325 min)
+### Séance de restitution
 
-Pour les étudiants en logique et IA symbolique : suivre les six premiers notebooks dans l'ordre — de Candidate Elimination a FOIL, puis SL-05 qui mène le bottom-up a terme (LGG, theta-subsomption, clause bottom et Progol), et SL-06 qui confronte quatre moteurs ILP réels (Aleph, Metagol, Popper, ∂ILP) sur une même tâche récursive.
-
-#### Parcours théorie des langages (SL-01 + SL-10, ~110 min)
-
-Pour les étudiants en informatique théorique : le cadre inductif général (SL-01), puis l'apprentissage actif d'automates avec ses garanties formelles (SL-10) — requêtes, Myhill-Nerode, minimalité, bornes PAC de l'oracle d'equivalence échantillonne.
-
-#### Parcours knowledge graphs (SL-02, SL-03, SL-04, SL-08, ~205 min)
-
-Pour les professionnels du web sémantique et des données structurees : EBL, RBL, FOIL sur clauses Horn, puis application directe sur des knowledge graphs réels avec rdflib et AMIE. Presuppose une familiarité avec RDF/SPARQL.
-
-## Seance de restitution : la table de pioche (61 exercices)
-
-Modalite de la séance : chaque groupe choisit **un exercice** dans la table ci-dessous, le prépare, et le présente en séance. Resoudre l'exercice est le minimum attendu ; chaque exercice est assorti d'une **question-twist** (détaillée dans la cellule « Defi présentation » du notebook correspondant) qui fait partie intégrante de la présentation. Premier arrive, premier servi : annoncez votre choix pour éviter les doublons.
+Modalité de la séance : chaque groupe choisit **un exercice** dans la table ci-dessous, le prépare et le présente. Résoudre l'exercice est le minimum attendu ; chaque exercice est assorti d'une **question-twist** — détaillée dans la section « Defi presentation » du carnet correspondant — qui fait partie intégrante de la présentation. Premier arrivé, premier servi : annoncez votre choix pour éviter les doublons. Une soixantaine d'exercices couvrent la série ; le nombre exact par carnet vit dans les carnets eux-mêmes.
 
 | # | Notebook | Exercice | Question-twist (en bref) |
 |---|----------|----------|--------------------------|
-| 1 | [SL-01](SL-01-LogicalLearning-Python.ipynb) | Ex. 1 — CBH avec ordre personnalise | Deux ordres d'exemples, deux hypothèses finales : pourquoi, a accuracy égale ? |
+| 1 | [SL-01](SL-01-LogicalLearning-Python.ipynb) | Ex. 1 — CBH avec ordre personnalisé | Deux ordres d'exemples, deux hypothèses finales : pourquoi, à accuracy égale ? |
 | 2 | [SL-01](SL-01-LogicalLearning-Python.ipynb) | Ex. 2 — Version Space sur sous-ensemble | Qu'est-ce qui rend un exemple *informatif* (frontières S et G) ? |
-| 3 | [SL-01](SL-01-LogicalLearning-Python.ipynb) | Ex. 3 — Règles avec couverture | Compacite vs hypothèse AIMA : quel biais (rasoir d'Occam) préfère l'une a l'autre ? |
+| 3 | [SL-01](SL-01-LogicalLearning-Python.ipynb) | Ex. 3 — Règles avec couverture | Compacité vs hypothèse AIMA : quel biais (rasoir d'Occam) préfère l'une à l'autre ? |
 | 4 | [SL-01](SL-01-LogicalLearning-Python.ipynb) | Ex. 4 — Réflexion sur le biais conjonctif | Un domaine où ce biais est idéal, un où il est catastrophique (no free lunch) |
-| 5 | [SL-01](SL-01-LogicalLearning-Python.ipynb) | Ex. 5 — La consistance sans Occam (aima) | Echantillonner les graines ne prouve pas la minimalité : quel algorithme exact le ferait ? |
-| 6 | [SL-02](SL-02-KnowledgeBasedLearning-Python.ipynb) | Ex. 1 — EBL differentiation symbolique | Exhiber une variabilisation trop agressive qui produit une règle compilee fausse |
+| 5 | [SL-01](SL-01-LogicalLearning-Python.ipynb) | Ex. 5 — La consistance sans Occam (aima) | Échantillonner les graines ne prouve pas la minimalité : quel algorithme exact le ferait ? |
+| 6 | [SL-02](SL-02-KnowledgeBasedLearning-Python.ipynb) | Ex. 1 — EBL et différenciation symbolique | Exhiber une variabilisation trop agressive qui produit une règle compilée fausse |
 | 7 | [SL-02](SL-02-KnowledgeBasedLearning-Python.ipynb) | Ex. 2 — RBL, robustesse au bruit | Une colonne bruitée qui « détermine » accidentellement la cible : régularité accidentelle ou véritable détermination ? |
 | 8 | [SL-02](SL-02-KnowledgeBasedLearning-Python.ipynb) | Ex. 3 — Speedup EBL | Le *utility problem* (Minton 1990) : pourquoi apprendre plus finit par ralentir |
-| 9 | [SL-03](SL-03-RelevanceLearning-Python.ipynb) | Ex. 1 — Déterminations meteo | Une observation bruitee : quelle détermination minimale survit ? |
-| 10 | [SL-03](SL-03-RelevanceLearning-Python.ipynb) | Ex. 2 — RBL vs sélection aleatoire | Trouver le point de croisement ou la sélection statistique bat le RBL |
+| 9 | [SL-03](SL-03-RelevanceLearning-Python.ipynb) | Ex. 1 — Déterminations météo | Une observation bruitée : quelle détermination minimale survit ? |
+| 10 | [SL-03](SL-03-RelevanceLearning-Python.ipynb) | Ex. 2 — RBL vs sélection aléatoire | Trouver le point de croisement où la sélection statistique bat le RBL |
 | 11 | [SL-03](SL-03-RelevanceLearning-Python.ipynb) | Ex. 3 — Sélecteur hybride | Quelles garanties votre hybride hérite-t-il vraiment ? Contre-exemple construit |
 | 12 | [SL-04](SL-04-InductiveLogicProgramming-Python.ipynb) | Ex. 1 — `sibling` avec FOIL | Le rôle du biais de langage : que se passe-t-il sans le littéral `X != Y` ? |
-| 13 | [SL-04](SL-04-InductiveLogicProgramming-Python.ipynb) | Ex. 2 — Opérateur W | Généralisation consistante mais fausse : pourquoi le bottom-up y est expose |
+| 13 | [SL-04](SL-04-InductiveLogicProgramming-Python.ipynb) | Ex. 2 — Opérateur W | Généralisation consistante mais fausse : pourquoi le bottom-up y est exposé |
 | 14 | [SL-04](SL-04-InductiveLogicProgramming-Python.ipynb) | Ex. 3 — Règles sur mini-KG | Monde clos vs PCA (cf SL-08) : quelle confiance est la bonne pour VOTRE KG ? |
 | 15 | [SL-04](SL-04-InductiveLogicProgramming-Python.ipynb) | Ex. 4 — `grandparent` avec Popper | Sans négatif arrière-grand-parent, quel programme plus court devient consistant ? |
 | 16 | [SL-05](SL-05-InverseResolution-Python.ipynb) | Ex. 1 — Apprendre `grandmother/2` | Pourquoi `grandparent/2` (sans sexe) est *plus facile* — rôle des négatifs |
 | 17 | [SL-05](SL-05-InverseResolution-Python.ipynb) | Ex. 2 — Profondeur de la clause bottom | Croissance de la clause bottom avec la profondeur ; la cible reste-t-elle dans le treillis ? |
 | 18 | [SL-05](SL-05-InverseResolution-Python.ipynb) | Ex. 3 — Tolérance au bruit | Le score `p - n - L` comme argument MDL : quand préfère-t-il une clause imparfaite ? |
-| 19 | [SL-05](SL-05-InverseResolution-Python.ipynb) | Ex. 4 — Reduction de Plotkin | Subsomption vs implication : le cas des clauses récursives ou elles divergent |
-| 20 | [SL-05](SL-05-InverseResolution-Python.ipynb) | Ex. 5 — Aleph face au bruit | Memoriser l'exception, sur-généraliser ou payer L dans f : trois frontières face au même bruit |
+| 19 | [SL-05](SL-05-InverseResolution-Python.ipynb) | Ex. 4 — Réduction de Plotkin | Subsomption vs implication : le cas des clauses récursives ou elles divergent |
+| 20 | [SL-05](SL-05-InverseResolution-Python.ipynb) | Ex. 5 — Aleph face au bruit | Mémoriser l'exception, sur-généraliser ou payer L dans f : trois frontières face au même bruit |
 | 21 | [SL-06](SL-06-ModernILP-Python.ipynb) | Ex. 1 — Direction de mode (Aleph) | Pourquoi `(+,-)` apprend et `(+,+)` échoue : ce que la direction des modes change pour l'entailment inverse |
-| 22 | [SL-06](SL-06-ModernILP-Python.ipynb) | Ex. 2 — `grandparent` non récursif | Cible a 2 sauts sans clôture : quel biais (max_clauses, pas de récursion) suffit, et l'invention de prédicats sert-elle encore ? |
-| 23 | [SL-06](SL-06-ModernILP-Python.ipynb) | Ex. 3 — Robustesse au bruit (∂ILP vs symbolique) | Un faux positif injecte : ∂ILP degrade sa confiance, Popper exact n'a pas de notion de bruit — a quel prix chacun ? |
-| 24 | [SL-07](SL-07-NeuroSymbolic-Python.ipynb) | Ex. 2 — LTN frere/oncle | Retirer les axiomes négatifs : pourquoi une LTN a besoin de négatifs explicites |
+| 22 | [SL-06](SL-06-ModernILP-Python.ipynb) | Ex. 2 — `grandparent` non récursif | Cible à 2 sauts sans clôture : quel biais (max_clauses, pas de récursion) suffit, et l'invention de prédicats sert-elle encore ? |
+| 23 | [SL-06](SL-06-ModernILP-Python.ipynb) | Ex. 3 — Robustesse au bruit (∂ILP vs symbolique) | Un faux positif injecté : ∂ILP dégrade sa confiance, Popper exact n'a pas de notion de bruit — à quel prix chacun ? |
+| 24 | [SL-07](SL-07-NeuroSymbolic-Python.ipynb) | Ex. 2 — LTN frère/oncle | Retirer les axiomes négatifs : pourquoi une LTN a besoin de négatifs explicites |
 | 25 | [SL-07](SL-07-NeuroSymbolic-Python.ipynb) | Ex. 3 — Règle transitive `ancestor` | Le modèle trivial « vrai partout » sature la règle : qu'est-ce qui l'évite ? |
 | 26 | [SL-07](SL-07-NeuroSymbolic-Python.ipynb) | Ex. 4 — T-norm de Lukasiewicz | Gradients exactement nuls : qu'est-ce qu'une sémantique floue *apprenable* ? |
 | 27 | [SL-07](SL-07-NeuroSymbolic-Python.ipynb) | Ex. 5 — Ablation de l'axiome 4 (LTNtorch) | Le négatif difficile (Marie, Pierre) est-il indispensable ? Contraste avec clingo (SL-08) |
 | 28 | [SL-08](SL-08-KnowledgeGraphs-ILP-Python.ipynb) | Ex. 1 — Nouvelle relation au KG | Règles redondantes (même extension, syntaxe différente) : comment AMIE les évite |
-| 29 | [SL-08](SL-08-KnowledgeGraphs-ILP-Python.ipynb) | Ex. 2 — PCA confidence | Construire un mini-KG ou la PCA confidence est trompeuse |
-| 30 | [SL-08](SL-08-KnowledgeGraphs-ILP-Python.ipynb) | Ex. 3 — Règles a 3 atomes | Explosion combinatoire : pourquoi AMIE impose des règles fermées, a quel prix |
-| 31 | [SL-08](SL-08-KnowledgeGraphs-ILP-Python.ipynb) | Ex. 4 — Reparation minimale (clingo) | Les reparations optimales sont ex-aequo : départager par des poids de confiance |
-| 32 | [SL-09](SL-09-LLM-SymbolicLearning-Python.ipynb) | Ex. 1 — Prompt personnalise | Changer de modèle LLM : que garantit vraiment l'oracle symbolique ? |
-| 33 | [SL-09](SL-09-LLM-SymbolicLearning-Python.ipynb) | Ex. 2 — Prompt direct vs CoT | Validation oracle vs plausibilite du texte : les deux métriques peuvent diverger |
-| 34 | [SL-09](SL-09-LLM-SymbolicLearning-Python.ipynb) | Ex. 3 — Detection d'hallucinations | Le detecteur suppose un monde clos : que devient-il en monde ouvert (cf SL-08) ? |
-| 35 | [SL-09](SL-09-LLM-SymbolicLearning-Python.ipynb) | Ex. 4 — Taux d'hallucination du vrai LLM | Maximiser le taux de validation ou le nombre de règles validees par appel ? |
+| 29 | [SL-08](SL-08-KnowledgeGraphs-ILP-Python.ipynb) | Ex. 2 — PCA confidence | Construire un mini-KG où la PCA confidence est trompeuse |
+| 30 | [SL-08](SL-08-KnowledgeGraphs-ILP-Python.ipynb) | Ex. 3 — Règles à 3 atomes | Explosion combinatoire : pourquoi AMIE impose des règles fermées, à quel prix |
+| 31 | [SL-08](SL-08-KnowledgeGraphs-ILP-Python.ipynb) | Ex. 4 — Réparation minimale (clingo) | Les réparations optimales sont ex æquo : départager par des poids de confiance |
+| 32 | [SL-09](SL-09-LLM-SymbolicLearning-Python.ipynb) | Ex. 1 — Prompt personnalisé | Changer de modèle LLM : que garantit vraiment l'oracle symbolique ? |
+| 33 | [SL-09](SL-09-LLM-SymbolicLearning-Python.ipynb) | Ex. 2 — Prompt direct vs CoT | Validation oracle vs plausibilité du texte : les deux métriques peuvent diverger |
+| 34 | [SL-09](SL-09-LLM-SymbolicLearning-Python.ipynb) | Ex. 3 — Détection d'hallucinations | Le détecteur suppose un monde clos : que devient-il en monde ouvert (cf SL-08) ? |
+| 35 | [SL-09](SL-09-LLM-SymbolicLearning-Python.ipynb) | Ex. 4 — Taux d'hallucination du vrai LLM | Maximiser le taux de validation ou le nombre de règles validées par appel ? |
 | 36 | [SL-10](SL-10-ActiveAutomataLearning-Python.ipynb) | Ex. 1 — Le langage « contient abb » | Certificat de minimalité : un suffixe distinguant pour chaque paire d'états (Myhill-Nerode) |
 | 37 | [SL-10](SL-10-ActiveAutomataLearning-Python.ipynb) | Ex. 2 — Fiabilité de l'EQ échantillonnée | Relier le taux de réussite empirique à la borne PAC ; construire une distribution adverse |
-| 38 | [SL-10](SL-10-ActiveAutomataLearning-Python.ipynb) | Ex. 3 — Contre-exemples : prefixes vs suffixes | Le pire cas qui fait exploser la table d'observation (Rivest-Schapire) |
-| 39 | [SL-10](SL-10-ActiveAutomataLearning-Python.ipynb) | Ex. 4 — Oracle bruite | Reparer L* par vote majoritaire : surcout en requêtes et probabilité residuelle d'erreur |
-| 40 | [SL-11](SL-11-Capstone-NeuroSymbolic-Python.ipynb) | Ex. 1 — Etendre le schéma (`marie_avec`) | Le mineur redecouvre la symetrie injectee par l'oracle : règle ou tautologie ? |
-| 41 | [SL-11](SL-11-Capstone-NeuroSymbolic-Python.ipynb) | Ex. 2 — Politique de conflit a sources | *Truth discovery* : estimer la fiabilité des sources en même temps que les faits |
-| 42 | [SL-11](SL-11-Capstone-NeuroSymbolic-Python.ipynb) | Ex. 3 — Le bon seuil n'existe pas | Vraie et fausse règle a confiance égale (0.67) : quel signal au-dela du seuil ? |
-| 43 | [SL-11](SL-11-Capstone-NeuroSymbolic-Python.ipynb) | Ex. 4 — Empoisonnement bout-en-bout | Classer les defenses par étage du pipeline ; ou s'arrete la provenance ? |
+| 38 | [SL-10](SL-10-ActiveAutomataLearning-Python.ipynb) | Ex. 3 — Contre-exemples : préfixes vs suffixes | Le pire cas qui fait exploser la table d'observation (Rivest-Schapire) |
+| 39 | [SL-10](SL-10-ActiveAutomataLearning-Python.ipynb) | Ex. 4 — Oracle bruité | Réparer L* par vote majoritaire : surcoût en requêtes et probabilité résiduelle d'erreur |
+| 40 | [SL-11](SL-11-Capstone-NeuroSymbolic-Python.ipynb) | Ex. 1 — Étendre le schéma (`marie_avec`) | Le mineur redécouvre la symétrie injectée par l'oracle : règle ou tautologie ? |
+| 41 | [SL-11](SL-11-Capstone-NeuroSymbolic-Python.ipynb) | Ex. 2 — Politique de conflit à sources | *Truth discovery* : estimer la fiabilité des sources en même temps que les faits |
+| 42 | [SL-11](SL-11-Capstone-NeuroSymbolic-Python.ipynb) | Ex. 3 — Le bon seuil n'existe pas | Vraie et fausse règle à confiance égale (0.67) : quel signal au-delà du seuil ? |
+| 43 | [SL-11](SL-11-Capstone-NeuroSymbolic-Python.ipynb) | Ex. 4 — Empoisonnement bout-en-bout | Classer les défenses par étage du pipeline ; où s'arrête la provenance ? |
 | 44 | [SL-12](SL-12-DifferentiableLogicGateNetworks-Python.ipynb) | Ex. 1 — Variation de profondeur | Trade-off capacité vs sur-apprentissage : combien de couches pour quel régime ? |
-| 45 | [SL-12](SL-12-DifferentiableLogicGateNetworks-Python.ipynb) | Ex. 2 — Porte favorite d'un neurone isole | Quelle porte (AND/NAND/XOR) l'apprentissage favorise-t-il pour MNIST ? |
-| 46 | [SL-12](SL-12-DifferentiableLogicGateNetworks-Python.ipynb) | Ex. 3 — Robustesse au bruit pixel | La discretisation booleenne aide-t-elle face au bruit vs un MLP équivalent ? |
+| 45 | [SL-12](SL-12-DifferentiableLogicGateNetworks-Python.ipynb) | Ex. 2 — Porte favorite d'un neurone isolé | Quelle porte (AND/NAND/XOR) l'apprentissage favorise-t-il pour MNIST ? |
+| 46 | [SL-12](SL-12-DifferentiableLogicGateNetworks-Python.ipynb) | Ex. 3 — Robustesse au bruit pixel | La discrétisation booléenne aide-t-elle face au bruit vs un MLP équivalent ? |
 | 47 | [SL-01b](SL-01b-LogicalLearning-Lean.ipynb) | Ex. 1 — Erreur nulle contre soi-même (Lean) | Spécialiser `trueError_self` : quel quantificateur la structure `Distribution` rend-il gratuit ? |
 | 48 | [SL-01b](SL-01b-LogicalLearning-Lean.ipynb) | Ex. 2 — Masse des échantillons (Lean) | `sampleWeight_sum_one` : pourquoi la Fubini discrète suffit-elle sans théorie de la mesure ? |
 | 49 | [SL-01b](SL-01b-LogicalLearning-Lean.ipynb) | Ex. 3 — Symétrie du désaccord (Lean) | `trueError_comm` : que dit la symétrie sur l'interprétabilité de l'erreur comme distance ? |
@@ -253,261 +192,234 @@ Modalite de la séance : chaque groupe choisit **un exercice** dans la table ci-
 
 Note : dans SL-07, le premier exercice de la numérotation interne est un exemple guide ; les exercices à piocher sont Ex. 2 à Ex. 5.
 
-## Notebooks
+## Contenu détaillé des carnets
 
-| # | Notebook | Contenu | Durée | Pour approfondir |
-|---|----------|---------|-------|-------------------|
-| 1 | [SL-01 - Apprentissage Logique](SL-01-LogicalLearning-Python.ipynb) | CBH, Version Space, Candidate Elimination | 50 min | [1b](#autour-de-sl-1) |
-| 1 | [SL-01 - Apprentissage Logique (Twin C#)](SL-01-LogicalLearning-CSharp.ipynb) | **Jumeau C#** — CBH (Current-Best-Hypothesis) + Candidate Elimination / Version Space implémentés from-scratch en C# pur (type system + `HashSet<>`, pas de lib externe ML) (See #4956) | 50 min | [1b](#autour-de-sl-1) |
-| 2 | [SL-02 - Apprentissage et Connaissance](SL-02-KnowledgeBasedLearning-Python.ipynb) | EBL, introduction au RBL (déterminations) | 45 min |  |
-| 2 | [SL-02 - Apprentissage et Connaissance (Twin C#)](SL-02-KnowledgeBasedLearning-CSharp.ipynb) | **Jumeau C#** — EBL (chaînage avant + unification, arbre de preuve, variabilisation) + RBL (vérification de détermination) from-scratch (See #4956) | 50 min |  |
-| 3 | [SL-03 - Apprentissage Basé sur la Pertinence](SL-03-RelevanceLearning-Python.ipynb) | Treillis des déterminations, MINIMAL-CONSISTENT-DET, RBL vs sklearn | 50 min |  |
-| 3 | [SL-03 - RBL (Twin C#)](SL-03-RelevanceLearning-CSharp.ipynb) | **Jumeau C#** — Treillis des déterminations, MINIMAL-CONSISTENT-DET (BFS), PAC bound, information mutuelle from-scratch (See #4956) | 50 min |  |
-| 4 | [SL-04 - Programmation Logique Inductive](SL-04-InductiveLogicProgramming-Python.ipynb) | FOIL, résolution inverse, clauses Horn, knowledge graphs, Popper (LFF) | 55 min |  |
-| 4 | [SL-04 - ILP (Twin C#)](SL-04-InductiveLogicProgramming-CSharp.ipynb) | **Jumeau C#** — FOIL (gain Quinlan) + résolution inverse (V/W) + unification from-scratch, mini-KG (See #4956) | 50 min |  |
-| 5 | [SL-05 - Résolution Inverse et Progol](SL-05-InverseResolution-Python.ipynb) | LGG de Plotkin, theta-subsomption, clause bottom, recherche Progol | 60 min |  |
-| 5 | [SL-05 - Résolution Inverse (Twin C#)](SL-05-InverseResolution-CSharp.ipynb) | **Jumeau C#** — LGG de Plotkin, θ-subsomption (skolemisation + backtracking), clause bottom (saturation bornée + variabilisation), recherche Progol (score `p − L`) from-scratch (See #4956) | 55 min |  |
-| 6 | [SL-06 - Moteurs ILP modernes](SL-06-ModernILP-Python.ipynb) | Aleph, Metagol, Popper, ∂ILP (Lernd) sur `ancestor/2` (moteurs réels) | 65 min |  |
-| 6 | [SL-06 - Moteurs ILP (Twin C#)](SL-06-ModernILP-CSharp.ipynb) | **Jumeau C#** — FOIL relationnel from-scratch (FOIL_Gain de Quinlan, couverture extensionnelle par backtracking, récursion `ancestor/2` = cas de base + pas récursif), benchmark profondeur 5-20, verdict SOTA des 4 moteurs externes (Aleph/Metagol/Popper=RECOVERABLE-MACHINE, ∂ILP=INTRINSIC) (See #4956) | 45 min |  |
-| 7 | [SL-07 - Intégration Neuro-Symbolique](SL-07-NeuroSymbolic-Python.ipynb) | T-norms, prédicats neuronaux, LTN, DeepProbLog | 55 min |  |
-| 8 | [SL-08 - ILP Moderne et Knowledge Graphs](SL-08-KnowledgeGraphs-ILP-Python.ipynb) | rdflib, AMIE rule mining, complétion KG, ASP avec clingo | 55 min |  |
-| 8 | [SL-08 - KG mining (Twin C#)](SL-08-KnowledgeGraphs-ILP-CSharp.ipynb) | **Jumeau C#** — KG familial dotNetRDF 3.5.2, AMIE rule mining from-scratch (clauses Horn 1-2 atomes, JOIN relationnel subject-indexé), PCA confidence, complétion KG 5→14, saturation fixpoint, arbre généalogique ASCII (See #4956) | 50 min |  |
-| 9 | [SL-09 - LLMs et Apprentissage Symbolique](SL-09-LLM-SymbolicLearning-Python.ipynb) | Prompting, extraction de règles, vérification symbolique (Gemini 3.5 Flash optionnel) | 50 min |  |
-| 10 | [SL-10 - Apprentissage Actif d'Automates](SL-10-ActiveAutomataLearning-Python.ipynb) | L* d'Angluin, table d'observation, requêtes MQ/EQ, Myhill-Nerode | 60 min |  |
-| 10 | [SL-10 - L* Angluin (Twin C#)](SL-10-ActiveAutomataLearning-CSharp.ipynb) | **Jumeau C#** — DFA, ObservationTable (S/E/T), requêtes MQ/EQ, conjecture DFA, contre-exemple (Angluin/Maler-Pnueli), oracle bruité + L* borné, forward sum-product + agrégation d'evidence from-scratch (See #4956) | 60 min |  |
-| 11 | [SL-11 - Capstone Neuro-Symbolique](SL-11-Capstone-NeuroSymbolic-Python.ipynb) | Pipeline 6 étages : extraction LLM, oracle, KG, mining, inférence avec provenance, QA | 90 min |  |
-| 12 | [SL-12 - Réseaux de Portes Logiques Différentiables](SL-12-DifferentiableLogicGateNetworks-Python.ipynb) | difflogic (Petersen NeurIPS 2022) : portes logiques apprises par descente de gradient, discrétisation en circuit booléen, inférence ultra-rapide | 45 min | [12b](#autour-de-sl-12) · [12c](#autour-de-sl-12) |
-| 13 | [SL-13 - DISCOVER léger : diagnostic TPR](SL-13-Discover-TPR-Python.ipynb) | Diagnostic DISCOVER (McCoy et al. arXiv:2608.29530) sur GRU 1 couche : TPR par ALS (role × filler), réinjection décodeur, constituent surgery, white-box TPR vs embeddings atomiques, balayage capacité d_model ∈ {8,16,32,48}, régularisation L2,1 — conclusion bornée (structure approximative, pas exacte) (See #14366) | 25 min | [13b](#autour-de-sl-13) |
-| 14 | [SL-14 - AIFeynman : découvrir des équations](SL-14-AIFeynman-Discover-Equations-Python.ipynb) | Régression symbolique AI Feynman 2.0 (Udrescu et al., NeurIPS 2020) sur l'énergie cinétique relativiste : symétries lues dans les gradients, front de Pareto complexité-précision, exécuté dans le conteneur `aifeynman:sl14` (See #14366) | 75 min |  |
-| 15 | [SL-15 - Conjectures apprises pour un vérificateur symbolique](SL-15-LearnedConjectures-Solver-Python.ipynb) | Neural diving en doctrine SL : MLP de solutions sœurs → conjectures (fixations) offertes à CP-SAT ; décomposition par conjecture (300/300 aidantes, médiane −62 %), hint complet −18 % malgré ~25 % d'arêtes conflictuelles (42/~168), boucle conjecture → réfutation → réparation exécutée (42 conflits → 0), seconde famille couverture (hint −15,9 %, réparation coûteuse) (See #17605) | 40 min |  |
+Ce que chaque carnet contient, dans l'ordre où il le présente. Les intitulés sont ceux des sections du carnet lui-même ; les objectifs, les exercices et le défi de présentation ne sont pas repris ici, ils vivent dans le carnet.
+
+### 01 — Apprentissage logique : CBH Search et Version Space
+
+Le carnet enchaîne : le problème du restaurant d'AIMA ; la représentation des hypothèses et la consistance ; la généralisation et la spécialisation ; l'algorithme Current-Best-Hypothesis ; l'algorithme Version Space par Candidate Elimination ; la prédiction avec le Version Space ; la visualisation de son évolution ; les limites du cadre conjonctif ; l'implémentation de référence aima-python. Le jumeau C# suit les mêmes sections écrites à la main, et ajoute la comparaison CBH contre Version Space ainsi qu'un pont PythonNet vers `aima-python`.
+
+### 01b — Apprentissage PAC formellement (Lean)
+
+Le vocabulaire PAC (distribution, hypothèse, erreur vraie) ; l'échantillon, les tirages i.i.d. et le poids d'un échantillon ; la borne de généralisation d'une classe finie ; le cadre agnostique ; la concentration, de Markov à Hoeffding ; le perceptron, convergence de Novikoff et serrage de la borne ; la lecture du fil ; la théorie effective de la représentation (arc `EffectiveTheory`) ; la théorie mathématique de l'univers (structures, générateurs, renommage). Tout s'exécute en noyau Lean sur le lake `learning_theory_lean`.
+
+### 02 — Apprentissage et connaissance (EBL & RBL)
+
+Le carnet avance : le cadre général de la connaissance dans l'apprentissage ; l'idée d'EBL ; l'exemple de la simplification arithmétique ; la variabilisation et l'extraction de règle ; l'implémentation complète ; l'efficacité et l'opérationnalité ; l'introduction aux déterminations par RBL ; la synthèse. Le jumeau C# part des quatre contraintes d'apprentissage, déroule EBL par chaînage avant avec unification, mesure le gain, puis vérifie une détermination.
+
+### 03 — Apprentissage basé sur la pertinence
+
+Pourquoi la pertinence ; les déterminations, formalisme et propriétés ; le treillis des déterminations ; l'algorithme MINIMAL-CONSISTENT-DET ; la sélection d'attributs guidée par la connaissance ; les déterminations et la sémantique web. Le jumeau C# ajoute le cas de l'activité biologique des molécules, la borne PAC comme avantage quantifié, le parallèle avec OWL, l'information mutuelle, puis confronte le classement à l'importance des variables mesurée par ML.NET.
+
+### 04 — Programmation logique inductive
+
+Pourquoi l'ILP ; les clauses de Horn et l'unification ; FOIL, l'apprentissage top-down ; la résolution inverse, bottom-up ; une application complète de FOIL pas à pas ; l'ILP et les graphes de connaissances ; puis le moteur Popper. Le jumeau C# détaille les briques de FOIL, le problème des ancêtres, l'évaluation des clauses candidates, la couverture séquentielle et un ILP sur mini graphe de connaissances, avec un pont vers clingo.
+
+### 05 — Résolution inverse et Progol
+
+Inverser la déduction ; la représentation et la couverture ; la généralisation la moins générale de Plotkin ; la θ-subsomption comme ordre du treillis ; l'entailment inverse et la clause bottom ; la recherche à la Progol ; de Progol aux systèmes modernes ; puis Aleph. Le jumeau C# reprend ces étapes jusqu'à la recherche Progol, apprend `grandmother/2` et vérifie la parité avec SWI-Prolog.
+
+### 06 — Moteurs ILP modernes
+
+Quatre paradigmes pour une seule tâche : Aleph et l'entailment inverse, Metagol et l'apprentissage méta-interprétatif, Popper et la recherche par contraintes, ∂ILP et la descente de gradient ; puis la synthèse qui les compare. Le jumeau C# réécrit le noyau de FOIL, l'applique à `ancestor/2`, le vérifie par la couverture, le mesure sur un graphe qui grandit, puis se prononce sur la portabilité des quatre moteurs.
+
+### 07 — Intégration neuro-symbolique
+
+Pourquoi combiner neural et symbolique ; les opérateurs logiques différentiables ; les prédicats neuronaux ; une logique tensorielle simplifiée ; le raisonnement guidé par la logique ; un DeepProbLog simplifié ; la vraie bibliothèque LTNtorch ; la comparaison des approches neuro-symboliques.
+
+### 08 — ILP moderne et knowledge graphs
+
+L'ILP sur données structurées ; la construction d'un graphe avec rdflib ; l'extraction des données pour le mining ; la découverte de règles de Horn ; l'énumération des candidats ; le passage des règles d'association aux règles logiques ; la complétion du graphe ; la visualisation ; les propriétés logiques et leur composition ; la comparaison entre ILP classique et rule mining ; puis le chaînage avant sous clingo. Le jumeau C# construit le même graphe avec dotNetRDF et s'arrête à la limite honnête de son périmètre pour l'ASP.
+
+### 09 — LLMs et apprentissage symbolique
+
+Les LLM comme moteurs de raisonnement symbolique ; le LLM comme générateur d'hypothèses ; la vérification symbolique de ses sorties ; le raisonnement pas à pas comme explication ; le pipeline complet des exemples aux règles validées ; l'itération et le raffinement ; la robustesse du générateur et le raccord à l'écosystème.
+
+### 10 — Apprentissage actif d'automates
+
+Du passif à l'actif, le modèle MAT ; la table d'observation ; l'algorithme L* ; son exécution complète sur le langage cible ; les garanties de minimalité et de complexité ; l'oracle d'équivalence en pratique ; puis un pont vers Infer.NET, et en annexe la postérité du domaine. Le jumeau C# suit le même plan avec la seule bibliothèque standard de .NET.
+
+### 11 — Capstone neuro-symbolique
+
+Le pipeline ; le corpus et le schéma ; l'extraction par LLM ; l'oracle symbolique ; le graphe de connaissances ; le mining de règles à la manière d'AMIE ; le chaînage avant et ce qu'il découvre ; puis la boucle bouclée où le LLM seul est confronté au graphe raisonné.
+
+### 12 — Portes logiques différentiables
+
+La motivation et le contexte historique ; le modèle difflogic ; l'apprentissage sur MNIST en 20 × 20 pixels ; l'inspection des prédictions ; l'inférence rapide par `CompiledLogicNet`, présentée comme avancée et bornée à une machine qui sait la compiler.
+
+### 12b — Synthèse logique spectrale
+
+La convention booléenne, écrite une seule fois ; les caractères de Walsh et la transformée exacte ; les coefficients de Fourier exacts contre les poids ternaires ; le routage par Sinkhorn ; la quantification puis la recherche discrète, par MCMC et parallel tempering ; le pont avec les portes locales du carnet 12. Le jumeau C# reprend les mêmes sections et ajoute un « Vérifiez votre compréhension ».
+
+### 12c — Reproduire Pavlov
+
+Le carnet mène la reproduction en deux phases et conclut sur le gain mesuré du routage par Sinkhorn ; ses cellules de mesure se suivent sans titre intermédiaire, ce qui explique le petit nombre de sections.
+
+### 13 et 13b — Structure TPR, deux lectures des états cachés
+
+Le carnet 13 ouvre sur son plan, ses prérequis et sa portée déclarée, puis enchaîne les mesures jusqu'à la conclusion, sans titres intermédiaires entre les cellules. Le carnet 13b suit la même forme pour relire les mêmes états cachés avec un dictionnaire creux.
+
+### 14 — AI Feynman
+
+Chercher dans l'espace des formules ; lancer la recherche avec `run_aifeynman` ; le cœur de l'algorithme, les symétries lues dans les gradients ; MEDL, décrire plutôt que minimiser ; et la leçon finale, « simple » dépend du langage de description.
+
+### 15 — Conjectures apprises pour un vérificateur
+
+Le cadre, conjecture, oracle, réfutation ; l'apprenant qui imite les solutions sœurs ; la conjecture individuelle et la décomposition du hint ; les conjectures de tête, en top-k ; la conjecture projetée, où l'oracle répare l'apprenant ; la boucle complète, exécutée ; une deuxième famille, la couverture d'ensemble ; et la synthèse qui ramène la conjecture au statut d'hypothèse réfutable.
 
 ## Approfondissements
 
-Les notebooks lettrés prolongent un palier du parcours principal. Les liens de la table renvoient à leur groupe ; leurs descriptions, durées et références sont conservées ici.
+Les extensions lettrées creusent un palier du parcours ; elles ne le font pas avancer.
 
-### Autour de SL-01
+### Autour de 01 — Compagnon Lean et note de lecture
 
-| # | Notebook | Contenu | Durée |
-|---|----------|---------|-------|
-| 1b (Lean) | [SL-01b - Apprentissage PAC formel (Lean natif)](SL-01b-LogicalLearning-Lean.ipynb) | **Compagnon Lean natif** — le lake `learning_theory_lean` exécuté au kernel `lean4-wsl` : modèle PAC, borne de Valiant classe finie, agnostique, Hoeffding-Chernoff, perceptron Novikoff + serrage (See #11703) | 40 min |
+Niveau Licence (compagnon du carnet 01).
 
-### Autour de SL-12
+- [01b — Apprentissage PAC formellement : le lake `learning_theory_lean` exécuté en noyau Lean](SL-01b-LogicalLearning-Lean.ipynb) : les mêmes notions passées en théorie formelle — vocabulaire PAC, échantillon i.i.d., borne de généralisation d'une classe finie, cadre agnostique, concentration de Markov à Hoeffding — puis le perceptron (convergence de Novikoff et serrage de la borne). Il s'exécute en noyau Lean sur le lake [`learning_theory_lean`](../../ML/learning_theory_lean/README.md) ; il ne fait pas partie du parcours exécutable en Python.
+- [Note de lecture — AIMA, chapitre 19](reference/AIMA_Ch19_Knowledge_in_Learning.md) : la synthèse du chapitre *Knowledge in Learning* de Russell et Norvig.
+- [`reference/aima_knowledge.py`](reference/aima_knowledge.py) : un sous-ensemble vendu de `knowledge.py` d'aima-python (licence MIT, copyright 2016 aima-python contributors), avec Current-Best-Hypothesis, Candidate Elimination et MINIMAL-CONSISTENT-DET ; il est testé par [`tests/test_aima_knowledge.py`](tests/test_aima_knowledge.py).
 
-| # | Notebook | Contenu | Durée |
-|---|----------|---------|-------|
-| 12b | [SL-12b - Synthèse Logique Spectrale](SL-12b-SpectralLogicSynthesis-Python.ipynb) | Fourier booléen exact (FWHT), PTF ternaires, routage Sinkhorn, quantification + Metropolis/parallel tempering avec oracle exact (Pavlov arXiv 2601.13953) (See #14366) | 75 min |
-| 12c | [SL-12c - Reproduction Pavlov DLS (recherche)](SL-12c-PavlovDLS-Reproduction-Python.ipynb) | Reproduction CPU Phase 1+2 de Pavlov (arXiv 2601.13953) : Walsh exacte, routeur linéaire signé vs Sinkhorn-constrained, mesure de séparation, verdict honnête (See #14366) | 25 min |
+### Autour de 12 — Synthèse spectrale et reproduction
 
-### Autour de SL-13
+Niveau Recherche.
 
-| # | Notebook | Contenu | Durée |
-|---|----------|---------|-------|
-| 13b | [SL-13b - TPR × SAE : deux lectures des mêmes états cachés](SL-13b-TPR-SAE-Python.ipynb) | Confrontation de la lecture TPR de SL-13 à un dictionnaire SAE top-k entraîné par l'organe réel `ict/sae_dictionary.py` (série ICT) : sélectivité aux facteurs (position, symbole) contre null apparié, prédiction géométrique rang 1 (non soutenue à ces effectifs, verdict exploratoire), double perturbation (permutation de blocs de coordonnées — contrôle structurel — vs ablation SAE dirigée, contrôles appariés en activité), généralisation encode-only — CPU borné, conclusion bornée (See #14366) | 30 min |
+- [12b — Synthèse logique spectrale : Fourier booléen et poids ternaires](SL-12b-SpectralLogicSynthesis-Python.ipynb) · [jumeau C#](SL-12b-SpectralLogicSynthesis-CSharp.ipynb) : au lieu d'apprendre des portes, représenter une fonction booléenne par ses caractères de Walsh et en sélectionner les coefficients — poids ternaires, polynômes à seuil ternaire, routage par Sinkhorn, recherche discrète (balayage glouton, énumération exhaustive).
+- [12c — Pavlov DLS : reproduction](SL-12c-PavlovDLS-Reproduction-Python.ipynb) : la reproduction du papier de Pavlov sur CPU, linéaire signé contre Sinkhorn contraint, qui ne confirme pas le gain mesuré pour Sinkhorn (voir [Questions de recherche ouvertes](#questions-de-recherche-ouvertes)) ; [exécution conservée](SL-12c-PavlovDLS-Reproduction-output-Python.ipynb) du même carnet, aux cellules identiques.
 
-## Contenu détaillé
+### Autour de 13 — Dictionnaire creux et exécutions conservées
 
-### SL-01-LogicalLearning-Python.ipynb
+Niveau Recherche.
 
-| Section | Contenu |
-|---------|---------|
-| Domaine restaurant | Attributs, exemples AIMA, hypothèses comme conjonctions |
-| Consistance | Faux positifs/négatifs, vérification d'hypothèses |
-| Généralisation/Spécialisation | Opérations fondamentales, hiérarchie de généralité |
-| CBH | Algorithme Current-Best-Hypothesis (AIMA Fig 19.2) |
-| Version Space | Candidate Elimination, G-set et S-set (AIMA Fig 19.3) |
-| Prédiction | Stratégies unanime, conservateur, majority |
-| Limites | Sensibilité au bruit, incapacité à représenter les disjonctions |
+- [13b — TPR x SAE : deux lectures des mêmes états cachés](SL-13b-TPR-SAE-Python.ipynb) : suite directe du carnet 13, qui relit les mêmes états cachés avec un auto-encodeur à dictionnaire creux et mesure l'effet causal des atomes dédiés.
+- [Exécution conservée du carnet 13](SL-13-Discover-TPR-output-Python.ipynb) : une exécution antérieure du carnet, conservée avec ses sorties ; une partie de ses cellules a depuis changé, et le carnet principal est celui à lire.
 
-### SL-01b-LogicalLearning-Lean.ipynb
+## Jumeaux C#
 
-| Section | Contenu |
-|---------|---------|
-| Modèle PAC | `Distribution` (poids ℝ normalisés), `Hypothesis`, `trueError` — une distribution construite à la main (`Dcoin` sur `Fin 2`) |
-| Échantillon | `sampleWeight`, normalisation `sampleWeight_sum_one` (Fubini discrète) |
-| Borne classe finie | `erm_error_bound`, `uniform_concentration`, union bound, `pac_finite_class_bound` (Valiant : `m ≥ (1/ε)(ln \|H\| + ln(1/δ))`) |
-| Agnostique | `sampleProb_mono`, `pac_agnostic_generalization` |
-| Concentration | Markov → Chernoff → Hoeffding (queues + concentration bilatérale), estimateur sans biais `sampleExpect_empError_eq_trueError` |
-| Perceptron | Trajectoire `perceptronWeights`, borne de Novikoff (`align_growth`, `norm_bound`, `novikoff_mistake_bound`), serrage (`witnessPts`, `novikoff_bound_is_sharp`) |
-| Exercices | 3 preuves à compléter (`sorry` stubs, convention C.1) : `trueError_self`, `sampleWeight_sum_one`, `trueError_comm` |
+Les jumeaux C# (.NET Interactive) reprennent les algorithmes de leur carnet Python et ajoutent chacun un pont vers un moteur de production ou un solveur de référence.
 
-### SL-02-KnowledgeBasedLearning-Python.ipynb
+| Carnet | Jumeau | Ce qu'il ajoute |
+|--------|--------|------------------|
+| 01 | [SL-01 C#](SL-01-LogicalLearning-CSharp.ipynb) | CBH et Candidate Elimination écrits à la main en C# pur (système de types et `HashSet<>`, sans bibliothèque de ML). |
+| 02 | [SL-02 C#](SL-02-KnowledgeBasedLearning-CSharp.ipynb) | EBL par chaînage avant avec unification (arbre de preuve, variabilisation) et RBL par vérification de détermination ; mesure du gain. |
+| 03 | [SL-03 C#](SL-03-RelevanceLearning-CSharp.ipynb) | Déterminations, treillis, clé minimale, borne PAC et parallèle avec OWL écrits à la main, puis un moteur de production : l'importance des variables par permutation sous ML.NET confirme le classement. |
+| 04 | [SL-04 C#](SL-04-InductiveLogicProgramming-CSharp.ipynb) | Clauses de Horn et unification, FOIL pas à pas, résolution inverse, ILP sur un mini graphe de connaissances ; parité vérifiée avec clingo sur `ancestor/2`. |
+| 05 | [SL-05 C#](SL-05-InverseResolution-CSharp.ipynb) | LGG de Plotkin, θ-subsomption, clause bottom par saturation bornée, recherche Progol sur `grandmother/2` ; parité vérifiée avec SWI-Prolog. |
+| 06 | [SL-06 C#](SL-06-ModernILP-CSharp.ipynb) | Le noyau algorithmique FOIL (gain de Quinlan, couverture extensionnelle, récursion), un benchmark sur un graphe `parent` croissant et un verdict de portabilité des quatre moteurs du carnet Python ; parité vérifiée avec clingo. |
+| 08 | [SL-08 C#](SL-08-KnowledgeGraphs-ILP-CSharp.ipynb) | Le même graphe de connaissances familial avec dotNetRDF, le mining de règles à la main et la complétion ; la récursion et les contraintes d'intégrité sous clingo restent dans le carnet Python. |
+| 10 | [SL-10 C#](SL-10-ActiveAutomataLearning-CSharp.ipynb) | L*, table d'observation et exécution complète sur le langage cible, avec les garanties de minimalité et de complexité ; écrit avec la seule bibliothèque standard de .NET. |
+| 12b | [SL-12b C#](SL-12b-SpectralLogicSynthesis-CSharp.ipynb) | Walsh, coefficients exacts, poids ternaires, routage par Sinkhorn et recherche discrète (Metropolis, parallel tempering) aux mêmes budgets ; Math.NET fait les moindres carrés du port C#, les générateurs aléatoires diffèrent et les figures C# sont des SVG statiques. |
 
-| Section | Contenu |
-|---------|---------|
-| Cadre général | Contrainte d'entraînement, EBL vs RBL vs KBIL |
-| EBL - Principe | Exemple de Zog, 4 étapes (expliquer, variabiliser, extraire, simplifier) |
-| EBL - Arithmétique | Simplification d'expressions, arbre de preuve |
-| EBL - Implémentation | Classe ArithmeticEBL complète |
-| EBL - Efficacité | Opérationalité vs généralité, prolifération de règles |
-| RBL - Introduction | Déterminations, vérification fonctionnelle, réduction d'espace (approfondi dans SL-03) |
+## Sous-séries
 
-> **Parité .NET** : [SL-02-KnowledgeBasedLearning-CSharp.ipynb](SL-02-KnowledgeBasedLearning-CSharp.ipynb) est le jumeau C# (.NET Interactive) — EBL (chaînage avant + unification, arbre de preuve, variabilisation) et RBL (vérification de détermination) implémentés from-scratch, sans lib ML. Marathon parité .NET ⇄ Python (#4956).
+Cette série n'a pas de sous-série.
 
-> **Parité .NET** : [SL-05-InverseResolution-CSharp.ipynb](SL-05-InverseResolution-CSharp.ipynb) est le jumeau C# (.NET Interactive) — LGG (Plotkin), θ-subsomption (skolemisation + backtracking), clause bottom (saturation bornée + variabilisation), recherche Progol (score `p−L`) implémentés from-scratch, sans lib ML. Marathon parité .NET ⇄ Python (#4956).
+## Installation
 
-### SL-03-RelevanceLearning-Python.ipynb
+### Environnement Python
 
-| Section | Contenu |
-|---------|---------|
-| Déterminations | Formalisme, monotonie, minimalité, `check_determination()` |
-| Treillis des déterminations | `build_determination_lattice()`, visualisation ASCII, up-set |
-| MINIMAL-CONSISTENT-DET | Implémentation détaillée, données moléculaires, cas d'échec disjonctif (restaurant) |
-| Sélection guidée | RBL vs sklearn (information mutuelle), comparaison |
-| Analyse PAC | Réduction exponentielle, bornes d'échantillonnage |
-| Web Sémantique | Parallel RBL <-> OWL (FunctionalProperty, hasKey) |
+Les dépendances sont listées dans [requirements.txt](requirements.txt) ; par carnet :
 
-### SL-04-InductiveLogicProgramming-Python.ipynb
+- carnets 01 et 02 : bibliothèque standard de Python uniquement ;
+- carnet 03 : `numpy` et `scikit-learn` ;
+- carnet 04 : `clingo`, `janus_swi` et Popper, sous un noyau Linux (voir plus bas) ;
+- carnet 05 : `janus_swi`, pour la section Aleph (optionnelle) ;
+- carnet 06 : `clingo`, `janus_swi`, Popper et `matplotlib`, sous un noyau Linux ; l'ILP différentiable tourne à part, dans l'environnement `lernd-dilp` (voir plus bas) ;
+- carnet 07 : `numpy`, `torch` et LTNtorch (`pip install LTNtorch`, et non `pip install ltn`, qui est un homonyme fondé sur TensorFlow avec une autre API) ;
+- carnet 08 : `rdflib` et `clingo` (module Python officiel Potassco, installé silencieusement par le carnet) ;
+- carnets 09 et 11 : `openai` et `python-dotenv` ;
+- carnet 10 : `matplotlib` ;
+- carnets 12, 13 et 13b : `numpy`, `torch` et `matplotlib` ; le carnet 12 ajoute `difflogic` et `torchvision`, le carnet 13b le paquet `ict` ;
+- carnets 12b et 12c : `numpy`, et `matplotlib` pour le 12b ;
+- carnet 14 : le paquet `aifeynman` n'est plus installable tel quel avec NumPy 2 (son `setup.py` importe `numpy.distutils`, retiré de cette version) : le carnet s'exécute dans le conteneur construit par [`assets/Dockerfile.aifeynman-py313`](assets/Dockerfile.aifeynman-py313), qui rend l'environnement fidèle au paquet figé en 2021 ;
+- carnet 15 : `numpy`, `ortools` et `scikit-learn`.
 
-| Section | Contenu |
-|---------|---------|
-| Clauses Horn | Représentation, `Literal`, `HornClause`, unification |
-| FOIL | Algorithme top-down, gain FOIL, littéraux candidats |
-| FOIL pas-à-pas | Trace détaillée sur le problème ancestor |
-| Résolution inverse | Opérateurs V (absorption) et W (identification) |
-| Knowledge Graphs | Règles AMIE, triples RDF, SPARQL CONSTRUCT |
-| Popper (Learning From Failures) | Programme récursif optimal, ablation sans récursion, vérification SWI-Prolog (kernel Linux/WSL) |
-| Exercices | sibling, opérateur W, règles sur KG |
+Aleph s'exécute via `janus_swi` sur SWI-Prolog ; Metagol est fourni dans [`vendor/metagol/`](vendor/metagol/), sous licence BSD-3 ; Popper tourne en sous-processus ; l'ILP différentiable (Lernd) tourne dans un environnement conda dédié, `lernd-dilp` (TensorFlow, licence GPL-3.0), importé et jamais vendu. Chaque moteur indisponible se signale proprement (drapeau `HAS_*`) sans interrompre le carnet. La section Aleph du carnet 05 ne tourne que sur un noyau Linux : son délai de garde repose sur `SIGALRM`.
 
-### SL-05-InverseResolution-Python.ipynb
+Les carnets 09 et 11 lisent leur clé LLM dans un fichier `.env` construit depuis [`.env.example`](.env.example) ; sans clé, un générateur (carnet 09) ou un simulateur (carnet 11) déterministe prend le relais, et le carnet s'exécute intégralement.
 
-| Section | Contenu |
-|---------|---------|
-| Clauses et couverture | `covers()` par backtracking, validation de la cible `grandfather/2` |
-| LGG de Plotkin | Anti-unification, généralisation la moins générale, sur-spécialisation |
-| Theta-subsomption | `subsumes()` par skolemisation, le treillis de généralité |
-| Clause bottom | Saturation bornée, entailment inverse, variabilisation |
-| Recherche Progol | Sous-ensembles connectés du corps de bottom, score `f = p - L`, consistance dure |
-| Cover-set | Boucle d'apprentissage de théorie complète |
+### Noyaux Jupyter
 
-### SL-06-ModernILP-Python.ipynb
+- `python3` pour la majorité des carnets ;
+- `python3-wsl` (Linux sous WSL) pour les carnets 04 et 06, qui appellent Popper ;
+- `difflogic-sl12` pour le carnet 12 ;
+- `lean4-wsl` pour le carnet 01b ;
+- `.net-csharp` (.NET Interactive) pour les jumeaux C#.
 
-| Section | Contenu |
-|---------|---------|
-| Quatre paradigmes | Tableau comparatif : entailment inverse, MIL, LFF, ILP différentiable |
-| Tâche partagée | KB `parent`/`ancestor`, clôture transitive, positifs/négatifs monde clos |
-| Aleph | Entailment inverse via `janus_swi` (SWI-Prolog), modes et déterminations |
-| Metagol | Meta-Interpretive Learning, métarègles, invention de prédicats (`metagol.pl` vendore, BSD-3) |
-| Popper | Learning From Failures, biais déclaratif, sous-processus kernel Linux |
-| dILP (Lernd) | ILP différentiable, descente de gradient, tolérance au bruit (env conda dédié, GPL-3.0) |
-| Synthèse | Quatre machineries pour un même concept ; forces et angles morts |
-| Exercices | Direction de mode (Aleph), `grandparent` non récursif, robustesse au bruit (dILP) |
+### Dépannage
 
-> **Parité .NET** : [SL-06-ModernILP-CSharp.ipynb](SL-06-ModernILP-CSharp.ipynb) est le jumeau C# (.NET Interactive) — FOIL relationnel from-scratch (FOIL_Gain de Quinlan, recherche dans le graphe de raffinement, couverture extensionnelle par backtracking, récursion `ancestor/2` via les clauses déjà apprises), benchmark de scalabilité (profondeur 5-20), et verdict SOTA des 4 moteurs externes du twin Python (Aleph/Metagol/Popper=RECOVERABLE-MACHINE Prolog/ASP, ∂ILP=INTRINSIC TensorFlow). Marathon parité .NET ⇄ Python (#4956).
+- **`rdflib` ne s'installe pas, ou plante sur les parsers RDF/XML** (carnet 08) : installez `lxml` comme repli (`pip install lxml`), ou passez par un environnement conda (`conda install -c conda-forge rdflib`).
+- **`scikit-learn` manquant ou incompatible** (carnets 03 et 15) : `pip install -U scikit-learn numpy`.
+- **`MemoryError` sur le treillis des déterminations** (carnet 03) : le treillis des déterminations croît exponentiellement avec le nombre d'attributs (l'exemple du carnet en a dix : `Sous-ensembles testes : 11 / 1023`) ; limitez l'analyse aux attributs les plus informatifs en premier.
+- **Un carnet ne trouve pas son noyau** : `python -m ipykernel install --user --name python3 --display-name "Python 3"`, puis `pip install papermill`, et redémarrez le noyau avant une exécution complète.
+- **Les carnets 04 et 06 échouent sous Windows** : Aleph et Popper passent par SWI-Prolog et par `SIGALRM` pour leur délai de garde, tous deux absents d'un noyau Windows natif. Il faut le noyau `python3-wsl` (voir Noyaux Jupyter) ; un moteur introuvable est signalé par son drapeau `HAS_*` et le carnet poursuit sans lui.
+- **Le carnet 14 échoue hors de son conteneur** : le paquet `aifeynman` figé en 2021 importe `numpy.distutils`, retiré de NumPy 2. Lancez-le par papermill dans l'image `aifeynman:sl14-py313` plutôt que dans un environnement Python standard.
 
-### SL-07-NeuroSymbolic-Python.ipynb
+## Organisation du dossier
 
-| Section | Contenu |
-|---------|---------|
-| T-norms / T-conorms | Opérateurs logiques différentiables |
-| Prédicats neuronaux | Fonctions P(x) -> [0,1] apprises |
-| LTN | Logique Tensorielle simplifiée |
-| Raisonnement guidé | Règles logiques guidant l'entraînement neuronal |
-| DeepProbLog | Programmation logique probabiliste + prédicats neuronaux |
+Hormis les carnets, le dossier porte :
 
-### SL-08-KnowledgeGraphs-ILP-Python.ipynb
+- [`assets/`](assets/) : la figure du parcours ([`readme/`](assets/readme/), avec le [`MANIFEST.md`](assets/readme/MANIFEST.md) qui documente sa provenance) et les Dockerfiles du carnet 14 ;
+- [`reference/`](reference/) : la note de lecture du chapitre 19 d'AIMA et `aima_knowledge.py`, sous-ensemble vendu de `knowledge.py` d'aima-python ;
+- [`tests/`](tests/) : les tests de ce fichier de référence ;
+- [`vendor/`](vendor/) : Metagol pour le carnet 06 et difflogic pour le carnet 12 ;
+- [`_archive/`](_archive/) : le registre de disposition et le lot daté du précurseur EML de SL-12, remplacé par le carnet 12 ;
+- [`.env.example`](.env.example) : le modèle de configuration des carnets 09 et 11 ; [`requirements.txt`](requirements.txt) : les dépendances.
 
-| Section | Contenu |
-|---------|---------|
-| Knowledge Graphs | Construction avec rdflib |
-| AMIE rule mining | Découverte de règles de Horn sur KG |
-| Complétion | Inférence de nouveaux triples |
-| ASP avec clingo | Validation croisée de la complétion, récursion (`ancestorOf`), contraintes d'intégrité (pont série Tweety) |
+## Pour aller plus loin
 
-> **Parité .NET** : [SL-08-KnowledgeGraphs-ILP-CSharp.ipynb](SL-08-KnowledgeGraphs-ILP-CSharp.ipynb) est le jumeau C# (.NET Interactive) — KG familial (14 personnes, 47 triples) construit avec dotNetRDF 3.5.2, AMIE rule mining **from-scratch** (clauses Horn 1-2 atomes, JOIN relationnel par subject-indexing, PCA confidence), complétion de graphe (+9 triples `grandparentOf`, 5→14) et saturation fixpoint (ré-application Datalog non-récursive, 0 nouveau triple : point fixe atteint dès la complétion). Vérdict SOTA du twin Python : rdflib/dotNetRDF=SOTA-OK, clingo ASP=INTRINSIC en .NET (récursion/réparation = principalement un solveur externe). Marathon parité .NET ⇄ Python (#4956).
+### Questions de recherche ouvertes
 
-### SL-09-LLM-SymbolicLearning-Python.ipynb
+- **Le gain de Sinkhorn ne se reproduit pas sur CPU** (carnet 12c) : la reproduction ne mesure aucun gain, sans pour autant invalider le papier — le gradient proxy peut être insuffisant, le gain peut n'apparaître qu'au-delà de deux variables ou avec une autre initialisation, ou le claim peut être partiellement surévalué. L'écart est rapporté, pas moyenné.
+- **Structure TPR approximative, pas produit tensoriel exact** (carnets 13 et 13b) : la structure se lit dans les états cachés, mais rien ne montre qu'un GRU calcule un produit tensoriel, et le dépôt officiel de DISCOVER n'est pas exécuté ici. Le passage à des architectures de production (transformers profonds, grands vocabulaires, longues séquences) est hors de portée du dispositif.
+- **Le mécanisme se transporte, le geste de réparation non** (carnet 15) : sur la couverture d'ensemble, retirer une contrainte fausse gagne et ajouter une nécessité oubliée coûte, là où la coloration de graphe réagit autrement — la boucle générateur/oracle n'est pas un remède universel.
+- **La découverte d'équations reste bornée à son budget** (carnet 14) : la recherche est plafonnée, `tanh` n'est pas dans la base d'opérations, et les résultats valent pour les fonctions du jeu de test, pas pour l'ensemble du benchmark du papier.
 
-| Section | Contenu |
-|---------|---------|
-| LLMs et raisonnement | Forces et limites pour le raisonnement symbolique |
-| Parseur de règles | Extraction de règles IF-THEN depuis du texte |
-| Vérification symbolique | Cohérence formelle des sorties LLM |
-| Boucle LLM-Symbolique | Génération + vérification + feedback |
+### Ce que les carnets mesurent
 
-### SL-10-ActiveAutomataLearning-Python.ipynb
+Les valeurs ci-dessous sont des sorties committées des carnets, recopiées telles quelles ; l'accentuation et la casse y sont celles du code qui les imprime.
 
-| Section | Contenu |
-|---------|---------|
-| Apprentissage actif | Passif vs actif, le cadre MAT (Minimally Adequate Teacher) |
-| DFA | Représentation, exécution, langage du mot « se termine par a » |
-| Table d'observation | Prefixes S, suffixes E, fermeture et cohérence |
-| L* | Algorithme complet d'Angluin (1987), construction de l'hypothèse |
-| Contre-exemples | Traitement, raffinement, convergence vers le DFA minimal |
-| Oracle échantillonné | Équivalence approchée par tirage, lien PAC |
-| Théorie | Myhill-Nerode, minimalité, bornes sur le nombre de requêtes |
+- **01** : `VS appris sur 4 exemples : |G|=3, |S|=1` et `Version Space complet : 7 hypotheses consistantes` ; le vote majoritaire des hypothèses restantes donne `5/8 corrects, 0 incertain`, et trois exécutions donnent `Hypotheses distinctes sur 3 seeds : 1/3`. Côté C#, `CBH accuracy : 5/8 = 62,5%` et `Version Space (vote) accuracy : 4/8 = 50,0%`.
+- **02** : EBL ramène la recherche de `101 etapes` à `67 etapes` (`Reduction : 34 etapes (34%)`, `Speedup (ratio) : 1.51x`), alors qu'en temps mural la médiane sur vingt exécutions donne `Ratio (sans/avec) : 0.33x` : les règles coûtent plus qu'elles ne rapportent à cette échelle, cas d'école du problème d'utilité. Le jumeau C# mesure `Speedup = 42/8 = 5,25x`.
+- **03** : MINIMAL-CONSISTENT-DET `TROUVE : {R1, R2} apres 11 tests`, soit `Sous-ensembles testes : 11 / 1023` et `Facteur de reduction : 256x` ; la sélection par déterminations atteint `accuracy = 0.969`, là où un tirage aléatoire moyen donne `0.142` (meilleur tirage : `0.969`). Côté C#, `I(logp ; activity) = 0,6100 bits`.
+- **04** : FOIL retrouve `Regle : ancestor(x, y) :- parent(x, y).` puis la clause récursive ; le jumeau C# obtient `Gain FOIL : 5,390` et conclut `Verdict parite : FOIL from-scratch == clingo (SOTA) sur ancestor/2`.
+- **05** : sur `grandfather/2`, la clause bottom a 9 littéraux et `56 candidats connectes`, et Progol retient `[Rule 1] [Pos cover = 4 Neg cover = 0]` ; le jumeau C# conclut `Verdict parite : theorie from-scratch == SWI-Prolog (SOTA) sur grandmother/2`.
+- **06** : `Tous apprennent : ancestor(A,B):-parent(A,B). ancestor(A,B):-parent(A,C),ancestor(C,B).`, et `Seul Metagol introduit un predicat auxiliaire (ancestor_1 = grandparent).` Sur un jeu volontairement empoisonné, le jumeau C# rend `TP = 11 / 11   FN = 0   FP = 1`.
+- **07** : la satisfaction globale des règles atteint `0.9242` à l'époque 400, et l'inférence sur un seul vrai grandparent rend `grandparent(Marie, Paul)   = 1.000`.
+- **08** : le graphe de départ compte `Total triples : 47` ; la règle retenue a `Support=14, Confidence=1.00` et `Gain : +9 triples (de 5 a 14)`, que le chaînage avant rejoue (`Total triples : 56 (+9)`) — `apply_rules etait bien un chainage avant Datalog -- clingo le confirme.` La confiance PCA donne `5/8 = 0.62`.
+- **09** : en prompt direct, `Regles validees   : 4` et `Regles rejetees   : 0`, avec `Couverture des positifs par les regles validees : 6/6` ; en raisonnement pas à pas, `Regles validees     : 6` mais `Regles rejetees     : 4` (`Taux d'acceptation : 6/10 (60%)`) ; la stabilité d'une exécution à l'autre vaut `Regles validees stables sur les 3 runs : 3/5 (stabilite 60%)`.
+- **10** : L* rejette une conjecture sur contre-exemple (`Conjecture 1 : 2 etats -> contre-exemple 'ba'`) puis accepte la suivante (`Conjecture 2 : 4 etats -> ACCEPTEE`), et rend `DFA appris : DFA(4 etats, 1 acceptants)` avec `|S| = 13, |E| = 3, MQ posees = 55` ; la vérification exhaustive confirme `2047/2047 mots (longueur <= 10) identiques`. Avec un oracle bruité (`eps=.20`), l'agrégation de 25 observations remonte de `0.790` (une observation) à `0.998`.
+- **11** : l'extraction rend `19 triplets`, avec `Rappel : 19/19 = 1.00` et `Precision : 19/19 = 1.00` ; un exercice rejoue le poison (un fait faux accepté par l'oracle) et le bloque par une contrainte de cardinalité sur le nombre de parents.
+- **12** : le réseau discrétisé atteint `Accuracy test : 0.826 (8261/10000)` ; la compilation en circuit C échoue dans l'environnement du carnet (`CompiledLogicNet indisponible`, code de sortie 1), ce que le carnet documente au lieu de le masquer.
+- **12b** : la recherche exhaustive `Exhaustive 3^11 = 177147 vecteurs en 0.13 s` trouve `92` optimums globaux à `E = 0`, tandis que le balayage glouton parti de `w_q` reste à `E final = 2/16` (minimum local) ; le jumeau C# compare les transformées de Walsh (`n=12 : naïf 0.155689s ; papillon 0.000249s ; ratio 625.3`).
+- **12c** : sur 27 opérations de la phase 1, le linéaire signé passe et Sinkhorn régresse (`Linéaire suffit, Sinkhorn régresse : 27 opérations`, `Sinkhorn aide (Δsk-lin > 1pp) : 0 opérations`) ; l'exemple `AND` tombe de `acc ternaire = 100%` en linéaire à `25%` en Sinkhorn.
+- **13** : remplacer l'état caché par son approximation TPR ne coûte rien (`Δacc (TPR) = 0.000`), là où la même substitution par un contrôle atomique coûte `Δacc (atomic) = 0.695`.
+- **13b** : sur la tâche copy, le GRU atteint `val_acc=0.817 (hasard = 0.091)` ; le dictionnaire creux se reconstruit avec `FVU SAE : train = 0.0747 | val = 0.1023` ; les huit atomes dédiés ont tous un effet causal positif (`atomes dedies avec effet > 0 : 8/8`) contre `128/160` pour le contrôle apparié, et leur sélectivité corrèle avec cet effet (`rho = +0.551`).
+- **14** : le front de Pareto tient `36 candidates, 0.0 a 163.5 bits` ; la séparabilité multiplicative de E(m, v) = g(m)·h(v) est détectée (`S[log|E|] = 0.0051`, seuil 0.1) et la séparabilité additive rejetée (`S[E] = 0.8857`) ; MEDL retrouve mieux les exposants que MSE (`MEDL : a = 0.562, b = 1.204` contre `MSE  : a = 0.466, b = 0.787`, pour des vrais paramètres a = b = 1).
+- **15** : les indications apprises réduisent les branches de `delta median = -18.4 %`, effacent les conflits (`med=42 -> apres : med=0`) et aident toutes les instances (`aidantes  (delta<0) :  300  (100.0 %)`) ; sur des graphes de test de `aretes min=165 | med=168.5 | max=174`, le hint brut fait mieux que le réparé (`-15.9 %` contre `-5.4 %`), et le réparé coûte `+12.5 %` de branches par rapport au brut.
 
-> **Parité .NET** : [SL-10-ActiveAutomataLearning-CSharp.ipynb](SL-10-ActiveAutomataLearning-CSharp.ipynb) est le jumeau C# (.NET Interactive) — L\* d'Angluin implémenté from-scratch (DFA, ObservationTable S/E/T, requêtes d'appartenance et d'équivalence, conjecture, contre-exemples Angluin/Maler-Pnueli, oracle d'équivalence échantillonné PAC, oracle bruité + L\* borné, algorithme forward sum-product et agrégation d'evidence), BCL .NET 9 seule (0 NuGet). Marathon parité .NET ⇄ Python (#4956).
+### Séries voisines
 
-### SL-11-Capstone-NeuroSymbolic-Python.ipynb
+| Série | Ce qui s'y prolonge |
+|-------|----------------------|
+| [Tweety](../Tweety/README.md) | Les logiques formelles que les carnets 04 et 05 écrivent à la main (clauses de Horn, unification) : Tweety les raisonne comme des théories données, la série les apprend des exemples. |
+| [SemanticWeb](../SemanticWeb/README.md) | RDFS et OWL formalisent les déterminations et les hiérarchies de généralité ; SW-02 donne les bases RDF utiles au carnet 08. |
+| [Planners](../Planners/README.md) | L'heuristique opérationnelle qu'EBL compile (carnet 02) répond au problème des heuristiques de planification : rendre une règle utilisable sans la redériver à chaque appel. |
+| [Lean](../Lean/README.md) · [ML](../../ML/README.md) | Le lake `learning_theory_lean`, hébergé par la série ML, est exécuté par le carnet 01b ; l'arbre de preuve d'EBL (carnet 02) a la forme d'un but de preuve Lean, avec la même décomposition en sous-buts. |
+| [Search](../../Search/README.md) | Le benchmark agrégé des conjectures apprises vit dans App-33 ; la série porte aussi solveurs et métaheuristiques. |
+| [Probas](../../Probas/README.md) · [GameTheory](../../GameTheory/README.md) | Le capstone (carnet 11) raisonne sur des faits tenus pour certains ; Probas (Infer.NET) et GameTheory outillent le cas où les faits sont incertains ou dépendent de la décision d'un autre agent. |
+| Lecture transversale | [`La mer qui monte`](../../../docs/cadrage/grothendieckian-lens.md) : grille de lecture grothendieckienne du dépôt (changement de représentation, certification A/B/C). |
 
-| Section | Contenu |
-|---------|---------|
-| Corpus | Saga « Atelier Verne » : 13 énoncés, 2 pieges factuels |
-| Étage 1 - Extraction | LLM (Gemini 3.5 Flash) ou simulateur : texte -> triples candidats |
-| Étage 2 - Oracle | Validation typée + contraintes fonctionnelles (cf SL-08) |
-| Étage 3 - KG | Knowledge graph valide (cf SL-07) |
-| Étage 4 - Mining | AMIE-lite : découverte de règles avec confiance standard (cf SL-04/SL-07) |
-| Étage 5 - Inférence | Chainage avant avec provenance ; le dérivé peut violer l'oracle (lecon d'architecture) |
-| Étage 6 - QA | Question 2 sauts : réponse KG (dérivation citée) vs réponse LLM seule |
+Quatre suites naturelles après le carnet 11 :
 
-### SL-12-DifferentiableLogicGateNetworks-Python.ipynb
+- **Approfondir les fondations formelles** : Tweety pour les logiques formelles et Lean pour les preuves ; les carnets 04 et 05 y trouvent leur ancrage rigoureux.
+- **Passer à l'échelle sur le web de données** : SemanticWeb, naturellement après le carnet 08 (graphes de connaissances et AMIE).
+- **Décider sous incertitude** : Probas (Infer.NET) et GameTheory, le complément probabiliste du capstone.
+- **Du capstone à la production** : reprendre le pipeline du carnet 11 et remplacer l'oracle de validation par une vérification Lean ou une cohérence Tweety.
 
-| Section | Contenu |
-|---------|---------|
-| Motivation | Registre **discret** du neuro-symbolique (vs SL-07 continu) : neurone = porte logique binaire apprise parmi 16 |
-| Prise en main | `LogicLayer(in, out)`, `GroupSum(k, tau)`, choix device/implementation |
-| Entraînement MNIST 20x20 | Précision : ~85-92% (référence GPU, 5000 iters) ; le notebook exécute une config CPU réduite (N_ITERS=2000) -> ~79% |
-| Inspection | Distribution des 16 portes apprises par les neurones |
-| `CompiledLogicNet` | Export C compilé, ~1M images/s sur 1 core CPU (RECOVERABLE-MACHINE, gcc) |
-| Note historique | Remplace la veille `Neurosymbolic-EML/` (atome NAND continu, parité-3 dégénéré) — voir `_archive/2026-07-04-Neurosymbolic-EML-precurseur-SL12/` |
+### Formalisations Lean
 
-**Référence** : Petersen et al., *Deep Differentiable Logic Gate Networks*, NeurIPS 2022 ([arXiv 2210.08277](https://arxiv.org/abs/2210.08277)).
-
-### SL-12b-SpectralLogicSynthesis-Python.ipynb
-
-| Section | Contenu |
-|---------|---------|
-| Convention testée | True ↔ +1 (x = 2b−1), portes définies sur les signes, convention croisée bit/signes sur les 4 tables n=2 (le piège du smoke test 6/7 de l'artefact Pavlov) |
-| Walsh-Hadamard | Caractères χ_S, transformée naïve vs papillon O(n·2^n), reconstruction exacte (f = H(D f̂), sans division), spectres MAJ3/PARITE3/ET3/OU3 + Parseval |
-| Fourier vs PTF | Coefficients exacts contre poids ternaires {−1,0,+1} : énumeration exhaustive 3^4=81 sur n=2 (16/16 représentables, degrés qui divergent), quantification naïve 8/16 |
-| Sinkhorn | Projection vers le polytope de Birkhoff, 3 régimes de température, métrique Σ P² ∈ [1,n], ex-aequo mesurés (4 permutations au coût minimal) sans surclaim de permutation |
-| Recherche discrète | Oracle exact Hamming 16 entrées, quantification E=2/16, glouton bloqué en minimum local, Metropolis (α = min(1, e^(−ΔE/T))) et parallel tempering (swap exact) à budget égal, vérité terrain exhaustive 3^11 = 177 147 (92 optima globaux) |
-| Pont SL-12 ↔ spectral | Spectre exact du circuit AND(OR(x1,x2), XNOR(x3,x4)) : degré 4, 8/16 coefficients, χ_{3,4} dominant ; tableau de confrontation portes locales/câblage fixe vs structure spectrale/composition |
-
-**Référence** : Gorgi Pavlov, *Differentiable Logic Synthesis: Spectral Coefficient Selection via Sinkhorn-Constrained Composition* ([arXiv 2601.13953](https://arxiv.org/abs/2601.13953)) — digestion EPIC #14366 grain G2.
-
-### SL-12c-PavlovDLS-Reproduction-Python.ipynb
-
-| Section | Contenu |
-|---------|---------|
-| Convention | Lecture de la convention Pavlov (DLS Sinkhorn), artefact reproduit |
-| Opérations | Énumération : Phase 1 (16 opérations n=2), Phase 2 (11 opérations temporelles n=4) |
-| Modèle linéaire signé | Routeur simple sur représentation Walsh, discrimination directe |
-| Sinkhorn-constrained routing | Proxy du routeur Pavlov (projection itérative vers le polytope de Birkhoff) |
-| Phase 1 | Discrimination linéaire vs Sinkhorn sur les 16 opérations, multi-seed (4 seeds) |
-| Phase 2 | Opérations temporelles n=4 (3 seeds) ; où le Sinkhorn aide vraiment |
-| Verdict honnête | Linéaire signé 100 % sur 27 opérations vs proxy 0-25 % — défaut de gradient proxy, pas réfutation du claim Pavlov |
-| Reproductibilité | Environnement verrouillé, commandes reproductibles, CPU-only (NumPy seul) |
-| Exercices | 3 (opération 2-variables rompant la non-régression, opération Phase 2 où le Sinkhorn aide, extension n=3) — tranche de recherche, non inscrits à la table de pioche |
-
-**Référence** : Gorgi Pavlov, *Differentiable Logic Synthesis* ([arXiv 2601.13953](https://arxiv.org/abs/2601.13953)) — reproduction bornée Phase 1+2, EPIC #14366 grain G1.
-
-### SL-13-Discover-TPR-Python.ipynb
-
-| Section | Contenu |
-|---------|---------|
-| Vocabulaire TPR | role_pos(t) ⊗ filler_symbole(x_t) (Smolensky 1990), lecture guidée |
-| Trois tâches symboliques | Copy, reverse, interleave — séquences générées programmatiquement |
-| Entraînement | GRU 1 couche sur architectures CPU petites |
-| Diagnostic DISCOVER | Premier passage : factorisation role × filler par moindres carrés alternés (ALS) |
-| Réinjection décodeur | TPR reconstruite injectée dans le décodeur, qualité d'approximation mesurée |
-| Constituent surgery | Permutation des rôles, effet attendu sur la sortie |
-| White-box TPR | Withheld role-filler, contrôle white-box TPR vs embeddings atomiques |
-| Capacité et régularisation | Balayage d_model ∈ {8, 16, 32, 48} ; régularisation L2,1 sur les rôles |
-| Conclusion bornée | Structure TPR approximative et fonctionnellement exploitée — pas une implémentation symbolique exacte |
-| Exercices | 3 (généralisation du diagnostic, constituent surgery sémantique, seuil de capacité) — table de pioche 53-55 |
-
-**Référence** : McCoy et al., *DISCOVER* ([arXiv 2608.29530](https://arxiv.org/abs/2608.29530)) — diagnostic léger, EPIC #14366 grain G6.
+Le lake [`learning_theory_lean`](../../ML/learning_theory_lean/README.md), hébergé par la série [ML](../../ML/README.md), porte en théorèmes les notions du carnet 01b : cadre PAC de Valiant (borne d'échantillonnage d'une classe finie, cadre agnostique), convergence du perceptron (Novikoff, serrage de la borne), théorie effective, structures, générateurs et renommage. Le carnet 01b exécute ce lake en noyau Lean ; ces formalisations ne font pas partie du parcours.
 
 ## Concepts clés
 
@@ -516,6 +428,8 @@ Les notebooks lettrés prolongent un palier du parcours principal. Les liens de 
 | **Hypothèse FOL** | Conjonction de contraintes sur les attributs | SL-01 |
 | **Version Space** | Ensemble de toutes les hypothèses consistantes | SL-01 |
 | **CBH** | Maintient une seule hypothèse ajustée incrémentalement | SL-01 |
+| **Borne PAC** | Nombre d'exemples suffisant pour généraliser une classe finie d'hypothèses | SL-01b |
+| **Perceptron (Novikoff)** | Convergence et serrage de la borne sur le nombre d'erreurs | SL-01b |
 | **EBL** | Extrait une règle générale d'un seul exemple par déduction | SL-02 |
 | **RBL** | Identifie les attributs pertinents via les déterminations | SL-02 |
 | **Détermination** | Relation fonctionnelle entre attributs | SL-02, SL-03 |
@@ -532,13 +446,14 @@ Les notebooks lettrés prolongent un palier du parcours principal. Les liens de 
 | **Theta-subsomption** | Ordre de généralité décidable entre clauses (∃θ : Cθ ⊆ D) | SL-05 |
 | **Clause bottom** | Clause la plus spécifique couvrant un exemple (entailment inverse) | SL-05 |
 | **Progol** | Recherche de clause guidée par la clause bottom | SL-05 |
-| **Aleph** | Entailment inverse, l'implémentation de référence de Progol (SWI-Prolog) | SL-06 |
+| **Aleph** | Entailment inverse, l'implémentation de référence de Progol (SWI-Prolog) | SL-05, SL-06 |
 | **Metagol (MIL)** | Apprentissage meta-interpretatif : métarègles + invention de prédicats | SL-06 |
 | **dILP** | ILP différentiable : règles pondérées apprises par descente de gradient | SL-06 |
 | **T-norm** | Généralisation différentiable de AND | SL-07 |
 | **DeepProbLog** | Programmation logique probabiliste + prédicats neuronaux | SL-07 |
 | **Knowledge Graph** | Graphe orienté de triples (sujet, prédicat, objet) | SL-08 |
 | **AMIE** | Rule mining sur knowledge graphs incomplets | SL-08 |
+| **PCA confidence** | Confiance ajustée à l'incomplétude du graphe : dénominateur restreint aux sujets ayant au moins un prédicat de tête connu | SL-08 |
 | **LLM-Symbolique** | Boucle de rétroaction LLM + vérification formelle | SL-09 |
 | **Apprentissage actif** | L'apprenant choisit ses questions au lieu de subir un échantillon | SL-10 |
 | **MAT** | Minimally Adequate Teacher : oracle d'appartenance + équivalence | SL-10 |
@@ -546,227 +461,44 @@ Les notebooks lettrés prolongent un palier du parcours principal. Les liens de 
 | **Myhill-Nerode** | Classes d'équivalence de suffixes = états du DFA minimal | SL-10 |
 | **Provenance** | Trace de dérivation attachée à chaque fait inféré | SL-11 |
 | **Pipeline neuro-symbolique** | LLM aux extrémités, validation et inférence symboliques au centre | SL-11 |
+| **Porte logique différentiable** | Neurone dont la fonction est une porte logique relaxée, discrétisée après entraînement | SL-12 |
 | **Caractère de Walsh** | χ_S(x) = ∏_{k∈S} x_k — base orthonormée des fonctions {−1,+1}^n | SL-12b |
 | **PTF ternaire** | sign(Σ w_S χ_S) avec w ∈ {−1,0,+1} — objet distinct des coefficients de Fourier exacts | SL-12b |
 | **Routage Sinkhorn** | Projection itérative vers le polytope de Birkhoff ; dans l'exemple à blocs ex-aequo, la limite n'est pas une permutation | SL-12b |
-
-## Prérequis
-
-### Connaissances requises
-
-- Python de base (fonctions, classes, tuples, dictionnaires)
-- Logique propositionnelle (conjonctions, prédicats)
-- Notions d'apprentissage supervisé (classification binaire)
-
-### Environnement Python
-
-Aucune dépendance externe pour SL-01, SL-02, SL-05 et SL-10 (bibliothèque standard Python 3.10+ uniquement). SL-03 utilise `scikit-learn` et `numpy` pour la comparaison avec la sélection statistique. SL-07 utilise `torch` et `LTNtorch` pour les Logic Tensor Networks. SL-08 utilise `rdflib` et `clingo` (module Python officiel Potassco, installé silencieusement par le notebook — même moteur ASP que le binaire utilisé par la série Tweety via `scripts/install_clingo.py`). SL-09 et SL-11 utilisent `python-dotenv` et `openai` pour les appels LLM optionnels via OpenRouter (Gemini 3.5 Flash) : copiez `.env.example` vers `.env` et renseignez `OPENROUTER_API_KEY` ; sans clé, un simulateur déterministe prend le relais et le notebook s'exécute intégralement. SL-12 utilise `torch` et `difflogic`. SL-12b s'exécute CPU uniquement avec `numpy` (algèbre, transformées, recherche) et `matplotlib` (spectres, cartes Sinkhorn, trajectoires) — aucune autre dépendance.
-
-SL-04 est en bibliothèque standard pour l'essentiel, mais sa section finale **Popper** requiert un environnement Unix : Popper utilise `signal.SIGALRM`, absent de Windows — le notebook s'exécute donc sur un kernel Python **Linux** (kernel `python3-wsl` via WSL sous Windows, kernel natif sous Linux/macOS). Dépendances de la section (installées silencieusement par le notebook) : SWI-Prolog >= 9.1.12 (`ppa:swi-prolog/stable`), `popper-ilp` épinglé à **v4.4.0** (la 5.0 exige Python >= 3.14), `janus_swi`, `clingo`, `setuptools < 81`. Si Popper est indisponible, les cellules de la section l'indiquent et se sautent proprement — le reste du notebook tourne sur n'importe quel kernel Python.
-
-SL-06 (Moteurs ILP modernes) partage l'exigence kernel **Linux/WSL** : Aleph et Metagol s'exécutent via `janus_swi` sur SWI-Prolog (Metagol est fourni dans `vendor/metagol/`, licence BSD-3), Popper en sous-processus, et ∂ILP via un environnement conda dédié `lernd-dilp` (TensorFlow, licence GPL-3.0 — *importé* uniquement, jamais vendore). Chaque moteur indisponible se signale proprement (drapeau `HAS_*`) sans interrompre le notebook.
-
-## FAQ / Troubleshooting
-
-### `rdflib` ne s'installe pas ou plantage à l'exécution
-
-SL-08 dépend de `rdflib` pour manipuler les knowledge graphs RDF. Si l'installation échoue :
-
-```bash
-pip install rdflib
-```
-
-Si rdflib plante avec une erreur de compilateur C sur les parsers RDF/XML : installez `lxml` comme fallback `pip install lxml`, ou utilisez un environnement conda (`conda install -c conda-forge rdflib`).
-
-### `scikit-learn` : version incompatible avec Python 3.10+
-
-SL-03 utilise `scikit-learn` pour la comparaison information mutuelle vs déterminations. Si vous avez une erreur lors de l'import :
-
-```bash
-pip install -U scikit-learn numpy
-```
-
-Les versions >= 1.3 de scikit-learn sont compatibles avec Python 3.10-3.12.
-
-### `MemoryError` sur le treillis des déterminations (SL-03)
-
-Le treillis des déterminations croît exponentiellement avec le nombre d'attributs. Si vous travaillez avec des datasets > 50 attributs :
-
-- Limitez l'analyse aux 20-30 attributs les plus informatifs en premier
-- Utilisez `check_determination()` pour filtrer avant de construire le treillis complet
-- Le notebook inclut un paramètre `max_attributes` pour contrôler cette taille
-
-### Jupyter / kernels Python
-
-- Si le kernel Python n'apparaît pas : `python -m ipykernel install --user --name python3 --display-name "Python 3"`
-- Si Papermill ne tourne pas les notebooks : `pip install papermill`
-- En cas de conflit de sortie entre cellules : redémarrez le kernel avant exécution complète
+| **TPR** | Représentation par produit tensoriel : somme de paires rôle × contenu | SL-13, SL-13b |
+| **SAE (dictionnaire creux)** | Auto-encodeur à atomes épars, qui isole des directions interprétables | SL-13b |
+| **MEDL** | Longueur de description moyenne de l'erreur : les valeurs aberrantes coûtent un logarithme, pas un carré | SL-14 |
+| **CP-SAT** | Solveur de programmation par contraintes (OR-Tools) : statut et compteur de branches | SL-15 |
+| **Hint** | Fixation partielle de variables proposée au solveur, qui reste libre de l'ignorer | SL-15 |
 
 ## Ressources
 
-### Références
+Références telles que les carnets les citent :
 
-- Russell & Norvig, *Artificial Intelligence: A Modern Approach*, 3e/4e éd., Chapitre 19
-- Tom Mitchell, *Machine Learning*, Chapitres 2 (Concept Learning) et 11 (EBL)
-- [AIMA Python Code](https://github.com/aimacode/aima-python) - Implémentations de référence
+- Russell et Norvig, *Artificial Intelligence: A Modern Approach*, 3e et 4e éditions, chapitre 19 (*Knowledge in Learning*).
+- Tom Mitchell, *Machine Learning*, chapitres 2 (Concept Learning) et 11 (Explanation-Based Learning).
+- Minton (1990), sur le *utility problem* : des règles utiles peuvent coûter plus qu'elles ne rapportent (carnet 02).
+- [AIMA Python Code](https://github.com/aimacode/aima-python), implémentations de référence.
+- L. Valiant, *A Theory of the Learnable*, Communications of the ACM, 1984.
+- S. Muggleton, *Inverse entailment and Progol*, New Generation Computing 13, 1995.
+- A. Srinivasan, *A Learning Engine for Proposing Hypotheses* (Aleph), 2001.
+- D. Angluin, *Learning Regular Sets from Queries and Counterexamples*, Information and Computation 75(2), 1987.
+- R. Rivest et R. Schapire, *Inference of Finite Automata Using Homing Sequences*, Information and Computation 103(2), 1993.
 
-## Structure des fichiers
+Repères de recherche :
 
-```
-SymbolicLearning/
-├── SL-01-LogicalLearning-Python.ipynb              # CBH, Version Space
-├── SL-01-LogicalLearning-CSharp.ipynb       # Jumeau C# (.NET Interactive) — CBH + Candidate Elimination from-scratch, parité #4956
-├── SL-01b-LogicalLearning-Lean.ipynb # Compagnon Lean natif (kernel lean4-wsl) — théorie PAC + perceptron de Novikoff, See #11703
-├── SL-02-KnowledgeBasedLearning-Python.ipynb        # EBL, RBL
-├── SL-02-KnowledgeBasedLearning-CSharp.ipynb # Jumeau C# (.NET Interactive) — EBL + RBL, parité #4956
-├── SL-03-RelevanceLearning-Python.ipynb             # Treillis, MINIMAL-CONSISTENT-DET, RBL vs sklearn
-├── SL-03-RelevanceLearning-CSharp.ipynb # Jumeau C# (.NET Interactive) — Treillis + MINIMAL-CONSISTENT-DET + PAC + MI, parité #4956
-├── SL-04-InductiveLogicProgramming-Python.ipynb     # FOIL, résolution inverse, knowledge graphs
-├── SL-04-InductiveLogicProgramming-CSharp.ipynb  # Jumeau C# (.NET Interactive) — FOIL + V/W + unification, parité #4956
-├── SL-05-InverseResolution-Python.ipynb             # LGG, theta-subsomption, clause bottom, Progol
-├── SL-05-InverseResolution-CSharp.ipynb      # Jumeau C# (.NET Interactive) — LGG + clause bottom + Progol, parité #4956
-├── SL-06-ModernILP-Python.ipynb                     # Aleph, Metagol, Popper, dILP (Lernd) — moteurs réels
-├── SL-06-ModernILP-CSharp.ipynb            # Jumeau C# (.NET Interactive) — FOIL relationnel + récursion ancestor/2, parité #4956
-├── SL-07-NeuroSymbolic-Python.ipynb                 # T-norms, LTN, DeepProbLog
-├── SL-08-KnowledgeGraphs-ILP-Python.ipynb           # rdflib, AMIE rule mining
-├── SL-08-KnowledgeGraphs-ILP-CSharp.ipynb    # Jumeau C# (.NET Interactive) — dotNetRDF KG + AMIE from-scratch + PCA + saturation, parité #4956
-├── SL-09-LLM-SymbolicLearning-Python.ipynb          # LLMs + vérification symbolique (Gemini 3.5 Flash optionnel)
-├── SL-10-ActiveAutomataLearning-Python.ipynb        # L* d'Angluin, apprentissage actif d'automates
-├── SL-10-ActiveAutomataLearning-CSharp.ipynb # Jumeau C# (.NET Interactive) — L* d'Angluin (DFA/ObservationTable/MQ-EQ/forward) from-scratch, parité #4956
-├── SL-11-Capstone-NeuroSymbolic-Python.ipynb       # Capstone : pipeline neuro-symbolique 6 étages
-├── SL-12-DifferentiableLogicGateNetworks-Python.ipynb # Portes logiques différentiables (difflogic), discrétisation en circuit booléen
-├── SL-12b-SpectralLogicSynthesis-Python.ipynb      # Synthèse logique spectrale : FWHT, PTF ternaires, Sinkhorn, MCMC (#14366 G2)
-├── SL-12c-PavlovDLS-Reproduction-Python.ipynb      # Reproduction Pavlov DLS Phase 1+2 : linéaire signé vs Sinkhorn-constrained, verdict honnête (#14366 G1)
-├── SL-12c-PavlovDLS-Reproduction-output-Python.ipynb # Artefact d'exécution papermill (non indexé catalogue)
-├── SL-13-Discover-TPR-Python.ipynb                 # Diagnostic DISCOVER (TPR role × filler, ALS, réinjection, surgery, white-box) sur GRU 1 couche (#14366 G6)
-├── SL-13-Discover-TPR-output-Python.ipynb          # Artefact d'exécution papermill (non indexé catalogue)
-├── assets/
-│   └── readme/                              # Figures du README (sl10-dfa-target.png) + MANIFEST.md
-├── tests/
-│   └── test_aima_knowledge.py               # Tests du vendored reference/aima_knowledge.py
-├── vendor/
-│   ├── metagol/                             # Metagol (BSD-3) pour SL-06
-│   └── difflogic/                           # difflogic (Petersen 2022) pour SL-12
-├── _archive/
-│   └── 2026-07-04-Neurosymbolic-EML-precurseur-SL12/  # Précurseur EML de SL-12 (archivé)
-├── .env.example                             # Modèle de configuration LLM (OpenRouter)
-├── requirements.txt                         # Dépendances optionnelles
-├── reference/
-│   ├── AIMA_Ch19_Knowledge_in_Learning.md   # Notes de référence
-│   └── aima_knowledge.py                     # AIMA Ch.19 (CBH, Version Space, MINIMAL-CONSISTENT-DET) — vendored aima-python
-└── README.md                                # Cette documentation
-```
+- G. Plotkin, *A note on inductive generalization*, Machine Intelligence 5, 1970.
+- L. Galarraga et al., *AMIE: Association Rule Mining under Incomplete Evidence in Ontological Knowledge Bases*, VLDB 2013 ; Lajus et al., AMIE 3, 2020.
+- R. Evans et E. Grefenstette, *Learning Explanatory Rules from Noisy Data*, JAIR 61, `arXiv:1711.04574`.
+- R. Manhaeve et al., *DeepProbLog: Neural Probabilistic Logic Programming*, 2018 ; [LTNtorch](https://github.com/tommasocarraro/LTNtorch), la bibliothèque de logique tensorielle du carnet 07.
+- J. Wei et al., *Chain-of-Thought Prompting Elicits Reasoning in Large Language Models*, NeurIPS 2022.
+- F. Petersen et al., *Deep Differentiable Logic Gate Networks*, NeurIPS 2022, `arXiv:2210.08277`.
+- Pavlov, *Differentiable Logic Synthesis: Spectral Coefficient Selection via Sinkhorn-Constrained Composition*, `arXiv:2601.13953`.
+- Smolensky (1990), à l'origine des représentations par produit tensoriel (rôles et fillers, carnet 13).
+- McCoy, Soulos, Linzen et Smolensky, *The Emergent Symbolic Structure of Artificial Neural Networks*, `arXiv:2608.29530`.
+- Udrescu et al., *AI Feynman 2.0: Pareto-optimal symbolic regression exploiting graph modularity*, NeurIPS 2020, `arXiv:2006.10782`.
+- Nair et al., *Solving Mixed Integer Programs Using Neural Networks*, 2021.
 
-## Statistiques catalogue à jour
+---
 
-Le bloc `CATALOG-STATUS` (lignes 5-10) appartient à l'automatisation catalogue (règle `catalog-pr-hygiene`) : il ne s'édite jamais à la main sur une branche. Il couvre les notebooks au fil de leurs livraisons — SL-13 y a été inscrit lors de sa livraison, mais pas SL-12c ; la régén quotidienne du catalog-cron aligne le bloc — et l'entrée JSON — sur le disque (consistance éventuelle < 24 h). Les compteurs en prose de ce README ne sont plus tenus : le décompte de référence vit dans le catalogue généré.
-
-**Table des phases** (elle couvre les notebooks **présents sur le disque**, état réconcilié par le catalog-cron) — dont SL-01b, compagnon Lean natif, qui n'entre dans aucune phase (il prouve, en parallèle de la phase 1, les garanties d'échantillonnage que SL-01 implémente), et les deux derniers livrés, SL-12c (reproduction Pavlov DLS) et SL-13 (diagnostic DISCOVER). Un seul ensemble de notebooks, jamais deux totaux pour le même ensemble — celui du catalogue généré :
-
-| Phase | Notebooks | Maturité | Contenu clé |
-|-------|-----------|----------|-------------|
-| **Phase 1 — Fondations inductives** | 2 (SL-01 + jumeau C#) | BETA=2 | Current-Best-Hypothesis, Version Space, Candidate Elimination (AIMA chapitre 19) ; limites face au bruit et aux disjonctions. Jumeau C# : CBH + Candidate Elimination from-scratch en C# pur |
-| **Phase 2 — Guidé par la connaissance** | 4 (SL-02, SL-03 + jumeaux C# SL-02, SL-03) | BETA=4 | EBL (Explanation-Based Learning, 4 étapes : expliquer, variabiliser, extraire, simplifier) ; RBL (Relevance-Based Learning) + treillis des déterminations + MINIMAL-CONSISTENT-DET ; comparaison RBL vs sklearn (information mutuelle). Jumeaux C# : EBL+unification (SL-02), treillis+PAC+information mutuelle (SL-03) from-scratch |
-| **Phase 3 — Programmes logiques (ILP)** | 4 (SL-04, SL-05 + jumeaux C# SL-04, SL-05) | BETA=4 | FOIL top-down + opérateurs V/W de la résolution inverse ; LGG de Plotkin, θ-subsomption, clause bottom par entailment inverse, recherche à la Progol ; pont vers knowledge graphs (AMIE, SPARQL CONSTRUCT). Jumeaux C# : FOIL+V/W+unification+mini-KG (SL-04), LGG+clause bottom+Progol (SL-05) from-scratch |
-| **Phase 4 — Moteurs ILP modernes** | 2 (SL-06 + jumeau C#) | BETA=2 | Quatre moteurs réels face à face sur `ancestor/2` : Aleph (entailment inverse), Metagol (MIL, invent. prédicats), Popper (LFF, v4.4.0 épinglé), ∂ILP Lernd (différentiable, env conda `lernd-dilp` GPL-3.0 importé). Jumeau C# : FOIL relationnel from-scratch + récursion + benchmark profondeur 5-20 |
-| **Phase 5 — Neuro-symbolique** | 5 (SL-07, SL-08, SL-09, SL-13 + jumeau C# SL-08) | BETA=4, ALPHA=1 | T-norms différentiables, LTN, DeepProbLog ; rdflib + AMIE rule mining + complétion KG + ASP clingo ; boucle LLM-symbolique d'extraction et vérification (Gemini 3.5 Flash optionnel via OpenRouter) ; diagnostic DISCOVER (TPR role × filler par ALS, réinjection décodeur, constituent surgery, white-box TPR vs embeddings atomiques) sur GRU 1 couche CPU. Jumeau C# : KG familial dotNetRDF 3.5.2 + AMIE from-scratch + PCA + complétion 5→14 + saturation (ALPHA en stabilisation) |
-| **Phase 6 — Actif + capstone** | 6 (SL-10, SL-11, SL-12, SL-12b, SL-12c + jumeau C# SL-10) | BETA=5, ALPHA=1 | L* d'Angluin (table d'observation, requêtes MQ/EQ, Myhill-Nerode, bornes PAC) ; capstone pipeline neuro-symbolique 6 étages avec LLM réel + provenance ; réseaux de portes logiques différentiables (difflogic, Petersen NeurIPS 2022) ; synthèse logique spectrale SL-12b : FWHT exacte, PTF ternaires, Sinkhorn, Metropolis/parallel tempering avec oracle exact ; reproduction Pavlov DLS SL-12c : routeur linéaire signé vs Sinkhorn-constrained sur 27 opérations, verdict honnête. Jumeau C# : DFA + ObservationTable + contre-exemples + oracle bruité + agrégation d'evidence (ALPHA en stabilisation) |
-| **Total** | **24** (SL-01b compagnon hors phases) | **BETA=22, ALPHA=2** | Python 3.10+ stdlib + .NET Interactive 1.4+ (sauf SL-03 sklearn+numpy, SL-04/SL-06 SWI-Prolog+Popper+janus_swi kernel Linux/WSL, SL-07 torch+LTNtorch, SL-08 rdflib+clingo, SL-09/SL-11 OpenRouter optionnel, SL-12 difflogic+torch, SL-12b numpy+matplotlib, SL-13 torch CPU+numpy) ; SL-01b : kernel lean4-wsl (lake `learning_theory_lean`) |
-
-**Note explicite maturité** : la série SymbolicLearning (notebooks Python, jumeaux C# marathon parité #4956 et compagnon Lean natif SL-01b) est couverte par l'automatisation catalogue (marqueur et JSON s'alignent sur le disque à la régén catalog-cron, consistance éventuelle < 24 h). La maturité n'est plus 100 % PRODUCTION comme avant le marathon parité : les notebooks Python historiques sont PRODUCTION-equivalent (AIMA chapitre 19, implémentations de référence stables vendored dans `reference/aima_knowledge.py`) ; les jumeaux C# livrés en marathon #4956 (SL-01, SL-02, SL-03, SL-04, SL-05, SL-06, SL-08, SL-10) sont **BETA** par défaut, sauf SL-08-C# (KG mining : verdict SOTA du twin Python note clingo ASP=INTRINSIC en .NET) et SL-10-C# (L* forward sum-product + agrégation bayésienne : algorithme le plus récent, vérifications de bornes encore en cours) qui restent **ALPHA** au catalogue. Les notebooks s'exécutent localement avec Python 3.10+ stdlib pour SL-01/2/5/7/10/13, `scikit-learn`+`numpy` pour SL-03, `rdflib`+`clingo` pour SL-08, et `SWI-Prolog >= 9.1.12`+`janus_swi`+`popper-ilp==4.4.0` pour SL-04/SL-06 via kernel Linux/WSL ; `numpy`+`matplotlib` pour SL-12b ; `torch` CPU+numpy pour SL-13 ; les jumeaux C# s'exécutent sur .NET Interactive 1.4+ (`Microsoft.dotnet-interactive`).
-
-**Conformité C.1** (stubs sans `raise NotImplementedError`) : tous les notebooks respectent la convention notebook 2026-04-26 — patterns de stub corrects (`pass` / `print("Exercice a completer")` / `return None` / `result = None  # TODO etudiant`). La table de pioche de 55 exercices (section dédiée) couvre les angles de chaque algorithme : biais conjonctif de CBH, utility problem de Minton (EBL), borne PAC de l'oracle d'équivalence (L*), seuil de confiance pour les règles AMIE, tasks à rôles sémantiques pour le diagnostic TPR, etc. Dépendances : `requirements.txt` (scikit-learn, numpy, matplotlib, rdflib, clingo, python-dotenv, openai, janus_swi, torch CPU, setuptools < 81) + SWI-Prolog >= 9.1.12 externe (kernel Linux/WSL pour SL-04/SL-06) + conda env `lernd-dilp` (TensorFlow) pour ∂ILP. Vendored : `vendor/metagol/` (BSD-3), `aima_knowledge.py` (MIT AIMA).
-
-**Posture EPITA-IS / Argumentum** : la série SymbolicLearning n'a **pas** de port EPITA-IS Argumentum (contrairement à ArgumentAnalysis qui aligne 15 PRs MERGED upstream-verbatim byte-equal — voir EPIC #4960 Argumentum). C'est une série 100 % originale du dépôt, ancrée sur AIMA chapitre 19, avec choix assumé d'**inclure** la table de pioche de 55 exercices en pied de README (vs un décompte minimal) — un README dense, cohérent avec la densité mathématique de la série.
-
-## Écosystème MCP et parenté cross-lane
-
-Trois outils d'infrastructure MCP (cohérent avec cycles 19-31) :
-
-1. **MCP Jupyter (`mcp__jupyter-papermill__*`)** — note bug #5211 (mode async ignore `kernel_name`, re-exec = `nbconvert --execute --ExecutePreprocessor.kernel_name=python3 --timeout=600`). SymbolicLearning notebooks utilisent majoritairement **kernel Python 3** (SL-01/2/3/5/7/8/9/10) ; SL-04 et SL-06 requièrent **kernel Linux/WSL** pour SWI-Prolog+Popper+Aleph+Metagol (Popper utilise `signal.SIGALRM` absent de Windows). Chaque notebook déclare son kernel en cellule metadata, et les sections indisponibles se signalent par drapeau `HAS_*` sans interrompre l'exécution.
-
-2. **Validation pre-commit** (`.pre-commit-config.yaml`) — `gitleaks` détecte les secrets inline ; le validateur notebook `validate_pr_notebooks.py` enforce C.1 (stubs sans `NotImplementedError`) et C.2 (notebooks commités AVEC outputs, `execution_count != null`). **Note spécifique SymbolicLearning** : les clés API LLM (`OPENROUTER_API_KEY`) vivent dans `.env` (jamais en clair dans un notebook), avec `.env.example` documenté ; sans clé, un **simulateur déterministe** prend le relais dans SL-09 et SL-11 (le notebook s'exécute intégralement, doctrine anti-théâtre : « pas de sortie maquée, pas de fallback qui prétend être un appel LLM »).
-3. **MCP QC Cloud (`mcp__qc-mcp-lite__*`)** — backtest QuantConnect partagé. SymbolicLearning n'utilise pas QC Cloud directement, mais partage avec QC la même rigueur méthodologique : **reproductibilité déterministe** (graines fixées pour les générateurs pseudo-aléatoires dans les splits train/test de SL-03, **bornes PAC documentées** pour L* d'Angluin dans SL-10), **pas de résultat maquée** (les 55 exercices de la table de pioche ont des *questions-twist* qui forcent l'étudiant à dévier du cas nominal). C'est la version **académique** de la doctrine « un résultat non vérifié n'est pas un résultat ».
-
-**Table parenté cross-lane** (SymbolicLearning se situe au croisement de plusieurs séries du dépôt — c'est l'une des séries les plus parentées) :
-
-| Notebook SymbolicLearning | Série parente | Pont conceptuel |
-|--------------------------|---------------|-----------------|
-| `SL-01 CBH/Version Space` | [Tweety](../Tweety/) (logique propositionnelle) + [Lean](../Lean/) (formalisation AIMA) | Les hypothèses = conjonctions de littéraux (PL) ; Candidate Elimination peut être formalisé en Lean via `Finset` pour borner le Version Space |
-| `SL-02 EBL` | [Lean](../Lean/) + [Planners](../Planners/) | L'arbre de preuve EBL **est** une tactique de preuve Lean (compiler une preuve en règle opérationnelle) ; analogue aux heuristiques de planification compilées |
-| `SL-03 déterminations` | [SemanticWeb](../SemanticWeb/) (RDFS/OWL) | RBL ↔ OWL FunctionalProperty + hasKey : parallèle direct, exposé dans la section "Web Sémantique" du notebook |
-| `SL-04 FOIL + KG + Popper` | [SemanticWeb](../SemanticWeb/) + [Tweety](../Tweety/) | AMIE rule mining sur triples RDF (SPARQL CONSTRUCT) ↔ FOIL sur clauses Horn ; Popper (LFF) ↔ ASP clingo (Tweety argument frameworks) |
-| `SL-05 Inverse Resolution + Progol` | [Tweety](../Tweety/) | θ-subsomption = subsomption logique ; entailment inverse = inverse de la résolution ; la clause bottom est un objet mathématique Tweety-nature |
-| `SL-06 4 moteurs ILP` | [Tweety](../Tweety/) + [Planners](../Planners/) + [ML](../../ML/) | Metagol (MIL, invention de prédicats) ↔ Tweety ASP ; ∂ILP différentiable ↔ heuristic learning planners ; Popper ↔ clingo ASP |
-| `SL-07 Neuro-symbolique` | [Tweety](../Tweety/) (logique floue / pondérée) + [ML](../../ML/) (réseaux neuronaux) | T-norms différentiables = logique floue ; LTN = logique tensorielle = pont Tweety pondéré ⇄ MLP |
-| `SL-08 KG mining + clingo` | [SemanticWeb](../SemanticWeb/) + [Tweety](../Tweety/) | rdflib ↔ SemanticWeb OWL ; AMIE rule mining ↔ SemanticWeb RDFS ; clingo ASP ↔ Tweety (même binaire via `scripts/install_clingo.py`) |
-| `SL-09 LLM-Symbolique` | [ArgumentAnalysis](../ArgumentAnalysis/) + [GenAI](../../GenAI/) | Boucle LLM + vérification = doctrine anti-théâtre ArgumentAnalysis (sentinelle `fabricated_true`) ; prompts LLM ↔ GenAI prompting structuré |
-| `SL-10 L* Angluin` | [Tweety](../Tweety/) (logique temporelle / automates) + [Lean](../Lean/) | Myhill-Nerode = théorème formalisable en Lean ; L* sur automates finis ↔ Tweety LTL/CTL (vérification de modèles) |
-| `SL-11 Capstone 6 étages` | [ArgumentAnalysis](../ArgumentAnalysis/) + [SemanticWeb](../SemanticWeb/) + [Tweety](../Tweety/) + [GenAI](../../GenAI/) | Pipeline bout-en-bout : LLM (GenAI) → extraction → oracle (Tweety ASP) → KG (SemanticWeb) → mining (AMIE = SymbolicLearning) → inférence avec provenance (ArgumentAnalysis Restitution_3_Actes pattern) |
-| `SL-12 Portes logiques différentiables` | [ML](../../ML/) (réseaux de neurones) + [GenAI](../../GenAI/) | difflogic (Petersen NeurIPS 2022) = registre **discret** du neuro-symbolique : neurone = porte logique binaire apprise parmi 16, puis discrétisée en circuit booléen interprétable (vs SL-07 continu) |
-| `SL-12b Synthèse logique spectrale` | [ML](../../ML/) (représentations apprises) + [Lean](../Lean/) (analyse de sensibilité) | Fourier booléen exact = changement de représentation certifié au bit près ; PTF ternaires et routage Sinkhorn de Pavlov (arXiv 2601.13953) — suite potentielle de l'EPIC #14366 (bornes de sensibilité formelles) |
-| `SL-12c Reproduction Pavlov DLS` | [ML](../../ML/) (mesures multi-seed, verdict honnête) + [Lean](../Lean/) (formalisation éventuelle de la borne de discrimination) | Reproduction bornée Phase 1+2 du claim Pavlov : routeur linéaire signé vs Sinkhorn-constrained sur 27 opérations — borne inférieure mesurée et dette identifiée (gradient exact du Sinkhorn-Knopp) pour les tranches ultérieures de l'EPIC #14366 |
-| `SL-13 Diagnostic DISCOVER / TPR` | [ML](../../ML/) (représentations apprises) + [Lean](../Lean/) (formalisation éventuelle du diagnostic) | TPR = `sum_t role_pos(t) ⊗ filler_symbole(x_t)` (Smolensky 1990) ; diagnostic DISCOVER (McCoy et al. arXiv:2608.29530) montre qu'un réseau développe une *structure approximative* et non une implémentation exacte — pont direct avec le questionnement interprétabilité du dépôt, second grain de l'EPIC #14366 sur le versant TPR (vs SL-12b spectrale) |
-
-**Paragraphe « effet de composition — SymbolicLearning = carrefour spectre-apprentissage inter-paradigmes »** :
-
-Là où ArgumentAnalysis (cycle 31) déploie le **carrefour informel/formel anti-théâtre inter-couches** (lecture LLM ⇄ Tweety/Lean), SmartContracts (cycle 30) le **carrefour trust/privacy inter-séries** (confiance ⇄ confidentialité ⇄ décision collective), Planners (cycle 29) la **dualité simulation/proof intra-série** (Python ⇄ Lean sur l'admissibilité d'heuristique), SemanticWeb (cycle 28) le **carrefour données structurées** (standards W3C + GraphRAG anti-hallucination), **SymbolicLearning déploie le carrefour spectre-apprentissage inter-paradigmes** : c'est la **seule série du dépôt à aligner quatre paradigmes d'apprentissage** (inductif pur → guidé par la connaissance → ILP → neuro-symbolique) dans un **parcours en spirale 6 phases** où **chaque phase répond à une limite de la précédente** :
-
-- Phase 1 (CBH/Version Space) **limite** : sensible au bruit, ne représente pas la disjonction
-- → Phase 2 (EBL/RBL) **réponse** : la connaissance du domaine accélère (peu de données + interprétabilité)
-- → Phase 3 (FOIL/Inverse Resolution/Progol) **réponse** : passer des attributs aux programmes logiques (clauses Horn + récursion)
-- → Phase 4 (4 moteurs ILP) **réponse** : comparer les machineries sur une même tâche récursive (`ancestor/2`) — Aleph, Metagol, Popper, ∂ILP
-- → Phase 5 (T-norms/KG mining/LLM boucle) **réponse** : rigidité logique → différentiabilité + vérifiabilité
-- → Phase 6 (L* + capstone) **réponse** : opacité neuronale → provenance + apprentissage actif
-
-Le **capstone SL-11** est l'un des rares pipelines neuro-symboliques bout-en-bout du dépôt (avec vrais appels LLM Gemini 3.5 Flash, oracle de validation symbolique Tweety-nature, KG SemanticWeb-nature, mining AMIE SymbolicLearning-nature, inférence avec provenance ArgumentAnalysis-nature, confrontation LLM vs KG). C'est la **convergence opérationnelle** des phases précédentes en une boucle où le LLM et la logique se corrigent mutuellement.
-
-**Doctrine symétrique — AIMA chapitre 19 + EPITA-IS Argumentum** : SymbolicLearning est ancrée sur AIMA chapitre 19 (Russell & Norvig, 3e/4e éd.) avec `aima_knowledge.py` vendored (référence MIT) — la cohérence algorithmique est garantie par les implémentations canoniques. Aucune série ne peut à elle seule aligner les 4 paradigmes d'apprentissage en 6 phases — c'est la **particularité structurelle** de SymbolicLearning dans le dépôt.
-
-## Cross-séries Bridges
-
-| Série | Lien | Connection |
-|-------|------|-------------|
-| [Tweety](../Tweety/README.md) | Argumentation | Les logiques formelles de Tweety (propositionnelle, FOL) sont le fondement des hypothèses symboliques |
-| [SemanticWeb](../SemanticWeb/README.md) | Représentation de connaissances | RDFS/OWL formalisent les déterminations et les hiérarchies de généralité |
-| [Planners](../Planners/README.md) | Planification | EBL compile les théories en règles opérationnelles, similaire aux heuristiques de planification |
-| [Lean](../Lean/README.md) | Preuves formelles | L'arbre de preuve EBL est analogue aux arbres de preuve Lean 4 |
-| Lecture transversale | [La mer qui monte](../../../docs/cadrage/grothendieckian-lens.md) | Grille de lecture grothendieckienne du depot : changement de représentation, certification A/B/C |
-
-## Conclusion / Prochaines étapes
-
-### Ce que vous avez appris
-
-Cette série traverse le **spectre complet** de l'apprentissage, du pur-inductif au pur-neuro-symbolique — un arc qu'aucune autre série du dépôt ne couvre dans son entièreté. Vous avez vu les deux extrémités et le point d'équilibre :
-
-- **Phase 1-2 — apprendre avec peu de données et beaucoup de connaissance** : CBH, Candidate Elimination, Version Space (SL-01) puis EBL (compiler une preuve en règle opérationnelle) et RBL (identifier les attributs déterminants via le treillis des déterminations, SL-02/SL-03). Quand la collecte de données est coûteuse ou impossible, la *connaissance du domaine* bat la statistique brute.
-
-- **Phase 3 — apprendre des programmes logiques** : FOIL (top-down), résolution inverse et ses opérateurs V/W (bottom-up), LGG de Plotkin, θ-subsomption, clause bottom, recherche à la Progol (SL-04/SL-05) — jusqu'à l'ILP moderne avec **Popper** (Learning From Failures) qui retrouve le programme récursif optimal et le fait vérifier en SWI-Prolog.
-
-- **Phase 4 — comparer les moteurs ILP réels** : quatre machineries face à face sur `ancestor/2` — Aleph (entailment inverse), Metagol (MIL), Popper (Learning From Failures) et ∂ILP (différentiable) (SL-06), pour voir où chaque paradigme gagne ou échoue.
-
-- **Phase 5 — réconcilier le symbolique et le connexionniste** : T-norms différentiables, Logics Tensor Networks, DeepProbLog (SL-07) ; rule mining sur knowledge graphs réels avec rdflib + AMIE (SL-08) ; boucle LLM-symbolique d'extraction et vérification (SL-09) ; diagnostic DISCOVER (TPR role × filler par ALS, réinjection, surgery, white-box vs atomique) sur GRU 1 couche CPU (SL-13).
-
-- **Phase 6 — apprentissage actif, capstone, portes logiques et spectre** : L* d'Angluin (SL-10), le **capstone SL-11** qui assemble un pipeline neuro-symbolique complet — LLM aux extrémités, validation et inférence symboliques au centre, avec provenance —, les réseaux de portes logiques différentiables (SL-12, difflogic) comme registre discret du neuro-symbolique, et SL-12b qui ouvre le versant spectral : Fourier booléen exact, PTF ternaires, Sinkhorn mesuré et recherche discrète MCMC contre un oracle exact.
-
-La thèse de la série, posée dès l'introduction et démontrée par le capstone : data-driven et knowledge-driven **ne s'opposent pas, ils se complètent**. Chaque phase est une réponse à une limite de la précédente — le bruit motive la connaissance, la rigidité logique motive la différentiabilité, l'opacité motive la provenance.
-
-### Prochaines étapes
-
-- **Approfondir les fondations formelles** : [Tweety](../Tweety/) (logique propositionnelle, FOL, argumentation — le langage dans lequel les hypothèses symboliques sont exprimées) et [Lean](../Lean/) (la preuve EBL y devient une tactique, la clause bottom un objet mathématique). SL-04/SL-05 y trouvent leur ancrage rigoureux.
-- **Passer à l'échelle sur le web de données** : [SemanticWeb](../SemanticWeb/) (RDFS/OWL formalisent les déterminations et les hiérarchies de généralité que RBL exploite) — naturellement après SL-07 (knowledge graphs + AMIE).
-- **Décider sous incertitude** : la logique apprise produit des règles certaines ; [Probas](../../Probas/) (Infer.NET) et [GameTheory](../../GameTheory/) traitent le cas où la certitude n'est pas atteignable — le complément probabiliste du capstone SL-11.
-- **Du capstone à la production** : reprenez le pipeline SL-11 et remplacez l'oracle de validation par une vérification Lean ou une cohérence Tweety — c'est le pont naturel vers une IA générative ancrée sur du vérifiable.
-- Relisez la **table de pioche** (55 exercices) et la **Lecture transversale** ci-dessus : elles recoupent les six phases sous des angles différents (grothendieckien : changement de représentation, certification A/B/C).
-
-### Le fil rouge
-
-L'apprentissage symbolique est l'art de **réussir là où les données seules échouent** — non pas en ignorant la connaissance, mais en l'écrivant explicitement, en l'induisant des exemples, puis en la réconciliant avec le connexionnisme. Le geste profond de la série : transformer une théorie du domaine (une détermination, une preuve, une ontologie) en un programme qui apprend — et prouver, au capstone, que l'on peut tenir les deux bouts, LLM et logique, dans une même boucle où chacun corrige l'autre.
-
-## Historique des versions
-
-**Version 1.4.0** — Septembre 2026 — ajout SL-13 (diagnostic DISCOVER / TPR, EPIC #14366 grain G6) : table de pioche 55 exercices, phase 5 étendue au versant structurel (TPR approximative vs exacte), parenté cross-lane complétée. Décomptes : catalogue généré (réconcilié par le catalog-cron).
-
-### Parité de la synthèse spectrale
-
-La [version C#](SL-12b-SpectralLogicSynthesis-CSharp.ipynb) reprend le [carnet Python](SL-12b-SpectralLogicSynthesis-Python.ipynb) : Walsh, PTF, Sinkhorn et recherches discrètes aux mêmes budgets. Math.NET effectue les moindres carrés du port C# ; les générateurs aléatoires diffèrent et les figures C# sont des SVG statiques.
+Voir la licence du dépôt principal. [↑ SymbolicAI](../README.md) · [Catalogue du dépôt](../../../COURSE_CATALOG.generated.md)
