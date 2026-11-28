@@ -1982,19 +1982,19 @@ if audio_data is None:
     print(""Utilisation du signal synthetique de secours"")
 
 print(f""\nEchantillon pret : {len(audio_data):,} samples @ {sr} Hz"")",,,,,,,,bc19818825fc9ba9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-3-Basic-Audio-Operations-Python.ipynb,57e26785,markdown,fr,37fac300f68f4997,"### Interpretation : Generation de l'echantillon
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-3-Basic-Audio-Operations-Python.ipynb,57e26785,markdown,fr,c5fce4a661c6583c,"### Interpretation : Generation de l'echantillon
 
-Trois stratégies sont disponibles en cascade (la première qui réussit gagne — ce run a chargé le fichier existant) :
+Trois stratégies sont disponibles en cascade (la première qui réussit gagne — ce run a chargé le fichier `sample_fr.wav` déjà présent dans `outputs/audio/samples/`, un cache local non versionné) :
 
 | Méthode | Statut | Avantage |
 |---------|--------|----------|
-| Fichier existant | Utilisé (ce run) | Pas d'appel API, reproductible |
-| OpenAI TTS | Disponible | Voix naturelle, texte arbitraire |
+| Fichier existant | Utilisé (ce run) | Pas d'appel API ; reproductible seulement si le fichier est versionné |
+| OpenAI TTS | Non utilisé (le fichier existait) | Voix naturelle, texte arbitraire |
 | Signal synthetique | Fallback | Aucune dépendance externe |
 
-L'echantillon chargé contient 261,569 samples a 22050 Hz, soit environ 11.9 secondes de parole.
+L'echantillon charge contient 270,664 samples a 22050 Hz, soit environ 12.3 secondes de parole.
 
-> **Note technique** : Le sample rate de 22050 Hz est un bon compromis pour la voix (bande passante utile ~8 kHz). Pour de la musique ou du HD, utilisez 44100 Hz ou 48000 Hz.",,,,,,,,37fac300f68f4997,,,,,,,,,,,,,,,
+> **Note technique** : Le sample rate de 22050 Hz est un bon compromis pour la voix (bande passante utile ~8 kHz). Pour de la musique ou du HD, utilisez 44100 Hz ou 48000 Hz.",,,,,,,,c5fce4a661c6583c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-3-Basic-Audio-Operations-Python.ipynb,cell-section1-intro,markdown,fr,61f4f85402891fff,"## Section 1 : Forme d'onde (Waveform)
 
 La forme d'onde est la representation la plus directe d'un signal audio : l'amplitude en fonction du temps.
@@ -2042,25 +2042,25 @@ if show_visualizations:
 else:
     print(""Visualisations desactivees"")
 ",,,,,,,,0d92f276fe55c0b2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-3-Basic-Audio-Operations-Python.ipynb,c419831b,markdown,fr,050b6d9c190837c2,"### Interpretation : Forme d'onde
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-3-Basic-Audio-Operations-Python.ipynb,c419831b,markdown,fr,540c10997ac7ec7b,"### Interpretation : Forme d'onde
 
 | Metrique | Valeur (output reel) | Signification |
 |----------|----------------------|---------------|
-| Duree | 11.86s | Longueur de l'échantillon chargé (cohérent avec 261,569 samples / 22050 Hz ≈ 11.86s) |
+| Duree | 12.28s | Longueur de l'échantillon chargé (cohérent avec 270,664 samples / 22050 Hz, soit 12.275s, arrondie à 12.28s au centième près) |
 | Sample rate | 22050 Hz | Standard pour audio voix/parole (Nyquist = 11025 Hz, donc frequences jusqu'a ~11 kHz capturées — au-dessus, l'audio est replie) |
-| Amplitude max | 0.3669 | Pic du signal sur [-1, 1] — bien en-dessous de la saturation (0.99+ serait un écrêtage) |
-| Amplitude moyenne | 0.0335 | Moyenne des valeurs absolues \|x\| — ce n'est **pas** une énergie (l'énergie moyenne serait `mean(x²)`, dont la racine est le RMS). Proche de 0 typique d'un signal voix avec pauses |
-| RMS | 0.0573 | Racine carrée de l'énergie moyenne (`sqrt(mean(x²))`) — proxy du niveau perçu, utilisé en compression audio. Parent du LUFS sans s'y réduire : la loudness LUFS (EBU R128) est une RMS **après filtrage K-weighted**, pas la RMS brute |
-| Facteur de crête | 16.1 dB | Rapport **pic / RMS** en dB — quantifie les transitoires par rapport au niveau moyen. Sinusoïde pure : 3.0103 dB (contrôle ci-dessus) ; voix non compressée : 10-20 dB. À ne pas confondre avec la **plage dynamique** (écart pic / bruit de fond), qui atteint 60+ dB sur un orchestre symphonique — cet ordre de grandeur concerne la plage dynamique, pas le facteur de crête |
+| Amplitude max | 0.3860 | Pic du signal sur [-1, 1] — bien en-dessous de la saturation (0.99+ serait un écrêtage) |
+| Amplitude moyenne | 0.0322 | Moyenne des valeurs absolues \|x\| — ce n'est **pas** une énergie (l'énergie moyenne serait `mean(x²)`, dont la racine est le RMS). Proche de 0 typique d'un signal voix avec pauses |
+| RMS | 0.0570 | Racine carrée de l'énergie moyenne (`sqrt(mean(x²))`) — proxy du niveau perçu, utilisé en compression audio. Parent du LUFS sans s'y réduire : la loudness LUFS (EBU R128) est une RMS **après filtrage K-weighted**, pas la RMS brute |
+| Facteur de crête | 16.6 dB | Rapport **pic / RMS** en dB — quantifie les transitoires par rapport au niveau moyen. Sinusoïde pure : 3.0103 dB (contrôle ci-dessus) ; voix non compressée : 10-20 dB. À ne pas confondre avec la **plage dynamique** (écart pic / bruit de fond), qui atteint 60+ dB sur un orchestre symphonique — cet ordre de grandeur concerne la plage dynamique, pas le facteur de crête |
 
 **Points cles** :
 
 1. La forme d'onde visualisee est une **serie temporelle d'amplitudes** : chaque point représente la pression acoustique a un instant `t` (echantillonnee a 22050 Hz). La periodicite visible reflete les harmoniques de la voix (F0 ≈ 100-200 Hz pour la voix humaine adulte).
 2. L'echelle d'amplitude est normalisee entre -1 et +1 : un signal `float32` de `librosa.load()` est toujours dans cette plage. Pour un `int16` (WAV natif), les valeurs seraient entre -32768 et +32767 — la conversion est faite a la lecture.
-3. La durée 11.86s est déterminée par le nombre d'échantillons divisé par le sample rate : 261569 / 22050 = 11.86s. **C'est exactement ce que la cellule de chargement a produit** (cf output précédent : ""Duree : 11.86s""), confirmant la cohérence inter-cellules sans perte d'échantillons au décodage.
-4. L'amplitude moyenne faible (0.0335) reflète la nature **creuse** d'un signal voix : il y a des pauses, des syllabes non-voisées (sifflantes, fricatives) qui tirent la moyenne vers 0. Le RMS (0.0573) est plus élevé que la moyenne absolue parce qu'il **carre** les amplitudes avant moyenne, penalisant les pics plus fortement.
-5. Le facteur de crête 16.1 dB signifie des pics environ 6,4× plus forts que le niveau RMS : typique d'une voix avec transitoires d'attaque. Le contrôle sinusoïdal ci-dessus le distingue d'une plage dynamique : 3.0103 dB invariants au gain (0.25 ou 1.0) — une plage dynamique aurait varié avec le gain, un rapport pic/RMS non.
-",,,,,,,,050b6d9c190837c2,,,,,,,,,,,,,,,
+3. La durée affichée (12.28s) decoule du nombre d'échantillons et du sample rate : 270664 / 22050 ≈ 12.275s, arrondi à 12.28s au centième. **C'est ce que la cellule de chargement a produit** (cf output précédent : ""Duree : 12.28s""), confirmant la cohérence inter-cellules sans perte d'échantillons au décodage.
+4. L'amplitude moyenne faible (0.0322) reflète la nature **creuse** d'un signal voix : il y a des pauses, des syllabes non-voisées (sifflantes, fricatives) qui tirent la moyenne vers 0. Le RMS (0.0570) est plus élevé que la moyenne absolue parce qu'il **carre** les amplitudes avant moyenne, penalisant les pics plus fortement.
+5. Le facteur de crête 16.6 dB signifie des pics environ 6,8× plus forts que le niveau RMS : typique d'une voix avec transitoires d'attaque. Le contrôle sinusoïdal ci-dessus le distingue d'une plage dynamique : 3.0103 dB invariants au gain (0.25 ou 1.0) — une plage dynamique aurait varié avec le gain, un rapport pic/RMS non.
+",,,,,,,,540c10997ac7ec7b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-3-Basic-Audio-Operations-Python.ipynb,cell-section2-intro,markdown,fr,eee306b2f7f98551,"## Section 2 : Spectrogrammes
 
 Un spectrogramme montre comment les frequences evoluent dans le temps. C'est l'outil fondamental de l'analyse audio.
@@ -2115,48 +2115,51 @@ if show_visualizations:
 else:
     print(""Visualisations desactivees"")
 ",,,,,,,,c2302307d9f75593,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-3-Basic-Audio-Operations-Python.ipynb,ed27d117,markdown,fr,d73492a9aa787c09,"### Exercice 1 : Analyse comparative de deux segments audio
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-3-Basic-Audio-Operations-Python.ipynb,ed27d117,markdown,fr,a7ea5dc95d14ddc8,"### Exemple guidé 1 : Analyse comparative de deux segments audio
 
-En vous basant sur les spectrogrammes generes ci-dessus, decoupez l'echantillon en deux moities et comparez leurs caractéristiques spectrales.
+*Contribution étudiante (PR #28854, github.com/lakhdaruqam), intégrée comme exemple guidé.*
 
-**Objectif** : Appliquer les opérations de chargement, decoupage et visualisation spectrogramme pour comparer deux parties d'un même fichier.
+En s'appuyant sur les spectrogrammes générés ci-dessus, on découpe l'échantillon en deux moitiés et on compare leurs caractéristiques spectrales.
 
 **Étapes** :
-1. Decouper `audio_data` en deux moities egales
-2. Calculer le mel-spectrogramme de chaque moitie
-3. Afficher les deux spectrogrammes cote a cote
-4. Calculer et comparer le spectral centroid moyen de chaque moitie
+1. Découper `audio_data` en deux moitiés égales
+2. Calculer le mel-spectrogramme de chaque moitié
+3. Afficher les deux spectrogrammes côte à côte
+4. Calculer et comparer le spectral centroid moyen de chaque moitié
 
-**Indices** :
-- `# Indice` : `first_half = audio_data[:len(audio_data)//2]` et `second_half = audio_data[len(audio_data)//2:]`
-- `# Indice` : utilisez `plt.subplots(1, 2, figsize=(14, 4))` pour afficher cote a cote
-- `# Indice` : `librosa.feature.spectral_centroid(y=..., sr=sr)` donne le centroid spectral",,,,,,,,d73492a9aa787c09,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-3-Basic-Audio-Operations-Python.ipynb,dc8eb3f8,code,fr,93d787b0958a9d03,"# Exercice 1 : Analyse comparative de deux segments audio
-# TODO etudiant : Decouper et comparer deux moities d'un echantillon audio
+**Le choix qui rend la comparaison honnête.** Appelé séparément sur chaque moitié, `librosa.power_to_db(..., ref=np.max)` normaliserait chaque image sur son propre maximum : deux moitiés d'énergies différentes auraient alors la même couleur au sommet, et la comparaison visuelle tromperait. La solution ci-dessous prend **une seule référence** pour les deux panneaux (`ref_power`, le maximum des deux mel-spectrogrammes) et fixe la même échelle de couleurs (`vmin=-80, vmax=0`) : une même couleur désigne alors la même énergie à gauche et à droite.",,,,,,,,a7ea5dc95d14ddc8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-3-Basic-Audio-Operations-Python.ipynb,dc8eb3f8,code,fr,6c2ea142e208dad4,"# Exemple guidé 1 : Analyse comparative de deux segments audio (contribution de la PR #28854)
+# Decouper et comparer deux moities d'un echantillon audio
 
 # Etape 1 : Decouper en deux moities
-first_half = None  # TODO etudiant : audio_data[:len(audio_data)//2]
-second_half = None  # TODO etudiant : audio_data[len(audio_data)//2:]
+first_half = audio_data[:len(audio_data)//2]
+second_half = audio_data[len(audio_data)//2:]
 
 # Etape 2 : Calculer les mel-spectrogrammes
-# Indice : librosa.feature.melspectrogram(y=..., sr=sr, n_mels=128)
-mel_first = None  # TODO etudiant
-mel_second = None  # TODO etudiant
+mel_first = librosa.feature.melspectrogram(y=first_half, sr=sr, n_mels=128)
+mel_second = librosa.feature.melspectrogram(y=second_half, sr=sr, n_mels=128)
 
 # Etape 3 : Afficher cote a cote
-# Indice : fig, axes = plt.subplots(1, 2, figsize=(14, 4))
-# puis librosa.display.specshow(..., ax=axes[0]) et axes[1]
+# Meme reference et meme echelle (-80 a 0 dB) pour les deux moities,
+# sinon les couleurs des deux images ne sont pas comparables
+ref_power = max(np.max(mel_first), np.max(mel_second))
+fig, axes = plt.subplots(1, 2, figsize=(14, 4))
+librosa.display.specshow(librosa.power_to_db(mel_first, ref=ref_power),
+                         x_axis='time', y_axis='mel', sr=sr, ax=axes[0], vmin=-80, vmax=0)
+axes[0].set_title(""Premiere moitie"")
+librosa.display.specshow(librosa.power_to_db(mel_second, ref=ref_power),
+                         x_axis='time', y_axis='mel', sr=sr, ax=axes[1], vmin=-80, vmax=0)
+axes[1].set_title(""Deuxieme moitie"")
+plt.tight_layout()
+plt.show()
 
 # Etape 4 : Comparer les spectral centroids
-# Indice : librosa.feature.spectral_centroid(y=..., sr=sr)
-centroid_first = None  # TODO etudiant
-centroid_second = None  # TODO etudiant
+centroid_first = librosa.feature.spectral_centroid(y=first_half, sr=sr)
+centroid_second = librosa.feature.spectral_centroid(y=second_half, sr=sr)
 
 # Afficher les moyennes
-# Indice : print(f""Premiere moitie : {np.mean(centroid_first):.1f} Hz"")
-# Indice : print(f""Deuxieme moitie : {np.mean(centroid_second):.1f} Hz"")
-
-print(""Exercice a completer"")",,,,,,,,93d787b0958a9d03,,,,,,,,,,,,,,,
+print(f""Premiere moitie : {np.mean(centroid_first):.1f} Hz"")
+print(f""Deuxieme moitie : {np.mean(centroid_second):.1f} Hz"")",,,,,,,,6c2ea142e208dad4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-3-Basic-Audio-Operations-Python.ipynb,cell-section2-interpretation,markdown,fr,c8c652a170feeb6d,"### Interpretation : Spectrogrammes
 
 | Type | Axes | Ce qu'on observe |
@@ -2438,7 +2441,7 @@ if test_pydub_ops:
 else:
     print(""Operations pydub desactivees"")
 ",,,,,,,,6ae2dd010d8ec4dd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-3-Basic-Audio-Operations-Python.ipynb,b6c1879d,markdown,fr,8b59624f25f43986,"### Interpretation : Opérations pydub
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-3-Basic-Audio-Operations-Python.ipynb,b6c1879d,markdown,fr,de1722a20a3f9153,"### Interpretation : Opérations pydub
 
 Les opérations effectuees demontrent les capacites de traitement audio de haut niveau.
 
@@ -2448,14 +2451,14 @@ Les opérations effectuees demontrent les capacites de traitement audio de haut 
 | Volume +6/-6 dB | Variation dBFS preservee | Normalisation audio |
 | Fade in/out (500ms) | Transitions douces | Eviter les clics aux coupures |
 | Concatenation | Assemblage sans couture | Creation de playlists, montage |
-| Conversion WAV->FLAC | Compression 2.3:1 (363.1 KB -> 155.0 KB, sortie committée) | Stockage efficace |
+| Conversion WAV->FLAC | Compression 2.3:1 (372.0 KB -> 162.2 KB, sortie committée) | Stockage efficace |
 
 **Points cles** :
 - Le dBFS mesure l'amplitude relative au maximum numérique (0 dBFS = saturation)
 - L'opération `audio + dB` de pydub est equivalente a `gain = 10^(dB/20)`
 - FLAC est lossless comme WAV, mais compresse mieux (ideal pour archivage)
 
-> **Note technique** : pydub manipule les données en memoire. Pour des fichiers volumineux (>100 Mo), preferez un traitement par chunks avec ffmpeg directement.",,,,,,,,8b59624f25f43986,,,,,,,,,,,,,,,
+> **Note technique** : pydub manipule les données en memoire. Pour des fichiers volumineux (>100 Mo), preferez un traitement par chunks avec ffmpeg directement.",,,,,,,,de1722a20a3f9153,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-3-Basic-Audio-Operations-Python.ipynb,cell-section5-intro,markdown,fr,0eb4452d3721f96c,"## Section 5 : Extraction de caractéristiques audio
 
 librosa permet d'extraire des caractéristiques de haut niveau :
@@ -36948,9 +36951,9 @@ Chaque personnage detecte en P1 a recu une voix TTS attribuee selon son profil (
 - **P3 — Annotation prosodique** : Enrichir le texte avec les tags expressifs FishAudio (`[laugh]`, `[whisper]`, `[sigh]`, `[gasp]`, `[pause]`, `[shout]`)
 - **P4 — Generation TTS** : Synthetiser les segments audio avec la voix appropriatee
 - **P5 — Compilation audio** : Assembler les chunks avec ffmpeg + mastering",,,,,,,,7343ccdb3e4c16d8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-3-Basic-Audio-Operations-Python.ipynb,fe5304f9,markdown,fr,2c9ba250fa2fe748,"### Controle : ce que le facteur de crete mesure, et ce qu'il ne mesure pas
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-3-Basic-Audio-Operations-Python.ipynb,fe5304f9,markdown,fr,72f17ee70291bba2,"### Controle : ce que le facteur de crete mesure, et ce qu'il ne mesure pas
 
-La cellule precedente affiche un facteur de crete de 16,1 dB. Ce nombre se confond facilement avec la *plage dynamique*, et la confusion est assez repandue pour qu'un controle explicite vaille mieux qu'une note de bas de page.
+La cellule precedente affiche un facteur de crete de 16,6 dB. Ce nombre se confond facilement avec la *plage dynamique*, et la confusion est assez repandue pour qu'un controle explicite vaille mieux qu'une note de bas de page.
 
 - Le **facteur de crete** est le rapport entre le pic et la valeur efficace du signal : `20*log10(pic / RMS)`. Il ne depend que de la forme du signal : multiplier l'amplitude par une constante ne change ni le pic ni le RMS, donc pas le facteur. Une sinusoide pure vaut exactement `20*log10(sqrt(2)) = 3,01 dB`, quel que soit le gain applique.
 - La **plage dynamique** est l'ecart entre le passage le plus fort et le passage le plus faible d'une oeuvre — pic contre bruit de fond, niveau fort contre pianissimo. Elle se mesure entre deux moments differents du signal, et un orchestre symphonique depasse 60 dB.
@@ -36963,7 +36966,7 @@ La cellule suivante verifie la premiere affirmation en calculant le facteur de c
 | Sinusoide, gain 0,25 | 3,0103 dB, identique | le facteur est invariant au gain, donc ce n'est pas une plage dynamique |
 | Signal nul (silence numerique) | `None` et message de garde | pas de division par zero, donc ni `-inf` ni `RuntimeWarning` |
 
-Le troisieme cas n'est pas decoratif : un `RuntimeWarning` numpy traverse silencieusement un notebook et laisse une trace dans les sorties commitees ; une garde explicite rend le comportement lisible. Le meme motif se retrouve dans toute metrique normalisee par une energie — rapport signal sur bruit, contraste spectral, dynamique de crete.",,,,,,,,2c9ba250fa2fe748,,,,,,,,,,,,,,,
+Le troisieme cas n'est pas decoratif : un `RuntimeWarning` numpy traverse silencieusement un notebook et laisse une trace dans les sorties commitees ; une garde explicite rend le comportement lisible. Le meme motif se retrouve dans toute metrique normalisee par une energie — rapport signal sur bruit, contraste spectral, dynamique de crete.",,,,,,,,72f17ee70291bba2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-3-Basic-Audio-Operations-Python.ipynb,5f757a72,markdown,fr,c780f85c301c484e,"### Interpretation : Spectrogrammes
 
 | Type | Axes | Ce qu'on observe |
@@ -37302,3 +37305,44 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-12-Compilati
 > *Repère de production —* Epic #1028, Pass 5 du pipeline : assemblage final des segments TTS en audiobook.",,,,,,,,a60891f5bdab8ede,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/Audio-04-7-TTS-Voice-Benchmark-Python.ipynb,production-note-20250-audio-5,markdown,fr,f0c925547e88f80f,"> *Repère de production —* Epic #1028, P0 : benchmark systématique des modèles TTS disponibles.",,,,,,,,f0c925547e88f80f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/Audio-04-9-Voice-Casting-Python.ipynb,production-note-20250-audio-6,markdown,fr,e9de978c97b5f814,"> *Repère de production —* Epic #1028, P2 : génération d’échantillons audio pour les personnages détectés en P1.",,,,,,,,e9de978c97b5f814,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-3-Basic-Audio-Operations-Python.ipynb,330c783b,markdown,fr,8b1eeae605093344,"### Lecture : deux moitiés, deux centroïdes
+
+Sur l'échantillon chargé à cette exécution (le fichier `sample_fr.wav` déjà présent), le centroïde spectral moyen passe de **2378.5 Hz** (première moitié) à **1649.4 Hz** (seconde moitié), soit un écart d'environ 730 Hz. Le centre de gravité du spectre de la seconde moitié est nettement plus bas : son énergie pèse davantage dans les basses fréquences. Les deux spectrogrammes, tracés avec la même référence et la même échelle de couleurs, permettent de le vérifier à l'œil.
+
+Deux précautions de lecture :
+- **Le chiffre dépend de l'échantillon.** Ce run a chargé le fichier `sample_fr.wav` (voir la section sur l'échantillon) au lieu de régénérer une voix ; sans ce fichier, la voix de synthèse est régénérée à chaque exécution et les deux centroïdes changent. Sur l'échantillon de la PR, l'écart était bien plus faible (1572 Hz contre 1303 Hz). Le centroïde décrit un enregistrement, pas « la voix » en général.
+- **Un centroïde est une moyenne.** Il dit que le spectre s'est déplacé, pas où : une baisse peut venir d'un renfort des graves comme d'une perte des aigus (moins de sifflantes, par exemple). L'exercice suivant pose précisément cette question.",,,,,,,,8b1eeae605093344,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-3-Basic-Audio-Operations-Python.ipynb,56b6f302,markdown,fr,0acfd6154f6a936e,"### Exercice 1 : Où, en fréquence, les segments diffèrent-ils ?
+
+L'exemple guidé résume chaque moitié par **un seul nombre**, son centroïde spectral moyen. Un écart de centroïde dit que le « centre de gravité » du spectre s'est déplacé, mais pas **où** : la différence peut venir d'une bande étroite (les sifflantes au-delà de 4 kHz, par exemple) ou d'une pente générale du spectre. Cet exercice remplace le nombre par un profil.
+
+**Étapes** :
+1. Découper `audio_data` en **quatre quarts** de même longueur.
+2. Pour chaque quart, calculer le mel-spectrogramme (64 bandes), le convertir en dB avec **une référence commune** aux quatre quarts (comme dans l'exemple guidé), puis le moyenner dans le temps : on obtient un **spectre moyen** de 64 valeurs par quart.
+3. Tracer les quatre spectres moyens superposés, fréquence en abscisse (échelle logarithmique).
+4. Trouver la bande où les quatre quarts **diffèrent le plus** (écart-type entre quarts maximal), puis afficher sa fréquence et cet écart en dB.
+5. Conclure en deux phrases : la différence est-elle concentrée dans une bande ou répartie sur tout le spectre ? Est-elle cohérente avec l'écart de centroïde de l'exemple guidé ?
+
+**Indices** :
+- `# Indice` : `np.array_split(audio_data, 4)` découpe en quatre morceaux.
+- `# Indice` : `librosa.mel_frequencies(n_mels=64, fmax=sr / 2)` donne une fréquence (Hz) par bande, assez précise pour lire le profil.
+- `# Indice` : `mel_db.mean(axis=1)` moyenne dans le temps ; `np.std(profils, axis=0)` mesure l'écart entre quarts, bande par bande.
+- `# Indice` : une bande où les quatre quarts sont tous sous −70 dB relève du bruit de fond ; ne la retenez pas comme « bande qui diffère ».",,,,,,,,0acfd6154f6a936e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-3-Basic-Audio-Operations-Python.ipynb,809aecf5,code,fr,7f301cd0f6fa157d,"# Exercice 1 : Ou, en frequence, les segments different-ils ?
+# TODO etudiant : comparer les spectres moyens de quatre quarts de l'echantillon
+
+# Etape 1 : Decouper en quatre quarts
+quarts = None  # TODO etudiant
+
+# Etape 2 : Spectre moyen de chaque quart (64 bandes mel, dB, reference commune)
+n_mels = 64
+profils = None  # TODO etudiant : array de forme (4, 64)
+
+# Etape 3 : Tracer les quatre profils superposes (frequence en echelle log)
+freqs = librosa.mel_frequencies(n_mels=n_mels, fmax=sr / 2)
+# TODO etudiant
+
+# Etape 4 : Bande ou les quarts different le plus (hors bruit de fond)
+# TODO etudiant : frequence (Hz) et ecart-type (dB)
+
+print(""Exercice a completer"")",,,,,,,,7f301cd0f6fa157d,,,,,,,,,,,,,,,
