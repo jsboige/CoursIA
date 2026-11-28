@@ -35,6 +35,15 @@ Usage :
     python scripts/lean/check_lean_derived_pages.py            # verdict humain
     python scripts/lean/check_lean_derived_pages.py --json     # verdict machine
     python scripts/lean/check_lean_derived_pages.py --timeout 900
+    python scripts/lean/check_lean_derived_pages.py --base origin/main   # attribution
+
+**Attribution (#28841).** Avec `--base`, une page `divergente` que la PR n'a
+pas causee -- elle n'ecrit ni `.lean`, ni generateur, ni page -- passe en
+avertissement : le retard appartient a la base, et le geste de regeneration
+est nomme au lieu d'etre exige de la PR. Les statuts `non_mesurable`,
+`mesure_impossible` et `illisible` ne sont pas des derives de page : ils
+restent bloquants quel que soit `--base`. Mecanique et bornes :
+`scripts/ci/freshness_attribution.py`.
 """
 
 from __future__ import annotations
@@ -47,6 +56,30 @@ import time
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
+sys.path.insert(0, str(REPO_ROOT / "scripts" / "ci"))
+
+from freshness_attribution import attribuer, fichiers_propres, message  # noqa: E402
+
+# Entrees des pages derivees : l'arbre Lean (les carnets qui portent des blocs
+# Lean comptent), les generateurs, leurs registres, et les pages elles-memes.
+MOTIFS_ENTREE: tuple[str, ...] = (
+    "**/*.lean",
+    "**/lakefile.toml",
+    "scripts/lean/lean_*.py",
+    "scripts/lean/check_lean_derived_pages.py",
+    "docs/reference/lean-*.md",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/README.md",
+    # `Lean/**/*.ipynb` exige AU MOINS un repertoire entre `Lean/` et le
+    # fichier : les carnets a la racine de la serie (`Lean/Lean-06-...ipynb`),
+    # qui sont la majorite de la table de maturite, echappaient a l'entree.
+    # Une PR qui les ecrivait sans regenerer le README etait alors classee
+    # `heritee` au lieu de `causee`. Les deux motifs sont necessaires.
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/**/*.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/*.ipynb",
+    "scripts/lean/ci_lakes.json",
+    "scripts/lean/lean_births.json",
+)
 
 # Code de sortie conventionnel d'un generateur qui n'a pas pu MESURER (il le
 # dit lui-meme : ni `--write` ni `--check` n'ont ete executes, la page sur
@@ -227,27 +260,64 @@ def check_all(timeout: int = 900, repo_root: Path | None = None) -> list[dict]:
     return results
 
 
+def _bloque(resultat: dict) -> bool:
+    """Ce resultat bloque-t-il la jambe ?
+
+    Un statut de machine bloque toujours : ce n'est pas une derive de page,
+    c'est l'impossibilite de conclure, et l'attribution ne l'absout pas. Une
+    `divergente` ne bloque que si la PR l'a causee -- ou si l'attribution n'a
+    pas pu etre faite (fail-closed, cf `freshness_attribution`).
+    """
+    if resultat["status"] in ("non_mesurable", "mesure_impossible", "illisible"):
+        return True
+    if resultat["status"] != "divergente":
+        return False
+    attribution = resultat.get("attribution")
+    return True if attribution is None else bool(attribution["bloquant"])
+
+
 def main(argv: list | None = None) -> int:
     ap = argparse.ArgumentParser(
         description="Pages derivees de l'arbre Lean : la page suit-elle l'arbre ?")
     ap.add_argument("--json", action="store_true", help="verdict machine")
+    ap.add_argument("--base", default=None,
+                    help="reference de base : active l'attribution (#28841). "
+                         "Absente -> verdict absolu, comme avant.")
     ap.add_argument("--timeout", type=int, default=900,
                     help="secondes accordees a chaque generateur (defaut: 900)")
     args = ap.parse_args(argv)
 
     results = check_all(args.timeout)
+
+    # Attribution (#28841) : elle ne porte que sur les derives de PAGE. Un
+    # statut de machine (`non_mesurable`, `mesure_impossible`, `illisible`)
+    # n'est pas une derive et ne s'attribue pas.
+    attribution = None
+    if args.base is not None:
+        pour_pages = [r for r in results if r["status"] == "divergente"]
+        if pour_pages:
+            attribution = attribuer(True, fichiers_propres(REPO_ROOT, args.base),
+                                    MOTIFS_ENTREE)
+            for r in pour_pages:
+                r["attribution"] = attribution
+
     drifted = [r for r in results if r["drifted"]]
-    expired = [r for r in results if r["status"] == "expiree"]
-    unmeasurable = [r for r in results if r["status"] == "non_mesurable"]
-    impossible = [r for r in results if r["status"] == "mesure_impossible"]
+    bloquees = [r for r in drifted if _bloque(r)]
+    expirees = [r for r in results if r["status"] == "expiree"]
+    unmeasurable = [r for r in bloquees if r["status"] == "non_mesurable"]
+    impossible = [r for r in bloquees if r["status"] == "mesure_impossible"]
 
     if args.json:
         print(json.dumps({
             "pages": results,
             "drifted": bool(drifted),
-            "expired": bool(expired),
+            "bloquant": bool(bloquees),
+            "expired": bool(expirees),
             "non_mesurable": bool(unmeasurable),
             "mesure_impossible": bool(impossible),
+            "base": args.base,
+            "attribution": attribution,
+            "heritees": [r["page"] for r in drifted if not _bloque(r)],
             "n_pages": len(results),
         }, indent=2, sort_keys=True))
     else:
@@ -267,6 +337,13 @@ def main(argv: list | None = None) -> int:
                     # tomberait a `hors matrice` pour tous les lacs).
                     print("   geste : la machine n'a pas repondu -- NE PAS"
                           " regenerer ici ; rejouer ou elargir le budget")
+                elif not _bloque(r):
+                    # Derive heritee : la page ne suit pas l'arbre, mais la PR
+                    # n'ecrit aucune de ses entrees. Le geste est nomme pour la
+                    # base ; il n'est pas exige de la PR.
+                    print("   %s" % message(r["attribution"]["verdict"],
+                                            "python %s --write"
+                                            % r["generator"]))
                 else:
                     print("   regenere par : python %s --write"
                           % r["generator"])
@@ -283,22 +360,30 @@ def main(argv: list | None = None) -> int:
     # `json.load` alors que le verdict etait « CONFORME (2 pages) » -- les
     # deux pages suivaient l'arbre, mais la sortie melangeait JSON et texte.
     stream = sys.stderr if args.json else sys.stdout
-    if drifted:
-        if len(unmeasurable) == len(drifted):
+    if bloquees:
+        if len(unmeasurable) == len(bloquees):
             # Rien n'a ete mesure : dire « DIVERGENCE » accuserait la page
             # d'un defaut dont la seule cause mesuree est la troncature.
             print("VERDICT: NON MESURABLE (%d page(s) sur %d -- clone "
-                  "shallow)" % (len(drifted), len(results)), file=stream)
-        elif len(impossible) == len(drifted):
+                  "shallow)" % (len(bloquees), len(results)), file=stream)
+        elif len(impossible) == len(bloquees):
             # Meme raison, autre cause : la machine n'a pas repondu a l'organe
             # amont. La page n'est pas accusee a tort -- elle n'est pas
             # certifiable ici.
             print("VERDICT: MESURE IMPOSSIBLE (%d page(s) sur %d -- la machine "
-                  "n'a pas repondu)" % (len(drifted), len(results)), file=stream)
+                  "n'a pas repondu)" % (len(bloquees), len(results)), file=stream)
         else:
             print("VERDICT: DIVERGENCE (%d page(s) sur %d)"
-                  % (len(drifted), len(results)), file=stream)
+                  % (len(bloquees), len(results)), file=stream)
         return 1
+    if drifted:
+        # Toute la derive est heritee : la PR n'ecrit aucune entree des pages.
+        # Le retard appartient a la base ; on le nomme, on ne le lui impute
+        # pas. Non bloquant, et le message dit quoi faire sur `main`.
+        print("VERDICT: HERITE (%d page(s) sur %d -- la PR n'ecrit aucune "
+              "entree ; regenerer sur main)"
+              % (len(drifted), len(results)), file=stream)
+        return 0
     print("VERDICT: CONFORME (%d page(s))" % len(results), file=stream)
     return 0
 

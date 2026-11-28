@@ -27,7 +27,9 @@ on:
       - 'docs/reference/pyodide-wheel-cache.json'
       - 'scripts/notebook_tools/pyodide_eligibility.py'
       - 'scripts/ci/check_pyodide_census_fresh.py'
+      - 'scripts/ci/freshness_attribution.py'
       - 'scripts/tests/test_check_pyodide_census_fresh.py'
+      - 'scripts/tests/test_freshness_attribution.py'
       - '.github/workflows/pyodide-census-freshness.yml'
 
 permissions:
@@ -56,10 +58,24 @@ jobs:
           # ref: la TETE de la branche PR (jamais le merge ref) -- le census
           # compare est celui de la PR, pas celui d'un commit de fusion.
           ref: ${{ github.event.pull_request.head.sha }}
+          # Historique complet : l'attribution (#28841) lit les commits PROPRES
+          # de la branche (`git log --no-merges <base>..HEAD`). Sur un clone
+          # superficiel, cette lecture rendrait une liste tronquee -- et une
+          # PR qui ecrit un carnet pourrait passer pour innocente.
+          fetch-depth: 0
+          # Graphe de commits sans les blobs de l'historique : `git log
+          # --name-only` lit les arbres, pas les blobs (politique #26383).
+          filter: blob:none
 
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
       - name: Fraicheur du census Pyodide (regeneration hors reseau + diff)
-        run: python scripts/ci/check_pyodide_census_fresh.py
+        # `--base` : une derive que la PR n'a pas causee (elle n'ecrit aucun
+        # carnet, ni le generateur, ni le census) passe en avertissement ; le
+        # geste de regeneration est nomme pour `main`. Une derive causee, ou
+        # non attribuable, reste rouge.
+        run: |
+          python scripts/ci/check_pyodide_census_fresh.py \
+              --base "origin/${{ github.base_ref || 'main' }}"

@@ -34,6 +34,11 @@ name: Lean derived pages gate
 #   - MyIA.AI.Notebooks/SymbolicAI/Lean/**/*.ipynb (les carnets de la serie :
 #                                  leurs cellules code et leurs headings
 #                                  d'exercice sont les mesures de la table)
+#   - MyIA.AI.Notebooks/SymbolicAI/Lean/*.ipynb (les carnets a la RACINE de la
+#                                  serie : `**` exige un repertoire entre `Lean/`
+#                                  et le fichier, donc `Lean-06-...ipynb` -- la
+#                                  majorite de la table de maturite -- declenchait
+#                                  la porte ; le module porte les deux motifs)
 #   - .github/workflows/**         (la carte du materiel lit la couverture CI)
 #   - scripts/lean/ci_lakes.json, scripts/lean/lean_births.json,
 #     scripts/lean/check_axiom_gate_coverage.py, scripts/lean/count_code_sorry.py
@@ -53,9 +58,12 @@ on:
       - '**/lakefile.toml'
       - 'scripts/lean/lean_*.py'
       - 'scripts/lean/check_lean_derived_pages.py'
+      - 'scripts/ci/freshness_attribution.py'
+      - 'scripts/tests/test_freshness_attribution.py'
       - 'docs/reference/lean-*.md'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/README.md'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/**/*.ipynb'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/*.ipynb'
       - '.github/workflows/**'
       - 'scripts/lean/ci_lakes.json'
       - 'scripts/lean/lean_births.json'
@@ -96,6 +104,7 @@ jobs:
         run: |
           set +e
           python scripts/lean/check_lean_derived_pages.py --json \
+              --base "origin/${{ github.base_ref || 'main' }}" \
               > lean_derived_pages.json 2>lean_derived_pages_stderr.log
           EXIT=$?
           set -e
@@ -119,19 +128,32 @@ jobs:
           data = json.load(open("lean_derived_pages.json"))
           pages = data.get("pages") or []
           drifted = [p for p in pages if p.get("drifted")]
+          # Attribution (#28841) : le rapport nomme les derives HERITEES de la
+          # base -- celles dont aucune entree n'est ecrite par la PR. Elles
+          # restent visibles (on ne les cache pas) mais elles ne bloquent pas :
+          # le geste de regeneration appartient a `main`, et l'imposer a la PR
+          # la rendait rouge pour une cause qu'elle ne peut pas corriger.
+          heritees = set(data.get("heritees") or [])
+          bloquees = [p for p in drifted if p.get("page") not in heritees]
+          was_heritees = [p for p in drifted if p.get("page") in heritees]
           # Une page non mesuree (`expiree` : la machine n'a pas repondu dans
           # le delai) n'est PAS conforme : elle est simplement inconnue. La
           # nommer evite qu'un vert muet se lise comme une verification.
           expired = [p for p in pages if p.get("status") == "expiree"]
 
-          if not drifted:
+          if not bloquees:
+              if was_heritees:
+                  print("::warning title=Lean derived pages heritees::%d page(s) en retard du fait de la base -- la PR n'ecrit aucune de leurs entrees. Regenerer sur `main`." % len(was_heritees))
+                  for p in was_heritees:
+                      print("- %s" % p.get("page"))
+                      print("  geste (sur main) : python %s --write" % p.get("generator"))
               if expired:
                   print("::warning title=Lean derived pages non mesurees::%d page(s) n'ont pas pu etre verifiees dans le delai de la machine -- le verdict CONFORME ne porte pas sur elles." % len(expired))
                   for p in expired:
                       print("- %s" % p.get("page"))
                       if p.get("detail"):
                           print("  %s" % p["detail"])
-              else:
+              elif not was_heritees:
                   print("::notice title=Lean derived pages::%d page(s) derivee(s) conforme(s) a l'arbre Lean." % len(pages))
               sys.exit(0)
 
@@ -145,8 +167,17 @@ jobs:
                   if p.get("detail"):
                       print("  %s" % p["detail"])
 
-          print("::error title=Lean derived pages divergeantes::%d page(s) derivee(s) ne suivent plus l'arbre Lean de cette revision." % len(drifted))
-          for p in drifted:
+          if was_heritees:
+              # Nommee meme quand une autre page bloque : un retard herite
+              # n'est pas une raison de le taire, il est seulement une raison
+              # de ne pas l'imputer a la PR.
+              print("::warning title=Lean derived pages heritees::%d page(s) en retard du fait de la base -- la PR n'ecrit aucune de leurs entrees." % len(was_heritees))
+              for p in was_heritees:
+                  print("- %s (geste sur main : python %s --write)"
+                        % (p.get("page"), p.get("generator")))
+
+          print("::error title=Lean derived pages divergeantes::%d page(s) derivee(s) ne suivent plus l'arbre Lean de cette revision." % len(bloquees))
+          for p in bloquees:
               print("- %s" % p.get("page"))
               if p.get("detail"):
                   print("  %s" % p["detail"])
