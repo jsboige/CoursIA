@@ -144,4 +144,4 @@ Une surface SOTA est un fait daté par la version de la bibliothèque, et les ca
 
 ## Ressources — tous niveaux
 
-Les sources sont portées par les carnets, auprès des expérirences qui s'y appuient. Le 00 les nomme dans sa section « Pour aller plus loin » ; le 00e, le 00f et le 01 ouvrent une section « Références », le 00g une section « References ». Le [README de la série RL](../README.md#références) tient la table des travaux cités par les carnets — l'attribution et la discussion vivent dans le carnet.
+Les sources sont portées par les carnets, auprès des expériences qui s'y appuient. Le 00 les nomme dans sa section « Pour aller plus loin » ; le 00e, le 00f et le 01 ouvrent une section « Références », le 00g une section « References ». Le [README de la série RL](../README.md#références) tient la table des travaux cités par les carnets — l'attribution et la discussion vivent dans le carnet.
