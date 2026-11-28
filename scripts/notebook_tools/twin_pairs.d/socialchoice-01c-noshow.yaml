@@ -1,0 +1,11 @@
+- name: "SocialChoice-01c NoShow"
+  family: GameTheory/SocialChoice
+  python: MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-01c-Paradoxe-NonParticipation-NoShow-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-01c-Paradoxe-NonParticipation-NoShow-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Paire DOUBLE-FACE parite .NET (#28578) : les deux jumeaux rejouent les MEMES profils de choix social en arithmetique exacte (entiers, aucun flottant) et s'attestent par assertions sur des sorties reproductibles a l'identique -- le jumeau est DETERMINISTE (aucune RNG), contrairement a un jumeau stochastique dont les RNG divergeraient. Cote C# : BCL .NET 9, 0 NuGet pour les algorithmes (ScottPlot 5.0.55 uniquement pour la figure) -- Borda (points decroissants) + IRV (elimination + transfert) from-scratch, recherche exhaustive du no-show (~2,78 M de profils, zero no-show Borda), profil a 5 votants d'IRV (no-show CONFIRME, trace pas-a-pas), figure ScottPlot de l'effet du bulletin sur l'ordre des eliminations, 3 exercices stubs compilables (// TODO etudiant). Cote Python : numpy + matplotlib, meme socle. Verdicts identiques des deux cotes : sans v -> C gagne, avec v -> A gagne. Asymetries residuelles ASSUMEES = idiomes de demonstration (idiomes de langage, viz ScottPlot vs matplotlib)."
+
+  known_differences:
+    - "Socle pedagogique commun : le critere de participation, le paradoxe de non-participation (no-show), Borda immunise (recherche exhaustive ~2,78 M profils, 0 no-show) vs IRV vulnérable (center squeeze), theoreme de Moulin (1988). Meme profil a 5 votants, meme verdict (sans v -> C, avec v -> A), meme trace IRV pas-a-pas."
+    - "Idiomes framework : Python = numpy + matplotlib, 16 cellules (7 de code) ; C# = BCL .NET 9 pur (System / System.Collections.Generic / System.Linq / System.Globalization), 0 NuGet pour les algorithmes, ScottPlot 5.0.55 pour la figure, 18 cellules (9 de code dont la config). Parite semantique : les axes algorithmiques (Borda, IRV, EstNoShow, recherche exhaustive, profil de la section 3) sont miroir, seuls les idiomes de langage et la viz divergent."
