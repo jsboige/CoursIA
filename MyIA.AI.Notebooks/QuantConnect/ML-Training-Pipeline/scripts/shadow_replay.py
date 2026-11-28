@@ -294,6 +294,18 @@ QC_MAX_END_GAP_DAYS = 7
 # lisent pas et la suite s'interrompt.
 QC_BENCHMARK_CHART = "Benchmark"
 QC_FROZEN_SESSIONS = 2
+# Un graphique `Benchmark` a 0.0 sur tous ses points ne cote rien : le projet n'a pas de
+# benchmark. C'est le cas, sans exception sur les dix projets QC du registre lus le
+# 2026-11-27, de tout projet qui fixe le modele de courtage IB sans appeler `set_benchmark`
+# (fs774, splits-lo, levetf-base, levetf-postfix ; x775-lev1 partage le code de fs774).
+# `qc_frozen_sessions` y lirait toutes les seances comme figees et refuserait chaque
+# passage. Corriger ces projets obligerait a geler de nouvelles candidates. Le temoin vient
+# donc d'un autre backtest de la meme passe : le graphique `Benchmark` d'une candidate qui
+# cote le marche, lance AVANT celui de la candidate. Une barre publiee quand le temoin l'a
+# lue l'etait encore pour la candidate lancee apres : la publication ne se defait pas.
+# Reste un recouvrement de quelques minutes, si le temoin lit ses dernieres barres apres
+# la candidate ; le defaut que la garde attrape est un retard de jours (backtest
+# 273d04de : deux seances non publiees), pas de minutes.
 
 
 def qc_entrypoint(candidate: dict) -> tuple[str, int]:
@@ -535,9 +547,72 @@ def qc_frozen_sessions(benchmark: dict, pass_date: str) -> list[str]:
     return trailing
 
 
+def qc_benchmark_absent(benchmark: dict) -> bool:
+    """Le graphique `Benchmark` vaut 0.0 sur tous ses points : il ne cote aucun marche."""
+    return all(float(v) == 0.0 for _, v in _chart_points(benchmark, QC_BENCHMARK_CHART))
+
+
+def _created(backtest: dict, who: str) -> dt.datetime:
+    """Heure de lancement d'un backtest (`created` de `read_backtest`, UTC)."""
+    created = backtest.get("created")
+    try:
+        return dt.datetime.fromisoformat(str(created))
+    except ValueError:
+        raise ValueError(f"{who}: backtest launch time {created!r} is unreadable -- the order "
+                         f"of the two backtests cannot be checked") from None
+
+
+def qc_publication_witness(candidate: dict, plan: dict, backtest: dict, benchmark: dict,
+                           witness: dict | None) -> tuple[dict, str]:
+    """Graphique qui temoigne de la publication des dernieres seances, et son auteur.
+
+    La candidate dont le graphique `Benchmark` cote le marche est son propre temoin, et un
+    temoin donne en plus est refuse : il n'y a qu'une lecture par passage. Celle dont le
+    graphique vaut 0.0 partout en demande un (`QC_BENCHMARK_CHART`) : `witness` porte le
+    `plan`, le `backtest` et le `benchmark` d'une autre candidate de la meme date de passage,
+    dont le backtest termine a ete lance au plus tard en meme temps que celui-ci.
+    """
+    if not qc_benchmark_absent(benchmark):
+        if witness is not None:
+            raise ValueError(f"{candidate['id']}: chart {QC_BENCHMARK_CHART!r} quotes a market, "
+                             f"it is its own witness -- a witness is only read for an absent "
+                             f"benchmark")
+        return benchmark, candidate["id"]
+    n_points = len(_chart_points(benchmark, QC_BENCHMARK_CHART))
+    if witness is None:
+        raise ValueError(f"{candidate['id']}: chart {QC_BENCHMARK_CHART!r} is 0.0 on its "
+                         f"{n_points} points -- the project sets no benchmark, the publication "
+                         f"of the last sessions cannot be read; give as witness another "
+                         f"backtest of the same pass")
+    w_plan, w_backtest, w_benchmark = witness["plan"], witness["backtest"], witness["benchmark"]
+    who = w_plan.get("candidate")
+    if who == candidate["id"]:
+        raise ValueError(f"{candidate['id']}: the witness is the candidate itself")
+    if w_plan.get("pass_date") != plan["pass_date"]:
+        raise ValueError(f"{candidate['id']}: witness {who} belongs to the pass of "
+                         f"{w_plan.get('pass_date')}, not {plan['pass_date']}")
+    if w_backtest.get("error") or w_backtest.get("completed") is not True:
+        raise ValueError(f"{candidate['id']}: the backtest of witness {who} is not completed")
+    if w_backtest.get("name") != w_plan.get("backtest_name"):
+        raise ValueError(f"{candidate['id']}: witness backtest {w_backtest.get('name')!r} is "
+                         f"not {w_plan.get('backtest_name')!r}")
+    if qc_benchmark_absent(w_benchmark):
+        raise ValueError(f"{candidate['id']}: chart {QC_BENCHMARK_CHART!r} of witness {who} is "
+                         f"0.0 everywhere too -- it quotes no market")
+    if _created(w_backtest, f"{candidate['id']}: witness {who}") > _created(backtest,
+                                                                           candidate["id"]):
+        raise ValueError(f"{candidate['id']}: witness {who} was launched after the candidate "
+                         f"-- a bar published between the two launches would be read as "
+                         f"published for the candidate")
+    return w_benchmark, who
+
+
 def ingest_qc(candidate: dict, plan: dict, backtest: dict, chart: dict, benchmark: dict,
-              series_dir: Path | None = None) -> dict:
-    """Ligne de CSV d'un passage QC, a partir de `read_backtest` et de ses deux graphiques."""
+              series_dir: Path | None = None, witness: dict | None = None) -> dict:
+    """Ligne de CSV d'un passage QC, a partir de `read_backtest` et de ses deux graphiques.
+
+    `witness` ne sert qu'a une candidate sans benchmark (`qc_publication_witness`).
+    """
     if (plan["candidate"], plan["sha"], plan["frozen_on"]) != (
             candidate["id"], candidate["sha"], candidate["frozen_on"]):
         raise ValueError(f"plan does not match the frozen candidate {candidate['id']}")
@@ -579,20 +654,24 @@ def ingest_qc(candidate: dict, plan: dict, backtest: dict, chart: dict, benchmar
     # dernier point au minuit de cette date, apres la derniere cloture tracee (mesure :
     # backtest 273d04de). Un jour de semaine sans point autour des dernieres seances est
     # une rupture de couverture : les seances du trou ne se lisent pas, le refus tombe
-    # au nom de la candidate.
+    # au nom de la candidate. Un graphique a 0.0 partout ne temoigne de rien : la lecture
+    # se fait alors sur celui d'un autre backtest de la meme passe.
+    benchmark, who = qc_publication_witness(candidate, plan, backtest, benchmark, witness)
+    of_whom = "" if who == candidate["id"] else f" of witness {who}"
     benchmark_days = sorted({_session(t) for t, _ in
                              _chart_points(benchmark, QC_BENCHMARK_CHART)})
     if benchmark_days[-1] < dates[-1]:
-        raise ValueError(f"{candidate['id']}: chart {QC_BENCHMARK_CHART!r} ends on "
+        raise ValueError(f"{candidate['id']}: chart {QC_BENCHMARK_CHART!r}{of_whom} ends on "
                          f"{benchmark_days[-1]}, before the last close {dates[-1]} -- "
                          f"truncated or incomplete, the publication of the last sessions "
                          f"cannot be read")
     try:
         frozen = qc_frozen_sessions(benchmark, plan["pass_date"])
     except ValueError as exc:
-        raise ValueError(f"{candidate['id']}: {exc}") from exc
+        prefix = "" if who == candidate["id"] else f"witness {who}: "
+        raise ValueError(f"{candidate['id']}: {prefix}{exc}") from exc
     if len(frozen) >= QC_FROZEN_SESSIONS:
-        raise ValueError(f"{candidate['id']}: benchmark bars of the last {len(frozen)} "
+        raise ValueError(f"{candidate['id']}: benchmark bars{of_whom} of the last {len(frozen)} "
                          f"sessions were not published at the pass date "
                          f"({', '.join(frozen)}) -- the pass measures flat sessions")
     costs = {}
@@ -661,6 +740,10 @@ def main(argv: list[str] | None = None) -> int:
                         "et benchmark.json")
     g.add_argument("--series-dir", type=Path, default=None,
                    help="dossier hors depot pour les series journalieres")
+    g.add_argument("--witness-dir", type=Path, default=None,
+                   help="pour une candidate dont le graphique Benchmark vaut 0.0 partout : "
+                        "dossier d'une autre candidate de la meme passe (plan.json, "
+                        "backtest.json, benchmark.json), lancee avant elle")
 
     a = ap.parse_args(argv)
     candidates = load_registry(a.registry)
@@ -695,12 +778,24 @@ def main(argv: list[str] | None = None) -> int:
                   f"dir -- read the chart {plan.get('benchmark_chart', QC_BENCHMARK_CHART)!r} "
                   f"of this backtest first, the pass cannot be checked for unpublished sessions")
             return 1
+        witness = None
+        if a.witness_dir is not None:
+            names = ("plan", "backtest", "benchmark")
+            missing = [f"{n}.json" for n in names if not (a.witness_dir / f"{n}.json").is_file()]
+            if missing:
+                print(f"INVALID {plan['candidate']}: witness dir lacks {', '.join(missing)}")
+                return 1
+            witness = {n: json.loads((a.witness_dir / f"{n}.json").read_text(encoding="utf-8"))
+                       for n in names}
         row = ingest_qc(candidate, plan,
                         json.loads((a.plan_dir / "backtest.json").read_text(encoding="utf-8")),
                         json.loads((a.plan_dir / "chart.json").read_text(encoding="utf-8")),
                         json.loads(benchmark.read_text(encoding="utf-8")),
-                        a.series_dir)
+                        a.series_dir, witness)
         append_row(a.csv, row)
+        if witness is not None:
+            print(f"WITNESS {plan['candidate']}: publication read on the chart "
+                  f"{QC_BENCHMARK_CHART!r} of {witness['plan'].get('candidate')}")
         print(json.dumps(row, ensure_ascii=False))
         return 0
 

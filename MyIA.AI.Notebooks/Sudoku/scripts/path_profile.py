@@ -182,9 +182,13 @@ _GFISH_RE = re.compile(r"^valeur (\d) : (lignes|colonnes) \(([\d,\s]+)\) "
                        r"couvrent les (lignes|colonnes) \[([\d,\s]+)\]$")
 _GFISH_RULES = frozenset({"swordfish", "jellyfish"})
 
+# Regles dont les premisses citent les cases du pas, sans recomptage d'unite.
+# Les ailes du lot 4 (#27533) en relevent : pivot et deux pinces y sont nommes,
+# au format ``(ligne,colonne)``.
 _PREMISE_CELLS = frozenset({
     "naked_single", "hidden_single", "naked_pair", "naked_triple", "naked_quad",
     "hidden_pair", "hidden_triple", "hidden_quad",
+    "xy_wing", "xyz_wing",
 })
 
 
