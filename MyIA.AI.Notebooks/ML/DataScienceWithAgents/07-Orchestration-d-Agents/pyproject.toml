@@ -1,0 +1,29 @@
+# pyproject.toml -- ENV DE SERIE de la serie ADK (#28606)
+#
+# Ce fichier ne declare pas un package a installer : il porte l'environnement
+# dans lequel les carnets de la serie doivent etre rejoues, a la ou un organe
+# peut le lire et le verifier.
+#
+# Lecture : `scripts/notebook_tools/check_kernel_drift.py` (fonction
+# `canonical_env_hint`) cherche cette table en remontant depuis le carnet, puis
+# verifie que l'interpreteur de la BASE des sorties commitees est compatible
+# avec elle. Un intervalle qui ne peut pas heberger l'interpreteur de la base
+# est signale comme `version_conflict` -- le hint ne propose alors pas un
+# environnement a suivre, il nomme la panne a reparer.
+#
+# Pourquoi une exigence explicite (#28606, volet 3) :
+#   - les sorties commitees de la serie ont ete produites sous Python 3.13 ;
+#   - la cellule de budget du Lab12d echoue sous 3.11 avec
+#     `Failed to detach context` (GeneratorExit) -- la cause est la version de
+#     l'interpreteur, pas le modele de raisonnement ;
+#   - sans declaration, un poste dont `python3` designe 3.11 rejoue le carnet
+#     sous le mauvais interpreteur, et la sortie atteste alors d'un runtime
+#     que le lecteur ne peut pas reproduire.
+#
+# Le nom de kernelspec commite reste `python3`, nom canonique du depot : la
+# garantie que `python3` designe bien 3.13 est un fait de poste (documente
+# dans `docs/reference/kernels-runtime.md`), et la divergence se repare au
+# niveau du kernelspec du poste -- jamais dans le carnet.
+
+[tool.coursia.pinned_env]
+requires-python = ">=3.13"

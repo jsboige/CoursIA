@@ -871,3 +871,104 @@ def test_c1b_x_c5_session_accumulates_handoffs_after_composition():
     assert "verifier_agent" in handoff_authors, (
         "le sous-agent n'apparait pas dans la session apres handoff : "
         f"auteurs observes : {handoff_authors}")
+
+
+# ---------------------------------------------------------------------------
+# Fuite du raisonnement (#28606) -- le runtime REFUSE une reponse contaminee.
+# ---------------------------------------------------------------------------
+
+#: Reponse contaminee, au format mesure sur la serie ADK : le titre de
+#: raisonnement en anglais ouvre la reponse, le monologue suit, et le verdict
+#: pedagogique attendu se retrouve noyé dedans.
+_LEAKED_BODY = (
+    "**Clarifying dataset execution**\n"
+    "The user asks for a profile of the dataset 'patients-2026'. I should "
+    "call dataset_profile first, then summarise the shape.\n"
+    "VERDICT : 240 lignes"
+)
+
+
+def test_detect_reasoning_preamble_flags_the_measured_titles():
+    # Controle POSITIF : les deux titres mesures sur la serie ADK.
+    assert adk_runtime.detect_reasoning_preamble(_LEAKED_BODY)
+    assert adk_runtime.detect_reasoning_preamble(
+        "**Identifying discrepancies in profiling**\nsuite")
+
+
+def test_detect_reasoning_preamble_ignores_ordinary_french_answers():
+    # Controle NEGATIF : une reponse pedagogique francophone -- meme avec un
+    # titre en gras -- n'est pas un monologue de raisonnement.
+    for answer in (
+        "",
+        "VERDICT : le dataset compte 240 lignes.",
+        "**Verdict :** le dataset compte 240 lignes.",
+        "**Analyse du jeu de donnees**\n240 lignes et 12 colonnes.",
+        "### Resultat\n240 lignes.",
+    ):
+        assert adk_runtime.detect_reasoning_preamble(answer) is None, (
+            f"une reponse ordinaire a ete signalee comme fuite : {answer!r}")
+
+
+def test_reasoning_leak_is_replayed_until_the_answer_is_clean():
+    # Le tour contamine n'est pas publie : il est rejoue. Observable : le
+    # second appel LLM a lieu, et la reponse rendue est celle du rejeu.
+    agent = _scripted_agent()
+    _SCRIPT.append(("text", _LEAKED_BODY))
+    _SCRIPT.append(("text", "VERDICT : 240 lignes et 12 colonnes."))
+    result = _run_turn(agent, "profil du dataset")
+    assert result.response_text == "VERDICT : 240 lignes et 12 colonnes."
+    assert len(_REQUESTS) == 2, (
+        "le tour contamine n'a pas ete rejoue : la reponse contaminee "
+        "serait publiee telle quelle")
+
+
+def test_reasoning_leak_is_refused_after_the_bounded_replays():
+    # Si la contamination survit aux rejeux, le runtime REFUSE (verdict
+    # RECOVERABLE-LOCAL) au lieu de rendre une reponse inexploitable.
+    agent = _scripted_agent()
+    _SCRIPT.extend([("text", _LEAKED_BODY)] * 3)
+    with pytest.raises(adk_runtime.AdkReasoningLeak) as excinfo:
+        _run_turn(agent, "profil du dataset", max_reasoning_retries=2)
+    assert "RECOVERABLE-LOCAL" in str(excinfo.value)
+    assert len(_REQUESTS) == 3
+
+
+def test_clean_answer_is_returned_without_any_replay():
+    # Controle NEGATIF du rejeu : une reponse propre ne consomme qu'un appel.
+    agent = _scripted_agent()
+    _SCRIPT.append(("text", "VERDICT : 240 lignes."))
+    result = _run_turn(agent, "profil du dataset")
+    assert result.response_text == "VERDICT : 240 lignes."
+    assert len(_REQUESTS) == 1
+
+
+def test_openrouter_model_carries_the_reasoning_control():
+    # La prevention est posee AU NIVEAU DU PROVIDER mesure : OpenRouter.
+    from config.providers import ProviderConfig, ProviderType
+    from utils.adk_runtime import build_adk_model
+
+    config = ProviderConfig(
+        provider=ProviderType.OPENROUTER,
+        model="openai/gpt-5.6-luna",
+        api_key="cle-de-test",
+        base_url="https://openrouter.ai/api/v1",
+    )
+    model = build_adk_model(config)
+    extra = model._additional_args.get("extra_body")
+    assert extra == {"reasoning": {"enabled": False}, "include_reasoning": False}, (
+        f"le levier provider n'est pas porte par le modele : {extra!r}")
+
+
+def test_non_measured_provider_carries_no_reasoning_control():
+    # Le levier n'est pose QUE sur le provider mesure : l'extraire d'un
+    # provider qui ne l'a pas ete serait une extrapolation non prouvee.
+    from config.providers import ProviderConfig, ProviderType
+    from utils.adk_runtime import build_adk_model
+
+    config = ProviderConfig(
+        provider=ProviderType.GEMINI,
+        model="gemini-3.1-pro",
+        api_key="cle-de-test",
+    )
+    model = build_adk_model(config)
+    assert "extra_body" not in model._additional_args
