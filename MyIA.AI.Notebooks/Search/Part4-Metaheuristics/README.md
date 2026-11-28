@@ -8,6 +8,24 @@ Comment passer de l'application *d'une* métaheuristique à la **composition** d
 
 L'arc part de la grammaire fluente et de la reconstruction des composés publiés (MGS-1 à 5), passe par la confrontation honnête sur bancs (MGS-6, 7), caractérise les biais de l'optimiseur — centrage (MGS-10), rotation (MGS-12), synergie d'îles (MGS-11 et 14) — et culmine sur le **No-Free-Lunch** : quatre capstones réunissent ses réponses classiques — mesurer le paysage (MGS-15), sélectionner l'algorithme (MGS-16), contrôler le paramètre pendant la course (MGS-17), éprouver le tout sur le banc CEC shift+rotate combiné (MGS-18). Viennent ensuite le **démontage** (MGS-19 : l'opérateur de Metropolis débranché du compound SA et éprouvé seul), l'**inversion de la question** (MGS-21 : sur le Sudoku, le choix de l'espace de recherche pèse plus que le choix du moteur) et la **confrontation externe systématique** (les carnets MGS-22 à MGS-31 de la [sous-série MGS vs mealpy](#sous-séries-découverte)).
 
+L'arc se résume en onze vagues conceptuelles, chacune posant la brique que la suivante compose :
+
+```mermaid
+flowchart LR
+    W1["<b>Socle &amp; composition</b><br/>MGS-1 — Moteur autonome<br/>MGS-2 — Grammaire fluente<br/>(Match, Container, Scoped)"]
+    W2["<b>Structuration de population</b><br/>MGS-3 — Eukaryote<br/>(partition du génome en chromosomes<br/>composites, analogie caryotype)<br/>MGS-4 — Islands (migration)"]
+    W3["<b>Composés publiés &amp; confrontation</b><br/>MGS-5 — Reconstruire WOA/EO/FBI<br/>MGS-6 — Benchmarks<br/>(No-Free-Lunch)<br/>MGS-7 — TSP combinatoire"]
+    W4["<b>Paysages de fitness</b><br/>MGS-7b/7c/7d — Projection N-D<br/>MGS-8 — Landscape Explorer<br/>MGS-9 — Everest (relief réel)"]
+    W5["<b>Biais &amp; mesure falsifiable</b><br/>MGS-10 — Biais central<br/>(Kudela 2022)<br/>MGS-11 — Synergie d'îles<br/>(verdict négatif)"]
+    W6["<b>Rotation &amp; retour critique</b><br/>MGS-12 — Alignement d'axes<br/>MGS-13 — Paysages dé-biaisés<br/>MGS-14 — Synergie conditionnelle"]
+    W7["<b>Nombre &amp; sélection (capstone)</b><br/>MGS-15 — Métriques de paysage<br/>(FDC, autocorrélation)<br/>MGS-16 — Sélection d'algorithme<br/>(Rice 1976, No-Free-Lunch)"]
+    W8["<b>Contrôle du paramètre</b><br/>MGS-17 — Parameter Control<br/>(Eiben 1999)<br/>tuning vs control<br/>(déterministe / adaptatif / self-adaptatif)"]
+    W9["<b>Banc CEC consolidé</b><br/>MGS-18 — shift + rotate combinés<br/>(protocole CEC)<br/>biais composés<br/>(sub- vs super-additif)"]
+    W10["<b>Recuit démonté</b><br/>MGS-19 — Metropolis isolé<br/>du compound SA<br/>opérateur fonctionnel<br/>bénéfice = couplage"]
+    W11["<b>Représentation vs algorithme</b><br/>MGS-21 — plan croisé Sudoku<br/>R1 continue+arrondi vs<br/>R2 permutations<br/>l'espace peut dominer le moteur"]
+    W1 --> W2 --> W3 --> W4 --> W5 --> W6 --> W7 --> W8 --> W9 --> W10 --> W11
+```
+
 Et cette composition se *voit* : avant de choisir un algorithme, MGS-8 rend le paysage de fitness en vraie heatmap graphique — chaque pixel coloré selon sa valeur de fitness, l'optimum global marqué en clair.
 
 [![Paysage de fitness analytique : heatmap de la fonction Sphere, l'optimum global au centre](assets/readme/mgs8-landscape.png)](MGS-08-LandscapeExplorer.ipynb)
@@ -135,6 +153,12 @@ La campagne **MGS vs mealpy** (carnets MGS-22 à MGS-31) oppose la bibliothèque
 | `dotnet build -c Release` | requis par [Search-05 (Partie 1)](../Part1-Foundations/Search-05-GeneticAlgorithms-CSharp.ipynb), seul carnet hors de cette partie à charger les DLL Release |
 | Python | requis pour le carnet MGS-17b (noyau `coursia-ml-training`) et pour le service TSP du carnet 7 ; dépendances du service dans [`requirements-mgs-tsp.txt`](requirements-mgs-tsp.txt) |
 
+Le kernel `dotnet-interactive` **charge nativement les assemblies `net9.0`** du fork ; tous les chargements `#r` des carnets sont relatifs (`../MetaGeneticSharp/src/...`) et visent des DLL `net9.0` produites par un `dotnet build` du fork :
+
+- `src/MetaGeneticSharp.Domain/bin/Debug/net9.0/` — `MetaGeneticSharp.Domain`, `Infrastructure` et `GeneticSharp` ;
+- `src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/` — les mêmes, plus `MetaGeneticSharp.Extensions`, SkiaSharp et `System.Drawing.Common`, pour les notebooks graphiques ;
+- `src/MetaGeneticSharp.Domain/bin/Release/net9.0/` — seulement pour [Search-05](../Part1-Foundations/Search-05-GeneticAlgorithms-CSharp.ipynb) (Partie 1), d'où le build `Release` ci-dessous.
+
 ```bash
 # depuis la racine du dépôt
 git submodule update --init --recursive MyIA.AI.Notebooks/Search/MetaGeneticSharp
@@ -153,7 +177,7 @@ Les notebooks sont committés **avec leurs sorties** (exécution réelle, kernel
 
 **Formalisations Lean.** Cette partie ne porte **aucune** formalisation : aucun de ses carnets ne consomme un lake. Les lakes de la série (`search_lean`, `discrepancy_lean`) sont consommés par la Partie 1 — carnets 3e, 9d et 9e — et leur inventaire vit dans [`LEAN_INVENTORY.md`](../LEAN_INVENTORY.md), qui n'est pas recopié ici.
 
-**Notes techniques — rendu graphique sous Linux et macOS.** Les paysages tirés d'une image ne passent plus par GDI+, que .NET réserve à Windows depuis la version 7. `LandscapeMaps.CreateFunction(KnownHeightMap)` et `CreateFunctionFromFile` décodent le PNG avec SkiaSharp et le convertissent en niveaux de gris en code managé ; `CreateFunctionFromBitmap` et `CreateBilinearFunctionFromBitmap` prennent un `DirectBitmap`. MGS-08 et MGS-09 n'utilisent que ces entrées et tournent sous Linux. Les surcharges qui prennent un `System.Drawing.Image` (`LandscapeMaps.Load`, `CreateFunctionFromImage`) restent réservées à Windows. Les carnets graphiques (MGS-04, MGS-07b à MGS-07d, MGS-08, MGS-09, MGS-11 et MGS-13 à MGS-15) chargent SkiaSharp depuis NuGet (`SkiaSharp` et `SkiaSharp.NativeAssets.Linux.NoDependencies`) : le kernel câble alors le binaire natif de la plateforme, ce que ne fait pas un `#r` par chemin vers le `SkiaSharp.dll` du build. MGS-07b à MGS-07d encodent leurs PNG avec `LandscapeHeatmap.ToPng()` (SkiaSharp) plutôt qu'avec `ToPngGdi()`, que la bibliothèque garde pour la parité avec GDI+ ; MGS-07c et MGS-07d les relisent avec `LandscapeMaps.DecodeBitmap`. Sous Windows, les quatre cartes fournies et les images en niveaux de gris donnent le même champ qu'avant ; un fichier **en couleur** passé à `CreateFunctionFromFile` peut s'écarter d'un niveau de gris de l'ancien résultat GDI+ sur environ 1 % des couleurs (celles dont la luminance tombe exactement sur un demi-niveau, mesuré sur les 2²⁴ couleurs opaques).
+**Notes techniques — rendu graphique sous Linux et macOS.** Les paysages tirés d'une image ne passent plus par GDI+, que .NET réserve à Windows depuis la version 7. `LandscapeMaps.CreateFunction(KnownHeightMap)` et `CreateFunctionFromFile` décodent le PNG avec SkiaSharp et le convertissent en niveaux de gris en code managé ; `CreateFunctionFromBitmap` et `CreateBilinearFunctionFromBitmap` prennent un `DirectBitmap`. MGS-08 et MGS-09 n'utilisent que ces entrées et tournent sous Linux. Les surcharges qui prennent un `System.Drawing.Image` (`LandscapeMaps.Load`, `CreateFunctionFromImage`) restent réservées à Windows. Les carnets graphiques (MGS-04, MGS-07b à MGS-07d, MGS-08, MGS-09, MGS-11 et MGS-13 à MGS-15) chargent SkiaSharp depuis NuGet (`SkiaSharp` et `SkiaSharp.NativeAssets.Linux.NoDependencies`) : le kernel câble alors le binaire natif de la plateforme, ce que ne fait pas un `#r` par chemin vers le `SkiaSharp.dll` du build. MGS-07b à MGS-07d encodent leurs PNG avec `LandscapeHeatmap.ToPng()` (SkiaSharp) plutôt qu'avec `ToPngGdi()`, que la bibliothèque garde pour la parité avec GDI+ ; MGS-07c et MGS-07d les relisent avec `LandscapeMaps.DecodeBitmap`. Les PNG des carnets graphiques sont encodés en base64 et affichés via `display(HTML(...))` — fiable sous papermill .NET (références DLL locales du fork, pas de `#r "nuget:"`). Sous Windows, les quatre cartes fournies et les images en niveaux de gris donnent le même champ qu'avant ; un fichier **en couleur** passé à `CreateFunctionFromFile` peut s'écarter d'un niveau de gris de l'ancien résultat GDI+ sur environ 1 % des couleurs (celles dont la luminance tombe exactement sur un demi-niveau, mesuré sur les 2²⁴ couleurs opaques).
 
 **Notes techniques — reproductibilité.** Le corpus est **seedé** : `MGS-01` à `MGS-09` initialisent explicitement le RNG avant la création de la population initiale (`FastRandomRandomization.ResetSeed` ; `SeededRandomization` pour `MGS-09`) — contrôles deux-exécutions à l'appui — et les bancs à partir de `MGS-10` sont seedés pour devenir **reproduisibles** :
 
@@ -172,7 +196,7 @@ Les notebooks sont committés **avec leurs sorties** (exécution réelle, kernel
 
 Le contrôle « deux exécutions → sorties identiques » vaut hors le seul blob de bootstrap du kernel (adresse et PID éphémères), et à condition de bâtir les DLL `#r` depuis le gitlink courant de la bibliothèque : un `bin/` antérieur au correctif de seed par pixel rend les rendus N-D non déterministes.
 
-**Notes techniques — conventions de la bibliothèque.** *Représentation agnostique :* les composés géométriques (WOA, EO) requièrent un chromosome qui stocke les gènes en `double` de façon transparente ; les carnets définissent un `DoubleArrayChromosome` (assistant de test, non livré dans la bibliothèque) dont `CreateNew()` randomise dans les bornes — indispensable pour la diversité initiale d'un benchmark. *Fitness = négation :* GeneticSharp *maximise* le fitness ; chaque `Evaluate()` des fonctions benchmark renvoie donc l'objectif nié. La bibliothèque pinne cette convention par tests unitaires (optimum à x\* plus négation).
+**Notes techniques — conventions de la bibliothèque.** *Représentation agnostique :* les composés géométriques (WOA, EO) requièrent un chromosome qui stocke les gènes en `double` de façon transparente ; les carnets définissent un `DoubleArrayChromosome` (assistant de test, non livré dans la bibliothèque) dont `CreateNew()` randomise dans les bornes — indispensable pour la diversité initiale d'un benchmark. *Fitness = négation :* GeneticSharp *maximise* le fitness ; chaque `Evaluate()` des fonctions benchmark renvoie donc l'objectif nié. La bibliothèque pinne cette convention par [tests unitaires](https://github.com/jsboige/MetaGeneticSharp/blob/main/tests/MetaGeneticSharp.Extensions.Tests/KnownFunctionsTests.cs) (optimum à x\* plus négation).
 
 **Notes techniques — le service web TSP.** Le carnet MGS-07 expose son optimisation comme un **service web** `POST /search/tsp`. Le cœur d'exécution est un port Python ([`mgs_tsp_core.py`](mgs_tsp_core.py)) du **même** algorithme (GA panmictique et modèle insulaire sur permutations, fitness = distance euclidienne du tour cyclique, opérateurs OX1, RSM et élite), de parité **seedée interne** : deux exécutions avec les mêmes entrées produisent le même tour et la même distance. Le serveur retenu est FastAPI ([`mgs_tsp_service.py`](mgs_tsp_service.py)) — codes HTTP 200 / 422 / 502 :
 
