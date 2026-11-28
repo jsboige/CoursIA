@@ -67,12 +67,12 @@ flowchart LR
 
 ## Cas pratiques Search — Puissance 4
 
-Quatre notebooks autour du Puissance 4 — deux Python et deux C# — forment un banc d'essai de la recherche adversariale : assez simple pour être résolu, assez riche pour départager les approches. Un premier binôme construit les joueurs (aléatoire, Minimax α-β, MCTS, glouton, puis le framework AIMA de Russell & Norvig) ; le second compare systématiquement Minimax, Alpha-Beta et MCTS.
+Six carnets autour du Puissance 4 — deux Python, deux C# et deux Rust — forment un banc d'essai de la recherche adversariale : assez simple pour être résolu, assez riche pour départager les approches. Un premier binôme construit les joueurs (aléatoire, Minimax α-β, MCTS, glouton, puis le framework AIMA de Russell & Norvig) ; le second compare systématiquement Minimax, Alpha-Beta et MCTS ; les deux jumeaux Rust rejouent ces deux carnets en Rust standard, sans dépendance externe.
 
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|----------|--------------------|--------|------------------|
-| 1 | [App-12-ConnectFour-Python](App-12-ConnectFour-Python.ipynb) — jumeau [C#](App-12-ConnectFour-CSharp.ipynb) | Puissance 4 : construire les joueurs — aléatoire, Minimax α-β, MCTS, glouton, framework AIMA (Russell & Norvig), tournoi round-robin. Le jumeau C# refait Minimax, Alpha-Beta, MCTS (UCB1), glouton et iterative deepening *from-scratch*, avec l'heuristique de fenêtres et le même tournoi (parité #4956) | Découverte | — |
-| 2 | [App-14-ConnectFour-Adversarial-Python](App-14-ConnectFour-Adversarial-Python.ipynb) — jumeau [C#](App-14-ConnectFour-Adversarial-CSharp.ipynb) | Benchmark adversarial : Minimax, Alpha-Beta et MCTS comparés systématiquement. Le jumeau C# refait les trois *from-scratch*, mesure les nœuds explorés et rejoue le tournoi round-robin (parité #4956) | Licence | — |
+| 1 | [App-12-ConnectFour-Python](App-12-ConnectFour-Python.ipynb) — jumeaux [C#](App-12-ConnectFour-CSharp.ipynb) et [Rust](App-12-ConnectFour-Rust.ipynb) | Puissance 4 : construire les joueurs — aléatoire, Minimax α-β, MCTS, glouton, framework AIMA (Russell & Norvig), tournoi round-robin. Le jumeau C# refait Minimax, Alpha-Beta, MCTS (UCB1), glouton et iterative deepening *from-scratch*, avec l'heuristique de fenêtres et le même tournoi (parité #4956). Le jumeau Rust rejoue le carnet pas à pas en Rust standard : générateur MT19937 reproduit à l'identique, d'où les mêmes coups que le Python sur les parties imprimées coup par coup ; plateau rendu en texte au lieu de matplotlib ; framework AIMA porté en `trait Game` avec approfondissement itératif | Découverte | — |
+| 2 | [App-14-ConnectFour-Adversarial-Python](App-14-ConnectFour-Adversarial-Python.ipynb) — jumeaux [C#](App-14-ConnectFour-Adversarial-CSharp.ipynb) et [Rust](App-14-ConnectFour-Adversarial-Rust.ipynb) | Benchmark adversarial : Minimax, Alpha-Beta et MCTS comparés systématiquement. Le jumeau C# refait les trois *from-scratch*, mesure les nœuds explorés et rejoue le tournoi round-robin (parité #4956). Le jumeau Rust porte le même benchmark en Rust (noyau evcxr, std seule) : mêmes comptes de nœuds et mêmes scores de tournoi, la composante stochastique étant reproduite par un MT19937 conforme au contrat CPython, et les figures remplacées par leurs données | Licence | — |
 
 ---
 
@@ -108,7 +108,7 @@ La génération procédurale de niveaux (App-19) encode le Wave Function Collaps
 
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|----------|--------------------|--------|------------------|
-| 1 | [App-01-NQueens-Python](App-01-NQueens-Python.ipynb) — jumeau [C#](App-01-NQueens-CSharp.ipynb) | Backtracking, Min-Conflicts et OR-Tools sur le banc d'essai canonique. Le jumeau C# décline le backtracking (simple, MRV, FC) et ajoute l'énumération complète avec symétrie D4 | Découverte | — |
+| 1 | [App-01-NQueens-Python](App-01-NQueens-Python.ipynb) — jumeaux [C#](App-01-NQueens-CSharp.ipynb) et [Rust](App-01-NQueens-Rust.ipynb) | Backtracking, Min-Conflicts et OR-Tools sur le banc d'essai canonique. Le jumeau C# décline le backtracking (simple, MRV, FC) et ajoute l'énumération complète avec symétrie D4. Le jumeau Rust reprend le même fil sous evcxr : hémisphère algorithmique en `std` seul (MT19937 porté pour retrouver les itérations de min-conflicts graine par graine), puis le même moteur CP-SAT par le crate `cp_sat` | Découverte | — |
 | 2 | [App-02-GraphColoring-Python](App-02-GraphColoring-Python.ipynb) — jumeau [C#](App-02-GraphColoring-CSharp.ipynb) | Greedy, DSATUR et CP-SAT sur le graphe des départements français. Le jumeau C# ajoute Welsh-Powell, le backtracking χ exact et le graphe de Mycielski | Licence | [Validité statistique](App-02-GraphColoring-Statistical-Validity-Python.ipynb) |
 | 3 | [App-03-NurseScheduling-Python](App-03-NurseScheduling-Python.ipynb) — jumeau [C#](App-03-NurseScheduling-CSharp.ipynb) | Contraintes dures et souples en CP-SAT : 15 infirmières, 28 jours, équité des charges. Le jumeau C# refait glouton, backtracking et min-conflicts *from-scratch* (modélisation 1 variable/slot, parité #4956) | Licence | — |
 | 4 | [App-04-JobShopScheduling-Python](App-04-JobShopScheduling-Python.ipynb) — jumeau [C#](App-04-JobShopScheduling-CSharp.ipynb) | Intervalles, précédences et makespan en ordonnancement d'atelier. Le jumeau C# ajoute les dispatching heuristics (SPT/LPT/MOR/MWKR/FIFO) et un branch-and-bound optimal *from-scratch* avec Gantt ASCII (parité #4956) | Licence | — |
@@ -136,7 +136,7 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 | 3 | [App-13-TSP-Metaheuristics-Python](App-13-TSP-Metaheuristics-Python.ipynb) — jumeau [C#](App-13-TSP-Metaheuristics-CSharp.ipynb) | Le TSP attaqué par quatre méthodes concurrentes : recuit simulé, génétique, colonies de fourmis, OR-Tools routing. Le jumeau C# refait force brute, plus proche voisin, 2-opt et recuit simulé sur permutations *from-scratch* | Licence | — |
 | 4 | [App-17-VRP-Logistics-Python](App-17-VRP-Logistics-Python.ipynb) — jumeaux [C#](App-17-VRP-Logistics-CSharp.ipynb), [Python](App-17-VRP-Logistics-Metaheuristiques-Python.ipynb) et [Rust](App-17-VRP-Logistics-Rust.ipynb) | Tournées de véhicules : recuit, GA, ACO et CP-SAT confrontés. Les jumeaux refont Nearest-Neighbor, cheapest-insertion, 2-opt et recuit simulé *from-scratch* — le Python vérifie ses solutions contre OR-Tools, le Rust reformule le VRP en MILP flot résolu par HiGHS | Licence | — |
 | 5 | [App-18-HyperparameterTuning-Python](App-18-HyperparameterTuning-Python.ipynb) — jumeaux [C#](App-18-HyperparameterTuning-CSharp.ipynb) et [Python](App-18-HyperparameterTuning-Implementation-Manuelle-Python.ipynb) | Optimisation ML : bayésienne, GA, PSO, Optuna — la boucle qui se referme, on optimise l'optimiseur. Les jumeaux refont Grid/Random Search, GP-EI, GA et PSO *from-scratch* sur l'objectif k-NN CV 5-fold (parité #4956) | Licence | [Rustuna vs Optuna](App-18c-HyperparameterTuning-Rustuna-vs-Optuna-Python.ipynb) |
-| 6 | [App-22-AlgorithmSelection-Python](App-22-AlgorithmSelection-Python.ipynb) | Sélection empirique d'algorithmes : 3 jeux (Sudoku, Puissance 4, Wordle), 13 familles conceptuelles / 14 étiquettes mesurées, non-commensurabilité des métriques + frontières de Pareto + choix sous préférences — hommage PR IS #42 (Théodore Deguest) | Recherche | — |
+| 6 | [App-22-AlgorithmSelection-Python](App-22-AlgorithmSelection-Python.ipynb) — jumeau [C#](App-22-AlgorithmSelection-CSharp.ipynb) | Sélection empirique d'algorithmes : 3 jeux (Sudoku, Puissance 4, Wordle), 13 familles conceptuelles / 14 étiquettes mesurées, non-commensurabilité des métriques + frontières de Pareto + choix sous préférences — hommage PR IS #42 (Théodore Deguest). Le jumeau C# refait toute l'analyse en BCL pure (lecteur CSV, dominance, normalisation, bootstrap, SVG inline) et retrouve les mêmes fronts, vainqueurs et point de bascule | Recherche | — |
 | 7 | [App-23-PRESENT-Differential-Cryptanalysis-SAT-Python](App-23-PRESENT-Differential-Cryptanalysis-SAT-Python.ipynb) | PRESENT : DDT, compression d'implicants, CNF pondérée, frontière SAT/UNSAT du meilleur trail et limites de certification — distillation PrCon F2 (Théodore Deguest) | Recherche | — |
 | 8 | [App-27-Sparse-Index-Tracking-Walk-Forward-Python](App-27-Sparse-Index-Tracking-Walk-Forward-Python.ipynb) | Sparse index tracking : modèle CP-SAT vérifiable, walk-forward sans fuite et lecture pédagogique des résultats QuantConnect réels — une recherche, deux lectures — distillation PrCon M2 (Godric Bouteloup) | Recherche | [Sparse-Index-Tracking-QC](../../QuantConnect/projects/Sparse-Index-Tracking-QC/README.md) |
 
@@ -173,12 +173,14 @@ Le [pont SOTA Rustuna vs Optuna](App-18c-HyperparameterTuning-Rustuna-vs-Optuna-
 
 ### Puissance 4 (Search)
 
-| Notebook | Fondations requises |
-|----------|--------------------|
-| App-12 ConnectFour | Search-3 (A*), Search-4 (LocalSearch) |
-| App-14 ConnectFour-Adversarial | Search-3 (Heuristiques), Search-6 (AdversarialSearch) |
-| App-14-Adversarial-CSharp | Search-3 (Heuristiques), Search-6 (AdversarialSearch) |
-| App-12-CSharp | Search-6 (AdversarialSearch), Search-7 (MCTS) |
+| Notebook | Fondations requises | Dépendances |
+|----------|--------------------|-------------|
+| App-12 ConnectFour | Search-3 (A*), Search-4 (LocalSearch) | numpy, matplotlib |
+| App-14 ConnectFour-Adversarial | Search-3 (Heuristiques), Search-6 (AdversarialSearch) | numpy, matplotlib, pandas |
+| App-14-Adversarial-CSharp | Search-3 (Heuristiques), Search-6 (AdversarialSearch) | dotnet-interactive |
+| App-14-Adversarial-Rust | Search-3 (Heuristiques), Search-6 (AdversarialSearch) | evcxr (noyau rust), sans dépendance externe |
+| App-12-CSharp | Search-6 (AdversarialSearch), Search-7 (MCTS) | dotnet-interactive |
+| App-12-Rust | Search-6 (AdversarialSearch), Search-7 (MCTS) | evcxr (noyau rust), sans dépendance externe |
 
 ### Cas pratiques CSP
 
@@ -186,6 +188,7 @@ Le [pont SOTA Rustuna vs Optuna](App-18c-HyperparameterTuning-Rustuna-vs-Optuna-
 |----------|--------------------|-------------|
 | App-1 NQueens | CSP-1 (Fundamentals) | - |
 | App-01-CSharp NQueens | CSP-1 (Fundamentals) | dotnet-interactive |
+| App-01-Rust NQueens | CSP-1 (Fundamentals) | evcxr (noyau rust), cp_sat |
 | App-2 GraphColoring | CSP-1, CSP-2 | networkx |
 | App-02-CSharp GraphColoring | CSP-1, CSP-2 | dotnet-interactive |
 | App-2c GraphColoring Statistical Validity | CSP-1, CSP-2, statistiques | networkx, scipy, ortools |
@@ -232,6 +235,7 @@ Le [pont SOTA Rustuna vs Optuna](App-18c-HyperparameterTuning-Rustuna-vs-Optuna-
 | App-18-Python HyperparameterTuning (Python) | Search-4, Search-5 | numpy, scipy, optuna |
 | App-18c HyperparameterTuning Rustuna-vs-Optuna | App-18-Python (terrain k-NN CV), Search-5 | numpy, optuna, rustuna |
 | App-22 AlgorithmSelection-Python | MGS-16 (Rice / No Free Lunch) | pandas, numpy, matplotlib |
+| App-22 AlgorithmSelection (C#) | MGS-16 (Rice / No Free Lunch) | dotnet-interactive |
 | App-23 PRESENT Differential Cryptanalysis | SAT, CNF, bit-vectors | python-sat, numpy, matplotlib |
 | App-27 Sparse Index Tracking Walk-Forward | CSP-3 (CP-SAT), CSP-5 (optimisation), App-10 (portefeuille) | ortools, pandas, numpy |
 

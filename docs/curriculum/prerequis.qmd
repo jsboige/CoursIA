@@ -153,7 +153,7 @@ flowchart LR
   click n13 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/20_Theorem_Rewriters.html" "Ouvrir le carnet"
 ```
 
-Mesuré à la génération : **33 arêtes** carnet→carnet sur **20 carnets**, 0 référence(s) de prérequis non résolue(s) sur 947. Chaque flèche se lit « le carnet source est un prérequis du carnet cible » ; le nombre d'arêtes suit la taxonomie, pas un dessin.
+Mesuré à la génération : **33 arêtes** carnet→carnet sur **20 carnets**, 0 référence(s) de prérequis non résolue(s) sur 1093. Chaque flèche se lit « le carnet source est un prérequis du carnet cible » ; le nombre d'arêtes suit la taxonomie, pas un dessin.
 Dans les détails, un nœud **arrondi** est un carnet d'une autre plage, rappelé
 comme entrée : sans lui la plage paraîtrait sans prérequis.
 
@@ -196,15 +196,16 @@ site, et la garde de fraîcheur de la PR compare le reste de la page.
 
 | Série | Notions citées | Carnets cités / réels | Couverture |
 |---|---|---|---|
-| Compression | 18 / 18 | 7 / 21 | 33 % |
-| GameTheory | 182 / 182 | 50 / 217 | 23 % |
-| IIT | 28 / 28 | 10 / 119 | 8 % |
-| Planners | 111 / 111 | 26 / 29 | 89 % |
+| BioMedecine | 17 / 17 | 1 / 1 | complète |
+| Compression | 136 / 136 | 21 / 23 | 91 % |
+| GameTheory | 182 / 182 | 50 / 226 | 22 % |
+| IIT | 28 / 28 | 10 / 128 | 7 % |
+| Planners | 111 / 111 | 26 / 30 | 86 % |
 | Probas | 135 / 135 | 32 / 99 | 32 % |
-| Search | 121 / 121 | 26 / 201 | 12 % |
+| Search | 121 / 121 | 26 / 207 | 12 % |
 | SymbolicAI (`semanticweb`) | 23 / 23 | 8 / 32 | 25 % |
 | SymbolicAI (`tweety`) | 21 / 21 | 5 / 39 | 12 % |
-| Z3-Linq2Z3 *(pilote)* | 21 / 21 | 20 / 67 | 29 % |
+| Z3-Linq2Z3 *(pilote)* | 21 / 21 | 20 / 72 | 27 % |
 
 <!-- COVERAGE-INVENTAIRE-DISQUE:END -->
 

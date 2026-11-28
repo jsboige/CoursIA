@@ -1,0 +1,14 @@
+# TRANCHE34 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE34
+guards:
+  -
+    name: "readme-notebook-coverage"
+    argv: ["python", "scripts/ci/check_readme_notebook_coverage.py", "--diff-base", "{base_ref}"]
+    source: "native"
+    paths: ["**/*.ipynb"]
+    blocking: true
+    needs_base: true
+    absorbed: true
+    warn_rc:
+      -
+        2

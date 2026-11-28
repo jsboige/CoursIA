@@ -25,6 +25,19 @@ et c'est elle qui doit interroger la BASE du squash, pas la tete de la branche.
 from __future__ import annotations
 
 
+def est_documentation_registre(nom: str) -> bool:
+    """Une entree `_`-prefixee du registre est de la DOCUMENTATION.
+
+    Regle du lecteur canonique (`check_twin_parity.load_registry`) : dans
+    `twin_pairs.d/`, chaque `*.yaml` ne commencant pas par `_` est le
+    descripteur d'UNE paire ; les `_`-prefixes (`_schema.yaml`) sont ignores.
+
+    La regle vit ici parce que `check_twin_parity.py` est epingle (plafond de
+    lignes) : les modules freres partagent la decision sans la dupliquer.
+    """
+    return nom.startswith("_")
+
+
 def squash_base_ref(organ, repo_root) -> str:
     """Base du squash : `origin/main` si elle se resout, sinon `HEAD`.
 
@@ -38,7 +51,8 @@ def squash_base_ref(organ, repo_root) -> str:
     return "origin/main" if r.returncode == 0 else "HEAD"
 
 
-def orphan_a_venir(organ, repo_root, latest: dict, cur_py, cur_cs) -> bool:
+def orphan_a_venir(organ, repo_root, latest: dict, cur_py, cur_cs,
+                   cur_ru=None) -> bool:
     """Vrai ssi l'attestation decrit un blob que la base du squash ne porte pas.
 
     `latest` est la derniere attestation de la paire (`_latest_audit`), et
@@ -46,12 +60,19 @@ def orphan_a_venir(organ, repo_root, latest: dict, cur_py, cur_cs) -> bool:
     differe du blob courant ET qui n'est pas joignable depuis la base sera
     ecrase par le squash : l'attestation doit etre rafraichie.
 
+    `cur_ru` (facultatif) est le git blob SHA du cote rust optionnel
+    (#27098). Il n'est interroge que si la paire declare ce cote : une paire
+    binaire passe `None` et ne consulte jamais la cle `rust_sha`.
+
     Le no-op metadata-only reste preserve quand le blob enregistre est DEJA sur
     la base (Sudoku-08/14 BDD) : c'est le meme contenu, et `main` porte deja
     ce blob -- il n'y a rien a re-attester.
     """
     base = squash_base_ref(organ, repo_root)
-    for cle, courant in (("python_sha", cur_py), ("csharp_sha", cur_cs)):
+    cotes = [("python_sha", cur_py), ("csharp_sha", cur_cs)]
+    if cur_ru is not None:
+        cotes.append(("rust_sha", cur_ru))
+    for cle, courant in cotes:
         rec = latest.get(cle)
         if rec is None or rec == courant:
             continue

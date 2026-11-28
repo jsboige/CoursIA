@@ -67,6 +67,36 @@ def lane_from_body(body: str) -> str | None:
     return None
 
 
+def pr_status_for(pr: dict[str, Any] | None, truncated: bool) -> str:
+    """L'etat de PR d'une branche, sans jamais mentir sur l'index (#28685).
+
+    `vue` — la PR est dans l'index (on sait son etat) ;
+    `hors_index` — l'index est Borne (`truncated`) et la branche n'y figure
+    pas : sa PR est soit absente, soit plus ancienne que la fenetre ; on ne
+    peut pas les distinguer, et l'affirmer « sans PR » est le defaut repare ;
+    `aucune_pr` — l'index est COMPLET (sous le plafond) et la branche n'a
+    veritablement aucune PR.
+    """
+    if pr is not None:
+        return "vue"
+    return "hors_index" if truncated else "aucune_pr"
+
+
+def is_recyclable(pr: dict[str, Any] | None, state: dict[str, Any]) -> bool:
+    """Un worktree est recyclable (retrait sans perte) seulement si TROIS
+    conditions tiennent a la fois : sa PR est fermee/mergee (signal), son
+    arbre est PROPRE (rien de non committe) et son HEAD est PRESERVE (aucun
+    commit au-dela de `origin/<br>`). La PR fermee seule est un signal, pas un
+    verdict de retirabilite (#28685 ask 3) : un arbre sale ou un HEAD non
+    pousse porte du contenu qui ne vit nulle part ailleurs.
+    """
+    if (pr or {}).get("state") not in RECYCLABLE_STATES:
+        return False
+    if state.get("modified", 0) != 0 or state.get("untracked", 0) != 0:
+        return False
+    return state.get("ahead") == 0
+
+
 def parse_worktree_list(text: str) -> list[dict[str, Any]]:
     """Parse la sortie de `git worktree list --porcelain`.
 
@@ -136,17 +166,20 @@ def gh_slug(repo: str) -> str | None:
     return None
 
 
-def fetch_prs(repo: str, limit: int = 600) -> tuple[dict[str, list[dict[str, Any]]], str | None]:
+def fetch_prs(repo: str, limit: int = 600) -> tuple[dict[str, list[dict[str, Any]]], str | None, bool]:
     """Les PRs du depot, indexees par branche de tete.
 
-    Retourne `(index, erreur)`. L'index est vide et l'erreur non nulle si `gh`
-    est indisponible : l'inventaire degrade alors en « sans attribution »,
-    ce qui est un etat honnete, pas un echec de mesure.
+    Retourne `(index, erreur, tronque)`. L'index est vide et l'erreur non nulle
+    si `gh` est indisponible : l'inventaire degrade alors en « sans
+    attribution », ce qui est un etat honnete, pas un echec de mesure.
 
     `limit` borne le nombre de PRs interrogees (`gh pr list --limit`). Le
-    defaut de 600 couvre les PRs merger recemment ; au-dela, une PR ancienne
-    sort de l'index et son worktree est lu « sans PR ». Le plafond est
-    expose (`--pr-limit`) pour qu'une ferme large puisse l'elever.
+    defaut de 600 couvre les PRs mergees recemment ; au-dela, une PR ancienne
+    sort de l'index. `tronque` est True des lors que le nombre de PRs remises
+    ATTEINT `limit` : l'index est alors borne, et une branche absente de
+    l'index ne peut PAS etre lue « sans PR » — elle est « hors index », un etat
+    distinct (#28685). Le plafond est expose (`--pr-limit`) pour qu'une ferme
+    large puisse l'elever ; son effet devient visible dans la sortie.
     """
     try:
         raw = subprocess.run(
@@ -155,14 +188,14 @@ def fetch_prs(repo: str, limit: int = 600) -> tuple[dict[str, list[dict[str, Any
              "number,headRefName,body,title,state,mergedAt"],
             capture_output=True, text=True, encoding="utf-8", errors="replace")
     except OSError as exc:
-        return {}, "gh indisponible : %s" % exc
+        return {}, "gh indisponible : %s" % exc, False
     if raw.returncode != 0:
         return {}, "gh a echoue (rc=%d) : %s" % (
-            raw.returncode, (raw.stderr or "").strip()[:200])
+            raw.returncode, (raw.stderr or "").strip()[:200]), False
     try:
         prs = json.loads(raw.stdout or "[]")
     except json.JSONDecodeError as exc:
-        return {}, "sortie de gh illisible : %s" % exc
+        return {}, "sortie de gh illisible : %s" % exc, False
     index: dict[str, list[dict[str, Any]]] = {}
     for pr in prs:
         index.setdefault(pr.get("headRefName") or "", []).append({
@@ -172,7 +205,7 @@ def fetch_prs(repo: str, limit: int = 600) -> tuple[dict[str, list[dict[str, Any
             "title": (pr.get("title") or "")[:120],
             "lane": lane_from_body(pr.get("body") or ""),
         })
-    return index, None
+    return index, None, len(prs) >= limit
 
 
 def worktree_state(path: str, branch: str | None) -> dict[str, Any]:
@@ -199,13 +232,13 @@ def census(farm: str, repo: str, use_gh: bool = True,
     rc, listing = git(repo, "worktree", "list", "--porcelain")
     if rc != 0:
         raise RuntimeError("git worktree list illisible (rc=%d)" % rc)
-    pr_index, gh_error = ({}, None)
+    pr_index, gh_error, pr_truncated = ({}, None, False)
     if use_gh:
         slug = gh_repo or gh_slug(repo)
         if not slug:
             gh_error = "slug GitHub introuvable sur le remote origin"
         else:
-            pr_index, gh_error = fetch_prs(slug, limit=pr_limit)
+            pr_index, gh_error, pr_truncated = fetch_prs(slug, limit=pr_limit)
     rows: list[dict[str, Any]] = []
     farm_norm = os.path.normcase(os.path.abspath(farm))
     rc_top, toplevel = git(repo, "rev-parse", "--show-toplevel")
@@ -223,6 +256,7 @@ def census(farm: str, repo: str, use_gh: bool = True,
         lane = (pr or {}).get("lane") or read_lane_owner(path)
         size = dir_size(path)
         state = worktree_state(path, branch)
+        pr_closed = (pr or {}).get("state") in RECYCLABLE_STATES
         rows.append({
             "name": os.path.basename(path.rstrip("\\/")),
             "path": path,
@@ -232,7 +266,9 @@ def census(farm: str, repo: str, use_gh: bool = True,
             "lane": lane,
             "pr": pr,
             "pr_state": (pr or {}).get("state"),
-            "recyclable": (pr or {}).get("state") in RECYCLABLE_STATES,
+            "pr_status": pr_status_for(pr, pr_truncated),
+            "pr_closed": pr_closed,
+            "recyclable": is_recyclable(pr, state),
             **state,
         })
     rows.sort(key=lambda r: -r["gib"])
@@ -244,10 +280,14 @@ def census(farm: str, repo: str, use_gh: bool = True,
         bucket["gib"] += row["gib"]
         if row["recyclable"]:
             bucket["recyclable"] += 1
+    hors_index = sum(1 for r in rows if r["pr_status"] == "hors_index")
     return {
         "farm": farm,
         "repo": repo,
         "gh_error": gh_error,
+        "pr_truncated": pr_truncated,
+        "pr_limit": pr_limit,
+        "hors_index": hors_index,
         "total_gib": round(sum(r["gib"] for r in rows), 2),
         "count": len(rows),
         "by_lane": by_lane,
@@ -263,6 +303,12 @@ def render(report: dict[str, Any]) -> str:
     if report["gh_error"]:
         out.append("Attribution indisponible : %s (les worktrees restent "
                    "'unattributed')" % report["gh_error"])
+    if report.get("pr_truncated"):
+        out.append("Index de PRs BORNE a %d : %d worktree(s) HORS de la "
+                   "fenetre (PR absente OU plus ancienne que le plafond, non "
+                   "distinguees) : pas un zero verifie. Lever --pr-limit pour "
+                   "les resoudre."
+                   % (report.get("pr_limit", 600), report.get("hors_index", 0)))
     out.append("")
     out.append("%-34s %5s %9s %-8s %-9s %s"
                % ("lane", "n", "Gio", "PR", "etat", "recyclable"))
@@ -272,13 +318,15 @@ def render(report: dict[str, Any]) -> str:
                    % (lane[:34], b["n"], b["gib"], "", "",
                       b["recyclable"]))
     out.append("")
-    out.append("%-26s %-38s %-7s %-8s %8s %6s %6s"
-               % ("worktree", "branche", "PR", "etat", "Gio", "mod", "untr"))
+    out.append("%-26s %-38s %-7s %-10s %8s %6s %6s"
+               % ("worktree", "branche", "PR", "etat PR", "Gio", "mod",
+                  "untr"))
     for row in report["rows"]:
         pr = row["pr"] or {}
-        out.append("%-26s %-38s %-7s %-8s %8.3f %6d %6d"
+        etat = pr.get("state") or row["pr_status"]
+        out.append("%-26s %-38s %-7s %-10s %8.3f %6d %6d"
                    % (row["name"][:26], (row["branch"] or "-")[:38],
-                      pr.get("number") or "-", pr.get("state") or "-",
+                      pr.get("number") or "-", etat,
                       row["gib"], row["modified"], row["untracked"]))
     return "\n".join(out)
 

@@ -53,6 +53,30 @@ Références :
   - Partie 72 (`Grothendieck.Stalks`) : germes et tiges concrets.
   - Partie 73 (`Grothendieck.StalkPoints`) : la tige comme foncteur fibre.
 
+Correspondance Stacks (groupe #14 de #28537 — « les tiges », mesure du 26/11)
+--------------------------------------------------------------------------
+Lecture de `AxiomMath/Stacks` sur l'**arborescence locale**
+`StacksFrontier/Topology/Sheaves/` (clone sparse du dossier entier) : la
+couverture est ici bien plus large que celle des relevés du 22/11 et du
+25/11, qui ne pouvaient lire que quelques fichiers par l'API `contents`
+(l'arbre récursif de GitHub est tronqué et `Topology/Sheaves` n'y apparaît
+pas). Un verdict « absent » signifie donc : **aucun énoncé de ce nom dans
+l'ensemble de `Topology/Sheaves/`**.
+
+| Énoncé | Classe | Référent Stacks | Ce que notre version ajoute |
+|---|---|---|---|
+| `eq_of_germ_eq_of_isSeparated` | **couvert** | `Stalk/Separated.lean:86` `isSeparated'_iff` (007A) | la construction du crible des voisinages (séparabilité site → injectivité de la famille de germes) |
+| `eq_of_germ_eq_of_isSheaf` | partiel | `Sheaf/Abelian.lean:149` `restrict_eq_zero_of_germ_eq_zero` ; `:91` `exact_of_local` ; `:125` `shortExact_of_local` | le corollaire « faisceau ⇒ séparé », sans hypothèse de limite |
+| `injective_germ_family_of_isSeparated` | **couvert** | `Stalk/Separated.lean:78` `IsSeparated'` ; `:65` `toStalkProduct` | la flèche inverse : la séparabilité site entraîne l'injectivité de la famille de germes |
+
+Correction du relevé du 25/11. Le relevé des tiges (commentaire
+`myia-po-2026:CoursIA-2` du 25/11 sur #28537) conclut que « Stacks suppose
+la séparabilité topologique de l'espace `X` lui-même ». C'est inexact :
+`Stalk/Separated.lean:78` définit `IsSeparated' F`, qui est une propriété
+**du préfaisceau `F`**, non de l'espace `X`. L'écart de cadre réel est un
+écart de *packaging* : Stacks **définit** la séparabilité par l'injectivité
+de la famille de germes ; nous la **déduisons** de la séparabilité site.
+
 Convention i18n (EPIC #4980 ratifiée 2026-07-04) : ce module est jumelé avec
 `StalkSeparated_en.lean`. Les énoncés, preuves et noms Lean restent identiques ;
 seules les docstrings et les commentaires diffèrent.
@@ -84,7 +108,19 @@ l'un de ces voisinages — crible couvrant pour `opensTopology T` — puis
 conclut en appliquant le prédicat de séparabilité bundlé
 (`Presheaf.IsSeparated`, dont le cœur est `IsSeparatedFor.ext`). C'est le
 relâchement séparé du `section_ext` de Mathlib, qui exige un faisceau
-complet. Référence : [MM92] Chap. II §6. -/
+complet. Référence : [MM92] Chap. II §6.
+
+Correspondance Stacks — **COUVERT** :
+`StacksFrontier/Topology/Sheaves/Stalk/Separated.lean:86`
+(`isSeparated'_iff`, Stacks 007A ; SGA 3 IV 4.3.1 et 4.3.18, SGA 4 II 2.1)
+énonce exactement la même caractérisation ponctuelle : deux sections d'un
+préfaisceau de types sur `U` dont les germes coïncident en tout point de `U`
+sont égales. Écart de packaging : Stacks pose l'hypothèse sous la forme
+`IsSeparated' F` (`Stalk/Separated.lean:78`), c'est-à-dire l'**injectivité
+de la famille de germes** ; nous la posons sous la forme
+`Presheaf.IsSeparated (J := opensTopology T) F`, la séparabilité **site**
+(crible par crible). Ce que notre version ajoute : la construction du
+crible des voisinages qui fait le passage de l'un à l'autre. -/
 theorem eq_of_germ_eq_of_isSeparated (F : TopCat.Presheaf (Type u) (TopCat.of T))
     (hF : Presheaf.IsSeparated (J := opensTopology T) F)
     {U : Opens T} {s t : F.obj (op U)}
@@ -126,7 +162,18 @@ sans aucune hypothèse de limite — là où le `section_ext` de Mathlib exige
 `[HasLimits C]` et compagnie, la séparabilité suffit ici : tout faisceau
 est séparé (`Presheaf.IsSheaf.isSeparated`), et le pont de la Partie 70
 (`isSheaf_opensTopology_iff`) transporte la condition de faisceau de
-Mathlib vers le site own. -/
+Mathlib vers le site own.
+
+Correspondance Stacks — **PARTIEL** : Stacks ne formule pas « faisceau
+⇒ séparé » comme énoncé nommé : son `IsSeparated'` est une hypothèse
+primitive, et l'injectivité de la famille de germes y est la définition
+même. Les énoncés voisins sont `StacksFrontier/Topology/Sheaves/Sheaf/Abelian.lean:149`
+(`restrict_eq_zero_of_germ_eq_zero` — un germe nul impose une restriction
+nulle), `:91` (`exact_of_local`) et `:125` (`shortExact_of_local`) :
+l'égalité et l'exactitude y sont **testées germe par germe**. Ce que notre
+version ajoute : le corollaire lui-même, déduit de la séparabilité site
+sans aucune hypothèse de limite — là où le `section_ext` de Mathlib exige
+`[HasLimits C]` et compagnie. -/
 theorem eq_of_germ_eq_of_isSheaf (F : TopCat.Presheaf (Type u) (TopCat.of T))
     (hF : TopCat.Presheaf.IsSheaf F)
     {U : Opens T} {s t : F.obj (op U)}
@@ -140,7 +187,15 @@ theorem eq_of_germ_eq_of_isSheaf (F : TopCat.Presheaf (Type u) (TopCat.of T))
 préfaisceau de types séparé, l'application qui envoie une section sur `U`
 vers sa famille de germes aux points de `U` est injective. Reformulation
 combinatoire du théorème principal — la brique ponctuelle du dictionnaire
-faisceaux ↔ espaces étalés amorcé aux Parties 72-73. -/
+faisceaux ↔ espaces étalés amorcé aux Parties 72-73.
+
+Correspondance Stacks — **COUVERT** : c'est la définition même de
+`IsSeparated'` chez Stacks (`StacksFrontier/Topology/Sheaves/Stalk/Separated.lean:78` :
+`∀ U, Function.Injective (toStalkProduct F U)`), la famille de germes y
+étant `toStalkProduct` (`Stalk/Separated.lean:65`). L'écart est l'**ordre de
+la flèche** : Stacks définit la séparabilité par l'injectivité de la
+famille de germes, nous la déduisons de la séparabilité site — la
+réciproque n'est pas énoncée chez Stacks. -/
 theorem injective_germ_family_of_isSeparated (F : TopCat.Presheaf (Type u) (TopCat.of T))
     (hF : Presheaf.IsSeparated (J := opensTopology T) F) (U : Opens T) :
     Function.Injective (fun (s : F.obj (op U)) (p : {x : T // x ∈ U}) =>

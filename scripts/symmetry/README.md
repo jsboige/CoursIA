@@ -22,15 +22,54 @@ attributs.point_group_order  # 8
 attributs.mirror_directions  # 4
 attributs.centers_by_order  # ((2, 2), (4, 2))
 svg = render_svg(groupe, cells=4, size=640)
+
+from symmetry import closed_set, signature
+
+len(closed_set(groupe))  # 8 : un élément par élément du groupe ponctuel
+signature(groupe).key()  # la signature, lue sur l'ensemble fermé
 ```
 
-Trois modules :
+Quatre modules :
 
-| Module | Role |
+| Module | Rôle |
 |---|---|
 | `symmetry.affine` | algèbre affine exacte (`Affine`, compositions, inverses) |
 | `symmetry.wallpaper` | les 17 groupes, leurs générateurs, les attributs dérivés, le rendu SVG |
+| `symmetry.closure` | la fermeture de chaque groupe par composition, la signature lue sur l'ensemble fermé |
 | `symmetry` (paquet) | ré-export de l'API publique |
+
+## Fermeture et signature lue sur l'ensemble fermé
+
+Le quotient d'un groupe de pavage par son réseau de translation est **fini** :
+deux éléments de même partie linéaire ne diffèrent que d'une translation du
+réseau. `symmetry.closure` ramène donc la translation de chaque élément au
+représentant canonique de sa classe, puis **ferme** l'ensemble par
+composition, depuis les seuls générateurs.
+
+* `closed_set(groupe)` — l'ensemble fermé : un élément par classe modulo le
+  réseau, l'identité comprise. Son cardinal est l'ordre du groupe ponctuel.
+* `signature(groupe)` — la signature lue sur cet ensemble (ordre de chaque
+  rotation comme isométrie du plan, lignes de miroir, axes de glissade,
+  centres). `signature(groupe).key()` est ce qui distingue deux groupes : les
+  17 clés sont deux à deux distinctes.
+* `compare_with_attributes(groupe)` — les champs où la signature fermée et
+  les attributs dérivés du parcours (`attributes`) divergent ; vide quand les
+  deux dérivations s'accordent. `verify_all()` fait cette lecture pour les 17
+  groupes.
+
+Deux pièges que l'arithmétique exacte évite, et que les tests pincent :
+
+* l'ordre d'un élément se lit sur ses puissances **non réduites** — le carré
+  d'une glissade est une translation du réseau, qu'une réduction prématurée
+  confondrait avec l'identité ;
+* une même classe modulo le réseau peut porter **à la fois** un miroir et une
+  glissade (c'est le cas de `cm`) : miroir ou glissade se décide sur les
+  lignes du groupe, jamais sur le seul représentant.
+
+La signature ne dépend ni du choix des représentants ni de l'origine des
+coordonnées. Un jeu de générateurs dont les **parties linéaires** sont celles
+de `pmm` mais dont les éléments sont des glissades se referme sur `pgg` :
+c'est le contrôle positif des tests (`scripts/tests/test_wallpaper_closure.py`).
 
 ## Conventions de comptage
 
@@ -108,7 +147,10 @@ n'a été inventé pour combler ce vide.
 5. **Quelle autre série assure la vérification indépendante ?** Les tests
    contrôlent l'exactitude par l'algèbre (fermeture du groupe, invariance du
    réseau par chaque partie linéaire, multiplicité `|det(I - A)|` des
-   centres) — un contrôle indépendant du chemin de calcul du moteur.
+   centres) — un contrôle indépendant du chemin de calcul du moteur. Depuis
+   `symmetry.closure`, la fermeture est aussi un **organe** : la signature
+   lue sur l'ensemble fermé est comparée champ à champ à celle que dérive le
+   parcours, et les 17 groupes s'accordent sur les dix champs communs.
 
 La PR `claude/terra30-02` (hors flotte) dessine des frises et des rosaces
 dans `MyIA.AI.Notebooks/GenAI/Image/05-History/symmetry_art.py` ; elle ne

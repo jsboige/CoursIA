@@ -1,6 +1,6 @@
 # Double-clé de resynchronisation (`translation-override`) — voie normale d'une lane
 
-> REFERENCE — vivante — dernière révision 2026-11-20
+> REFERENCE — vivante — dernière révision 2026-11-24
 
 > **Statut** : référence opérationnelle. Ce document transpose dans le dépôt l'arbitrage
 > ai-01 du dispatch `c2760` (commentaire sur #20232, 2026-11-03), qui ne vivait jusqu'ici
@@ -154,7 +154,7 @@ la première ligne montrent que la voie est déjà empruntée en pratique ; ce d
 - `docs/i18n/CSV-by-series-design.md` — le design de l'infrastructure CSV par série
 - `docs/transients/2026-08-06-translations-root-diagnostic.md` — l'état des lieux du répertoire
   `translations/`
-- `docs/transients/2026-07-19-epic-4957-status.md` — l'état de clôture de l'Epic #4957 (Phase 1
+- `docs/translation/epic-4957-status.md` — l'état de clôture de l'Epic #4957 (Phase 1
   infrastructure livrée, Phase 2 rollout via PRs filles)
 
 ***

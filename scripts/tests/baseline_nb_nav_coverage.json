@@ -24,11 +24,11 @@
       "GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-CSharp.ipynb"
     ],
     "GenAI/Audio/02-Advanced": [
-      "GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb"
+      "GenAI/Audio/02-Advanced/Audio-02-7-YuE2-Song-Generation-Python.ipynb"
     ],
     "GenAI/Audio/04-Applications": [
-      "GenAI/Audio/04-Applications/04-15-MERT2-Music-Understanding.ipynb",
-      "GenAI/Audio/04-Applications/04-20-Separation-Avancee-Qualite.ipynb",
+      "GenAI/Audio/04-Applications/Audio-04-15-MERT2-Music-Understanding-Python.ipynb",
+      "GenAI/Audio/04-Applications/Audio-04-20-Separation-Avancee-Qualite-Python.ipynb",
       "GenAI/Audio/04-Applications/04-8-Lecture-Analytique.ipynb"
     ],
     "GenAI/Audio/05-Diffusion-from-scratch": [
@@ -71,7 +71,7 @@
       "GenAI/Texte/13b_Agent_Evaluation.ipynb"
     ],
     "GenAI/Texte/TransformerVariants": [
-      "GenAI/Texte/TransformerVariants/TV-00a-RoPE-from-scratch.ipynb"
+      "GenAI/Texte/TransformerVariants/TV-00a-RoPE-from-scratch-Python.ipynb"
     ],
     "IIT/ICT-Series": [
       "IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb",
@@ -310,16 +310,16 @@
       "SymbolicAI/SemanticWeb/SW-15-Coup-Argumentatif-Python.ipynb"
     ],
     "SymbolicAI/SymbolicLearning": [
-      "SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb",
-      "SymbolicAI/SymbolicLearning/SL-12-DifferentiableLogicGateNetworks.ipynb",
-      "SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction-output.ipynb",
-      "SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction.ipynb",
-      "SymbolicAI/SymbolicLearning/SL-14-AIFeynman-Discover-Equations.ipynb",
-      "SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb",
-      "SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb",
-      "SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb",
-      "SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb",
-      "SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb"
+      "SymbolicAI/SymbolicLearning/SL-01-LogicalLearning-CSharp.ipynb",
+      "SymbolicAI/SymbolicLearning/SL-12-DifferentiableLogicGateNetworks-Python.ipynb",
+      "SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction-output-Python.ipynb",
+      "SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction-Python.ipynb",
+      "SymbolicAI/SymbolicLearning/SL-14-AIFeynman-Discover-Equations-Python.ipynb",
+      "SymbolicAI/SymbolicLearning/SL-02-KnowledgeBasedLearning-CSharp.ipynb",
+      "SymbolicAI/SymbolicLearning/SL-03-RelevanceLearning-CSharp.ipynb",
+      "SymbolicAI/SymbolicLearning/SL-04-InductiveLogicProgramming-CSharp.ipynb",
+      "SymbolicAI/SymbolicLearning/SL-05-InverseResolution-CSharp.ipynb",
+      "SymbolicAI/SymbolicLearning/SL-06-ModernILP-CSharp.ipynb"
     ],
     "SymbolicAI/Tweety": [
       "SymbolicAI/Tweety/Tweety-04-Belief-Revision-CSharp.ipynb",
