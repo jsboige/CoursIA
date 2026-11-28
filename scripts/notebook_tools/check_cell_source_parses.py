@@ -281,7 +281,12 @@ def _diff_range(base: str, head: str) -> Iterable[str]:
     """
     try:
         cp = subprocess.run(
-            ["git", "diff", "--name-only", f"{base}...{head}"],
+            # `-c core.quotePath=false` : sans ce drapeau, git cite les chemins
+            # non ASCII et le chemin cite n'existe pas sur le disque -- le
+            # carnet etait ecarte en silence (faux vert). Precedent :
+            # `check_notebook_navlinks.py`.
+            ["git", "-c", "core.quotePath=false",
+             "diff", "--name-only", f"{base}...{head}"],
             cwd=REPO_ROOT,
             capture_output=True,
             text=True,

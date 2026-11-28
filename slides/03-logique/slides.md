@@ -47,6 +47,37 @@ layout: default
 - Planification
 - Representation de connaissances
 - TP: Mise en oeuvre de l'infrence en logique propositionnelle et en logique du premier ordre
+- Apprentissage symbolique : quand la logique apprend (pont vers V)
+
+---
+class: nb-map nb-k92
+---
+
+# La série SymbolicAI dans CoursIA : la carte
+
+<p class="nb-lead">Ce cours a son pendant exécutable : la série <code>SymbolicAI</code> du dépôt CoursIA. Chaque famille de notebooks reprend un chapitre et le fait tourner sur un vrai solveur, un vrai prouveur ou un vrai planificateur.</p>
+
+<div class="nb-grid nb-cols-4">
+
+<div class="nb-card"><p class="nb-step">Logiques formelles</p><p class="nb-what">Propositionnelle, premier ordre, modale, description, révision de croyances, argumentation de Dung, avec TweetyProject. Dossier : <code>Tweety</code>.</p></div>
+
+<div class="nb-card"><p class="nb-step">SAT et SMT</p><p class="nb-what">Modéliser en contraintes, résoudre avec Z3, expliquer une insatisfiabilité, optimiser. Dossier : <code>SMT</code>.</p></div>
+
+<div class="nb-card"><p class="nb-step">Planification</p><p class="nb-what">PDDL, espace d’états, heuristiques, temporel, hiérarchique, LLM planificateurs. Dossier : <code>Planners</code>.</p></div>
+
+<div class="nb-card"><p class="nb-step">Web sémantique</p><p class="nb-what">RDF, SPARQL, RDFS, OWL, SHACL, graphes de connaissances, raisonneurs. Dossier : <code>SemanticWeb</code>.</p></div>
+
+<div class="nb-card"><p class="nb-step">Analyse argumentative</p><p class="nb-what">Toulmin, Walton, sophismes, dialogues, maintenance de vérité, ontologie AIF. Dossier : <code>ArgumentAnalysis</code>.</p></div>
+
+<div class="nb-card"><p class="nb-step">Apprentissage symbolique</p><p class="nb-what">Espace des versions, explications, ILP, automates, neuro-symbolique. Dossier : <code>SymbolicLearning</code>.</p></div>
+
+<div class="nb-card"><p class="nb-step">Preuve formelle</p><p class="nb-what">Lean 4 : types dépendants, tactiques, Mathlib, preuve assistée par LLM, mathématiques formalisées. Dossier : <code>Lean</code>.</p></div>
+
+<div class="nb-card"><p class="nb-step">Smart contracts</p><p class="nb-what">Solidity, tests et fuzzing, vérification formelle, preuves à divulgation nulle. Dossier : <code>SmartContracts</code>.</p></div>
+
+</div>
+
+<p class="nb-foot"><strong>Mode d’emploi.</strong> Les planches « carte » de chaque chapitre renvoient aux notebooks sur GitHub ; « À observer » donne la question à trancher en les exécutant.</p>
 
 ---
 layout: section
@@ -55,23 +86,20 @@ layout: section
 # Agents fondes sur les connaissances
 ---
 layout: compact
+class: fig
 ---
 
 
 # Agents fondes sur les connaissances
 
+<TeachingStep placement="end" size="md">
+
 ## Fonction KB-AGENT
-
-<div class="img-stack absolute" style="top: 60px; right: 30px; width: 380px;">
-
-<img src="./images/img_001.png" alt="Pseudocode KB-AGENT : fonction Tell/Ask avec compteur de temps et base de connaissances persistante" />
-
-</div>
 
 ```
 fonction KB-AGENT(percept) retourne une action
   persistante: KB, une base de connaissances
-               t, un compteur, initialement a 0, qui indique le temps
+               t, un compteur, initialement a 0
 
   Tell(KB, Creer-Enonce-Percept(percept, t))
   action <- Ask(KB, Creer-Requete-Action(t))
@@ -82,12 +110,6 @@ fonction KB-AGENT(percept) retourne une action
 
 ## Composants
 
-<div class="img-stack absolute" style="top: 60px; right: 30px; width: 380px;">
-
-<img src="./images/img_002.png" alt="Architecture d'un agent base sur les connaissances : KB, moteur d'inference, module d'action" />
-
-</div>
-
 - Une base de connaissance (KB), composee d'enonces formules dans un langage formel de representation des connaissances
 - Un système d'infrence (raisonnement) qui produit de nouveaux enonces pour prendre des decisions
 
@@ -95,6 +117,12 @@ fonction KB-AGENT(percept) retourne une action
 
 - Tell (-> KB) : Ajouter des connaissances
 - Ask (<- KB) : Interroger la base
+
+<template #visual>
+<img src="./images/img_002.png" alt="Architecture d'un agent base sur les connaissances : KB, moteur d'inference, module d'action" />
+</template>
+
+</TeachingStep>
 
 ---
 layout: default
@@ -108,12 +136,12 @@ layout: default
 
 ---
 layout: default
+class: fig
 ---
 
 # Exemple: le monde du Wumpus
 
-<img src="./images/img_003.png" style="position:absolute; top:50px; right:10px; height:280px;" alt="Grille du monde du Wumpus" />
-
+<TeachingStep placement="end" size="lg">
 
 ## Jeu de rôle simpliste
 
@@ -134,30 +162,46 @@ layout: default
 - Odeur, brise, lueur, choc, cri
   -> Vecteur
 
+<template #visual>
+<img src="./images/img_003.png" alt="Grille du monde du Wumpus" />
+</template>
+
+</TeachingStep>
+
 ---
 layout: default
+class: fig
 ---
 
 # Monde du Wumpus : symboles
 
-- A = Agent
-- B = Brise
-- L = Lueur/Or
-- OK = Case sure
-- P = Puits
-- O = Odeur
-- V = Visite
-- W = Wumpus
+<TeachingStep placement="end" size="lg" class="fig-xl">
 
-<img src="./images/img_004.png" style="position:absolute; top:60px; right:20px; height:300px;" alt="Grille du Wumpus annotee avec les symboles P?, W!, A, O, L, B, V, OK" />
+- **A** = Agent
+- **B** = Brise
+- **L** = Lueur / Or
+- **OK** = Case sûre
+- **P** = Puits
+- **O** = Odeur
+- **V** = Visité
+- **W** = Wumpus
+
+<template #visual>
+<img src="./images/img_004.png" alt="Grille du Wumpus annotee avec les symboles P?, W!, A, O, L, B, V, OK" />
+</template>
+
+</TeachingStep>
 
 
 ---
 layout: default
+class: fig
 ---
 
 
 # Representation et logique
+
+<TeachingStep placement="end" size="lg">
 
 ## Syntaxe
 
@@ -174,14 +218,14 @@ layout: default
 
 ## Connecteurs logiques
 
-- NON (negation)
-- ET (conjonction)
-- OU (disjonction)
-- IMPLIQUE (implication)
-- EQUIVAUT (equivalence)
+- NON (negation), ET (conjonction), OU (disjonction)
+- IMPLIQUE (implication), EQUIVAUT (equivalence)
 
+<template #visual>
+<img src="./images/img_007.png" alt="Relation sémantique enonces et monde réel" />
+</template>
 
-<img src="./images/img_007.png" style="position:absolute; top:60px; right:20px; width:300px;" alt="Relation sémantique enonces et monde réel" />
+</TeachingStep>
 
 ---
 layout: default
@@ -223,7 +267,7 @@ layout: default
 | Ordre superieur (HOL) | Relations, fonctions | Relations | Non |
 | Modale | + mondes possibles | Necessaire/possible | Selon variante |
 
-*Notebooks : [Tweety-02-Basic-Logics-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb) (propositionnelle et premier ordre) · [Tweety-03-Advanced-Logics-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-CSharp.ipynb) (description, modale, QBF, conditionnelle) · [Lean-01-Setup-Lean-Python](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb) (ordre superieur).*
+*Notebooks : [Tweety-02-Basic-Logics-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb) (propositionnelle et premier ordre) · [Tweety-03-Advanced-Logics-CSharp](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-CSharp.ipynb) (description, modale, QBF, conditionnelle) · [Lean-01-Setup-Lean-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb) (ordre superieur).*
 
 ---
 layout: section
@@ -256,18 +300,15 @@ layout: default
 
 ---
 layout: default
+class: fig
 ---
 
 
 # Syntaxe de la logique propositionnelle
 
+<TeachingStep placement="end" size="lg">
+
 ## Symboles
-
-<div class="img-stack absolute" style="top: 60px; right: 30px; width: 380px;">
-
-<img src="./images/img_005.png" alt="Tableau des symboles logiques : connecteurs NON, ET, OU, IMPLIQUE, EQUIVAUT, parentheses" />
-
-</div>
 
 - Propositions: P, Q, R, ...
 - Connecteurs: ET, OU, NON, =>, <=>
@@ -280,51 +321,47 @@ layout: default
 3. Si P et Q sont des FBF, (P ET Q), (P OU Q), (P => Q), (P <=> Q) sont des FBF
 4. Rien d'autre n'est une FBF
 
+<template #visual>
+<img src="./images/img_008.png" alt="Grammaire BNF de la logique propositionnelle" />
+</template>
 
-<img src="./images/img_008.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Grammaire BNF logique propositionnelle" />
+</TeachingStep>
 
 ---
 layout: default
+class: fig
 ---
 
 # Sémantique de la logique propositionnelle
 
+<TeachingStep placement="end" size="lg">
+
 ## Interpretation
 
 - Attribution d'une valeur de verite (Vrai/Faux) a chaque proposition
-
-## Tables de verite
-
-<div class="img-stack">
-
-<img src="./images/img_009.png" alt="Tables de verite pour NON, ET, OU, IMPLIQUE, EQUIVAUT : colonnes p, q, op1, op2 avec résultats booléens 0/1" />
-
-</div>
-
-<table style="border-collapse:collapse; margin: 0.4em 0 1em 0; font-size: 0.92em;">
-<thead>
-<tr style="background:#8B1A1A; color:#fff;">
-<th style="padding:4px 14px; border:1px solid #8B1A1A;">P</th>
-<th style="padding:4px 14px; border:1px solid #8B1A1A;">Q</th>
-<th style="padding:4px 14px; border:1px solid #8B1A1A;">P ET Q</th>
-<th style="padding:4px 14px; border:1px solid #8B1A1A;">P OU Q</th>
-<th style="padding:4px 14px; border:1px solid #8B1A1A;">P =&gt; Q</th>
-<th style="padding:4px 14px; border:1px solid #8B1A1A;">P &lt;=&gt; Q</th>
-</tr>
-</thead>
-<tbody>
-<tr><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td></tr>
-<tr><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">F</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">F</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">F</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">F</td></tr>
-<tr><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">F</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">F</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">F</td></tr>
-<tr><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">F</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">F</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">F</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">F</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td><td style="padding:3px 14px; border:1px solid #ccc; text-align:center;">V</td></tr>
-</tbody>
-</table>
 
 ## Satisfaction
 
 - Une interpretation satisfait une formule si la formule est vraie sous cette interpretation
 - Une formule est **satisfaisable** s'il existe au moins une interpretation qui la satisfait
 - Une formule est **valide** (tautologie) si elle est satisfaite par toute interpretation
+
+<template #visual>
+<div>
+
+**Tables de verite**
+
+| P | Q | P ET Q | P OU Q | P => Q | P <=> Q |
+|:-:|:-:|:-:|:-:|:-:|:-:|
+| V | V | V | V | V | V |
+| V | F | F | V | F | F |
+| F | V | F | V | V | F |
+| F | F | F | F | V | V |
+
+</div>
+</template>
+
+</TeachingStep>
 
 ---
 layout: default
@@ -334,11 +371,9 @@ layout: default
 
 ## Entailment (consequence sémantique)
 
-<div class="img-stack absolute" style="top: 60px; right: 30px; width: 380px;">
-
-<img src="./images/img_006.png" alt="Diagramme entailment : KB |= alpha, la base de connaissances KB implique l'enonce alpha" />
-
-</div>
+$$
+\alpha \models \beta \iff M(\alpha) \subseteq M(\beta)
+$$
 
 - KB |= alpha : "KB entraine alpha"
 - Alpha est vrai dans tous les modèles ou KB est vrai
@@ -358,10 +393,13 @@ layout: default
 
 ---
 layout: default
+class: fig
 ---
 
 
 # Règles d'inférence
+
+<TeachingStep placement="end" size="lg">
 
 <div class="dense-list">
 
@@ -392,7 +430,11 @@ layout: default
 
 </div>
 
-<img src="./images/img_011.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Equivalences logiques" />
+<template #visual>
+<img src="./images/img_011.png" alt="Equivalences logiques" />
+</template>
+
+</TeachingStep>
 
 ---
 layout: default
@@ -420,13 +462,13 @@ layout: default
 - Si une clause a un seul litteral: P, (NON P OU Q) |- Q
 
 ---
-layout: image-overlay
-image: ./images/img_015.png
+layout: default
+class: fig
 ---
 
 # Resolution - Algorithme
 
-<div style="background: rgba(245,245,245,0.92); padding: 1.2em 1.6em; border-radius: 6px; max-width: 60%;">
+<TeachingStep placement="end" size="lg">
 
 ## Algorithme de resolution
 
@@ -436,17 +478,20 @@ image: ./images/img_015.png
 
 **Résultat** : si la clause vide est derivee, alors KB |= alpha (preuve par refutation).
 
-</div>
+<template #visual>
+<img src="./images/img_015.png" alt="Pseudocode PL-RESOLUTION : clauses de KB et de NON alpha, resolution par paires jusqu'a la clause vide ou point fixe" />
+</template>
+
+</TeachingStep>
 
 ---
-layout: default
+layout: compact
+class: fig
 ---
 
 # Forward et Backward Chaining
 
-<img src="./images/img_014.png" style="position:absolute; top:84px; right:26px; width:350px;" alt="Equivalences logiques et chainage" />
-<img src="./images/img_013.png" style="position:absolute; bottom:26px; right:44px; width:165px;" alt="Clauses Forward Chaining" />
-
+<TeachingStep placement="end" size="md">
 
 ## Forward Chaining (chaîne avant)
 
@@ -465,6 +510,14 @@ layout: default
 - Forward: mieux quand les faits sont peu nombreux et les buts nombreux
 - Backward: mieux quand les buts sont peu nombreux et les faits nombreux
 
+<template #visual>
+<div class="fig-stack">
+<img src="./images/img_014.png" alt="Equivalences logiques et chainage" />
+<img src="./images/img_013.png" alt="Clauses Forward Chaining" />
+</div>
+</template>
+
+</TeachingStep>
 
 ---
 layout: default
@@ -493,10 +546,13 @@ layout: default
 
 ---
 layout: default
+class: fig
 ---
 
 
 # Procedure d'inference simple
+
+<TeachingStep placement="end" size="lg">
 
 ## Approche par verification de modèle (truth table)
 
@@ -508,15 +564,21 @@ layout: default
 - Procedure **coherente** et **complete** (par definition)
 - Mais **couteuse** : exponentielle en fonction du nombre de symboles
 
+<template #visual>
+<img src="./images/img_010.png" alt="Procedure d'inference par verification de modèle" />
+</template>
 
-<img src="./images/img_010.png" style="position:absolute; top:50px; right:20px; width:350px;" alt="Procedure d'inference par verification de modèle" />
+</TeachingStep>
 
 ---
-layout: default
+layout: compact
+class: fig
 ---
 
 
 # Backtracking complet (DPLL)
+
+<TeachingStep placement="end" size="md">
 
 ## Algorithmes efficaces pour la satisfiabilite (SAT)
 
@@ -530,10 +592,13 @@ layout: default
 - **Heuristique des symboles purs** : toujours le même signe -> litteral doit etre vrai
 - **Heuristique des clauses unitaires** : assignation de ces clauses en premier
 
+<template #visual>
+<img src="./images/img_016.png" alt="Algorithme DPLL" />
+</template>
 
-<img src="./images/img_016.png" style="position:absolute; top:50px; right:20px; width:320px;" alt="Algorithme DPLL" />
+</TeachingStep>
 
-*Notebooks : [Z3-Python-01-Introduction](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb) (SAT et SMT par API) · [Tweety-03-QBF-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-QBF-CSharp.ipynb) (quantification booleenne).*
+<p class="nb-ref">Notebooks : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb" target="_blank" rel="noopener">Z3-Python-01-Introduction</a> (SAT et SMT par API) · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-QBF-CSharp.ipynb" target="_blank" rel="noopener">Tweety-03-QBF-CSharp</a> (quantification booleenne).</p>
 
 ---
 layout: default
@@ -555,14 +620,17 @@ layout: default
 - Verification de protocoles
 - Model checking
 
-*Notebooks : [App-23-PRESENT-Differential-Cryptanalysis-SAT-Python](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-23-PRESENT-Differential-Cryptanalysis-SAT-Python.ipynb) (cryptanalyse ramenee a SAT) · [Z3-Python-14-BitVectors-Overflow](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb) (arithmetique machine, verification de code).*
+*Notebooks : [App-23-PRESENT-Differential-Cryptanalysis-SAT-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-23-PRESENT-Differential-Cryptanalysis-SAT-Python.ipynb) (cryptanalyse ramenee a SAT) · [Z3-Python-14-BitVectors-Overflow](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb) (arithmetique machine, verification de code).*
 
 ---
 layout: default
+class: fig
 ---
 
 
 # Exploration locale
+
+<TeachingStep placement="end" size="lg">
 
 ## Principe
 
@@ -575,10 +643,63 @@ layout: default
 - Ratio nb clauses / nb symboles -> seuil de satisfiabilite
 - NP-complet souvent au seuil
 
+<template #visual>
+<img src="./images/img_017.png" alt="Exploration locale pour SAT" />
+</template>
 
-<img src="./images/img_017.png" style="position:absolute; top:50px; right:20px; width:300px;" alt="Exploration locale pour SAT" />
+</TeachingStep>
 
-*Notebooks : [14_Optimize_MaxSAT](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/14_Optimize_MaxSAT.ipynb) (relachement vers MaxSAT) · [Tweety-04-Belief-Revision-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb) (MaxSAT et incoherence).*
+<p class="nb-ref">Notebooks : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/14_Optimize_MaxSAT.ipynb" target="_blank" rel="noopener">14_Optimize_MaxSAT</a> (relachement vers MaxSAT) · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb" target="_blank" rel="noopener">Tweety-04-Belief-Revision-Python</a> (MaxSAT et incoherence).</p>
+
+---
+class: nb-map nb-k96
+---
+
+# SAT et SMT avec Z3 : modéliser, résoudre, expliquer
+
+<p class="nb-lead">DPLL et la recherche locale tournent au cœur des solveurs modernes. La série SMT s’en sert à travers Z3 : on écrit le modèle, le solveur cherche — et tout l’art est dans le modèle.</p>
+
+<div class="nb-grid nb-cols-3">
+
+<div class="nb-card"><p class="nb-step">Premiers pas</p><p class="nb-what">Variables, contraintes, <code>check()</code> et <code>model()</code> : satisfaisable ou non, et avec quel témoin.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb" target="_blank" rel="noopener">Z3-01 Python</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-CSharp.ipynb" target="_blank" rel="noopener">Z3-01 C#</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Des règles aux contraintes</p><p class="nb-what">Sudoku, énigme d’Einstein : traduire des règles en contraintes et laisser le solveur propager.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-02-Sudoku-Python.ipynb" target="_blank" rel="noopener">Z3-02-Sudoku</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb" target="_blank" rel="noopener">Z3-09-Einstein</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Tactiques et théories</p><p class="nb-what">Bit-vecteurs, tableaux, chaînes : choisir la théorie et la stratégie de résolution.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-03-Tactics-Python.ipynb" target="_blank" rel="noopener">Z3-03-Tactics</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-Python.ipynb" target="_blank" rel="noopener">Z3-04-Strings</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Prouver par réfutation</p><p class="nb-what">Une propriété est valide si sa négation est insatisfaisable : le solveur devient prouveur.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-Python.ipynb" target="_blank" rel="noopener">Z3-05-Quantifiers-Proofs</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Expliquer l’échec</p><p class="nb-what">Un noyau d’insatisfiabilité désigne les contraintes incompatibles entre elles.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb" target="_blank" rel="noopener">Z3-13-UnsatCores</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Optimiser</p><p class="nb-what">Contraintes molles et MaxSAT : de « existe-t-il ? » à « quelle est la meilleure ? ».</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb" target="_blank" rel="noopener">Z3-06-Optimization</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/14_Optimize_MaxSAT.ipynb" target="_blank" rel="noopener">14_Optimize_MaxSAT</a></p></div>
+
+</div>
+
+<p class="nb-foot"><strong>À observer.</strong> Le solveur ne connaît aucune règle de Sudoku : d’où vient alors sa rapidité sur une grille difficile ?</p>
+
+---
+class: nb-concept nb-center nb-k90
+---
+
+# Le Sudoku en contraintes : le modèle fait le travail
+
+<p class="nb-lead">Un humain résout un Sudoku avec des techniques ; Z3 ne reçoit que la description de ce qu’est une grille valide. La modélisation déclarative remplace l’algorithme.</p>
+
+<div class="nb-grid nb-cols-2">
+
+<div class="nb-card"><p class="nb-step">Variables</p><p class="nb-what">Une variable entière par case, de domaine 1 à 9 ; les chiffres donnés fixent certaines cases.</p></div>
+
+<div class="nb-card"><p class="nb-step">Contraintes</p><p class="nb-what"><code>Distinct</code> sur chaque ligne, chaque colonne et chaque bloc : c’est toute la règle du jeu.</p></div>
+
+<div class="nb-card"><p class="nb-step">Résolution</p><p class="nb-what"><code>check()</code> répond <code>sat</code> et le modèle est la grille complétée ; <code>unsat</code> prouve qu’elle n’a pas de solution.</p></div>
+
+<div class="nb-card"><p class="nb-step">Unicité</p><p class="nb-what">Interdire la solution trouvée puis relancer : un second <code>sat</code> révèle une grille à solutions multiples.</p></div>
+
+</div>
+
+<p class="nb-foot"><strong>À observer.</strong> Ajoutez la contrainte anti-diagonale de l’exercice 1 : combien de lignes de modèle faut-il changer, et l’algorithme, lui, change-t-il ?</p>
+
+<p class="notebook-reference">Notebook : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-02-Sudoku-Python.ipynb" target="_blank" rel="noopener">Z3-02-Sudoku-Python.ipynb</a>.</p>
 
 ---
 layout: default
@@ -607,10 +728,13 @@ layout: default
 
 ---
 layout: default
+class: fig
 ---
 
 
 # Agents fondes sur la logique propositionnelle (2/2)
+
+<TeachingStep placement="end" size="lg">
 
 ## Agent hybride
 
@@ -626,8 +750,11 @@ layout: default
 
 - = estimation des etats
 
+<template #visual>
+<img src="./images/img_018.png" alt="Agent hybride logique propositionnelle" />
+</template>
 
-<img src="./images/img_018.png" style="position:absolute; top:50px; right:20px; width:300px;" alt="Agent hybride logique propositionnelle" />
+</TeachingStep>
 
 ---
 layout: default
@@ -673,6 +800,32 @@ layout: default
 - Hybride / SatPlan
 
 ---
+class: nb-map nb-k96
+---
+
+# Logiques formelles avec Tweety : écrire, interroger, certifier
+
+<p class="nb-lead">TweetyProject offre une bibliothèque Java de logiques, appelée ici depuis Python ou C#. Les labos les plus récents font répondre Tweety, puis certifier la réponse par le noyau de Lean.</p>
+
+<div class="nb-grid nb-cols-3">
+
+<div class="nb-card"><p class="nb-step">Installer</p><p class="nb-what">JVM, bibliothèques Tweety et solveurs externes : un environnement réel, vérifié dès la première cellule.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-01-Setup-Python.ipynb" target="_blank" rel="noopener">Tweety-01-Setup</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Propositionnel et premier ordre</p><p class="nb-what">Écrire des bases de connaissances, interroger un raisonneur, parcourir les mondes possibles.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb" target="_blank" rel="noopener">Tweety-02 Python</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02b-Semantics-CSharp.ipynb" target="_blank" rel="noopener">Tweety-02b C#</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Validité et contre-modèle</p><p class="nb-what">Une formule est prouvée valide, ou un contre-modèle est exhibé : deux réponses, deux certificats.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05e-Propositional-Lab-Lean-Python.ipynb" target="_blank" rel="noopener">Tweety-05e-Propositional-Lab</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Calculs de preuve</p><p class="nb-what">Systèmes de Hilbert et calcul des séquents de Gentzen, élimination des coupures.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02e-Preuves-Hilbert-Gentzen-Lean-Python.ipynb" target="_blank" rel="noopener">Tweety-02e-Hilbert-Gentzen</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Logiques avancées</p><p class="nb-what">Logiques de description, modale, booléenne quantifiée (QBF), conditionnelle.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-Python.ipynb" target="_blank" rel="noopener">Tweety-03 Python</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-QBF-CSharp.ipynb" target="_blank" rel="noopener">Tweety-03-QBF C#</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Base incohérente</p><p class="nb-what">Révision de croyances, ensembles minimaux incohérents, mesures d’incohérence.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb" target="_blank" rel="noopener">Tweety-04-Belief-Revision</a></p></div>
+
+</div>
+
+<p class="nb-foot"><strong>À observer.</strong> Quand le raisonneur répond « non valide », qu’est-ce qui le prouve : l’absence de preuve, ou la présence d’un contre-modèle ?</p>
+
+---
 layout: section
 ---
 
@@ -700,10 +853,13 @@ layout: default
 
 ---
 layout: default
+class: fig
 ---
 
 
 # Syntaxe de la logique du premier ordre
+
+<TeachingStep placement="end" size="lg">
 
 ## Termes
 
@@ -723,14 +879,20 @@ layout: default
   - Quel que soit (pour tout): ∀x P(x)
   - Il existe: ∃x P(x)
 
+<template #visual>
+<img src="./images/img_019.png" alt="Grammaire BNF FOL" />
+</template>
 
-<img src="./images/img_019.png" style="position:absolute; top:50px; right:10px; width:320px;" alt="Grammaire BNF FOL" />
+</TeachingStep>
 
 ---
-layout: default
+layout: compact
+class: fig
 ---
 
 # Sémantique de la logique du premier ordre
+
+<TeachingStep placement="end" size="lg">
 
 ## Interpretation
 
@@ -741,18 +903,18 @@ layout: default
 
 ## Satisfaction
 
-<div class="img-stack absolute" style="top: 60px; right: 30px; width: 380px;">
-
-<img src="./images/img_012.png" alt="Règles de satisfaction FOL : Tautologie, Contradiction, Satisfaisable avec exemples" />
-
-</div>
-
 - Une interpretation satisfait ∀x P(x) si P(x) est vrai pour tout élément du domaine
 - Une interpretation satisfait ∃x P(x) si P(x) est vrai pour au moins un élément
 
 ## Modèle
 
 - Une interpretation qui satisfait une formule
+
+<template #visual>
+<img src="./images/img_012.png" alt="Règles de satisfaction FOL : Tautologie, Contradiction, Satisfaisable avec exemples" />
+</template>
+
+</TeachingStep>
 
 ---
 layout: default
@@ -856,10 +1018,13 @@ layout: default
 
 ---
 layout: default
+class: fig
 ---
 
 
 # Aparte : Analyse rhetorique
+
+<TeachingStep placement="end" size="lg">
 
 ## Introduction a l'argumentation
 
@@ -875,9 +1040,14 @@ layout: default
 - Qualites argumentatives
 - Jeu de cartes
 
+<template #visual>
+<div class="fig-row">
+<img src="./images/img_020.png" alt="Carte heuristique de la taxonomie des arguments fallacieux" />
+<img src="./images/img_021.jpg" alt="Cartes argumentation" />
+</div>
+</template>
 
-<img src="./images/img_020.png" style="position:absolute; top:50px; right:20px; width:250px;" alt="Ontologie et argumentation" />
-<img src="./images/img_021.jpg" style="position:absolute; bottom:10px; right:20px; width:200px;" alt="Cartes argumentation" />
+</TeachingStep>
 
 ---
 layout: default
@@ -1097,13 +1267,13 @@ layout: default
 - "Who's a criminal?"
 
 ---
-layout: default
+layout: compact
+class: fig
 ---
 
 # Procedures d'inference en FOL (2/2)
 
-
-<img src="./images/img_022.png" style="position:absolute; top:84px; right:28px; width:365px;" alt="Arbre backward chaining Criminal(West)" />
+<TeachingStep placement="end" size="md">
 
 ## Resolution
 
@@ -1116,6 +1286,12 @@ layout: default
 - p ∨ (q ∧ r) <-> p + (q * r)
 - Prolog: `cat(X) :- furry(X), meows(X), has(X, claws)`
 - Lispy: `(forall ?x (implies (and (furry ?x) (meows ?x) (has ?x claws)) (cat ?x)))`
+
+<template #visual>
+<img src="./images/img_022.png" alt="Arbre backward chaining Criminal(West)" />
+</template>
+
+</TeachingStep>
 
 ---
 layout: default
@@ -1171,7 +1347,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Comparer recursivement les termes
 - Remplacer les variables par des termes plus spécifiques
 
-*Notebooks : [SL-5-InverseResolution](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb) (unification remontee a l'envers) · [SL-4-InductiveLogicProgramming](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb) (apprendre des regles).*
+*Notebooks : [SL-05-InverseResolution-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-05-InverseResolution-Python.ipynb) (unification remontee a l'envers) · [SL-04-InductiveLogicProgramming-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-04-InductiveLogicProgramming-Python.ipynb) (apprendre des regles).*
 
 ---
 layout: default
@@ -1196,12 +1372,12 @@ layout: default
 
 ---
 layout: default
+class: fig
 ---
 
 # Backward chaining en FOL
 
-<img src="./images/img_022.png" style="position:absolute; top:50px; right:10px; width:400px;" alt="Arbre backward chaining Criminal(West)" />
-
+<TeachingStep placement="end" size="lg">
 
 ## Principe
 
@@ -1218,6 +1394,11 @@ layout: default
 - Nouveau but: Humain(Socrate)
 - Fait connu: Humain(Socrate) -> Succes!
 
+<template #visual>
+<img src="./images/img_022.png" alt="Arbre backward chaining Criminal(West)" />
+</template>
+
+</TeachingStep>
 
 ---
 layout: default
@@ -1247,37 +1428,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Substitution: &#123;x/Jean&#125;
 - Resolvante: (Q(Jean) OU R(y))
 
-*Notebooks : [Tweety-02c-FOL-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02c-FOL-CSharp.ipynb) (FOL avec EProver) · [Z3-Python-05-Quantifiers-Proofs](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-Python.ipynb) (quantificateurs et preuves).*
-
----
-layout: default
----
-
-# Resolution inverse et apprentissage inductif
-
-<style scoped>
-.slidev-layout { font-size: 0.88em; }
-h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
-</style>
-
-## De la preuve a l'hypothese
-
-- La resolution **derive** des consequences a partir de clauses donnees
-- **Resolution inverse** : remonter la regle pour proposer la clause manquante qui, ajoutee a la base, rend la consequence derivable
-- La machine propose l'hypothese, la logique la **valide** — c'est un renversement du sens de l'inference
-
-## Apprentissage inductif (ILP)
-
-- Entrees : exemples positifs, exemples negatifs, connaissance de fond
-- Sortie : un programme logique qui couvre les positifs et exclut les negatifs
-- Cadre theorique : apprentissage dans la limite, biais inductif declare
-
-## Pourquoi cela compte en 2026
-
-- Un LLM propose des regles plausibles mais **non garanties** ; l'ILP en etablit la coherence avec les exemples
-- La regle apprise reste un enonce de la base : elle est verifiable, pas seulement plausible
-
-*Notebooks : [SL-5-InverseResolution](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb) (resolution remontee) · [SL-4-InductiveLogicProgramming](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb) (ILP) · [SL-1-LogicalLearning](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb).*
+*Notebooks : [Tweety-02c-FOL-CSharp](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02c-FOL-CSharp.ipynb) (FOL avec EProver) · [Z3-Python-05-Quantifiers-Proofs](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-Python.ipynb) (quantificateurs et preuves).*
 
 ---
 layout: default
@@ -1310,7 +1461,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - **E-prover** : demonstrateur automatique pour FOL
 - **Lean** : assistant de preuve interactif, très actif en mathematiques
 
-*Notebooks : [Tweety-02c-FOL-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02c-FOL-CSharp.ipynb) (EProver pilote depuis Python) · [Lean-01-Setup-Lean-Python](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb) (ordre superieur en Lean 4).*
+*Notebooks : [Tweety-02c-FOL-CSharp](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02c-FOL-CSharp.ipynb) (EProver pilote depuis Python) · [Lean-01-Setup-Lean-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb) (ordre superieur en Lean 4).*
 
 ---
 layout: default
@@ -1350,7 +1501,31 @@ layout: default
 - Argumentation (raisonnement modal, mondes possibles)
 - Argumentum
 
-*Notebooks : [Tweety-03-ModalLogic-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-ModalLogic-CSharp.ipynb) (modale, SPASS-XDB) · [Tweety-03-Conditional-Logics-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Conditional-Logics-CSharp.ipynb) (logiques conditionnelles).*
+*Notebooks : [Tweety-03-ModalLogic-CSharp](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-ModalLogic-CSharp.ipynb) (modale, SPASS-XDB) · [Tweety-03-Conditional-Logics-CSharp](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Conditional-Logics-CSharp.ipynb) (logiques conditionnelles).*
+
+---
+class: nb-concept nb-center nb-k94
+---
+
+# Logique modale : Kripke répond, Lean certifie
+
+<p class="nb-lead">Un schéma modal (T, 4, 5) est valide sur une classe de cadres de Kripke. Le labo vérifie cette correspondance de deux façons indépendantes : par calcul sur des cadres finis, puis par preuve dans le noyau de Lean.</p>
+
+<div class="nb-grid nb-cols-2">
+
+<div class="nb-card"><p class="nb-step">La syntaxe</p><p class="nb-what">Tweety manipule les formules et les schémas, mais ne tranche pas leur validité.</p></div>
+
+<div class="nb-card"><p class="nb-step">La sémantique</p><p class="nb-what">Un petit moteur de Kripke évalue chaque formule dans chaque monde d’un cadre fini.</p></div>
+
+<div class="nb-card"><p class="nb-step">Les témoins</p><p class="nb-what">Trois cadres cassent respectivement T, 4 et 5 : réflexivité, transitivité, euclidianité.</p></div>
+
+<div class="nb-card"><p class="nb-step">La certification</p><p class="nb-what">Le même résultat, prouvé dans Lean : « non valide » devient une preuve d’existence d’un contre-modèle.</p></div>
+
+</div>
+
+<p class="nb-foot"><strong>À observer.</strong> Le calcul sur cadres finis et la preuve Lean donnent-ils toujours le même verdict ? Où s’arrête ce que le comptage peut établir ?</p>
+
+<p class="notebook-reference">Notebooks : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03b-Modal-Lab-Lean-Python.ipynb" target="_blank" rel="noopener">Tweety-03b-Modal-Lab-Lean-Python.ipynb</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02f-Modal-Zoo-Lean-Python.ipynb" target="_blank" rel="noopener">Tweety-02f-Modal-Zoo-Lean-Python.ipynb</a>.</p>
 
 ---
 layout: default
@@ -1387,14 +1562,16 @@ layout: default
   - Coherence des ensembles et forces contextuels des arguments
 - **Argumentum**
 
-*Notebooks : [Tweety-05-Abstract-Argumentation-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb) (Dung, semantiques, CF2) · [Tweety-06-Structured-Argumentation-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb) (ASPIC+, ABA) · [Argument_Analysis_Dung_AF_Semantics](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb).*
+*Notebooks : [Tweety-05-Abstract-Argumentation-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb) (Dung, semantiques, CF2) · [Tweety-06-Structured-Argumentation-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb) (ASPIC+, ABA) · [Argument_Analysis_Dung_AF_Semantics](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb).*
 
 ---
-layout: default
+layout: compact
+class: fig
 ---
 
 # Argument mining
 
+<TeachingStep placement="end" size="lg">
 
 ## Objectif
 
@@ -1412,10 +1589,63 @@ layout: default
 - Importance du travail collaboratif
 - Debat, jeux de dialogue : "statement, challenge, defense"
 
+<template #visual>
+<img src="./images/img_023.png" alt="Argument mining structure" />
+</template>
 
-<img src="./images/img_023.png" style="position:absolute; top:50px; right:20px; width:300px;" alt="Argument mining structure" />
+</TeachingStep>
 
-*Notebooks : [Argumentation-Onto-01-AIF-OWL2-Python](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb) (ontologie AIF+) · [Argument_Analysis_Toulmin_Model](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-01-Toulmin-Model-Python.ipynb) · [Argument_Analysis_Agentic-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02-Fallacies-Detection-Python.ipynb) (reconstruction depuis le texte).*
+<p class="nb-ref">Notebooks : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb" target="_blank" rel="noopener">Argumentation-Onto-01-AIF-OWL2-Python</a> (ontologie AIF+) · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-01-Toulmin-Model-Python.ipynb" target="_blank" rel="noopener">Argument_Analysis_Toulmin_Model</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02-Fallacies-Detection-Python.ipynb" target="_blank" rel="noopener">Argument_Analysis_Agentic-1-informal</a> (reconstruction depuis le texte).</p>
+
+---
+class: nb-map nb-k96
+---
+
+# Argumentation : des cadres abstraits à l’analyse de textes
+
+<p class="nb-lead">Deux familles se complètent : <code>Tweety</code> calcule sur des cadres formels, <code>ArgumentAnalysis</code> part du texte argumentatif pour en extraire la structure.</p>
+
+<div class="nb-grid nb-cols-3">
+
+<div class="nb-card"><p class="nb-step">Cadres de Dung</p><p class="nb-what">Arguments, attaques, extensions : qui est accepté, selon quelle sémantique.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb" target="_blank" rel="noopener">Tweety-05</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb" target="_blank" rel="noopener">Argumentation-03-Dung</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Argumentation structurée</p><p class="nb-what">ASPIC+, DeLP, ABA : les arguments sont construits à partir de règles strictes et défaisables.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb" target="_blank" rel="noopener">Tweety-06</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Aspic-CSharp.ipynb" target="_blank" rel="noopener">Tweety-04-Aspic C#</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Valeurs et classements</p><p class="nb-what">Valeurs (VAF), classement gradué, cadres dialectiques (ADF).</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03b-Value-Based-AF-Python.ipynb" target="_blank" rel="noopener">03b-VAF</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03c-Ranking-Semantics-Python.ipynb" target="_blank" rel="noopener">03c-Ranking</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03d-ADF-Semantiques-Python.ipynb" target="_blank" rel="noopener">03d-ADF</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Du texte à la structure</p><p class="nb-what">Modèle de Toulmin, schémas de Walton : reconnaître donnée, garantie et conclusion.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-01-Toulmin-Model-Python.ipynb" target="_blank" rel="noopener">01-Toulmin</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-01b-Schemes-Walton-Python.ipynb" target="_blank" rel="noopener">01b-Walton</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Sophismes</p><p class="nb-what">Détection par taxonomie, cartes Argumentum, ontologie AIF en OWL 2.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02-Fallacies-Detection-Python.ipynb" target="_blank" rel="noopener">02-Fallacies</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02b-Argumentum-Cards-Python.ipynb" target="_blank" rel="noopener">02b-Cards</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb" target="_blank" rel="noopener">Onto-01-AIF</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Dialogues</p><p class="nb-what">Protocoles d’enquête et de persuasion ; dialogues entre agents.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-04-Dialogues-Protocolises-Python.ipynb" target="_blank" rel="noopener">04-Dialogues</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-08-Agent-Dialogues-Python.ipynb" target="_blank" rel="noopener">Tweety-08</a></p></div>
+
+</div>
+
+<p class="nb-foot"><strong>À observer.</strong> Le même débat, analysé à la main puis par un cadre de Dung : les arguments acceptés sont-ils ceux que vous aviez jugés convaincants ?</p>
+
+---
+class: nb-concept nb-center nb-k94
+---
+
+# Dung : une attaque, trois verdicts
+
+<p class="nb-lead">Un cadre d’argumentation n’est qu’un graphe d’attaques. Ce qu’on « accepte » dépend de la sémantique choisie, et sur un même cadre les trois sémantiques classiques peuvent diverger.</p>
+
+<div class="nb-grid nb-cols-2">
+
+<div class="nb-card"><p class="nb-step">Admissible</p><p class="nb-what">Un ensemble sans conflit interne qui défend chacun de ses membres contre toute attaque.</p></div>
+
+<div class="nb-card"><p class="nb-step">Grounded</p><p class="nb-what">Le verdict le plus sceptique : unique, il n’accepte que ce qui est défendu sans aucun pari.</p></div>
+
+<div class="nb-card"><p class="nb-step">Preferred</p><p class="nb-what">Les ensembles admissibles maximaux : plusieurs positions crédules peuvent coexister.</p></div>
+
+<div class="nb-card"><p class="nb-step">Stable</p><p class="nb-what">Accepte un ensemble qui attaque tout le reste ; il peut ne pas exister du tout.</p></div>
+
+</div>
+
+<p class="nb-foot"><strong>À observer.</strong> Sur le cas canonique du notebook, grounded, preferred et stable diffèrent : quel argument fait basculer chaque verdict ?</p>
+
+<p class="notebook-reference">Notebook : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb" target="_blank" rel="noopener">Argumentation-03-Dung-AF-Semantics-Python.ipynb</a>.</p>
 
 ---
 layout: default
@@ -1453,7 +1683,7 @@ layout: default
 - **Optimiseurs / solveurs** : MSF, OR-Tools
 - **Exemple** : Linq To Z3
 
-*Notebooks : [Z3-Python-01-Introduction](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb) · [Z3-Python-01b-Style-Declaratif-Linq](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb) (le style declaratif Linq To Z3) · [Z3-Python-06-Advanced-Optimization](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb) (optimiseurs).*
+*Notebooks : [Z3-Python-01-Introduction](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb) · [Z3-Python-01b-Style-Declaratif-Linq](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb) (le style declaratif Linq To Z3) · [Z3-Python-06-Advanced-Optimization](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb) (optimiseurs).*
 
 ---
 layout: default
@@ -1483,7 +1713,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Debloquer une configuration industrielle : le solveur dit UNSAT, quelle contrainte relacher ?
 - Revision des croyances : quelle croyance retirer pour rester coherent (postulats AGM)
 
-*Notebooks : [Z3-13-UnsatCores-Python](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb) (noyaux d'insatisfiabilite) · [Z3-13b-UnsatCores-MUS-Python](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13b-UnsatCores-MUS-Python.ipynb) (MUS par deletion-based) · [17_UnsatCores](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/17_UnsatCores.ipynb) · [Tweety-04-Belief-Revision-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb) (MUS, MCS, dualite).*
+*Notebooks : [Z3-13-UnsatCores-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb) (noyaux d'insatisfiabilite) · [Z3-13b-UnsatCores-MUS-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13b-UnsatCores-MUS-Python.ipynb) (MUS par deletion-based) · [17_UnsatCores](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/17_UnsatCores.ipynb) · [Tweety-04-Belief-Revision-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb) (MUS, MCS, dualite).*
 
 ---
 layout: default
@@ -1502,10 +1732,12 @@ layout: default
 
 ---
 layout: default
+class: fig
 ---
 
 # Agents a base de connaissance (2/2)
 
+<TeachingStep placement="end" size="lg">
 
 ## Fondes sur un modèle
 
@@ -1517,8 +1749,11 @@ layout: default
 - Axiomes de persistance, d'effets, problemes de qualifications
 - Ingenierie de données -> modeliser le bon niveau
 
+<template #visual>
+<img src="./images/img_024.png" alt="Sequence etats Wumpus S0-S3" />
+</template>
 
-<img src="./images/img_024.png" style="position:absolute; top:50px; right:20px; width:300px;" alt="Sequence etats Wumpus S0-S3" />
+</TeachingStep>
 
 ---
 layout: default
@@ -1601,7 +1836,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Representation des actions et des etats
 - Raisonnement sur les plans
 
-*Notebooks : [SW-02-RDFBasics-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-Python.ipynb) (RDF, SPARQL) · [Planners-01-Introduction-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb) (planification).*
+*Notebooks : [SW-02-RDFBasics-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-Python.ipynb) (RDF, SPARQL) · [Planners-01-Introduction-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb) (planification).*
 
 ---
 layout: section
@@ -1627,14 +1862,15 @@ layout: default
 - Exploration de l'espace de plan en plus de l'espace d'etats
 - Sous-objectifs independants reduisent la complexite
 
-*Notebooks : [Planners-01-Introduction-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb) · [Planners-03-State-Space-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb).*
+*Notebooks : [Planners-01-Introduction-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb) · [Planners-03-State-Space-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb).*
 
 ---
-layout: default
+layout: compact
 ---
 
 # Definition d'un domaine de planification
 
+<div class="cols-2">
 
 ## Planning Domain Definition Language (PDDL)
 
@@ -1658,21 +1894,22 @@ layout: default
 - Add(a): Litteraux positifs dans les effets
 - Del(a): Litteraux negatifs dans les effets
 
+## Domaine de planification
 
-<img src="./images/img_025.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Domaine PDDL Air Cargo" />
+- Schémas d'action + état initial + but
+- Ex: transport logistique (diapo suivante) : description PDDL et plan solution
+
+</div>
 
 ---
 layout: default
+class: fig
 ---
 
 
 # Exemple PDDL: Transport logistique
 
-<div class="img-stack absolute" style="top: 60px; right: 30px; width: 380px;">
-
-<img src="./images/img_026.png" alt="Exemple PDDL complet : domaine Logistique avec packages, trucks, avions et entrepots, mission initiale et but" />
-
-</div>
+<TeachingStep placement="below" size="lg" class="fig-full">
 
 ```
 Init(At(C1, SFO) ET At(C2, JFK) ET At(P1, SFO) ET At(P2, JFK)
@@ -1693,14 +1930,23 @@ Action(Fly(p, from, to),
   EFFECT: NON At(p, from) ET At(p, to))
 ```
 
-*Notebooks : [Planners-02-PDDL-Basics-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb) (le domaine logistique) · [Planners-06-Domains-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb).*
+<template #visual>
+<img src="./images/img_026.png" alt="Plan solution : Load(C1,P1,SFO), Fly(P1,SFO,JFK), Unload(C1,P1,JFK), Load(C2,P2,JFK), Fly(P2,JFK,SFO), Unload(C2,P2,SFO)" />
+</template>
+
+</TeachingStep>
+
+<p class="nb-ref">Notebooks : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb" target="_blank" rel="noopener">Planners-02-PDDL-Basics-Python</a> (le domaine logistique) · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb" target="_blank" rel="noopener">Planners-06-Domains-Python</a>.</p>
 
 ---
-layout: default
+layout: compact
+class: fig
 ---
 
 
 # Approches de planification
+
+<TeachingStep placement="end" size="lg">
 
 ## Exploration de l'espace des etats et des plans
 
@@ -1722,21 +1968,23 @@ layout: default
 
 ## Calcul situationnel
 
-<div class="img-stack absolute" style="top: 60px; right: 30px; width: 380px;">
-
-<img src="./images/img_032.png" alt="Situation Calculus Have Cake / Eat Cake : axiomes d'action unique pour raisonner sur les consequences d'une action dans le monde du Wumpus" />
-
-</div>
-
 - Logique du premier ordre
 - Utilisation de theoremes pour prouver les bonnes sequences
 
+<template #visual>
+<img src="./images/img_032.png" alt="Situation Calculus Have Cake / Eat Cake : axiomes d'action unique pour raisonner sur les consequences d'une action dans le monde du Wumpus" />
+</template>
+
+</TeachingStep>
+
 ---
-layout: default
+layout: compact
+class: fig
 ---
 
 # Exploration de l'espace des etats
 
+<TeachingStep placement="end" size="lg">
 
 ## Complexite de la planification classique
 
@@ -1753,10 +2001,13 @@ layout: default
   - Recherche des etats pertinents
 - Explorations bidirectionnelles
 
+<template #visual>
+<img src="./images/img_027.png" alt="Graphe espace etats planification" />
+</template>
 
-<img src="./images/img_027.png" style="position:absolute; top:50px; right:10px; width:380px;" alt="Graphe espace etats planification" />
+</TeachingStep>
 
-*Notebooks : [Planners-03-State-Space-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb) · [Planners-04-Fast-Downward-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb) (planificateur progressif et regressif).*
+<p class="nb-ref">Notebooks : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb" target="_blank" rel="noopener">Planners-03-State-Space-Python</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb" target="_blank" rel="noopener">Planners-04-Fast-Downward-Python</a> (planificateur progressif et regressif).</p>
 
 ---
 layout: default
@@ -1781,24 +2032,18 @@ layout: default
 
 - Faits qui doivent etre vrais a un moment donne
 
-*Notebooks : [Planners-05-Heuristics-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb) (heuristiques de planification) · [Planners-05b-Lean-Relaxation-Lean](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb) (relaxation et landmarks).*
+*Notebooks : [Planners-05-Heuristics-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb) (heuristiques de planification) · [Planners-05b-Lean-Relaxation-Lean](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb) (relaxation et landmarks).*
 
 ---
-layout: default
+layout: compact
+class: fig
 ---
 
 # Graphes de planification
 
+<TeachingStep placement="end" size="lg">
 
 ## Structure de données
-
-<div class="img-stack absolute" style="top: 60px; right: 30px; width: 380px;">
-
-<img src="./images/img_031.png" alt="Graphe de planification : niveau actions (proposition level 0) et niveau fluents (proposition level 1)" />
-
-<img src="./images/img_028.png" alt="Liens de maintien entre actions precondition et effets" style="margin-top: 8px;" />
-
-</div>
 
 - Generee a partir d'un problème de planification
 - Divisee en niveaux:
@@ -1817,15 +2062,21 @@ layout: default
 - Effets -> Fluents
 - Mutexes: actions incompatibles, fluents incompatibles
 
+<template #visual>
+<div class="fig-stack">
+<img src="./images/img_031.png" alt="Graphe de planification : niveau actions (proposition level 0) et niveau fluents (proposition level 1)" />
+<img src="./images/img_028.png" alt="Liens de maintien entre actions precondition et effets" />
+</div>
+</template>
 
-<img src="./images/img_031.png" style="position:absolute; top:50px; right:10px; width:350px;" alt="Graphe de planification Have/Eat/Bake Cake" />
+</TeachingStep>
 
 ---
 layout: default
+class: code-lg
 ---
 
 # Algorithme GraphPlan
-
 
 ```
 fonction GRAPHPLAN(probleme) retourne solution ou echec
@@ -1840,8 +2091,7 @@ fonction GRAPHPLAN(probleme) retourne solution ou echec
     graph <- EXPAND-GRAPH(graph, probleme)
 ```
 
-
-<img src="./images/img_030.png" style="position:absolute; top:50px; right:10px; width:400px;" alt="Algorithme GraphPlan" />
+L'expansion alterne niveaux d'actions et de propositions ; l'extraction remonte du but en évitant les paires mutuellement exclusives, et la table *nogoods* mémorise les échecs pour ne pas les refaire.
 
 ---
 layout: default
@@ -1864,20 +2114,22 @@ layout: default
 - Variables: Action unique pour chaque étape, Fluent
 - Contraintes: decrivent les effets + etat initial et but
 
-*Notebooks : [Planners-07-OR-Tools-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb) (planification par contraintes) · [Z3-Python-08-Ordonnancement](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-08-Ordonnancement-Python.ipynb) (planning vers scheduling) · [11_Job_Shop_Scheduling](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb).*
+*Notebooks : [Planners-07-OR-Tools-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb) (planification par contraintes) · [Z3-Python-08-Ordonnancement](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-08-Ordonnancement-Python.ipynb) (planning vers scheduling) · [11_Job_Shop_Scheduling](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb).*
 
 ---
 layout: default
+class: fig
 ---
 
 # Calcul situationnel
-
-<img src="./images/img_024.png" style="position:absolute; top:85px; right:108px; width:345px;" alt="Sequence d'etats du Wumpus S0 a S3 (Forward, Turn Right)" />
 
 <style scoped>
 .slidev-layout { font-size: 0.85em; }
 h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 </style>
+
+<TeachingStep placement="end" size="lg">
+
 
 ## Limitations de PDDL
 
@@ -1898,14 +2150,21 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 
 - (∃s) At(Home, s) ET Have(Milk, s)<br>ET Have(Bananas, s) ET Have(Drill, s)
 
+<template #visual>
+<img src="./images/img_024.png" alt="Sequence d'etats du Wumpus S0 a S3 (Forward, Turn Right)" />
+</template>
+
+</TeachingStep>
+
 ---
-layout: default
+layout: compact
+class: fig
 ---
 
 
 # Axiomes du calcul situationnel
 
-<img src="./images/img_033.png" style="position:absolute; top:225px; right:40px; width:240px;" alt="Result(Result(S0,Forward),Turn(Right)) - composition de situations" />
+<TeachingStep placement="end" size="md">
 
 ## Preconditions -> Axiomes de Possibilite
 
@@ -1925,18 +2184,26 @@ layout: default
 
 - At(Home, Result'(p, S0)) ET Have(Milk, Result'(p, S0))<br>ET Have(Bananas, Result'(p, S0)) ET Have(Drill, Result'(p, S0))
 
+<template #visual>
+<img src="./images/img_033.png" alt="Result(Result(S0,Forward),Turn(Right)) - composition de situations" />
+</template>
+
+</TeachingStep>
+
 ---
 layout: default
+class: fig
 ---
 
 # Planification a ordre partiel
-
-<img src="./images/img_034.png" style="position:absolute; top:96px; right:28px; width:330px;" alt="Planification ordre partiel - ordonnancement étapes" />
 
 <style scoped>
 .slidev-layout { font-size: 0.88em; }
 h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 </style>
+
+<TeachingStep placement="end" size="lg">
+
 
 ## Planificateur non lineaire
 
@@ -1965,14 +2232,18 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Chaîne de causalite
 - Validite temporelle
 
+<template #visual>
+<img src="./images/img_034.png" alt="Planification ordre partiel - ordonnancement étapes" />
+</template>
+
+</TeachingStep>
+
 ---
 layout: default
+class: fig
 ---
 
 # Decomposition hiérarchique
-
-<img src="./images/img_035.png" style="position:absolute; top:92px; right:30px; width:255px;" alt="SIPE-2 decomposition hiérarchique" />
-<img src="./images/img_036.png" style="position:absolute; top:288px; right:58px; width:200px;" alt="Build House HTN" />
 
 <style scoped>
 .slidev-layout { font-size: 0.88em; }
@@ -1982,6 +2253,9 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
    SOUS l'image (glyphes repeints, cf issue 15351). */
 .slidev-layout > p:last-of-type { max-width: 640px; }
 </style>
+
+<TeachingStep placement="end" size="lg">
+
 
 ## Conditions réelles plus difficiles
 
@@ -2001,21 +2275,25 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Primitives de bas niveau: Executable
 - Opérateurs non primitifs: Buts, actions abstraites
 
-*Notebooks : [Planners-09-HTN-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb) (decomposition hierarchique) · [Planners-10-LLM-Planning-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb) (LLM et decomposition).*
+<template #visual>
+<div class="fig-stack">
+<img src="./images/img_035.png" alt="SIPE-2 decomposition hiérarchique" />
+<img src="./images/img_036.png" alt="Build House HTN" />
+</div>
+</template>
+
+</TeachingStep>
+
+<p class="nb-ref">Notebooks : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb" target="_blank" rel="noopener">Planners-09-HTN-Python</a> (decomposition hierarchique) · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb" target="_blank" rel="noopener">Planners-10-LLM-Planning-Python</a> (LLM et decomposition).</p>
 
 ---
-layout: default
+layout: compact
+class: fig
 ---
 
 # Resume planification
 
-<div class="img-stack absolute" style="top: 60px; right: 30px; width: 320px;">
-
-<img src="./images/img_029.png" alt="Graphe de planification 3D : visualisation d'un plan dans l'espace des etats avec couches d'actions connectees" style="margin-bottom: 8px;" />
-
-<img src="./images/img_037.png" alt="Tableau International Planning Competition 1998-2008 : systèmes vainqueurs (GAMER, LAMA, SATPLAN, FAST, LPG, FF, IPP, TLPLAN)" />
-
-</div>
+<TeachingStep placement="end" size="lg">
 
 ## Approches
 
@@ -2033,35 +2311,91 @@ layout: default
 - Moindre engagement
 - Planification non lineaire
 
+<template #visual>
+<div class="fig-stack">
+<img src="./images/img_029.png" alt="Graphe de planification 3D : visualisation d'un plan dans l'espace des etats avec couches d'actions connectees" />
+<img src="./images/img_037.png" alt="Tableau International Planning Competition 1998-2008 : systèmes vainqueurs (GAMER, LAMA, SATPLAN, FAST, LPG, FF, IPP, TLPLAN)" />
+</div>
+</template>
+
+</TeachingStep>
+
+---
+class: nb-map nb-k96
+---
+
+# Planification : du PDDL au planificateur neuro-symbolique
+
+<p class="nb-lead">La série <code>Planners</code> reprend ce chapitre dans l’ordre : écrire un domaine, le résoudre par recherche, guider la recherche, puis élargir au temps, à la hiérarchie et aux LLM.</p>
+
+<div class="nb-grid nb-cols-3">
+
+<div class="nb-card"><p class="nb-step">Fondations</p><p class="nb-what">La planification d’abord écrite à la main, puis le langage PDDL : domaine, problème, plan.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb" target="_blank" rel="noopener">Planners-01</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb" target="_blank" rel="noopener">Planners-02-PDDL</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Espace d’états</p><p class="nb-what">Recherche progressive et régressive, puis un planificateur classique de référence, Fast Downward.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb" target="_blank" rel="noopener">Planners-03</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb" target="_blank" rel="noopener">Planners-04-Fast-Downward</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Heuristiques</p><p class="nb-what">Relaxation sans suppressions, h<sup>max</sup> et h<sup>add</sup>, admissibilité prouvée en Lean.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb" target="_blank" rel="noopener">Planners-05</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb" target="_blank" rel="noopener">Planners-05b-Lean</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Domaines et contraintes</p><p class="nb-what">Domaines classiques (logistique, blocs), puis planification par contraintes avec OR-Tools.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb" target="_blank" rel="noopener">Planners-06-Domains</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb" target="_blank" rel="noopener">Planners-07-OR-Tools</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Temps et hiérarchie</p><p class="nb-what">Actions durables et concurrentes ; décomposition hiérarchique de tâches (HTN).</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb" target="_blank" rel="noopener">Planners-08-Temporal</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb" target="_blank" rel="noopener">Planners-09-HTN</a></p></div>
+
+<div class="nb-card"><p class="nb-step">LLM et planification</p><p class="nb-what">Un LLM propose, un planificateur vérifie ; bibliothèque Unified Planning ; apprendre à planifier.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb" target="_blank" rel="noopener">Planners-10-LLM</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb" target="_blank" rel="noopener">Planners-11</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb" target="_blank" rel="noopener">Planners-12-LOOP</a></p></div>
+
+</div>
+
+<p class="nb-foot"><strong>À observer.</strong> Sur un même domaine, le plan proposé par un LLM passe-t-il la vérification du planificateur ? Sinon, quelle précondition a-t-il oubliée ?</p>
+
+---
+class: nb-concept nb-center nb-k94
+---
+
+# Heuristiques : relaxer le problème pour guider la recherche
+
+<p class="nb-lead">Une bonne heuristique estime la distance au but sans résoudre le problème. En planification, on l’obtient en ignorant les effets négatifs des actions : la relaxation sans suppressions.</p>
+
+<div class="nb-grid nb-cols-2">
+
+<div class="nb-card"><p class="nb-step">Relaxation</p><p class="nb-what">Sans suppressions, un fait acquis le reste : le problème relaxé devient facile à résoudre.</p></div>
+
+<div class="nb-card"><p class="nb-step">h<sup>max</sup></p><p class="nb-what">Coût du sous-but le plus cher : admissible, donc sûre pour A*, mais souvent trop optimiste.</p></div>
+
+<div class="nb-card"><p class="nb-step">h<sup>add</sup></p><p class="nb-what">Somme des coûts des sous-buts : plus informative, mais elle peut surestimer.</p></div>
+
+<div class="nb-card"><p class="nb-step">Admissibilité</p><p class="nb-what">Ne jamais surestimer le coût restant : c’est la condition pour qu’A* rende un plan optimal.</p></div>
+
+</div>
+
+<p class="nb-foot"><strong>À observer.</strong> Le notebook exhibe un cas où h<sup>add</sup> surestime : le plan trouvé avec elle est-il encore optimal ?</p>
+
+<p class="notebook-reference">Notebooks : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb" target="_blank" rel="noopener">Planners-05-Heuristics-Python.ipynb</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb" target="_blank" rel="noopener">Planners-05b-Lean-Relaxation-Lean.ipynb</a>.</p>
+
 ---
 layout: section
 ---
 
 # Representation de Connaissances
 ---
-layout: default
+layout: compact
+class: fig
 ---
 
 # Ontologies
-
-<img src="./images/img_020.png" style="position:absolute; top:118px; right:34px; width:300px; max-height:420px;" alt="Ontologie - graphe de connaissances" />
-
-<div class="img-stack absolute" style="top: 60px; left: 30px; width: 380px;">
-
-<img src="./images/img_038.png" alt="Hiérarchie d'ontologie : classes, sous-classes, instances et relations sémantiques" />
-
-</div>
 
 <style scoped>
 .slidev-layout { font-size: 0.88em; }
 h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 </style>
 
+<TeachingStep placement="end" size="md">
+<div class="dense-list">
+
+
 ## Objectifs
 
 - Representation des connaissances a grande echelle
 - Lier les domaines specialises du savoir
-- Couvrir la diversite des connaissances
+- Couvrir la diversite des connaissances -> tâche difficile
 
 ## Besoins de categorisation
 
@@ -2069,16 +2403,29 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
   - BallonDeBasket(b) -> Membre(b, BallonsDeBasket)
 - Hiérarchie: taxonomies (sous-classes), heritage
 - Partitions: Disjoints + decomposition exhaustive
-- Composition: PartieDe(x,y)
-- Mesure: Unites (Centimetre, Pouces)
+- Composition: PartieDe(x,y) ; partition -> assortiment (pas ensemble)
+
+## Mesure
+
+- Unites : Diametre(ballonDeBasket12) = Centimetre(24) ; Centimetre(2,54 × d) = Pouces(d)
+- Evenements : temps plutot que situations (…, t) ; evenements discrets -> « processus » continus, liquides
 
 ## Objets mentaux
 
-- Connaissances sur les croyances
-- Logique modale: mondes possibles
+- Connaissances sur les croyances -> degres de croyance : Knows(Lois, CanFly(Superman))
+- Logique modale: mondes possibles relies par des relations d'accessibilite
+
+</div>
+
+<template #visual>
+<img src="./images/img_038.png" alt="Hiérarchie d'ontologie : classes, sous-classes, instances et relations sémantiques" />
+</template>
+
+</TeachingStep>
 
 ---
 layout: default
+class: fig
 ---
 
 # Web sémantique
@@ -2086,22 +2433,9 @@ layout: default
 <style scoped>
 .slidev-layout { font-size: 0.88em; }
 h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
-/* l'ancre notebook est le dernier paragraphe en flux ; le bloc d'images est
-   absolute a right:30px width:320px (bord gauche x=630), donc l'ancre est
-   bornee a 570px pour ne pas passer SOUS la pile d'images (glyphes repeints,
-   cf issue 15351). */
-.slidev-layout > p:last-of-type { max-width: 570px; }
 </style>
 
-<div class="img-stack absolute" style="top: 60px; right: 30px; width: 320px;">
-
-<img src="./images/img_039.png" alt="Pile du Web sémantique : URI, XML, RDF, RDFS, OWL, SPARQL, Inference" style="margin-bottom: 8px;" />
-
-<img src="./images/img_040.png" alt="RDF Triple : sujet, predicat, objet avec exemple (Tim knows Jane)" style="margin-bottom: 8px;" />
-
-<img src="./images/img_043.png" alt="LOD cloud : nuage des données liees interconnectees" />
-
-</div>
+<TeachingStep placement="end" size="lg" class="fig-xl">
 
 
 ## Resource Description Framework (RDF)
@@ -2124,19 +2458,28 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - SOA (Service Oriented Architecture)
 - Données connectees sur le web
 
+<template #visual>
+<div class="fig-grid">
+<img src="./images/img_039.png" alt="Pile du Web sémantique : URI, XML, RDF, RDFS, OWL, SPARQL, Inference" />
+<img src="./images/img_040.png" alt="RDF Triple : sujet, predicat, objet avec exemple (Tim knows Jane)" />
+<img src="./images/img_043.png" alt="LOD cloud : nuage des données liees interconnectees" />
+<img src="./images/img_042.jpg" alt="dotNetRDF" />
+<img src="./images/img_041.png" alt="BrightstarDB, base de donnees RDF native pour la plateforme .NET" />
+</div>
+</template>
 
-<img src="./images/img_042.jpg" style="position:absolute; top:60px; right:20px; width:200px;" alt="dotNetRDF" />
+</TeachingStep>
 
-<img src="./images/img_041.png" style="position:absolute; bottom:14px; left:405px; width:170px;" alt="BrightstarDB, base de donnees RDF native pour la plateforme .NET" />
-
-*Notebooks : [SW-02-RDFBasics-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-Python.ipynb) (triples et SPARQL) · [SW-11-Python-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) · [SW-12-GraphRAG-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-GraphRAG-Python.ipynb) (du graphe au RAG).*
+<p class="nb-ref">Notebooks : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-Python.ipynb" target="_blank" rel="noopener">SW-02-RDFBasics-Python</a> (triples et SPARQL) · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb" target="_blank" rel="noopener">SW-11-Python-KnowledgeGraphs</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-GraphRAG-Python.ipynb" target="_blank" rel="noopener">SW-12-GraphRAG-Python</a> (du graphe au RAG).</p>
 
 ---
-layout: default
+layout: compact
+class: fig
 ---
 
 # Systèmes de raisonnement
 
+<TeachingStep placement="end" size="lg">
 
 ## Reseaux sémantiques
 
@@ -2156,8 +2499,11 @@ layout: default
 - Nouveaux faits peuvent invalider etat de croyance
 - Circonscription, logique par defaut
 
+<template #visual>
+<img src="./images/img_044.png" alt="Systèmes de raisonnement diagrammes" />
+</template>
 
-<img src="./images/img_044.png" style="position:absolute; top:50px; right:10px; width:300px;" alt="Systèmes de raisonnement diagrammes" />
+</TeachingStep>
 
 ---
 layout: default
@@ -2188,7 +2534,33 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Incoherence = un concept dont aucune instance ne peut exister
 - De l'ontologie au graphe de connaissances, puis au RAG : la chaine complete est outillee
 
-*Notebooks : [SW-13-Reasoners-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb) (raisonneurs OWL) · [SW-14-Coup-Ontologique-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-14-Coup-Ontologique-Python.ipynb) · [Tweety-03-Advanced-Logics-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-CSharp.ipynb) (logics.dl, HermiT/Pellet).*
+*Notebooks : [SW-13-Reasoners-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb) (raisonneurs OWL) · [SW-14-Coup-Ontologique-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-14-Coup-Ontologique-Python.ipynb) · [Tweety-03-Advanced-Logics-CSharp](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-CSharp.ipynb) (logics.dl, HermiT/Pellet).*
+
+---
+class: nb-map nb-k96
+---
+
+# Web sémantique : des triplets aux raisonneurs
+
+<p class="nb-lead">La série <code>SemanticWeb</code> existe en Python (rdflib) et en C# (dotNetRDF). Elle suit la pile du web sémantique, du triplet au raisonneur, puis vers les graphes de connaissances.</p>
+
+<div class="nb-grid nb-cols-3">
+
+<div class="nb-card"><p class="nb-step">RDF</p><p class="nb-what">Triplets sujet–prédicat–objet, graphes, sérialisations.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-Python.ipynb" target="_blank" rel="noopener">SW-02 Python</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-CSharp.ipynb" target="_blank" rel="noopener">SW-02 C#</a></p></div>
+
+<div class="nb-card"><p class="nb-step">SPARQL et Linked Data</p><p class="nb-what">Interroger un graphe ; suivre les liens vers des sources ouvertes.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-04-SPARQL-Python.ipynb" target="_blank" rel="noopener">SW-04-SPARQL</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-Python.ipynb" target="_blank" rel="noopener">SW-05-LinkedData</a></p></div>
+
+<div class="nb-card"><p class="nb-step">RDFS et OWL</p><p class="nb-what">Classes, propriétés, restrictions : le vocabulaire devient une ontologie.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06-RDFS-Python.ipynb" target="_blank" rel="noopener">SW-06-RDFS</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-Python.ipynb" target="_blank" rel="noopener">SW-07-OWL</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Valider</p><p class="nb-what">SHACL contrôle la forme des données, là où OWL infère.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-Python.ipynb" target="_blank" rel="noopener">SW-08-SHACL</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Raisonner</p><p class="nb-what">Inférer les faits implicites d’une ontologie avec un raisonneur.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb" target="_blank" rel="noopener">SW-13-Reasoners</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Graphes de connaissances</p><p class="nb-what">Construire un graphe de connaissances, puis s’en servir pour ancrer un RAG.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb" target="_blank" rel="noopener">SW-11-KnowledgeGraphs</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-GraphRAG-Python.ipynb" target="_blank" rel="noopener">SW-12-GraphRAG</a></p></div>
+
+</div>
+
+<p class="nb-foot"><strong>À observer.</strong> Après le passage du raisonneur, combien de triplets nouveaux apparaissent, et lesquels n’auriez-vous pas écrits vous-même ?</p>
 
 ---
 layout: default
@@ -2223,10 +2595,35 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Hypotheses = explications raisonnables
 - Explications minimales (Ockham)
 
-*Notebooks : [Argument_Analysis_Agentic-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06-JTMS-Python.ipynb) (JTMS : justification et revision) · [Tweety-04-Belief-Revision-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb) (postulats AGM).*
+*Notebooks : [Argument_Analysis_Agentic-5-jtms](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06-JTMS-Python.ipynb) (JTMS : justification et revision) · [Tweety-04-Belief-Revision-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb) (postulats AGM).*
+
+---
+class: nb-concept nb-center nb-k90
+---
+
+# Maintenir la vérité : justifier, retirer, propager
+
+<p class="nb-lead">Un système de maintenance de vérité (JTMS) garde, pour chaque croyance, les justifications qui la soutiennent. Retirer une prémisse retire en cascade tout ce qui n’avait qu’elle pour appui.</p>
+
+<div class="nb-grid nb-cols-2">
+
+<div class="nb-card"><p class="nb-step">Étiquetage</p><p class="nb-what">Chaque croyance est IN ou OUT selon ses justifications ; l’étiquetage est un point fixe.</p></div>
+
+<div class="nb-card"><p class="nb-step">Rétractation</p><p class="nb-what">Retirer un fait relance l’étiquetage : la cascade est le cœur du raisonnement non monotone.</p></div>
+
+<div class="nb-card"><p class="nb-step">Circularité</p><p class="nb-what">Une boucle impaire de justifications empêche tout étiquetage cohérent.</p></div>
+
+<div class="nb-card"><p class="nb-step">Hypothèses multiples</p><p class="nb-what">L’ATMS garde tous les environnements à la fois ; la révision AGM choisit quoi abandonner.</p></div>
+
+</div>
+
+<p class="nb-foot"><strong>À observer.</strong> Prédisez la cascade de l’exercice 2 avant de l’exécuter : quelles croyances tombent, lesquelles survivent grâce à un second appui ?</p>
+
+<p class="notebook-reference">Notebooks : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06-JTMS-Python.ipynb" target="_blank" rel="noopener">Argumentation-06-JTMS-Python.ipynb</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06b-ATMS-Conflits-Python.ipynb" target="_blank" rel="noopener">Argumentation-06b-ATMS-Conflits-Python.ipynb</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06c-Revision-Croyances-Python.ipynb" target="_blank" rel="noopener">Argumentation-06c-Revision-Croyances-Python.ipynb</a>.</p>
 
 ---
 layout: default
+class: fig
 ---
 
 # Smart Contracts
@@ -2235,6 +2632,8 @@ layout: default
 .slidev-layout { font-size: 0.88em; }
 h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 </style>
+
+<TeachingStep placement="end" size="lg">
 
 
 ## Cryptographie
@@ -2257,10 +2656,39 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Signatures composites (courtier, depots/agents fiduciaires)
 - Clauses scriptees (ex: EtherCoin Hack)
 
+<template #visual>
+<img src="./images/img_045.png" alt="Smart Contracts diagramme" />
+</template>
 
-<img src="./images/img_045.png" style="position:absolute; top:50px; right:10px; width:300px;" alt="Smart Contracts diagramme" />
+</TeachingStep>
 
-*Notebooks : [SC-14-Formal-Verification-Python](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-14-Formal-Verification-Python.ipynb) (verification formelle) · [SC-15-Zero-Knowledge-Proofs-Python](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-15-Zero-Knowledge-Proofs-Python.ipynb) (preuves non interactives) · [SC-16-Homomorphic-Encryption-Python](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-16-Homomorphic-Encryption-Python.ipynb) · [SC-17-E2E-Verifiable-Voting-Python](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting-Python.ipynb) (vote verifiable, cf Helios).*
+<p class="nb-ref">Notebooks : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-14-Formal-Verification-Python.ipynb" target="_blank" rel="noopener">SC-14-Formal-Verification-Python</a> (verification formelle) · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-15-Zero-Knowledge-Proofs-Python.ipynb" target="_blank" rel="noopener">SC-15-Zero-Knowledge-Proofs-Python</a> (preuves non interactives) · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-16-Homomorphic-Encryption-Python.ipynb" target="_blank" rel="noopener">SC-16-Homomorphic-Encryption-Python</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting-Python.ipynb" target="_blank" rel="noopener">SC-17-E2E-Verifiable-Voting-Python</a> (vote verifiable, cf Helios).</p>
+
+---
+class: nb-map nb-k96
+---
+
+# Smart contracts : du contrat écrit au contrat vérifié
+
+<p class="nb-lead">Un smart contract est un programme qui détient de la valeur : une erreur se paie immédiatement. La série <code>SmartContracts</code> va de Solidity à la vérification formelle et à la cryptographie.</p>
+
+<div class="nb-grid nb-cols-3">
+
+<div class="nb-card"><p class="nb-step">Origines et outils</p><p class="nb-what">L’héritage cypherpunk, puis Foundry et web3.py pour déployer en local.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb" target="_blank" rel="noopener">SC-00</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/SC-01-Setup-Foundry-Python.ipynb" target="_blank" rel="noopener">SC-01-Foundry</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Solidity</p><p class="nb-what">Types, fonctions, état, héritage, erreurs et événements.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb" target="_blank" rel="noopener">SC-03</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-04-Functions-State-Python.ipynb" target="_blank" rel="noopener">SC-04</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Tokens et invariants</p><p class="nb-what">Le standard ERC-20 et son invariant « somme des soldes = offre totale », prouvé en Lean.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb" target="_blank" rel="noopener">SC-07</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb" target="_blank" rel="noopener">SC-7b-Lean</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Tester, puis prouver</p><p class="nb-what">Fuzzing d’invariants, puis vérification formelle (SMTChecker, Certora).</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-13-Fuzz-Invariants-Python.ipynb" target="_blank" rel="noopener">SC-13-Fuzz</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-14-Formal-Verification-Python.ipynb" target="_blank" rel="noopener">SC-14-Formal</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Confidentialité</p><p class="nb-what">Preuves à divulgation nulle, chiffrement homomorphe.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-15-Zero-Knowledge-Proofs-Python.ipynb" target="_blank" rel="noopener">SC-15-ZKP</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-16-Homomorphic-Encryption-Python.ipynb" target="_blank" rel="noopener">SC-16-FHE</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Vote vérifiable</p><p class="nb-what">Un vote de bout en bout vérifiable, dans l’esprit d’Helios.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting-Python.ipynb" target="_blank" rel="noopener">SC-17-Voting</a></p></div>
+
+</div>
+
+<p class="nb-foot"><strong>À observer.</strong> Le fuzzing n’a trouvé aucun contre-exemple : qu’est-ce que la vérification formelle établit de plus ?</p>
 
 ---
 layout: default
@@ -2290,7 +2718,7 @@ layout: default
 layout: section
 ---
 
-# TP — 24 notebooks (Tweety + Lean)
+# TP — Tweety et Lean
 
 ---
 
@@ -2310,30 +2738,30 @@ layout: section
 - APOLLO : 99.5% miniF2F
 
 ---
+class: nb-map nb-k96
+---
 
-# Cartographie des 24 notebooks
+# Le TP en un coup d’œil : Tweety calcule, Lean prouve
 
-```mermaid
-graph TB
-    A[IA Symbolique] --> B[Tweety 10 NBs]
-    A --> C[Lean 14 NBs]
+<p class="nb-lead">Deux familles de la série <code>SymbolicAI</code> portent la partie pratique. Tweety exécute les logiques et l’argumentation du cours ; Lean vérifie des preuves, des algorithmes et des réseaux de neurones.</p>
 
-    B --> B1[Logiques NB 1-3]
-    B --> B2[Belief Revision NB 4]
-    B --> B3[Argumentation NB 5-7]
-    B --> B4[Agents NB 8-9]
+<div class="nb-grid nb-cols-3">
 
-    C --> C1[Fondations NB 1-5]
-    C --> C2[Mathlib NB 6]
-    C --> C3[Integration IA NB 7-9]
-    C --> C4[ML verifie NB 10-12]
+<div class="nb-card"><p class="nb-step">Tweety · logiques</p><p class="nb-what">Installation, propositionnel et premier ordre, logiques avancées, révision de croyances.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-01-Setup-Python.ipynb" target="_blank" rel="noopener">01</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb" target="_blank" rel="noopener">02</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-Python.ipynb" target="_blank" rel="noopener">03</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb" target="_blank" rel="noopener">04</a></p></div>
 
-    B --> D[Pont : Tweety = backend Java]
-    C --> D
-    D --> E[Series ArgumentAnalysis, GameTheory, SmartContracts]
-```
+<div class="nb-card"><p class="nb-step">Tweety · argumentation</p><p class="nb-what">Cadres de Dung, argumentation structurée, cadres étendus, classements et probabilités.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb" target="_blank" rel="noopener">05</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb" target="_blank" rel="noopener">06</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07-Extended-Frameworks-Python.ipynb" target="_blank" rel="noopener">07</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07b-Ranking-Probabilistic-Python.ipynb" target="_blank" rel="noopener">07b</a></p></div>
 
-**Total** : ~18 heures de contenu interactif (7h Tweety + 11h Lean).
+<div class="nb-card"><p class="nb-step">Tweety · agents et au-delà</p><p class="nb-what">Dialogues entre agents, préférences et vote, réseaux logiques de Markov, causalité.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-08-Agent-Dialogues-Python.ipynb" target="_blank" rel="noopener">08</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-09-Preferences-Python.ipynb" target="_blank" rel="noopener">09</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb" target="_blank" rel="noopener">10</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb" target="_blank" rel="noopener">11</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Lean · fondations</p><p class="nb-what">Types dépendants, propositions comme types, quantificateurs, tactiques.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb" target="_blank" rel="noopener">01</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-02-Dependent-Types-Lean.ipynb" target="_blank" rel="noopener">02</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-03-Propositions-Proofs-Lean.ipynb" target="_blank" rel="noopener">03</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-04-Quantifiers-Lean.ipynb" target="_blank" rel="noopener">04</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-05-Tactics-Lean.ipynb" target="_blank" rel="noopener">05</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Lean · Mathlib et IA</p><p class="nb-what">Mathlib, preuve assistée par LLM, preuve agentique, multi-agents, LeanDojo.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-06-Mathlib-Essentials-Lean.ipynb" target="_blank" rel="noopener">06</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-07-LLM-Integration-Lean-Python.ipynb" target="_blank" rel="noopener">07</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-08-Agentic-Proving-Python.ipynb" target="_blank" rel="noopener">08</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-09-SK-Multi-Agents-Lean-Python.ipynb" target="_blank" rel="noopener">09</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-10-LeanDojo.ipynb" target="_blank" rel="noopener">10</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Lean · ML vérifié et capstones</p><p class="nb-what">Réseaux de neurones vérifiés, théorème de sensibilité, projets de formalisation.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-11-TorchLean.ipynb" target="_blank" rel="noopener">11</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12-Sensitivity-Theorem.ipynb" target="_blank" rel="noopener">12</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-37-Capstone-Serre100.ipynb" target="_blank" rel="noopener">37</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-39-Capstone-GOL.ipynb" target="_blank" rel="noopener">39</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb" target="_blank" rel="noopener">41</a></p></div>
+
+</div>
+
+<p class="nb-foot"><strong>Le pont.</strong> Les labos <code>*-Lean-Python</code> de la famille Tweety font certifier par le noyau de Lean ce que Tweety calcule — logique propositionnelle, premier ordre, modale.</p>
 
 ---
 
@@ -2341,8 +2769,8 @@ graph TB
 
 | Partie | Duree | Contenu |
 |--------|-------|---------|
-| **I. TweetyProject** | 30 min | 10 notebooks Java/Python — argumentation et logiques |
-| **II. Lean 4** | 40 min | 14 notebooks — verification formelle et integration IA |
+| **I. TweetyProject** | 30 min | Logiques formelles et argumentation, en Python et en C# |
+| **II. Lean 4** | 40 min | Vérification formelle et intégration de l’IA |
 | **III. Convergence** | 15 min | LLM + provers, ponts inter-series |
 | **IV. Pratique** | 15 min | Quick start, parcours suggere, projets integrateurs |
 
@@ -2380,16 +2808,16 @@ JDK 17 + 35 JARs telecharges automatiquement par le notebook de setup. Aucune in
 
 | # | Notebook | Thème | Duree |
 |---|----------|-------|-------|
-| 1 | Setup | JVM, JARs, outils externes | 20 min |
-| 2 | Basic-Logics | Propositionnelle, FOL | 45 min |
-| 3 | Advanced-Logics | DL, Modale, QBF, Conditionnelle | 40 min |
-| 4 | Belief-Revision | MUS, MaxSAT, incoherence | 50 min |
-| 5 | Abstract-Argumentation | Dung AF, sémantiques, CF2 | 55 min |
-| 6 | Structured-Argumentation | ASPIC+, DeLP, ABA, ASP | 60 min |
-| 7a | Extended-Frameworks | ADF, Bipolar, WAF, SAF | 50 min |
-| 7b | Ranking-Probabilistic | Ranking, probabiliste | 40 min |
-| 8 | Agent-Dialogues | Dialogues, loteries | 35 min |
-| 9 | Preferences | Vote, agregation | 30 min |
+| 1 | [Setup](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-01-Setup-Python.ipynb) | JVM, JARs, outils externes | 20 min |
+| 2 | [Basic-Logics](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb) | Propositionnelle, FOL | 45 min |
+| 3 | [Advanced-Logics](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-Python.ipynb) | DL, Modale, QBF, Conditionnelle | 40 min |
+| 4 | [Belief-Revision](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb) | MUS, MaxSAT, incoherence | 50 min |
+| 5 | [Abstract-Argumentation](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb) | Dung AF, sémantiques, CF2 | 55 min |
+| 6 | [Structured-Argumentation](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb) | ASPIC+, DeLP, ABA, ASP | 60 min |
+| 7 | [Extended-Frameworks](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07-Extended-Frameworks-Python.ipynb) | ADF, Bipolar, WAF, SAF | 50 min |
+| 7b | [Ranking-Probabilistic](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07b-Ranking-Probabilistic-Python.ipynb) | Ranking, probabiliste | 40 min |
+| 8 | [Agent-Dialogues](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-08-Agent-Dialogues-Python.ipynb) | Dialogues, loteries | 35 min |
+| 9 | [Preferences](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-09-Preferences-Python.ipynb) | Vote, agregation | 30 min |
 
 ---
 
@@ -2542,19 +2970,19 @@ Reference : de Moura & Ullrich, *"The Lean 4 Theorem Prover and Programming Lang
 
 | # | Notebook | Thème | Duree |
 |---|----------|-------|-------|
-| 1 | Setup | elan, kernel Jupyter | 15 min |
-| 2 | Dependent-Types | Calcul des Constructions | 35 min |
-| 3 | Propositions-Proofs | Prop, Curry-Howard | 45 min |
-| 4 | Quantifiers | forall, exists, egalite | 40 min |
-| 5 | Tactics | apply/exact/intro/rw/simp | 50 min |
-| 6 | Mathlib-Essentials | ring/linarith/omega | 45 min |
-| 7 | LLM-Integration | LeanCopilot, AlphaProof | 50 min |
-| 7b | Examples | Benchmarks miniF2F, proofnet | 40 min |
-| 8 | Agentic-Proving | APOLLO, Erdos | 55 min |
-| 9 | SK-Multi-Agents | Agent Framework | 45 min |
-| 10 | LeanDojo | Tracing, Dojo interactif | 45 min |
-| 11/11a | TorchLean | NN verifies, IBP, CROWN | 1h30-2h |
-| 12 | Sensitivity-Theorem | Huang 2019, port Lean | 60 min |
+| 1 | [Setup](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb) | elan, kernel Jupyter | 15 min |
+| 2 | [Dependent-Types](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-02-Dependent-Types-Lean.ipynb) | Calcul des Constructions | 35 min |
+| 3 | [Propositions-Proofs](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-03-Propositions-Proofs-Lean.ipynb) | Prop, Curry-Howard | 45 min |
+| 4 | [Quantifiers](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-04-Quantifiers-Lean.ipynb) | forall, exists, egalite | 40 min |
+| 5 | [Tactics](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-05-Tactics-Lean.ipynb) | apply/exact/intro/rw/simp | 50 min |
+| 6 | [Mathlib-Essentials](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-06-Mathlib-Essentials-Lean.ipynb) | ring/linarith/omega | 45 min |
+| 7 | [LLM-Integration](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-07-LLM-Integration-Lean-Python.ipynb) | LeanCopilot, AlphaProof | 50 min |
+| 7b | [Examples](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-07b-Examples-Python.ipynb) | Benchmarks miniF2F, proofnet | 40 min |
+| 8 | [Agentic-Proving](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-08-Agentic-Proving-Python.ipynb) | APOLLO, Erdos | 55 min |
+| 9 | [SK-Multi-Agents](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-09-SK-Multi-Agents-Lean-Python.ipynb) | Agent Framework | 45 min |
+| 10 | [LeanDojo](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-10-LeanDojo.ipynb) | Tracing, Dojo interactif | 45 min |
+| 11/11b | [TorchLean](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-11-TorchLean.ipynb) | NN verifies, IBP, CROWN | 1h30-2h |
+| 12 | [Sensitivity-Theorem](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12-Sensitivity-Theorem.ipynb) | Huang 2019, port Lean | 60 min |
 
 ---
 
@@ -2964,6 +3392,175 @@ layout: two-cols
 <p style="font-family: monospace; font-size: 0.75em; margin-top: 0.5em;">argumentum.games/fallacies_fr.html</p>
 
 </div>
+
+---
+layout: default
+---
+
+# Quand la logique apprend : l'apprentissage symbolique
+
+<style scoped>
+.slidev-layout { font-size: 0.88em; }
+h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+</style>
+
+## Le renversement
+
+- La déduction **part** des règles et produit des conséquences ; apprendre, c'est **remonter** ce sens
+- **Résolution inverse** : proposer la clause manquante qui, ajoutée à la base, rend la conséquence dérivable — la machine propose l'hypothèse, la logique la **valide**
+- Cadre général (apprentissage inductif à base de connaissances, KBIL) :
+  **Hypothèses ∧ Descriptions |= Classifications** — le rasoir d'Occam écarte l'énumération
+
+## Trois façons d'exploiter la connaissance
+
+| Famille | Ce qui est appris | Schéma |
+|---|---|---|
+| **EBL** — par explication | une règle **générale** depuis **un** exemple | Contexte |= Hypothèse |
+| **RBL** — par pertinence | une **détermination** | Contexte ∧ Desc. ∧ Classif. |= Hypothèse |
+| **ILP** — inductif | un programme logique | Contexte ∧ Hypothèse ∧ Desc. |= Classif. |
+
+*Cette partie se présente ici, à la fin de la logique — ou, comme précédemment, au moment du cours V (Apprentissage) : le cursus AIMA la place dans « Knowledge in Learning » (3ᵉ éd., ch. 19). Les trois familles suivent ce chapitre.*
+
+---
+layout: default
+---
+
+# Apprentissage par explication (EBL)
+
+<style scoped>
+.slidev-layout { font-size: 0.88em; }
+h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+</style>
+
+## Principe
+
+- **Hypothèse ∧ Descriptions |= Classifications** et **Contexte |= Hypothèse** : un seul exemple suffit quand la connaissance de fond explique pourquoi il fonctionne (la langue du pays visité, la densité constante — pas le poids de la brochette)
+
+## Méthode — généraliser la preuve d'un exemple
+
+1. **Dériver l'exemple** depuis la KB existante (backward chaining depuis le but)
+2. Construire l'**arbre parallèle généralisé** : même preuve, but **variabilisé**
+3. En tirer la **règle causale** ; **supprimer les conditions tautologiques** ou inutiles
+4. L'élagage des branches produit des règles plus générales (ex. `InconnueArithmétique` → `Primitive` → `Simplifier`)
+
+## Critère d'opérationnalité
+
+- Une règle extraite doit **rembourser** son coût : l'augmentation du biais est compensée par les gains d'efficacité
+- `Primitive(x)` est opérationnel ; `Simplifier(x+z, w)` ne l'est pas — compromis généralité (maths, difficile) ou efficacité (empirique, plus simple)
+
+## Lecture
+
+- EBL améliore l'**efficacité** d'une KB : une **mémoïsation** généralisée, pas de savoir nouveau
+- L'hypothèse de stationnarité de la distribution (cadre PAC) fait le lien avec l'apprentissage statistique
+
+---
+layout: default
+---
+
+# Apprentissage par pertinence (RBL) et déterminations
+
+<style scoped>
+.slidev-layout { font-size: 0.88em; }
+h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+</style>
+
+## Principe
+
+- **Contexte ∧ Descriptions ∧ Classifications |= Hypothèse** : la connaissance de fond **déduit** l'hypothèse elle-même — une généralisation déductive, pas une conjecture
+
+## Déterminations
+
+- Une **détermination** énonce qu'un attribut en détermine un autre : la **nationalité détermine la langue** ; la densité est constante pour un matériau — pas le poids d'un objet
+- Connue, elle transforme l'induction en **déduction** : plus besoin d'exemples pour généraliser, seulement pour identifier la valeur
+- C'est le pont diagnostic : apprendre une détermination, c'est apprendre **quoi observer** — le diagnostic médical procède ainsi (signes déterminants vs bruit)
+
+## Place dans le cursus
+
+- RBL prépare la question du **biais inductif** : ce que la connaissance impose avant tout exemple — on la retrouve au cours V face aux espaces d'hypothèses statistiques
+
+---
+layout: default
+---
+
+# Programmation logique inductive (ILP)
+
+<style scoped>
+.slidev-layout { font-size: 0.88em; }
+h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+</style>
+
+## Principe
+
+- **Contexte ∧ Hypothèse ∧ Descriptions |= Classifications** : combiner l'induction et la **force de la FOL**
+- Les relations FOL généralisent là où les attributs échouent : `GrandPère` exige la **réification** de la chaîne `Père/Mère`
+- Clauses lisibles, critiquables — ce que les réseaux appris n'offrent pas
+
+## Exemple — apprendre `GrandPère(x, y)`
+
+- `Père(x,y) ⇒ GrandPère(x,y)` : **contre-exemples** (il manque le chaînage)
+- `Père(x,z) ∧ Père(z,y) ⇒ GrandPère(x,y)` **fonctionne** ; couverture complète : + `Père(x,z) ∧ Mère(z,y) ⇒ GrandPère(x,y)`
+- Choix des nouveaux littéraux : prédicats (une variable commune au moins), égalités/inégalités, comparaisons arithmétiques
+
+## Deux directions
+
+- **Descendante** (générale → spécifique) : **FOIL** (1990), clauses de Horn, spécialisation ≈ induction d'arbres de décision — hypothèse = clauses et non arbre
+- **Montante** (exemples → générale) : **résolution inverse**, Progol — remonter la déduction depuis les exemples
+
+## Le coût
+
+- Espace d'hypothèses **très grand** : restrictions de types + **gain informationnel** + heuristique d'Occam (longueur de la clause) bornent la recherche
+- L'**induction constructive** (créer de nouveaux prédicats, ex. `Parent`) reste la frontière
+
+---
+layout: default
+---
+
+# Pourquoi cela compte en 2026
+
+<style scoped>
+.slidev-layout { font-size: 0.88em; }
+h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+</style>
+
+## La règle apprise reste un énoncé
+
+- Un LLM propose des règles plausibles mais **non garanties** ; l'ILP en établit la **cohérence avec les exemples** — hypothèses vérifiables, pas seulement plausibles
+- La règle apprise vit dans la base : elle se relit, se critique, se **re-vérifie** à chaque inférence
+- Espace des versions : la borne S/G (spécifique/générale) encadre l'hypothèse compatible avec les exemples — l'élimination d'hypothèses **est** l'apprentissage
+
+## Pont vers le cours V
+
+- Cette section est autoportante : présentable ici (fin de la logique) ou au moment de l'apprentissage, comme le cursus AIMA le propose
+- Les mêmes schémas `|=` se retrouveront en apprentissage statistique : hypothèse, descriptions, classifications — seul le cadre de vérification change (données vs conséquences logiques)
+
+*Notebooks : [SL-05-InverseResolution-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-05-InverseResolution-Python.ipynb) (résolution remontée) · [SL-04-InductiveLogicProgramming-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-04-InductiveLogicProgramming-Python.ipynb) (ILP) · [SL-01-LogicalLearning-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-01-LogicalLearning-Python.ipynb) (espace des versions).*
+
+---
+class: nb-map nb-k96
+---
+
+# Apprendre des règles : la série SymbolicLearning
+
+<p class="nb-lead">La résolution inverse retourne la déduction pour induire des règles. La série suit ce fil, de l’espace des versions jusqu’aux moteurs ILP modernes et aux hybrides neuro-symboliques.</p>
+
+<div class="nb-grid nb-cols-3">
+
+<div class="nb-card"><p class="nb-step">Espace des versions</p><p class="nb-what">Chercher l’hypothèse cohérente avec les exemples, entre la plus générale et la plus spécifique.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-01-LogicalLearning-Python.ipynb" target="_blank" rel="noopener">SL-01-LogicalLearning</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Apprendre avec des connaissances</p><p class="nb-what">Apprentissage par explications et par pertinence : la théorie du domaine guide la généralisation.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-02-KnowledgeBasedLearning-Python.ipynb" target="_blank" rel="noopener">SL-02</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-03-RelevanceLearning-Python.ipynb" target="_blank" rel="noopener">SL-03</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Programmation logique inductive</p><p class="nb-what">FOIL descend du général au spécifique ; la résolution inverse et Progol remontent des exemples.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-04-InductiveLogicProgramming-Python.ipynb" target="_blank" rel="noopener">SL-04-ILP</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-05-InverseResolution-Python.ipynb" target="_blank" rel="noopener">SL-05-InverseResolution</a></p></div>
+
+<div class="nb-card"><p class="nb-step">ILP moderne</p><p class="nb-what">Aleph, Metagol, Popper et dILP : apprendre des programmes récursifs.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-06-ModernILP-Python.ipynb" target="_blank" rel="noopener">SL-06-ModernILP</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-08-KnowledgeGraphs-ILP-Python.ipynb" target="_blank" rel="noopener">SL-08-KG-ILP</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Automates</p><p class="nb-what">L* d’Angluin : apprendre un automate en posant des questions à un oracle.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Python.ipynb" target="_blank" rel="noopener">SL-10-ActiveAutomataLearning</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Neuro-symbolique</p><p class="nb-what">Réseaux et règles dans un même pipeline, avec un LLM comme générateur d’hypothèses.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-07-NeuroSymbolic-Python.ipynb" target="_blank" rel="noopener">SL-07</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-09-LLM-SymbolicLearning-Python.ipynb" target="_blank" rel="noopener">SL-09</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-11-Capstone-NeuroSymbolic-Python.ipynb" target="_blank" rel="noopener">SL-11-Capstone</a></p></div>
+
+</div>
+
+<p class="nb-foot"><strong>À observer.</strong> Une règle apprise par ILP se lit et se vérifie ; un réseau appris, non. Que coûte cette lisibilité en données et en temps de calcul ?</p>
+
 
 ---
 layout: center

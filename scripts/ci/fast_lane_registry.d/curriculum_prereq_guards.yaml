@@ -1,0 +1,65 @@
+# CURRICULUM_PREREQ_GUARDS -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+# Porte en donnees par #28117 depuis le monolithe de main (#27657) : le bloc de
+# commentaire ci-dessous est celui de #27657, verbatim.
+#
+# ---------------------------------------------------------------------------
+# CURRICULUM_PREREQ_GUARDS -- carte des prerequis derivee de la taxonomie
+# (#27657, suite de #27556/#27594).
+#
+# `docs/curriculum/prerequis.qmd` est GENEREE par
+# `scripts/curriculum/generate_prereq_map.py` depuis
+# `docs/curriculum/taxonomy/*.json` : une modification de la taxonomie laisse
+# la page deriver en silence tant qu'aucune jambe CI ne rejoue le `--check` du
+# generateur. Incident fondateur, mesure au tete `6c335ed6e28` de `main`
+# (23/11) : trois PRs de densification taxonomique (#27454 Probas 22->135
+# concepts, #27461 GameTheory 28->182, #27471 Search CSP 33->121) ont fusionne
+# APRES la generation unique de la page (#27594) sans la regenerer -- la page
+# commettait encore les compteurs de l'ancienne taxonomie (427 refs au lieu de
+# 947, GameTheory 9/170 au lieu de 50/202...). Cette PR regenere la page et
+# pose la garde qui rend la derive impossible a merger.
+#
+# Portee : la garde ne se declenche que sur les PRs qui touchent la
+# taxonomie, la page, ou le generateur -- une PR qui ne peut pas causer la
+# derive ne peut pas etre accusee de la porter (forme
+# lean-derived-pages-gate, #24183 : une porte qui redd toute la flotte pour un
+# defaut qu'elle ne cause pas a une portee fausse).
+#
+# Correction de cause (DM coordinateur 24/11) : la promesse ci-dessus etait
+# rompue par `real_inventory`. Le bloc « Couverture des series » de la page est
+# mesure contre le DISQUE (tous les *.ipynb sous le dossier de la serie), pas
+# contre la taxonomie : chaque carnet fusionne hors taxonomie re-perimait la
+# page pour toute la flotte, et la PR suivante touchant la taxonomie etait
+# accusee d'une derive venue d'ailleurs. `--check` compare donc desormais la
+# partie derivee de la taxonomie SEULE ; le bloc de couverture (borne par
+# COVERAGE_BEGIN/END) reste dans la page et se regenere au rendu du site
+# (quarto-pages-deploy) et au cron catalogue, comme _quarto.yml (#19901 : la
+# fraicheur de main appartient a l'automatisation, jamais aux PR de contenu).
+# Temoin : un carnet factice ajoute hors taxonomie ne rougit pas --check ; un
+# compteur de la carte tamponne rougit toujours.
+#
+# Forme : predicat ABSOLU (pas de base) -- le `--check` compare la page
+# commisee a la taxonomie du checkout courant, sans diff. rc=1 = page perimee ;
+# le geste de reparation est imprime par le generateur (relancer sans --check).
+# Une taxonomie JSON malformee leve une exception -> exit 1 egalement :
+# fail-closed, une taxonomie illisible ne vaut jamais un quitus vert.
+#
+# `absorbed=True` : mesure sur la tete de cette PR (page regeneree incluse),
+# `generate_prereq_map.py --check` rend rc=0. Sur `main` NU la page est
+# perimee (incident ci-dessus) : l'absorption devient vraie au MERGE de cette
+# PR, qui livre la page regeneree dans le meme commit que la garde.
+# ---------------------------------------------------------------------------
+group: CURRICULUM_PREREQ_GUARDS
+guards:
+  -
+    name: "curriculum-prereq-staleness-guard"
+    argv: ["python", "scripts/curriculum/generate_prereq_map.py", "--check"]
+    source: "native"
+    paths:
+      - "docs/curriculum/taxonomy/**"
+      - "docs/curriculum/prerequis.qmd"
+      - "scripts/curriculum/generate_prereq_map.py"
+      - "scripts/curriculum/tests/test_generate_prereq_map.py"
+      - "scripts/ci/fast_lane.py"
+      - "scripts/ci/fast_lane_registry.py"
+    blocking: true
+    absorbed: true
