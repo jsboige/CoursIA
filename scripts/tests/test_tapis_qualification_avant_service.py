@@ -14,6 +14,12 @@ Ce que la voie legere rend, une fois la qualification appliquee :
 - une fenetre entierement refusee bascule sur le meme repli.
 
 Aucun test ne touche le reseau : `run` est un faux, le fil est monkeypatche.
+L'etat **local** est isole lui aussi (cache du repli et ancre de la lane) :
+sans cette isolation, un poste qui a deja tire verrait le repli servir et le
+cas « file confirmee vide -> repli » ne se declencherait jamais -- et un
+cache perime du poste ferait echouer un test qui n'a rien a voir avec lui
+(mesure : le meme fichier passe sur un poste et echoue sur un autre, a
+qualification egale).
 """
 import json
 import re
@@ -25,13 +31,25 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from coordination import gh_bulk, tapis_ancre, tapis_leger
+from coordination import gh_bulk, tapis_leger
 from coordination import tapis_qualification as tq
 
 pytestmark = pytest.mark.usefixtures("forbid_shell_escape")
 
 NOW = datetime(2026, 11, 18, 9, 0, tzinfo=UTC)
 LANE = "myia-ai-01:CoursIA-2"
+
+
+@pytest.fixture(autouse=True)
+def _etat_local_isole(tmp_path, monkeypatch):
+    """L'etat local du poste est neutralise : cache du repli et ancre.
+
+    Les deux vivent sous `%LOCALAPPDATA%` (`gh_bulk.dossier_cache_defaut`,
+    `tapis_etat`) : sans cette isolation, le resultat du test depend de ce
+    que le poste a deja tire. `LOCALAPPDATA` est redirige vers `tmp_path`,
+    donc les deux lecture et toutes leurs ecritures.
+    """
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
 
 
 def _noeud(n: int, titre: str = "", cree: str = "2026-11-01T00:00:00Z",
@@ -266,10 +284,10 @@ def test_le_budget_de_la_commande_borne_la_qualification(monkeypatch, tmp_path):
                                             "premier_servable_s": None}
 
     monkeypatch.setattr(tq, "qualifier", faux_qualification)
-    # L'ANCRE est ISOLÉE : le tirage ecrit l'etat de la lane dans le repertoire
-    # local de la machine -- un test qui lit l'ancre reelle faitdependre un
-    # test sans rapport de l'etat du poste (faux rouge mesure).
-    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
+    # L'ANCRE est ISOLÉE (fixture `_etat_local_isole`) : le tirage ecrit l'etat
+    # de la lane dans le repertoire local de la machine -- un test qui lit
+    # l'ancre reelle fait dependre un test sans rapport de l'etat du poste
+    # (faux rouge mesure).
     _cache_repli(tmp_path, monkeypatch, [9001, 9002, 9003])
     rapport, code = tapis_leger.tirage(LANE, 4, NOW, 45, "g", Path("."),
                                        _run_faux(nb=6), budget_s=budget_s)
