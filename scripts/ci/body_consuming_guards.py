@@ -451,11 +451,23 @@ def _script_invoked(text: str, script: str, via_fast_lane: bool) -> bool:
 
 
 def discover_fast_lane_scripts(root: Path) -> set[str]:
-    """Scripts joignables par le fast lane, d'apres le registre du depot."""
+    """Scripts joignables par le fast lane, d'apres le registre du depot.
+
+    Depuis #28117 le registre est un module chargeur PLUS des donnees YAML
+    (``fast_lane_registry.d/``) : les argv des gardes vivent dans les donnees.
+    L'inventaire lit donc l'union des deux -- sur un arbre d'avant #28117,
+    le repertoire de donnees n'existe pas et la lecture se reduit au module,
+    qui portait alors les argv en dur.
+    """
     registry = root / SCRIPT_ROOT / "ci" / "fast_lane_registry.py"
     if not registry.is_file():
         return set()
     text = registry.read_text(encoding="utf-8", errors="replace")
+    data_dir = root / SCRIPT_ROOT / "ci" / "fast_lane_registry.d"
+    if data_dir.is_dir():
+        for yaml_path in sorted(data_dir.glob("*.yaml")):
+            text += "\n" + yaml_path.read_text(encoding="utf-8",
+                                               errors="replace")
     names: set[str] = set()
     for path in _iter_script_files(root):
         if Path(path).name in text:

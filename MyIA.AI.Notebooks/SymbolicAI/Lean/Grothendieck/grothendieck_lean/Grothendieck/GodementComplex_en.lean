@@ -67,6 +67,36 @@ chain — and then the passage to homology. The augmented complex
 `F ⟶ C⁰F ⟶ C⁰(coker μ) ⟶ ⋯` as a **resolution** of `F` (the
 quasi-isomorphism) follows acyclicity and is not approached here.
 
+## Relation to AxiomMath/Stacks
+
+The repository `AxiomMath/Stacks` formalizes the Godement resolution of
+[Stacks, Tag 0FKS] over sheaves of modules on a ringed space, under
+`StacksFrontier/Topology/Sheaves/Cohomology/GodementResolution/`. The
+correspondence with this Part, stated per covered declaration in the French
+docstrings:
+
+- `godementCanonicalComplex` — the complex `F[0] ⟶ f_* f^* F ⟶ ⋯`, the Moore
+  cochain complex of the Godement cosimplicial object (`Stalk.lean`); ours is
+  assembled at the level of presheaves of abelian groups.
+- `isZero_stalk_homology_godementCanonicalComplex` — covered, in stronger
+  form, by clause (5) (`homotopyEquivalences_stalk_godementAugmentation`,
+  `StalkHomotopy.lean:520`) and clause (3) (`quasiIso_godementAugmentation`,
+  `StalkHomotopy.lean:558`). The frameworks differ (sheaf of modules there,
+  arbitrary presheaf of abelian groups here), so our statement is not a
+  specialization of theirs, and nothing they establish is reproved here.
+- `isFlasque_godementCanonicalComplex` — their clause (3) states the flasque
+  resolution in the sheaf-of-modules setting; ours proves flascity
+  degree-wise at the presheaf level, with no sheafification.
+- `shortExact_godementMapHom`, `shortExact_stalk_godementMapHom`,
+  `shortExact_stalk_godementCanonicalMap_zero` — the degree-0 row of the
+  degreewise short exact sequence, made explicit; it is the form the next
+  tranche consumes, not stated separately in Stacks.
+
+`singleConstantHomotopyEquiv` (`Stalk.lean:156`) — the Moore complex of a
+constant cosimplicial object is homotopy equivalent to the complex
+concentrated in degree 0 — is the computation that degenerates the
+augmentation in degree 0; it is used here, not reproved.
+
 ## References
 
   - R. Godement, *Topologie algébrique et théorie des faisceaux* [God58],
@@ -206,7 +236,7 @@ variable {X : TopCat.{u}}
 -- **Not posed** — the named frontier: the degreewise SES of the canonical
 -- complexes themselves (a `ShortExact` of complexes, not of presheaf
 -- sections at one open); it needs the flabby lifting
--- (`epi_of_shortExact_of_isFlasqueSieves`, Part 94) or the separatedness
+-- (`epi_of_shortExact_of_isFlasqueSieves`, Part 82) or the separatedness
 -- ladder — tranche 2, feeding Part 99 (long exact sequence assembly).
 --
 -- **Part 99, the pointwise exactness bridge and rank 0 landed in the FR
@@ -295,5 +325,128 @@ variable {X : TopCat.{u}}
 -- (`L₃_exact` of `SnakeInput`) — needless: the snake remains the organ of
 -- the **hard** target (mono/epi of the stages and annihilation of the
 -- connector `δ` by `hsep`/`hres`), not of the nullity of the composite.
+--
+-- **Part 101 landed in the FR twin**: the short exactness of
+-- `C⁰`, categorified and stalkwise. `Grothendieck.shortExact_godementMapHom`
+-- — the SES of `C⁰`-images as a short exact sequence **in the presheaf
+-- category** itself: Part 98 had it open by open, and the evaluation
+-- functors preserve finite limits and colimits while jointly reflecting
+-- isomorphisms, so `JointlyReflectIsomorphisms.shortExact_iff` transports
+-- the pointwise statement to the categorical one.
+-- `Grothendieck.shortExact_stalk_godementMapHom` — the stalk version, by
+-- exactness of the stalk functor (`exact_tfae`).
+-- `Grothendieck.shortExact_stalk_godementCanonicalMap_zero` — the
+-- degree-`0` row of the canonical complexes, read at every stalk, is short
+-- exact: the `n = 0` base of the degreewise SES (`godementCanonicalMap_zero`
+-- is `rfl`, the degree-0 row **is** the row of `C⁰`-images). **Not posed** —
+-- the named frontier: degrees `n + 1` of the degreewise SES (snake lemma at
+-- the stalks, vanishing of the connecting morphism via
+-- `isZero_stalk_homology_godementCanonicalComplex`, Part 93(b)), then the
+-- assembly `shortExact_iff_degreewise_shortExact` towards the SES of
+-- canonical complexes.
+
+-- **Part 103 — the degree-0 tranche of the hard target is PROVED and
+-- COMPILED**: `shortExact_godementCanonicalObj_zero` — the stage SES at step
+-- `0`, in the exact shape of the withdrawn statement. At step `0` the stage
+-- is `C⁰` of the term (`godementCanonicalObj_zero`) and the stage arrow is
+-- `C⁰` of the short-complex arrow (`godementCanonicalMap_zero`), so the
+-- step-0 stage SES is the `C⁰`-image of the SES `S` — that is
+-- `shortExact_map_godementFunctor` (Part 99, rank 0), whose `exact` field is
+-- transported to the shape of the withdrawn statement; the mono comes from
+-- Part 86 (`godementMapHom_mono`), the epi from Part 98
+-- (`epi_godementMapHom_of_epi`).
+--
+-- What the tranche leaves open — and that is the substance: the steps
+-- `n ≥ 1`. There the stage is `C⁰(coker dⁿ)` and the stage arrow is `C⁰` of
+-- the cokernel arrow (`godementCanonicalMap_succ_two`): the stage SES
+-- requires the cokernel SES
+-- `0 → coker dⁿ_{X₁} → coker dⁿ_{X₂} → coker dⁿ_{X₃} → 0`, hence (a) the
+-- annihilation of the connector `δ` by the snake lemma (`SnakeInput`) —
+-- `hsep` killing `ker μ_{X₃}` at the priming step, `hres` killing `ker dⁿ`
+-- at the following ones — and (b) the monicity of the cokernel arrows,
+-- which goes through `mono_cokernel_map_of_isPullback`: the unit square must
+-- be a pullback. `hsep` bears on the **right** term only; the separatedness
+-- of the left term is a hypothesis to be established (or added to the
+-- statement) before even step `1`. **Part 104 below REFUTES that last
+-- sentence**: the separatedness of the left term is not required.
+
+/-!
+### Part 104 — the units square is a pullback: the separatedness of the LEFT
+term is NOT required
+
+Part 103 delivered step `n = 0` of `shortExact_godementCanonicalObj` and named
+the frontier of step `1`: the separatedness of the **left** term (`X₁`) looked
+required — Part 103 writes it: "`hsep` bears on the **right** term only; the
+separatedness of the left term is a hypothesis to be established (or added to
+the statement) before even step `1`".
+
+**It is not.** The lemma below shows that the units square
+
+    X₁ ──f──▶ X₂        C⁰X₁ ──C⁰f──▶ C⁰X₂
+    │         │          │            │
+   μ₁        μ₂         μ₁           μ₂
+
+is a **pullback** as soon as the **right** term is separated (`Mono (toGodement
+S.X₃)`) and the sequence `0 → X₁ → X₂ → X₃ → 0` is short exact: the fibre of
+the square is **bijective** — existence by `godementUnits_pullback`,
+uniqueness by `godementUnits_pullback_unique`. This is the brick that unlocks
+step `1`: the `IsPullback` shape of the same square, obtained through
+`mono_cokernel_map_of_isPullback`, will give the monicity of the cokernel
+arrow `coker μ₁ → coker μ₂` **without any hypothesis on `X₁`**.
+
+The argument is **local** and mobilizes nothing but stalk facts:
+
+1. `C⁰f(z) = μ₂(y)` gives componentwise `fₓ(z x) = germ_x(y)`;
+2. composing by `gₓ` and using `g ∘ f = 0`, the germs of `g(y)` vanish — hence
+   `g(y) = 0`, by **injectivity of the unit of `X₃`** (this is the only
+   separatedness used, and it bears on the right term);
+3. exactness `ker g = im f` then gives `x₀ ∈ X₁(U)` with `f(x₀) = y`;
+4. `fₓ` injective (the mono of `S.f` transported to the stalk by AB5) gives
+   `germ_x(x₀) = z x`;
+5. **uniqueness** requires only the monicity of `f`: two sections of `X₁` over
+   `U` with the same image by `f` are equal.
+
+No passage through the snake lemma is required at this level: the rigidity of
+the stalk products (`C⁰F(U) = ∏_{x ∈ U} Fₓ`) suffices.
+-/
+
+/-!
+### Part 105 — the fibre of the units square is compatible with restriction
+
+Part 104 established that the fibre of the units square is **bijective** —
+existence by `godementUnits_pullback`, uniqueness by
+`godementUnits_pullback_unique`. But a pointwise bijection is not yet a
+**global** construction: to state the `IsPullback` shape of the units square —
+and draw from it the monicity of the cokernel arrow `coker μ₁ → coker μ₂`
+through `mono_cokernel_map_of_isPullback` — the fibres must **glue** into a
+morphism of presheaves, that is, the fibre bijection must **respect
+restriction**.
+
+This is what Part 105 proves:
+
+1. **Preservation** (`godementUnits_pullback_res`): if `x` is a fibre element
+   over `V` (that is, `f(x) = y` and `unit(x) = z`), then the restriction of
+   `x` to `U ⊆ V` is again a fibre element over `U`: **both** fibre equations
+   are carried over. The first comes from the **naturality** of `S.f` (a
+   morphism of presheaves commutes with restriction); the second from the fact
+   that **the germ commutes with restriction**
+   (`TopCat.Presheaf.germ_res_apply`).
+2. **Restricted uniqueness** (`godementUnits_pullback_res_unique`): the fibre
+   element over `U` is not *a* fibre element, it is **the** restriction of the
+   one over `V` — Part 104's uniqueness applied at `U` identifies any section
+   of `X₁` whose image by `f` is `S.X₂.map i.op y` with the restriction of `x`.
+
+The first lemma uses **no short-exactness hypothesis** at all: it is a fact of
+naturality. The second uses one (Part 104's uniqueness depends on it), but
+**none** on `X₁`: the separatedness of the left term stays unused, as in Part
+102.
+
+What is still missing, and what Part 105 does not do: the **existence** half of
+the gluing — making sure that the restricted datum `(y', z')` does have, at the
+level of `U`, the shape Part 104 consumes (a Godement section of `C⁰X₁(U)`),
+so that the restricted uniqueness can be applied to an element that
+**exists**. Part 105 supplies the **uniqueness** half; the open question is a
+**descent on stalks**, not an algebraic difficulty.
+-/
 
 end Grothendieck_en

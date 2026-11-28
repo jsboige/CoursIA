@@ -53,6 +53,15 @@ on sheaves P84, stability of the cokernel) that remain to be assembled.
   - R. Godement, *Topologie algébrique et théorie des faisceaux* [God58],
     Chap. II §5. Acyclicity `H^n(C⁰F) = 0` for `n ≥ 1` — named frontier of
     Part 90.
+
+## Stacks correspondence
+
+**PARTIAL.** In Stacks the differential of the Godement complex is the alternating
+coface-map complex of the cosimplicial object
+(`Topology/Sheaves/Cohomology/GodementResolution/Basic.lean:329`
+`resolutionComplex`); the canonical step `B → C⁰(coker f)` has no named statement.
+The nullity Stacks states is that of the augmentation with the first differential
+(`Basic.lean:337` `resolutionAugmentationCondition`).
 -/
 
 universe u

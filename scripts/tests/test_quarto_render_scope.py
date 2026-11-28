@@ -16,12 +16,14 @@ scope), and ``restrict_yaml`` is asserted to preserve the project's other keys
 and the whole tail of the file byte-for-byte.
 
 Tests are CPU-only: no ``git``, no subprocess -- ``decide`` and
-``restrict_yaml`` are pure and the changed-file rows are hand-built. Two
-exceptions, both deliberate: ``test_every_glob_in_the_real_render_list_is
-_representable`` reads the repo's own ``_quarto.yml``, and
+``restrict_yaml`` are pure and the changed-file rows are hand-built. Three
+exceptions, all deliberate: ``test_every_glob_in_the_real_render_list_is
+_representable`` reads the repo's own ``_quarto.yml``,
 ``test_changed_files_deepens_a_shallow_checkout_and_retries`` drives real git
 in a throwaway repo -- the shallow-crash it guards against is plumbing, and a
-mock would test the mock. A fixture cannot catch
+mock would test the mock -- and ``test_config_named_assets_finds_the_real_
+theme`` calls the config scan itself, which reads the repo's configs through
+git exactly as the script does in CI. A fixture cannot catch
 someone adding an entry this module's glob translator would silently
 under-match, and under-matching is the failure mode above.
 """
@@ -425,6 +427,99 @@ def test_14431_shape_scopes_to_the_moved_documents():
     assert mode == "scoped"
     assert files == ["MyIA.AI.Notebooks/Search/Search-02c.ipynb",
                      "MyIA.AI.Notebooks/Search/Search-3.ipynb"]
+
+
+# ---------------------------------------------------------------------------
+# decide -- a pure MOVE is not a content change (#28576)
+# ---------------------------------------------------------------------------
+
+# No config names these basenames: the Roo-Code demo stylesheet is a static
+# asset of a demo site, not an input of any rendering.
+NO_NAMED_ASSETS = frozenset()
+
+_DEMO_CSS = "Corrections/04-creation-contenu/demo-1-web/css/style.css"
+_DEMO_CSS_OLD = ("Corrections/corriges-ateliers-roo/ateliers-initiaux/"
+                 "04-creation-contenu/demo-1-web/css/style.css")
+
+
+def test_pure_move_of_an_unreferenced_asset_does_not_force_full():
+    """The measured case (#28576): the only FULL trigger of the PR was two
+    R100 moves of a demo stylesheet, and it paid the full render of 3 088
+    documents -- killed at the 60-min ceiling, five attempts, same wall."""
+    rows = [("R", _DEMO_CSS, _DEMO_CSS_OLD, "100")]
+    mode, files, _ = qrs.decide(rows, ENTRIES, named_assets=NO_NAMED_ASSETS)
+    assert mode == "empty"
+    assert files == []
+
+
+def test_rename_with_a_changed_content_still_forces_full():
+    """Similarity < 100 means the bytes changed: the suffix rule applies
+    under its original reason."""
+    rows = [("R", _DEMO_CSS, _DEMO_CSS_OLD, "97")]
+    assert qrs.decide(rows, ENTRIES, named_assets=NO_NAMED_ASSETS)[0] == "full"
+
+
+def test_pure_move_of_the_root_theme_still_forces_full():
+    """Moving the site theme changes every page."""
+    rows = [("R", "assets/styles.css", "styles.css", "100")]
+    assert qrs.decide(rows, ENTRIES, named_assets=NO_NAMED_ASSETS)[0] == "full"
+
+
+def test_pure_move_of_a_metadata_yml_still_forces_full():
+    """A metadata file's scope follows its directory: moving it re-targets
+    the metadata, so the rendering of the new directory changes."""
+    rows = [("R", "MyIA.AI.Notebooks/_metadata.yml",
+             "old/MyIA.AI.Notebooks/_metadata.yml", "100")]
+    assert qrs.decide(rows, ENTRIES, named_assets=NO_NAMED_ASSETS)[0] == "full"
+
+
+def test_pure_move_of_a_config_named_asset_still_forces_full():
+    """The config is what turns an asset into a rendering input."""
+    rows = [("R", "assets/theme.css", "old/theme.css", "100")]
+    named = frozenset({"theme.css"})
+    assert qrs.decide(rows, ENTRIES, named_assets=named)[0] == "full"
+
+
+def test_unknown_named_assets_keeps_the_conservative_full_render():
+    """named_assets=None means the config scan could not be performed: the
+    exemption is then disabled, never assumed."""
+    rows = [("R", _DEMO_CSS, _DEMO_CSS_OLD, "100")]
+    assert qrs.decide(rows, ENTRIES)[0] == "full"
+
+
+def test_two_field_rows_never_benefit_from_the_move_exemption():
+    """A caller that only knows (status, path) -- the --changed-from file --
+    keeps the conservative behaviour."""
+    rows = [("R", _DEMO_CSS)]
+    assert qrs.decide(rows, ENTRIES, named_assets=NO_NAMED_ASSETS)[0] == "full"
+
+
+def test_moved_documents_are_scoped_and_their_moved_asset_is_not_rendered():
+    """End to end on the #28576 shape: the rendered documents that moved are
+    rendered, the stylesheet that moved alongside them is not (it is not a
+    document), and the scope is the seven documents of the measurement."""
+    rows = [("M", "_quarto.yml"),
+            ("R", "MyIA.AI.Notebooks/Search/Search-02c.ipynb",
+             "old/MyIA.AI.Notebooks/Search/Search-02c.ipynb", "100"),
+            ("R", _DEMO_CSS, _DEMO_CSS_OLD, "100"),
+            ("R", "Corrections/04-creation-contenu/demo-1-web/css/other.css",
+             "Corrections/corriges-ateliers-roo/ateliers-initiaux/04-creation-contenu/demo-1-web/css/other.css",
+             "100")]
+    mode, files, _ = qrs.decide(rows, ENTRIES, yml_render_list_only=True,
+                                 named_assets=NO_NAMED_ASSETS)
+    assert mode == "scoped"
+    assert files == ["MyIA.AI.Notebooks/Search/Search-02c.ipynb"]
+
+
+def test_config_named_assets_finds_the_real_theme():
+    """The one git-driven test of this module: the scan reads the repo's own
+    configs the way the script does in CI, and the repo's only project theme
+    must be in it -- otherwise a moved theme would be taken for a static
+    asset."""
+    names = qrs.config_named_assets()
+    assert names is not None
+    assert "styles.css" in names
+    assert "style.css" not in names  # the demo stylesheet is NOT a theme
 
 
 def test_changed_files_deepens_a_shallow_checkout_and_retries(tmp_path, monkeypatch):

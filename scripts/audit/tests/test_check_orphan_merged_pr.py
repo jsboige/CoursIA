@@ -503,15 +503,15 @@ def test_unlabel_repaired_labeled_pr(monkeypatch, tmp_path):
     _g(repo, "checkout", "-q", "-b", "feature/base")
     _commit(repo, "base leg work", {"_quarto.yml": "cfg"})
     _g(repo, "checkout", "-q", "-b", "feature/site")
-    mc = _commit(repo, "PR work", {"CSP/CSP-5-Optimization.ipynb": "v1"})
+    mc = _commit(repo, "PR work", {"CSP/CSP-05-Optimization-Python.ipynb": "v1"})
     _g(repo, "checkout", "-q", "main")
     _commit(repo, "squash base leg", {"_quarto.yml": "cfg"})
-    _commit(repo, "relanded", {"CSP/CSP-5-Optimization.ipynb": "v1"})
-    _commit(repo, "evolved", {"CSP/CSP-5-Optimization.ipynb": "v9"})
+    _commit(repo, "relanded", {"CSP/CSP-05-Optimization-Python.ipynb": "v1"})
+    _commit(repo, "evolved", {"CSP/CSP-05-Optimization-Python.ipynb": "v9"})
 
     fake_pr = {"number": 11931, "baseRefName": "feature/base",
                "headRefName": "feature/site", "mergedAt": "2026-08-15T10:00:00Z",
-               "mergeCommit": {"oid": mc}, "files": [{"path": "CSP/CSP-5-Optimization.ipynb"}],
+               "mergeCommit": {"oid": mc}, "files": [{"path": "CSP/CSP-05-Optimization-Python.ipynb"}],
                "title": "T", "body": "See #11891"}
 
     def fake_gh(args):

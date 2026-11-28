@@ -28,8 +28,12 @@ from shadow_replay import (
     main,
     metrics,
     plan_qc,
+    qc_benchmark_absent,
+    QC_FROZEN_SESSIONS,
     qc_daily_equity,
     qc_entrypoint,
+    qc_frozen_sessions,
+    qc_publication_witness,
     replay_local,
     save_registry,
     validate,
@@ -286,6 +290,40 @@ def _chart(days: list[str], equity, fees: float = 0.0012, turnover: float = 1.6,
     return {"name": "shadow", "series": series}
 
 
+def _midnight_ts(day: str) -> int:
+    """00:00 New York: the time QC stamps on a benchmark point, one per calendar day."""
+    return int(dt.datetime.combine(dt.date.fromisoformat(day), dt.time(0), tzinfo=NY).timestamp())
+
+
+def _benchmark(closes: list[float], start: str) -> dict:
+    """Chart `Benchmark` as QC returns it: one point per calendar day, weekends included,
+    where a closed market repeats the last close."""
+    day0 = dt.date.fromisoformat(start)
+    return {"name": "Benchmark", "series": {"Benchmark": {"values": [
+        [_midnight_ts(str(day0 + dt.timedelta(days=i))), float(close)]
+        for i, close in enumerate(closes)]}}}
+
+
+def _live_benchmark(start: str, n_days: int) -> dict:
+    """A published market: the close changes every day, so no session repeats."""
+    return _benchmark([700.0 + i for i in range(n_days)], start)
+
+
+def _benchmark_days(points: list[tuple[str, float]]) -> dict:
+    """Chart `Benchmark` point by point, for a chart without one point per calendar day."""
+    return {"name": "Benchmark", "series": {"Benchmark": {"values": [
+        [_midnight_ts(day), float(close)] for day, close in points]}}}
+
+
+# Graphique `Benchmark` du backtest 273d04de (projet 39243884), lu le 2026-11-25 : neuf
+# points, un par jour de calendrier, du jeudi 12 au vendredi 20 novembre. Chaque point porte
+# la cloture de la veille : celui du samedi 14 porte celle du vendredi 13 (754,37 differe de
+# 757,12), le dimanche et le lundi la repetent (marche ferme). Le point du jeudi 19 et celui
+# du vendredi 20 repetent aussi celui de la veille alors que le marche etait ouvert : les
+# barres du mercredi 18 et du jeudi 19 n'etaient pas publiees au passage du vendredi 20.
+BENCHMARK_273D04DE = [759.81, 757.12, 754.37, 754.37, 754.37, 739.95, 732.44, 732.44, 732.44]
+
+
 def _qc_candidate(sha: str = SHA) -> dict:
     return _frozen(id="qc-demo", kind="qc", sha=sha, frozen_on="2025-10-01",
                    entrypoint="qcproj:4242", params={"weight": 0.6})[0]
@@ -350,6 +388,7 @@ def test_plan_qc_extracts_frozen_files(qc_repo, tmp_path):
     assert plan["backtest_name"] == "shadow-qc-demo-2025-11-14"
     assert plan["chart_start"] <= _close_ts("2025-10-01")
     assert plan["chart_end"] > _close_ts("2025-11-14")
+    assert plan["benchmark_chart"] == "Benchmark"
     assert json.loads((target / "plan.json").read_text(encoding="utf-8")) == plan
 
 
@@ -471,7 +510,7 @@ def test_ingest_qc_accepts_the_btc_voltarget_shift():
                         entrypoint="qcproj:4242", params={"weight": 0.6})[0]
     plan = _qc_plan(candidate, pass_date=days[-1])
     row = ingest_qc(candidate, plan, _backtest(plan),
-                    _chart(days, _equity(5), shift=1))
+                    _chart(days, _equity(5), shift=1), _live_benchmark(days[0], 12))
     assert row["period_end"] == days[-1]
     assert row["n_days"] == 4
 
@@ -485,7 +524,7 @@ def test_ingest_qc_refuses_a_shifted_chart_whose_first_session_is_missing():
     plan = _qc_plan(candidate, pass_date=days[-1])
     with pytest.raises(ValueError, match="not the first session of the window"):
         ingest_qc(candidate, plan, _backtest(plan),
-                  _chart(days[1:], _equity(4), shift=1))
+                  _chart(days[1:], _equity(4), shift=1), _live_benchmark(days[0], 12))
 
 
 def test_ingest_qc_accepts_short_window_ending_near_the_pass_date():
@@ -496,7 +535,7 @@ def test_ingest_qc_accepts_short_window_ending_near_the_pass_date():
     plan = _qc_plan(candidate)
     days = _sessions("2025-11-10", 3)
     row = ingest_qc(candidate, plan, _backtest(plan, tradeableDates=9),
-                    _chart(days, _equity(3)))
+                    _chart(days, _equity(3)), _live_benchmark(days[0], 10))
     assert row["period_end"] == days[-1]
 
 
@@ -510,7 +549,7 @@ def test_ingest_qc_accepts_universe_dates_beyond_the_traced_closes():
     days = _sessions("2026-10-05", 15)
     assert days[-1] == "2026-10-23"
     row = ingest_qc(candidate, plan, _backtest(plan, tradeableDates=22),
-                    _chart(days, _equity(15)))
+                    _chart(days, _equity(15)), _live_benchmark(days[0], 24))
     assert row["period_end"] == "2026-10-23" and row["n_days"] == 14
 
 
@@ -523,7 +562,8 @@ def test_ingest_qc_refuses_trailing_truncation():
     equity = _equity(32)
     chart = _chart(days[:22], equity[:22])
     with pytest.raises(ValueError, match="chart truncated or incomplete"):
-        ingest_qc(candidate, plan, _backtest(plan, tradeableDates=32), chart)
+        ingest_qc(candidate, plan, _backtest(plan, tradeableDates=32), chart,
+                  _live_benchmark(days[0], 40))
 
 
 def test_ingest_qc_matches_direct_metrics(tmp_path):
@@ -532,7 +572,7 @@ def test_ingest_qc_matches_direct_metrics(tmp_path):
     days = _sessions("2025-10-01", 32)
     equity = _equity(32)
     row = ingest_qc(candidate, plan, _backtest(plan), _chart(days, equity),
-                    series_dir=tmp_path / "series")
+                    _live_benchmark(days[0], 48), series_dir=tmp_path / "series")
 
     returns = equity[1:] / equity[:-1] - 1
     expected = metrics(days, returns, np.full(31, 1.6 / 31), 0.0012)
@@ -563,7 +603,7 @@ def test_ingest_qc_refuses(change, exc, message):
     chart = _chart(_sessions("2025-10-01", 32), _equity(32))
     change(bt, plan, chart)
     with pytest.raises(exc, match=message):
-        ingest_qc(candidate, plan, bt, chart)
+        ingest_qc(candidate, plan, bt, chart, _live_benchmark("2025-10-01", 48))
 
 
 def test_ingest_qc_refuses_equity_before_freezing():
@@ -571,7 +611,203 @@ def test_ingest_qc_refuses_equity_before_freezing():
     plan = _qc_plan(candidate)
     chart = _chart(_sessions("2025-09-29", 20), _equity(20))
     with pytest.raises(ValueError, match="outside 2025-10-01"):
-        ingest_qc(candidate, plan, _backtest(plan), chart)
+        ingest_qc(candidate, plan, _backtest(plan), chart, _live_benchmark("2025-09-29", 32))
+
+
+def _passage_273d04de():
+    """Le passage de `short-intl-v2` du 2026-11-20 (backtest 273d04de), tel que la plateforme
+    l'a rendu : six seances, l'equite figee du 17 au 19 novembre (100 112,3408 trois fois),
+    les frais et la rotation figes avec elle."""
+    days = ["2026-11-12", "2026-11-13", "2026-11-16", "2026-11-17", "2026-11-18", "2026-11-19"]
+    chart = _chart(days, [100437.8878, 100261.0932, 100112.3193, 100112.3408, 100112.3408,
+                          100112.3408], fees=0.0007117, turnover=0.9904392)
+    candidate = _frozen(id="short-intl-v2", kind="qc", sha=SHA, frozen_on=days[0],
+                        entrypoint="qcproj:4242", params={"weight": 0.6})[0]
+    plan = _qc_plan(candidate, pass_date="2026-11-20")
+    return candidate, plan, _backtest(plan), chart
+
+
+def test_qc_frozen_sessions_reads_the_measured_tail():
+    # Les points du jeudi 19 et du vendredi 20 repetent celui de la veille : les barres du
+    # mercredi 18 et du jeudi 19 n'etaient pas publiees. Le dimanche 15 et le lundi 16
+    # repetent aussi le vendredi 13 : le marche etait ferme, rien ne compte.
+    benchmark = _benchmark(BENCHMARK_273D04DE, "2026-11-12")
+    assert qc_frozen_sessions(benchmark, "2026-11-20") == ["2026-11-18", "2026-11-19"]
+
+
+def test_qc_frozen_sessions_ignores_closed_days():
+    # Un passage le lundi 16 lit deux points qui repetent celui du vendredi 13 : le marche
+    # etait ferme samedi 14 et dimanche 15.
+    assert qc_frozen_sessions(_benchmark([759.81, 757.12, 754.37, 754.37, 754.37],
+                                         "2026-11-12"), "2026-11-16") == []
+
+
+def test_qc_frozen_sessions_does_not_reset_the_run_over_a_weekend():
+    # Barres du jeudi 19 et du vendredi 20 non publiees, passage le lundi 23 : les points
+    # du samedi et du dimanche repetent aussi, sans interrompre la suite.
+    benchmark = _benchmark([701.0, 700.0, 700.0, 700.0, 700.0, 700.0], "2026-11-18")
+    assert qc_frozen_sessions(benchmark, "2026-11-23") == ["2026-11-19", "2026-11-20"]
+
+
+def test_qc_frozen_sessions_stops_at_the_pass_date():
+    # Le point du passage (jeudi 19) porte la barre du mercredi 18 : sa repetition est
+    # comptee. Un point d'apres porterait la seance du passage, hors fenetre.
+    assert qc_frozen_sessions(_benchmark([700.0, 701.0, 701.0, 701.0], "2026-11-17"),
+                              "2026-11-19") == ["2026-11-18"]
+
+
+def test_qc_frozen_sessions_admits_one_closed_weekday():
+    # Jeudi de Thanksgiving 2026 (26/11) : le marche est ferme, le point du vendredi 27
+    # repete celui du jeudi. Une repetition seule ne se distingue pas d'une barre en
+    # retard d'un jour : la seance est rendue, sans atteindre le seuil.
+    assert qc_frozen_sessions(_benchmark([700.0, 701.0, 702.0, 702.0], "2026-11-24"),
+                              "2026-11-27") == ["2026-11-26"]
+    assert 1 < QC_FROZEN_SESSIONS
+
+
+def test_qc_frozen_sessions_keeps_only_the_trailing_run():
+    # Une repetition isolee en cours de fenetre (point du mercredi 25) n'affecte pas la fin.
+    assert qc_frozen_sessions(_benchmark([700.0, 701.0, 701.0, 702.0, 703.0], "2026-11-23"),
+                              "2026-11-28") == []
+
+
+def test_qc_frozen_sessions_compares_only_the_day_after():
+    # Un backtest qui s'arrete en cours de jour ajoute un point a son heure d'arret (cas
+    # mesure sur `controle-v2-sans-defaut`, 2026-11-10 a 19:00). Un second point du meme
+    # jour ne suit pas la veille : il n'est compare a rien, meme s'il repete le premier.
+    def stopped(last: float) -> dict:
+        return {"name": "Benchmark", "series": {"Benchmark": {"values": [
+            [_midnight_ts("2026-11-09"), 74825.0], [_midnight_ts("2026-11-10"), 74780.0],
+            [_midnight_ts("2026-11-10") + 19 * 3600, last]]}}}
+
+    assert qc_frozen_sessions(stopped(73797.0), "2026-11-11") == []
+    assert qc_frozen_sessions(stopped(74780.0), "2026-11-11") == []
+
+
+def test_qc_frozen_sessions_keeps_the_run_over_a_weekend_without_points():
+    # Meme week-end que le test precedent, sans ses deux points : l'ecart du vendredi 20
+    # au lundi 23 ne laisse passer qu'un samedi et un dimanche, et le point du lundi
+    # porte toujours la cloture du vendredi. La seance du vendredi se lit.
+    benchmark = _benchmark_days([("2026-11-17", 100.0), ("2026-11-18", 100.0),
+                                 ("2026-11-19", 100.0), ("2026-11-20", 100.0),
+                                 ("2026-11-23", 100.0)])
+    assert qc_frozen_sessions(benchmark, "2026-11-23") == [
+        "2026-11-17", "2026-11-18", "2026-11-19", "2026-11-20"]
+
+
+def test_qc_frozen_sessions_refuses_a_coverage_break_in_the_tail():
+    # Lundi 16 et mardi 17 a 100, puis jeudi 19 et vendredi 20 a 101 : aucun point le
+    # mercredi 18. Chacune des deux repetitions isole une seance non publiee, mais le
+    # graphique ne dit rien du mercredi : il n'etablit pas que lundi et jeudi se
+    # suivent. Le temoin est incomplet, il ne fonde ni un compte de deux seances de
+    # suite ni leur admission. Le passage est lu au vendredi 20 : la fin du graphique
+    # est lue, seul le trou du milieu reste indecidable.
+    benchmark = _benchmark_days([("2026-11-16", 100.0), ("2026-11-17", 100.0),
+                                 ("2026-11-19", 101.0), ("2026-11-20", 101.0)])
+    with pytest.raises(ValueError, match=r"no point on 2026-11-18.*trailing run \(2026-11-19\)"):
+        qc_frozen_sessions(benchmark, "2026-11-20")
+
+
+def test_qc_frozen_sessions_refuses_a_chart_that_stops_before_the_pass_date():
+    # Meme graphique, passage lu le samedi 21 : le point du vendredi 20 est la derniere
+    # date lue, et la seance du vendredi n'a pas de point suivant qui la tranche. La
+    # repetition du jeudi plaide pour une suite figee qui pourrait l'inclure : la
+    # couverture s'arrete avant le passage, le temoin est incomplet.
+    benchmark = _benchmark_days([("2026-11-19", 101.0), ("2026-11-20", 101.0)])
+    with pytest.raises(ValueError,
+                       match=r"the chart stops on 2026-11-20, before the pass date 2026-11-21"):
+        qc_frozen_sessions(benchmark, "2026-11-21")
+    # Le meme graphique lu au vendredi 20 ne cache rien : la repetition du jeudi reste
+    # une seule seance, sous le seuil, et le passage est admis.
+    assert qc_frozen_sessions(benchmark, "2026-11-20") == ["2026-11-19"]
+
+
+def test_qc_frozen_sessions_closes_a_coverage_break_on_a_published_session():
+    # Meme trou, mais le point du samedi 21 ne repete pas celui du vendredi 20 : la
+    # seance du vendredi a ete publiee, aucune suite figee ne termine le graphique. Le
+    # trou ne porte plus sur la fin, il ne refuse rien.
+    benchmark = _benchmark_days([("2026-11-16", 100.0), ("2026-11-17", 100.0),
+                                 ("2026-11-19", 101.0), ("2026-11-20", 101.0),
+                                 ("2026-11-21", 102.0)])
+    assert qc_frozen_sessions(benchmark, "2026-11-21") == []
+
+
+def test_qc_frozen_sessions_counts_what_follows_a_coverage_break():
+    # Apres le trou du mardi 17, trois seances de suite repetees (mercredi 18, jeudi 19,
+    # vendredi 20, lues aux points du lendemain) : le refus se fonde sur elles seules.
+    benchmark = _benchmark_days([("2026-11-16", 100.0), ("2026-11-18", 101.0),
+                                 ("2026-11-19", 101.0), ("2026-11-20", 101.0),
+                                 ("2026-11-21", 101.0)])
+    assert qc_frozen_sessions(benchmark, "2026-11-21") == [
+        "2026-11-18", "2026-11-19", "2026-11-20"]
+
+
+def test_ingest_qc_refuses_the_passage_that_measured_flat_sessions():
+    # Accepte le 2026-11-20 par la version d'alors, ce passage a ete retire de #27480. La
+    # date de sa derniere cloture (la veille) est recente : la fraicheur des seances se lit
+    # sur le benchmark, pas au calendrier.
+    candidate, plan, backtest, chart = _passage_273d04de()
+    with pytest.raises(ValueError, match=r"last 2 sessions.*\(2026-11-18, 2026-11-19\)"):
+        ingest_qc(candidate, plan, backtest, chart,
+                  _benchmark(BENCHMARK_273D04DE, "2026-11-12"))
+
+
+def test_ingest_qc_names_the_candidate_of_an_incomplete_witness():
+    # Un jour de semaine sans point autour des dernieres seances : le passage est refuse
+    # comme temoin incomplet, au nom de la candidate, pas comme deux seances de suite
+    # que le graphique n'etablit pas.
+    candidate, plan, backtest, chart = _passage_273d04de()
+    benchmark = _benchmark_days([("2026-11-16", 100.0), ("2026-11-17", 100.0),
+                                 ("2026-11-19", 101.0), ("2026-11-20", 101.0)])
+    with pytest.raises(ValueError,
+                       match=r"^short-intl-v2: chart 'Benchmark': no point on 2026-11-18"):
+        ingest_qc(candidate, plan, backtest, chart, benchmark)
+
+
+def test_ingest_qc_accepts_a_flat_candidate_on_a_published_market():
+    # Contre-epreuve : l'equite figee n'est pas ce que le garde refuse. Un portefeuille en
+    # liquidites trace une equite constante ; si le marche, lui, cote, le passage est sain.
+    candidate, plan, backtest, chart = _passage_273d04de()
+    row = ingest_qc(candidate, plan, backtest, chart, _live_benchmark("2026-11-12", 8))
+    assert row["period_end"] == "2026-11-19" and row["n_days"] == 5
+    assert row["turnover"] == pytest.approx(0.9904392 / 5, abs=1e-6)
+
+
+def test_ingest_qc_refuses_a_benchmark_that_stops_before_the_last_close():
+    # Temoin ampute de sa fin : la publication des dernieres seances ne se lit plus.
+    candidate, plan, backtest, chart = _passage_273d04de()
+    with pytest.raises(ValueError,
+                       match=r"'Benchmark' ends on 2026-11-17, before the last close 2026-11-19"):
+        ingest_qc(candidate, plan, backtest, chart, _live_benchmark("2026-11-12", 6))
+
+
+def test_ingest_qc_refuses_a_passage_without_its_benchmark():
+    # Sans temoin, la fraicheur des seances ne se mesure pas : le passage ne s'accepte pas.
+    candidate, plan, backtest, chart = _passage_273d04de()
+    with pytest.raises(ValueError, match="'Benchmark': missing series 'Benchmark'"):
+        ingest_qc(candidate, plan, backtest, chart, {"name": "Benchmark", "series": {}})
+
+
+def test_cli_ingest_qc_refuses_a_plan_dir_without_the_benchmark(tmp_path, capsys):
+    reg, out = tmp_path / "registry.json", tmp_path / "passes.csv"
+    candidate, plan, backtest, chart = _passage_273d04de()
+    save_registry(reg, [candidate])
+    plan_dir = tmp_path / "short-intl-v2"
+    plan_dir.mkdir()
+    (plan_dir / "plan.json").write_text(json.dumps(plan), encoding="utf-8")
+    (plan_dir / "backtest.json").write_text(json.dumps(backtest), encoding="utf-8")
+    (plan_dir / "chart.json").write_text(json.dumps(chart), encoding="utf-8")
+    cmd = ["--registry", str(reg), "--csv", str(out), "ingest-qc", "--plan-dir", str(plan_dir)]
+
+    assert main(cmd) == 1
+    printed = capsys.readouterr().out
+    assert "benchmark.json is missing" in printed and "'Benchmark'" in printed
+
+    (plan_dir / "benchmark.json").write_text(
+        json.dumps(_benchmark(BENCHMARK_273D04DE, "2026-11-12")), encoding="utf-8")
+    with pytest.raises(ValueError, match="not published"):
+        main(cmd)
+    assert not out.exists()
 
 
 def test_cli_plan_qc_then_ingest_qc(qc_repo, tmp_path, capsys):
@@ -600,6 +836,8 @@ def test_cli_plan_qc_then_ingest_qc(qc_repo, tmp_path, capsys):
     days = _sessions("2025-10-01", 32)
     (plan_dir / "backtest.json").write_text(json.dumps(_backtest(plan)), encoding="utf-8")
     (plan_dir / "chart.json").write_text(json.dumps(_chart(days, _equity(32))), encoding="utf-8")
+    (plan_dir / "benchmark.json").write_text(
+        json.dumps(_live_benchmark("2025-10-01", 50)), encoding="utf-8")
 
     assert main(base + ["ingest-qc", "--plan-dir", str(plan_dir)]) == 0
     rows = load_rows(out)
@@ -612,3 +850,164 @@ def test_cli_plan_qc_then_ingest_qc(qc_repo, tmp_path, capsys):
     assert main(base + ["plan-qc", "--pass-date", "2025-11-20", "--repo", str(qc_repo),
                         "--out-dir", str(tmp_path / "plans2")]) == 0
     assert capsys.readouterr().out == "" and not (tmp_path / "plans2").exists()
+
+
+# Graphique `Benchmark` d'un projet qui fixe le modele de courtage IB sans `set_benchmark` :
+# 0.0 sur tous ses points (mesure sur fs774, splits-lo, levetf-base et levetf-postfix le
+# 2026-11-27). Le temoin de publication vient alors d'un autre backtest de la meme passe.
+
+def _zero_benchmark(start: str, n_days: int) -> dict:
+    return _benchmark([0.0] * n_days, start)
+
+
+def _witness(pass_date: str = "2025-11-14", created: str = "2025-11-14 09:00:00",
+             benchmark: dict | None = None, **backtest) -> dict:
+    """Ce que l'operateur passe en `--witness-dir` : une autre candidate de la meme passe."""
+    plan = _qc_plan({"id": "other-v1", "sha": "b" * 40, "frozen_on": "2025-10-01"}, pass_date)
+    return {"plan": plan, "backtest": _backtest(plan, created=created, **backtest),
+            "benchmark": benchmark if benchmark is not None else _live_benchmark("2025-10-01", 48)}
+
+
+def _absent_passage():
+    """Le passage standard de `qc-demo`, lance a 10:00, sans benchmark."""
+    candidate = _qc_candidate()
+    plan = _qc_plan(candidate)
+    days = _sessions("2025-10-01", 32)
+    return (candidate, plan, _backtest(plan, created="2025-11-14 10:00:00"),
+            _chart(days, _equity(32)), _zero_benchmark("2025-10-01", 48))
+
+
+def test_qc_benchmark_absent_reads_zero_on_every_point():
+    assert qc_benchmark_absent(_zero_benchmark("2025-10-01", 48))
+    assert not qc_benchmark_absent(_live_benchmark("2025-10-01", 48))
+    # Un seul point cote suffit : le graphique n'est plus absent, il se lit tel quel.
+    assert not qc_benchmark_absent(_benchmark([0.0, 0.0, 700.0], "2025-10-01"))
+
+
+def test_ingest_qc_refuses_a_benchmark_at_zero_without_witness():
+    # Sans temoin, chaque seance se lirait figee : le refus dit la cause, pas "figee".
+    candidate, plan, backtest, chart, benchmark = _absent_passage()
+    with pytest.raises(ValueError, match=r"^qc-demo: chart 'Benchmark' is 0\.0 on its 48 "
+                                         r"points -- the project sets no benchmark"):
+        ingest_qc(candidate, plan, backtest, chart, benchmark)
+
+
+def test_ingest_qc_reads_the_publication_on_a_witness():
+    # Le temoin ne change que la lecture de la publication : la ligne est celle du passage
+    # dont le graphique `Benchmark` aurait cote le meme marche.
+    candidate, plan, backtest, chart, benchmark = _absent_passage()
+    witness = _witness()
+    row = ingest_qc(candidate, plan, backtest, chart, benchmark, witness=witness)
+    assert row == ingest_qc(candidate, plan, backtest, chart, witness["benchmark"])
+    assert qc_publication_witness(candidate, plan, backtest, benchmark, witness) == (
+        witness["benchmark"], "other-v1")
+
+
+def test_ingest_qc_accepts_a_witness_launched_at_the_same_second():
+    candidate, plan, backtest, chart, benchmark = _absent_passage()
+    row = ingest_qc(candidate, plan, backtest, chart, benchmark,
+                    witness=_witness(created="2025-11-14 10:00:00"))
+    assert row["candidate"] == "qc-demo"
+
+
+def test_ingest_qc_reads_frozen_sessions_on_the_witness():
+    # Le temoin du backtest 273d04de : ses deux dernieres seances ne sont pas publiees, la
+    # candidate lancee apres lui ne les mesure pas davantage.
+    candidate, plan, backtest, chart = _passage_273d04de()
+    backtest["created"] = "2026-11-20 10:00:00"
+    witness = _witness(pass_date="2026-11-20", created="2026-11-20 09:00:00",
+                       benchmark=_benchmark(BENCHMARK_273D04DE, "2026-11-12"))
+    with pytest.raises(ValueError, match=r"^short-intl-v2: benchmark bars of witness other-v1 "
+                                         r"of the last 2 sessions"):
+        ingest_qc(candidate, plan, backtest, chart, _zero_benchmark("2026-11-12", 9),
+                  witness=witness)
+
+
+def test_ingest_qc_names_the_witness_of_a_coverage_break():
+    candidate, plan, backtest, chart = _passage_273d04de()
+    backtest["created"] = "2026-11-20 10:00:00"
+    witness = _witness(pass_date="2026-11-20", created="2026-11-20 09:00:00",
+                       benchmark=_benchmark_days([("2026-11-16", 100.0), ("2026-11-17", 100.0),
+                                                  ("2026-11-19", 101.0), ("2026-11-20", 101.0)]))
+    with pytest.raises(ValueError, match=r"^short-intl-v2: witness other-v1: chart 'Benchmark': "
+                                         r"no point on 2026-11-18"):
+        ingest_qc(candidate, plan, backtest, chart, _zero_benchmark("2026-11-12", 9),
+                  witness=witness)
+
+
+def test_ingest_qc_names_the_witness_of_a_truncated_benchmark():
+    candidate, plan, backtest, chart, benchmark = _absent_passage()
+    with pytest.raises(ValueError, match=r"chart 'Benchmark' of witness other-v1 ends on "):
+        ingest_qc(candidate, plan, backtest, chart, benchmark,
+                  witness=_witness(benchmark=_live_benchmark("2025-10-01", 20)))
+
+
+@pytest.mark.parametrize("change, message", [
+    (lambda w: w["backtest"].update(created="2025-11-14 10:00:01"),
+     "witness other-v1 was launched after the candidate"),
+    (lambda w: w["plan"].update(pass_date="2025-10-14"),
+     "witness other-v1 belongs to the pass of 2025-10-14, not 2025-11-14"),
+    (lambda w: w["backtest"].update(completed=False),
+     "the backtest of witness other-v1 is not completed"),
+    (lambda w: w["backtest"].update(error="Runtime Error"),
+     "the backtest of witness other-v1 is not completed"),
+    (lambda w: w["backtest"].update(name="other"), "witness backtest 'other' is not "),
+    (lambda w: w.update(benchmark=_zero_benchmark("2025-10-01", 48)),
+     "chart .Benchmark. of witness other-v1 is 0.0 everywhere too"),
+    (lambda w: w["plan"].update(candidate="qc-demo"), "the witness is the candidate itself"),
+    (lambda w: w["backtest"].pop("created"), "witness other-v1: backtest launch time None is "
+                                             "unreadable"),
+])
+def test_ingest_qc_refuses_the_witness(change, message):
+    candidate, plan, backtest, chart, benchmark = _absent_passage()
+    witness = _witness()
+    change(witness)
+    with pytest.raises(ValueError, match=f"^qc-demo: {message}"):
+        ingest_qc(candidate, plan, backtest, chart, benchmark, witness=witness)
+
+
+def test_ingest_qc_refuses_a_candidate_without_launch_time():
+    # L'ordre des deux lancements se lit sur `created` : un backtest.json sans lui ne se
+    # compare pas.
+    candidate, plan, backtest, chart, benchmark = _absent_passage()
+    backtest.pop("created")
+    with pytest.raises(ValueError, match="^qc-demo: backtest launch time None is unreadable"):
+        ingest_qc(candidate, plan, backtest, chart, benchmark, witness=_witness())
+
+
+def test_ingest_qc_refuses_a_witness_for_a_quoted_benchmark():
+    # Une seule lecture par passage : la candidate qui cote le marche est son propre temoin.
+    candidate, plan, backtest, chart, _ = _absent_passage()
+    with pytest.raises(ValueError, match="quotes a market, it is its own witness"):
+        ingest_qc(candidate, plan, backtest, chart, _live_benchmark("2025-10-01", 48),
+                  witness=_witness())
+
+
+def test_cli_ingest_qc_reads_the_witness_dir(tmp_path, capsys):
+    reg, out = tmp_path / "registry.json", tmp_path / "passes.csv"
+    candidate, plan, backtest, chart, benchmark = _absent_passage()
+    save_registry(reg, [candidate])
+    plan_dir, witness_dir = tmp_path / "qc-demo", tmp_path / "other-v1"
+    plan_dir.mkdir()
+    witness_dir.mkdir()
+    for name, data in (("plan", plan), ("backtest", backtest), ("chart", chart),
+                       ("benchmark", benchmark)):
+        (plan_dir / f"{name}.json").write_text(json.dumps(data), encoding="utf-8")
+    witness = _witness()
+    for name in ("plan", "backtest"):
+        (witness_dir / f"{name}.json").write_text(json.dumps(witness[name]), encoding="utf-8")
+    base = ["--registry", str(reg), "--csv", str(out), "ingest-qc", "--plan-dir", str(plan_dir)]
+
+    with pytest.raises(ValueError, match="is 0.0 on its 48 points"):
+        main(base)
+    assert main(base + ["--witness-dir", str(witness_dir)]) == 1
+    assert "INVALID qc-demo: witness dir lacks benchmark.json" in capsys.readouterr().out
+    assert not out.exists()
+
+    (witness_dir / "benchmark.json").write_text(json.dumps(witness["benchmark"]),
+                                                encoding="utf-8")
+    assert main(base + ["--witness-dir", str(witness_dir)]) == 0
+    printed = capsys.readouterr().out.splitlines()
+    assert printed[0] == "WITNESS qc-demo: publication read on the chart 'Benchmark' of other-v1"
+    rows = load_rows(out)
+    assert len(rows) == 1 and rows[0]["candidate"] == "qc-demo"

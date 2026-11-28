@@ -1002,6 +1002,37 @@ jobs:
         continue-on-error: true
         run: python scripts/ci/check_grothendieck_umbrella.py --check
 
+      # #28721 :: la table des Parties du README Grothendieck contre le disque.
+      # L'organe existait depuis la tranche 1, mais AUCUNE jambe ne l'executait :
+      # deux modules (`FlasqueAcyclic`, `Monodromie`) sont restes hors du
+      # tableau et le numero 94 etait porte par deux tranches a la fois. Le
+      # point 3 de l'issue -- quelle numerotation fait foi -- est tranche dans
+      # la PR de cablage : la colonne Partie est un numero de TRANCHE, valide
+      # par les chemins `.lean` entre backticks seulement ; la decision est
+      # consignee dans les README eux-memes, la ou l'organe la lit.
+      #
+      # Portee : la PR qui touche le lake Grothendieck. Ce workflow n'a pas de
+      # `paths:` (canari), donc un garde non filtre rougirait sur toutes les
+      # PRs de la flotte pour une derive qu'elles n'ont pas introduite ; le
+      # filtre de diff donne la meme protection sans ce bruit. A l'interieur
+      # de sa portee, le garde est BLOQUANT : un organe cable en advertissement
+      # qui ne rougit jamais reproduit exactement le defaut que l'issue decrit.
+      - name: "Table des Parties Grothendieck vs disque (#28721)"
+        id: grothendieck_parts_table
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          BASE="origin/${{ github.base_ref }}"
+          git fetch origin "${{ github.base_ref }}" -q
+          CHANGED="$(git diff --no-renames --name-only "${BASE}...HEAD" \
+            -- MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean || true)"
+          if [ -z "$CHANGED" ]; then
+            echo "Lake Grothendieck inchange sur cette PR : rien a verifier."
+            exit 0
+          fi
+          printf 'Fichiers du lake touches :\n%s\n' "$CHANGED" | head -40
+          python scripts/lean/check_grothendieck_readme.py --strict
+
       # Porte du cliquet hot-subset traduction (#15196, 5e occurrence du motif
       # #10416 -- un garde aveugle a son SUJET). Le cliquet SRC_DRIFT +
       # traduction deposee (#13551) vivait sous scripts-tests.yml, dont le
