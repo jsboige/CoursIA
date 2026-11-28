@@ -46,7 +46,7 @@ python genai.py quant summary # bonne quant chargee ?
 - Pas d'URL placeholder `yourdomain.com` — vrai sous-domaine.
 
 ## FLAGS connus (inventaire 2026-05-23)
-- `02-5-Multi-Model-TTS-Gateway` 401.
+- `Audio-02-5-Multi-Model-TTS-Gateway-Python` 401.
 - Naming `COMFYUI_API_TOKEN` = `COMFYUI_AUTH_TOKEN` (alias canonique, deux noms pour le même secret — géré par `render_envs.py`). `COMFYUI_BEARER_TOKEN` n'est plus géré.
 
 ## Anti-patterns interdits

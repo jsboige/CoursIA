@@ -26,8 +26,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import (frozen_campaigns, gh_bulk, gh_recherche, tapis_acceptance, tapis_assiette,
                          tapis_dernier_grain, tapis_ecarts_fond, tapis_equilibre, tapis_origami,
-                         tapis_attente, tapis_sature, tapis_service,
-                         tapis_voie_leger)
+                         tapis_attente, tapis_borne, tapis_sature, tapis_service, tapis_voie_leger)
 from coordination.tapis_marqueurs import (
     _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _age, _dt, _iso, _rouverte,
     claims_ouverts, evenements, lane_de_pr)
@@ -50,10 +49,7 @@ LABEL_CONSOLIDATION = "consolidation"
 LABELS_CONTENEUR = frozenset({"epic", "umbrella"})
 # Login partage : la lane habilitee a degeler se lit dans le marqueur, pas dans l'auteur.
 LANES_DEGEL = frozenset({"myia-ai-01:CoursIA", "myia-po-2025:CoursIA-2"})
-# Les textes de service sont dans tapis_service (#26926) : REPLI et VERIF
-# n'ont plus d'usage ici.
-# EPAISSE et SATURE : les deux barrieres de FOND d'un CONTENEUR (#26973).
-# PAUSE : une [RELEASED] qui porte une condition (#27726).
+# EPAISSE, SATURE : barrieres de FOND d'un CONTENEUR (#26973) ; PAUSE : [RELEASED] conditionnelle (#27726).
 CODES = ("HORSFLOTTE", "LABEL", "GEL", "EPAISSE", "PAUSE", "LIVREE", "MERGEE",
          "COUVERTE", "RELACHEE", "PLAFOND", "ORIGAMI", "RECLAMEE", "SATURE")
 
@@ -242,7 +238,9 @@ def _decider(e: Etat, it: dict, evts: list[Evt], ancetres: list[int], ctx: dict)
         ("PAUSE", lambda: tapis_attente.pause(evts, ctx)),
         ("COUVERTE", lambda: None if e.conteneur else _couverte(
             e.numero, ctx["lane"], ctx["prs_par_issue"])),
-        ("RELACHEE", lambda: tapis_attente.relachee(evts, ctx["maintenant"])),
+        # Portee par les CHEMINS (#28899) puis par la LANE (#28440).
+        ("RELACHEE", lambda: tapis_attente.relachee(
+            evts, ctx["maintenant"], ctx["lane"], ctx.get("chemins"))),
         ("PLAFOND", lambda: _plafond(e, evts, ctx["filles"].get(e.numero, []),
                                      ctx["lane"], ctx["maintenant"])),
     ]
@@ -263,7 +261,7 @@ def _prs_par_issue(prs: list[dict]) -> dict[int, list[dict]]:
 
 
 def _contexte(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
-              jours: int = 45):
+              jours: int = 45, chemins: list[str] | None = None):
     """Issues ouvertes, parents, naissances et contexte de decision -- partages
     par `etats` et la re-decision sur fil complet (#27179)."""
     ouvertes = {it["number"]: it for it in lecture.issues}
@@ -275,6 +273,7 @@ def _contexte(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
             filles.setdefault(p, []).append((n, ouvertes[n].get("created_at")))
     ctx = {"lane": lane, "maintenant": maintenant, "citations": lecture.citations,
            "limite": maintenant - timedelta(days=jours), "filles": filles,
+           "chemins": chemins,  # demandes par le consommateur (#28899) ; None au tirage
            "prs_par_issue": _prs_par_issue(lecture.prs),
            # Les numeros encore ouverts (issues ET PRs) : la levee d'une pause
            # se mesure sur l'etat de la cible citee (#27726).
@@ -284,9 +283,9 @@ def _contexte(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
 
 
 def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
-          jours: int = 45) -> list[Etat]:
+          jours: int = 45, chemins: list[str] | None = None) -> list[Etat]:
     """Un `Etat` par issue ouverte, decide sur la seule lecture."""
-    ouvertes, parents, filles, ctx = _contexte(lecture, lane, maintenant, jours)
+    ouvertes, parents, filles, ctx = _contexte(lecture, lane, maintenant, jours, chemins)
     nommes = {p for p in parents.values() if p is not None}
     resultat = []
     depuis = maintenant - timedelta(days=tapis_equilibre.FENETRE_J)
@@ -489,29 +488,34 @@ def _voie_lourde(args, depot: Path, run: gh_bulk.Run, maintenant: datetime | Non
 
 
 def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
-         maintenant: datetime | None = None, lire_fils: object = None) -> int:
+         maintenant: datetime | None = None, lire_fils: object = None,
+         echeance: float | None = None) -> int:
     args = _parser().parse_args(argv)
     depot = Path(__file__).resolve().parents[2]
-    # Garde de fraicheur (mandat 14/11, invariant I4) : la sortie 4 (sans
-    # repli picker) est le REFUS -- mesure impossible ; retard ou module
-    # divergent DEGRADENT (sortie 0). Un rejeu --lecture est hors ligne.
+    # La BORNE de commande (#28114, I6) : une echeance unique, prise ICI.
+    echeance = echeance or tapis_borne.echeance()
+    # Garde de fraicheur (mandat 14/11, invariant I4) : la sortie 4 est le
+    # REFUS (mesure impossible) ; retard ou module divergent DEGRADENT (0).
     fraicheur = None
     if not args.lecture:
         from coordination import main_freshness
-        fraicheur = main_freshness.garder_et_dire(depot, allow_stale=args.allow_stale)
+        fraicheur = main_freshness.garder_et_dire(depot, allow_stale=args.allow_stale,
+                                                 echeance=echeance)
         if fraicheur["refuse"]:
             return 4  # pas le repli picker : il fait rejouer le meme incident
     # Bascule (#27225) : le tirage par defaut est leger -- classement sur
     # metadonnees, qualification du grain servi sur son FIL COMPLET. Le rejeu
     # --lecture est hors ligne : il reste sur la voie lourde, seule voie qui
-    # sait relire un dossier de lecture.
+    # sait relire un dossier de lecture. La voie LOURDE est un DIAGNOSTIC :
+    # elle garde ses budgets propres, pas l'enveloppe I6, qui borne le tirage
+    # par defaut.
     if args.voie == "leger" and not args.lecture:
         # La graine est calculee ICI : elle depend de la tranche de 4 h, et la
         # calculer des deux cotes ouvrirait une course au passage d'une tranche.
         maintenant = maintenant or datetime.now(UTC)
         graine = args.graine or graine_defaut(args.lane, maintenant)
         return tapis_voie_leger.servir(args, depot, run, maintenant, graine,
-                                       fraicheur)
+                                       fraicheur, echeance=echeance)
     return _voie_lourde(args, depot, run, maintenant, fraicheur, lire_fils)
 
 

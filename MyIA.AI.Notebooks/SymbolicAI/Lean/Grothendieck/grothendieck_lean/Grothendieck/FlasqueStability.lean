@@ -43,11 +43,11 @@ version site de la Partie 79 :
     `Subsingleton (H F (n+1))`. Ce theoreme delivre son contenu dans
     l'enonce, pas la preuve (`inferInstance`, l'annulation etant une
     instance Mathlib deja pontee en Partie 20) : il pose la pierre ou
-    Godement met Zorn. **Correction (Partie 94)** : la glose initiale
+    Godement met Zorn. **Correction (Partie 102)** : la glose initiale
     « flasque => injectif (II.5.2) » est **fausse** — sur un espace discret
     a deux points, tous les faisceaux sont flasques et le faisceau constant
     (Z, Z) n'est pas injectif dans Ab x Ab. L'enonce vrai de Godement est
-    *flasque => Γ-acyclique* (II.5.1) : la Partie 94
+    *flasque => Γ-acyclique* (II.5.1) : la Partie 102
     (`Grothendieck.FlasqueAcyclic`) en livre le degre 1 inconditionnel, le
     decalage, et le capstone conditionnel dont l'unique hypothese est
     *injectif => flasque* (II.4, `j_!` absent de Mathlib) — frontiere
@@ -71,7 +71,7 @@ References :
   - Mathlib, `Mathlib.CategoryTheory.Limits.FunctorCategory` (`piObjIso`).
   - Partie 20 (`Grothendieck.SheafCohomology.Basic`) : la cohomologie Ext.
   - Partie 79 (`Grothendieck.Flasque`) : `IsFlasqueSieves`.
-  - Partie 94 (`Grothendieck.FlasqueAcyclic`) : flasque => Γ-acyclique,
+  - Partie 102 (`Grothendieck.FlasqueAcyclic`) : flasque => Γ-acyclique,
     degre 1 inconditionnel + decalage + capstone conditionnel.
   - Partie 63 (`Grothendieck.SheafCondition`) : la decomposition
     produit-egaliseur dont la flasquie est la moitie existence.
@@ -221,7 +221,7 @@ acyclique** : pour un faisceau abelien `F` flasque au niveau des cribles
 cohomologie `H^{n+1}` est triviale. L'annulation est l'instance Mathlib
 deja pontee par la Partie 20 ; ce theoreme la consomme dans le cadre
 flasque. La pierre posee ici precede l'acyclicite inconditionnelle du
-degre 1 livree par la Partie 94 (`Grothendieck.FlasqueAcyclic`) : le vrai
+degre 1 livree par la Partie 102 (`Grothendieck.FlasqueAcyclic`) : le vrai
 theoreme de Godement II.5.1 est *flasque => Γ-acyclique*, dont le seul
 maillon manquant est *injectif => flasque* (II.4) — frontiere documentee
 du lake, consciemment non franchie. -/

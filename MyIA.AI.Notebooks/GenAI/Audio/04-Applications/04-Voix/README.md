@@ -14,7 +14,7 @@ Suivez l'ordre de la table pour passer de la comparaison de moteurs au casting, 
 |---|---|---|
 | [04-7 — Benchmark de voix TTS](04-7-TTS-Voice-Benchmark.ipynb) | Comparer des systèmes et des rendus de synthèse vocale dans un cadre commun. | Point de départ pour situer les moteurs et leurs voix. |
 | [04-9 — Voice casting](04-9-Voice-Casting.ipynb) | Associer une voix à un personnage et raisonner sur la distribution vocale d'un texte. | Applique le choix de voix au pipeline narratif. |
-| [04-19 — Évaluation MOS](04-19-Evaluation-MOS.ipynb) | Construire une évaluation subjective, agréger des notes et examiner l'incertitude et les auditeurs aberrants. | Approfondit l'évaluation de la qualité perçue. |
+| [04-19 — Évaluation MOS](Audio-04-19-Evaluation-MOS-Python.ipynb) | Construire une évaluation subjective, agréger des notes et examiner l'incertitude et les auditeurs aberrants. | Approfondit l'évaluation de la qualité perçue. |
 
 ## Approfondissements — Pratique
 
@@ -28,7 +28,7 @@ Le [benchmark 04-7](04-7-TTS-Voice-Benchmark.ipynb) pose les bases de la compara
 
 ### Évaluer l'écoute avec un protocole
 
-[04-19](04-19-Evaluation-MOS.ipynb) présente une rubrique d'écoute et son agrégateur. Le protocole tient compte de l'ordre de présentation, de notes incohérentes et de l'incertitude associée aux scores ; les notes fictives du carnet illustrent le calcul, tandis qu'une véritable campagne nécessite des évaluations humaines. Les mesures automatiques présentées en complément répondent à des propriétés différentes et ne se substituent pas à l'écoute.
+[04-19](Audio-04-19-Evaluation-MOS-Python.ipynb) présente une rubrique d'écoute et son agrégateur. Le protocole tient compte de l'ordre de présentation, de notes incohérentes et de l'incertitude associée aux scores ; les notes fictives du carnet illustrent le calcul, tandis qu'une véritable campagne nécessite des évaluations humaines. Les mesures automatiques présentées en complément répondent à des propriétés différentes et ne se substituent pas à l'écoute.
 
 Les besoins logiciels, les services appelés et leurs conditions d'accès sont propres à chaque carnet. Les scores et rendus dépendent des voix, des modèles et des auditeurs utilisés ; ne les interprétez pas comme un classement universel.
 
