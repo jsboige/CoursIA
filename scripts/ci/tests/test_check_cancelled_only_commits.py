@@ -11,7 +11,7 @@ import pathlib
 import sys
 from datetime import datetime, timedelta
 
-HERE = pathlib.Path(__file__).resolve().parent
+HERE = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(HERE))
 
 from check_cancelled_only_commits import (  # noqa: E402
@@ -404,7 +404,7 @@ def test_sparse_checkout_ferme_les_imports_de_l_organe(tmp_path):
     import shutil
     import subprocess
 
-    racine = pathlib.Path(__file__).resolve().parents[2]
+    racine = pathlib.Path(__file__).resolve().parents[3]
     workflow = racine / ".github" / "workflows" / _WF_NAME
     assert workflow.is_file(), f"workflow absent : {workflow}"
     fichiers = _sparse_checkout_list(workflow.read_text(encoding="utf-8"))
