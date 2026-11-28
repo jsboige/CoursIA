@@ -4,7 +4,10 @@
 # Uses ghcr.io/myia-org/whisper-api:latest image (pre-built)
 # With full main branch configuration (lazy loading, networks, healthchecks)
 #
-# GPU: RTX 3090 (24GB) - GPU 1 (po-2023)
+# GPU: RTX 3090 (24GB) - GPU_PCI_INDEX 1 (po-2023)
+#      Convention #28423 : CUDA_DEVICE_ORDER=PCI_BUS_ID, index nvidia-smi
+#      (0 = 3080 Ti, 1 = 3090). Les cles GPU_DEVICE_ID et CUDA_VISIBLE_DEVICES
+#      du .env ne sont plus lues : elles portent l'ancienne convention.
 # Port: 8190
 # URL: whisper-api.myia.io
 
@@ -20,7 +23,7 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ['${GPU_DEVICE_ID:-1}']
+              device_ids: ['${GPU_PCI_INDEX:-1}']
               capabilities: [gpu]
 
     ports:
@@ -39,8 +42,9 @@ services:
         target: /root/.cache
 
     environment:
-      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-1}
-      - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-1}
+      - CUDA_DEVICE_ORDER=PCI_BUS_ID
+      - CUDA_VISIBLE_DEVICES=${GPU_PCI_INDEX:-1}
+      - NVIDIA_VISIBLE_DEVICES=${GPU_PCI_INDEX:-1}
       - PYTHONUNBUFFERED=1
       - WHISPER_MODEL=${WHISPER_MODEL:-large-v3-turbo}
       - WHISPER_DEVICE=cuda

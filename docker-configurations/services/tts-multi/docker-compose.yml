@@ -138,20 +138,37 @@ services:
               device_ids: ['${TADA_GPU_ID:-1}']
               capabilities: [gpu]
 
-    # Maintenance#303 bounds: 3B model, measured 316 MiB / 44 PIDs in steady
-    # state; 2g covers the on-demand load path (PRELOAD_MODEL=false) without
-    # letting the model balloon the host.
-    mem_limit: 2g
-    memswap_limit: 2g
+    # Maintenance#303 bounds: steady state measured 316 MiB / 44 PIDs, but the
+    # on-demand load path (PRELOAD_MODEL=false) was never measured and the old
+    # 2g bound killed the container before the encoder finished.
+    # Measured 2026-11-27 on this image and this cache volume (throwaway
+    # replicas, cgroup memory.peak, one 9-word synthesis):
+    #   - encoder + aligner alone: 3 275 MiB host, 2.41 GiB VRAM;
+    #   - full path as the model card loads it (bfloat16 then .to("cuda")):
+    #     6 557 MiB host in the probe, 6 248 MiB on the service, 10.91 GiB VRAM
+    #     (torch allocated), 85 434 samples (3.56 s) generated end to end;
+    #   - the same path in float16: killed at an 8g bound before the 3B finished
+    #     (float16 forces a conversion copy the bfloat16 checkpoint does not need);
+    #   - device_map="cuda" loads at 5 720 MiB host but leaves the decoder nested
+    #     in __init__ on CPU, so the synthesis fails: not a RAM saving.
+    # 8g covers the measured peak with ~1.9 GiB of margin; the model itself lives
+    # on the GPU, so the host bound only has to cover the load path.
+    mem_limit: 8g
+    memswap_limit: 8g
     pids_limit: 128
 
     volumes:
       - type: bind
         source: ${MODELS_PATH:-./models}
         target: /app/models
+      # The service runs as appuser (HOME=/home/appuser). The previous target
+      # (/root/.cache) was unreadable to it, so the volume stayed empty and the
+      # Hugging Face cache lived in the container's writable layer, lost at
+      # every recreate (measured 2026-11-27: the volume held only pip/, while
+      # 1.5 GiB of codecs sat in the writable layer).
       - type: volume
         source: tada-cache
-        target: /root/.cache
+        target: /home/appuser/.cache
 
     environment:
       # Same enumeration fix as tts-kokoro (see comment there, #11624).

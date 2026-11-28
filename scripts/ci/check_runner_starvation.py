@@ -594,6 +594,13 @@ class Starvation:
     skipped_young: int = 0
     budget_unread: list[tuple[str, int, float]] = field(default_factory=list)
     in_progress_unread: int = 0
+    # #28552 : runs in_progress NON lus parce que la garde anti-faux-positif
+    # etait deja satisfaite ET que le run est plus jeune que `starve_minutes`
+    # (il ne peut donc porter aucun job affame, cf passe 2). Distinct de
+    # `in_progress_unread` (hors echantillon, ou un job affame peut se cacher) :
+    # ici rien n'a manque a `starved`, mais le nombre de jobs en cours rendu est
+    # une BORNE INFERIEURE (« au moins N »), jamais une absence.
+    in_progress_satisfied_exit: int = 0
     listing_failed: set[str] = field(default_factory=set)
     # Runs ecartes PAR LE FILTRE DE CHEMIN (jamais lus, jamais comptes) :
     # ils ne peuvent pas porter un job du label mesure. Le compte est une
@@ -783,6 +790,7 @@ def fetch_starvation(
     job_read_budget: int = DEFAULT_JOB_READ_BUDGET,
     in_progress_sample: int = DEFAULT_IN_PROGRESS_SAMPLE,
     local_paths: set[str] | None = None,
+    skip_young_in_progress_after_proof: bool = False,
 ) -> Starvation:
     """Classe les jobs du label : affames (queued > seuil) et en cours.
 
@@ -801,6 +809,18 @@ def fetch_starvation(
     job vu queued puis completed au second passage quitte la liste des affames
     (sinon faux positif apres drain, repro adjoint 2026-09-02 11:23Z) ; seuls
     queued/in_progress sont reinseres.
+
+    ``skip_young_in_progress_after_proof`` (opt-in, #28552) : une fois qu'un
+    job du label a ete vu en cours, la passe 2 saute les runs **plus jeunes que
+    ``starve_minutes``** au lieu de tous les lire. Un job n'etant jamais plus
+    vieux que son run, ces runs ne peuvent porter aucun job affame, et la passe
+    1 ne les a pas lus (elle ne lit que les plus vieux) : ``starved`` reste
+    identique a ce que rend la lecture complete, et le cout par passage tombe.
+    ``in_progress`` devient une **borne inferieure** et
+    ``in_progress_satisfied_exit`` compte les sauts. Les runs **plus vieux**
+    restent lus : c'est la qu'un job queued au-dela du seuil peut se cacher
+    dans un run lui-meme in_progress (#22215). Defaut ``False`` : tout
+    consommateur existant garde exactement le comportement d'avant.
     """
     now = now or datetime.now(timezone.utc)
     result = Starvation()
@@ -924,6 +944,24 @@ def fetch_starvation(
             continue
         if idx >= sample:
             result.in_progress_unread += 1
+            continue
+        # #28552 : la passe in_progress PROUVE qu'un slot du label sert (garde
+        # anti-faux-positif : sans elle, une file qui drainne passerait pour
+        # une file morte). Elle ne sert pas QU'A ca : `absorb` y classe aussi
+        # les jobs queued au-dela du seuil d'un run lui-meme en cours (faux
+        # negatif #22215). Une sortie inconditionnelle des la preuve masquait
+        # donc un job affame loge dans un run plus ancien (review ai-01,
+        # 2026-11-25). Ce qui est saute ici est borne par l'AGE : un job n'est
+        # jamais plus vieux que son run, donc un run de moins de
+        # `starve_minutes` ne peut porter NI job affame, NI observation
+        # anterieure a rafraichir (la passe 1 ne lit que les runs plus vieux)
+        # -- le sauter ne retire rien a `starved`. Les runs plus vieux restent
+        # lus. Le saut est compte separement du budget epuise, et le nombre de
+        # jobs en cours rendu devient une borne inferieure.
+        age_min = (now - created).total_seconds() / 60.0
+        if (skip_young_in_progress_after_proof and result.in_progress
+                and age_min <= starve_minutes):
+            result.in_progress_satisfied_exit += 1
             continue
         absorb(run, "in_progress", created)
 
@@ -1182,6 +1220,36 @@ def _live_queue_depth(repo: str) -> tuple[int | None, int | None, str, int]:
     return report["live_depth"], None, "", calls
 
 
+def _count_in_progress(st: Starvation) -> str:
+    """Compte rendu des jobs en cours (#28552).
+
+    La passe in_progress saute les runs plus jeunes que le seuil des que la
+    garde anti-faux-positif est satisfaite : le nombre lu n'est alors qu'une
+    BORNE INFERIEURE, et le dire « au moins N » est exact. Un echantillon lu en
+    entier rend le compte exact, comme avant.
+    """
+    if st.in_progress_satisfied_exit:
+        return f"au moins {len(st.in_progress)}"
+    return str(len(st.in_progress))
+
+
+def _sample_only(st: Starvation) -> str:
+    """Portee du decompte d'affames (review ai-01 du 25/11, #28552).
+
+    Le decompte ne vaut que pour les runs LUS. Tant qu'il reste des runs non
+    lus -- hors echantillon in_progress, ou faute de budget sur la passe
+    queued -- un job queued au-dela du seuil peut s'y cacher : la conclusion
+    « rien d'affame » se dit alors dans l'echantillon, jamais dans l'absolu.
+    Rendre la chaine vide quand tout est lu garde la formulation d'avant mot
+    pour mot (aucun consommateur ne lit un nota bene qui n'existe pas).
+    """
+    unread = st.in_progress_unread + len(st.budget_unread)
+    if not unread:
+        return ""
+    return (f" (decompte etabli dans l'echantillon seulement : {unread} run(s) "
+            f"non lu(s) peuvent encore porter un job affame)")
+
+
 def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int,
              label: str = DEFAULT_LABEL,
              declared: DeclaredHosts | None = None,
@@ -1241,10 +1309,20 @@ def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int,
         f"{st.skipped_young} run(s) queued trop jeune(s) pour affamer "
         f"(aucun appel jobs)."
     )
+    if st.in_progress_satisfied_exit:
+        v.notes.append(
+            f"{st.in_progress_satisfied_exit} run(s) in_progress plus jeune(s) "
+            f"que le seuil, non lus apres la preuve qu'un job du label tourne "
+            f"(#28552) -- un job n'est jamais plus vieux que son run, donc "
+            f"aucun ne peut y porter un job affame. Le compte de jobs en cours "
+            f"est une borne inferieure."
+        )
     if st.in_progress_unread:
         v.notes.append(
             f"{st.in_progress_unread} run(s) in_progress hors echantillon -- "
-            f"non lus : le predicat ne demande que l'existence d'un job en cours."
+            f"non lus : la preuve qu'un job du label tourne n'en depend pas, "
+            f"mais un job queued au-dela du seuil peut s'y cacher, donc le "
+            f"compte d'affames n'est etabli QUE dans l'echantillon."
         )
     if st.budget_unread:
         oldest_unread = max(a for _, _, a in st.budget_unread)
@@ -1364,12 +1442,17 @@ def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int,
     elif st.starved:
         v.notes.append(
             f"file profonde mais saine: {len(st.starved)} job(s) queued > seuil, "
-            f"{len(st.in_progress)} job(s) in_progress -- capacite en train de drainer"
+            f"{_count_in_progress(st)} job(s) in_progress -- capacite en train de drainer"
+            f"{_sample_only(st)}"
         )
     elif st.in_progress:
-        v.notes.append(f"{len(st.in_progress)} job(s) in_progress, rien d'affame -- OK")
+        tail = _sample_only(st)
+        v.notes.append(
+            f"{_count_in_progress(st)} job(s) in_progress, "
+            + (f"aucun job affame{tail}" if tail else "rien d'affame -- OK"))
     else:
-        v.notes.append("ni queue affamee ni job en cours -- OK")
+        v.notes.append("ni queue affamee ni job en cours"
+                       + (_sample_only(st) or " -- OK"))
 
     # Alertes de perte de pool par hote (#20697 point 4) -- disjointes de
     # EXTINCTION globale : un hote peut perdre tous ses online pendant que le
@@ -1614,6 +1697,13 @@ def main() -> int:
             workflow=args.workflow or None,
             job_read_budget=args.job_read_budget,
             in_progress_sample=args.in_progress_sample,
+            # #28552 : la sonde rend un VERDICT, elle n'a pas besoin du compte
+            # exact de jobs en cours pour le rendre -- elle opte donc pour le
+            # saut des runs in_progress plus jeunes que le seuil une fois la
+            # preuve faite. `ci_overflow_controller` lit `in_progress` comme une
+            # CHARGE et exige `in_progress_unread == 0` : il garde le defaut
+            # (lecture complete), aucun changement de comportement pour lui.
+            skip_young_in_progress_after_proof=True,
         )
         declared = load_declared_hosts(args.declared_hosts, args.label)
         # Profondeur VIVANTE (#26719) : une SECONDE lecture de la file (elle
@@ -1696,6 +1786,12 @@ def main() -> int:
         "skipped_young_runs": st.skipped_young if st is not None else None,
         "budget_unread_runs": len(st.budget_unread) if st is not None else None,
         "in_progress_unread_runs": st.in_progress_unread if st is not None else None,
+        # #28552 : runs non lus parce que la garde anti-faux-positif etait deja
+        # satisfaite. Distinct des `in_progress_unread_runs` (budget) : ici le
+        # verdict ne perd rien, seul le COMPTE de jobs en cours devient une
+        # borne inferieure (rendu « au moins N » dans le rapport texte).
+        "in_progress_satisfied_exit_runs": (
+            st.in_progress_satisfied_exit if st is not None else None),
         "listing_failed": sorted(st.listing_failed) if st is not None else [],
         # L'etat du miroir d'objets (#26453) : la ligne `[WARN][mirror]` doit
         # etre lisible par une machine, pas seulement par un oeil sur le

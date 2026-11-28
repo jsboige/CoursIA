@@ -1,0 +1,21 @@
+# TRANCHE8 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE8
+guards:
+  -
+    name: "Smart-contract engine proof ratchet"
+    argv: ["python", "scripts/notebook_tools/audit_engine_named_not_invoked.py", "--scan-all", "MyIA.AI.Notebooks/SymbolicAI/SmartContracts", "--json"]
+    source: "native"
+    paths: ["MyIA.AI.Notebooks/SymbolicAI/SmartContracts/**/*.ipynb", "scripts/notebook_tools/audit_engine_named_not_invoked.py", "scripts/notebook_tools/tests/test_audit_engine_named_not_invoked.py", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py"]
+    needs_base: true
+    delta_argv: ["python", "scripts/notebook_tools/audit_engine_named_not_invoked.py", "--compare-base", "{base_json}", "--compare-head", "{head_json}", "--json"]
+    swap_paths: ["MyIA.AI.Notebooks/SymbolicAI/SmartContracts"]
+    absorbed: true
+  -
+    name: "Smart-contract standards and execution ratchet"
+    argv: ["python", "scripts/notebook_tools/detect_smartcontract_drift.py", "--scan-all", "MyIA.AI.Notebooks/SymbolicAI/SmartContracts", "--json"]
+    source: "native"
+    paths: ["MyIA.AI.Notebooks/SymbolicAI/SmartContracts/**/*.ipynb", "scripts/notebook_tools/detect_smartcontract_drift.py", "scripts/notebook_tools/tests/test_detect_smartcontract_drift.py", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py"]
+    needs_base: true
+    delta_argv: ["python", "scripts/notebook_tools/detect_smartcontract_drift.py", "--compare-base", "{base_json}", "--compare-head", "{head_json}", "--json"]
+    swap_paths: ["MyIA.AI.Notebooks/SymbolicAI/SmartContracts"]
+    absorbed: true
