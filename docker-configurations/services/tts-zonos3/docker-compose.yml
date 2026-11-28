@@ -1,0 +1,95 @@
+# Service TTS ZONOS3-Mini : serveur natif zonos3-server (backend ggml/CUDA)
+# construit depuis le commit epingle de l'amont (Dockerfile, README.md).
+#
+# GPU : index nvidia-smi (convention #28423, voir plus bas). Sur le siege
+# de reference, ZONOS3_GPU_ID=1 est la RTX 3090 ; l'image est construite pour
+# l'architecture 86 (RTX 3090 et RTX 3080 Ti).
+# Port hote : 1919, publie sur la boucle locale seulement.
+# API : POST /v2/generate, POST /v1/audio/speech, GET /v2/health.
+#
+# Cycle de vie : ce compose n'installe PAS de sidecar idle-monitor et met
+# restart a "no" (motif mesure dans le README, section « Veille et residence ») :
+# le runtime ne sait pas mettre le modele en veille, donc le conteneur ne reside
+# que le temps qu'on le laisse tourner. Demarrage a la demande : docker compose
+# up -d, ou service_wake.ensure_service_up("tts-zonos3", <sante>) cote appelant.
+# Arret : docker compose stop libere la VRAM.
+
+services:
+  tts-zonos3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tts-zonos3
+    hostname: tts-zonos3
+
+    ports:
+      - "127.0.0.1:${ZONOS3_PORT:-1919}:1919"
+
+    # Maintenance#303 : bornes egales (swap desactive) et nombre de processus
+    # borne. Les valeurs viennent de la mesure du conteneur du 2026-11-27
+    # (README.md, section « Bornes mesurees ») : pic memoire du cgroup 1 666 Mio
+    # en charge soutenue au plafond que l'API admet (8 sessions simultanees de
+    # 133 s d'audio, cinq vagues) pour une borne de 3 g ; 38 entrees pids au
+    # pic, threads compris, pour une borne de 128.
+    mem_limit: 3g
+    memswap_limit: 3g
+    pids_limit: 128
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['${ZONOS3_GPU_ID:-1}']
+              capabilities: [gpu]
+
+    volumes:
+      - type: bind
+        source: ${ZONOS3_MODELS_PATH:?ZONOS3_MODELS_PATH est obligatoire (README.md, section Poids)}
+        target: /models
+        read_only: true
+
+    environment:
+      # Convention #28423 : avec CUDA_DEVICE_ORDER=PCI_BUS_ID l'index CUDA
+      # coincide avec celui de nvidia-smi (0 = 3080 Ti, 1 = 3090). Les trois
+      # variables portent la meme valeur pour que le runtime NVIDIA, le toolkit
+      # et le serveur voient le meme GPU.
+      - CUDA_DEVICE_ORDER=PCI_BUS_ID
+      - CUDA_VISIBLE_DEVICES=${ZONOS3_GPU_ID:-1}
+      - NVIDIA_VISIBLE_DEVICES=${ZONOS3_GPU_ID:-1}
+      - ZONOS3_PORT=1919
+      - ZONOS3_BATCH=${ZONOS3_BATCH:-}
+      # Vide = pas d'authentification (protection par la boucle locale). Defini,
+      # le serveur rend l'API en 403 sauf Authorization: Bearer <jeton>.
+      - ZONOS3_ACCESS_TOKEN=${ZONOS3_ACCESS_TOKEN:-}
+      - TZ=${TZ:-Europe/Paris}
+
+    healthcheck:
+      # La sonde porte sa propre borne (connect 3 s, total 8 s). Le jeton, s'il
+      # est arme, est exige par tout le routage : la sonde le presente alors.
+      # « $$ » : la variable est lue dans l'environnement du conteneur au moment
+      # de la sonde, la ou le serveur la prend lui-meme. Le jeton n'est donc pas
+      # recopie dans la ligne de commande de la sonde (visible dans docker inspect
+      # et dans le journal de sante).
+      test: ["CMD-SHELL", "if [ -n \"$${ZONOS3_ACCESS_TOKEN:-}\" ]; then curl --connect-timeout 3 --max-time 8 -sf -H \"Authorization: Bearer $${ZONOS3_ACCESS_TOKEN}\" http://127.0.0.1:1919/v2/health; else curl --connect-timeout 3 --max-time 8 -sf http://127.0.0.1:1919/v2/health; fi"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      # Demarrage jusqu'au premier 200 de la sonde mesure a 7,1 s par ce compose
+      # (2026-11-27) ; 60 s couvre un demarrage a cache de pages froid.
+      start_period: 60s
+
+    restart: "no"
+
+    networks:
+      - zonos3-network
+
+    labels:
+      - "com.myia.service=tts-zonos3"
+      - "com.myia.gpu=rtx-3090"
+      - "com.myia.model=zonos3-mini"
+
+networks:
+  zonos3-network:
+    driver: bridge
+    name: zonos3-network

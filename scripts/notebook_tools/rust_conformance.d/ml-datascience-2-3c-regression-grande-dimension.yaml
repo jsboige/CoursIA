@@ -1,0 +1,461 @@
+# Paire ML 2.3c : jumeau Python + portage Rust (issue #27134, page de spec #28296,
+# Lot 6 de l'Epic Origami #26510).
+# Les deux carnets ont exactement la meme structure (42 cellules, 13 cellules de
+# code) et les memes indices : les cotes se correspondent par index.
+# Cote Rust = evcxr seul, SANS crate : Gram des lignes, spectre par rotations de
+# Jacobi, inversion Gauss-Jordan, NIPALS et PLS sont ecrits dans le preambule.
+# Le carnet 2.3c a un jumeau C# ; il n'est pas declare ici : cette entree atteste
+# la paire Python/Rust de ce grain, et la parite Python/C# a sa propre entree dans
+# twin_pairs.d (ml-datascience-2-3c-grande-dimension.yaml, parity_level semantic).
+# La parite SHA par cote de twin_pairs.d (cote rust) attend le point 1 de #27098 :
+# declaree en commentaire, pas reimplementee ici.
+#
+# POURQUOI DES TOLERANCES PLUTOT QUE L'EGALITE : les deux carnets ne tirent PAS le
+# meme echantillon. Le cote Python le tire de numpy (GRAINE = 42), le cote Rust d'un
+# xorshift64* + Box-Muller maison. Les grandeurs qui ne dependent que du PLAN
+# (formes, rang, en-tetes de tableau, stubs d'exercice) se comparent donc a
+# l'egalite stricte, et celles qui dependent du tirage se comparent a une tolerance
+# declaree, mesuree des deux cotes et motivee dans la description. Les grandeurs
+# dont l'ecart mesure est du meme ordre qu'elles-memes (RMSE de test, lambda de la
+# CV, correlations realisees, k retenus par graine) ne sont PAS declarees : ce
+# registre ne fabrique pas de tolerance pour faire passer un nombre.
+# La conversion du calcul Rust a l'echelle du Python est attestee hors registre :
+# 59 quantites confrontees a scikit-learn 1.5.2 sur les MEMES entrees, ecarts
+# maximaux de l'ordre de 1e-13 (body de la PR).
+- name: "ML 2.3c Regression en grande dimension (OLS, ridge, PCR, PLS)"
+  family: ML/DataScienceWithAgents/02-ML-Cours
+  python: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3c-Regression-Grande-Dimension.ipynb
+  rust: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3c-Regression-Grande-Dimension-Rust.ipynb
+  measures:
+    # --- plan du dispositif : independant du tirage, egalite stricte --------
+    - id: formes
+      description: "Formes du dispositif (n_train, n_test, p, p/n), communes aux deux tirages"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "(n_train=\\d+, n_test=\\d+, p=\\d+  \\(p/n = [\\d.]+\\))"
+          transform: text
+        rust:
+          cell: 2
+          pattern: "(n_train=\\d+, n_test=\\d+, p=\\d+  \\(p/n = [\\d.]+\\))"
+          transform: text
+    - id: rang_et_noyau
+      description: "Rang de X_train et dimension du noyau : consequences du seul plan 120 x 205"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "(rang\\(X_train\\) = \\d+ sur p = \\d+ colonnes -> \\d+ directions du noyau)"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "(rang\\(X_train\\) = \\d+ sur p = \\d+ colonnes -> \\d+ directions du noyau)"
+          transform: text
+    - id: entete_tableau_regimes
+      description: "En-tete du tableau des quatre methodes par regime (cellule 30)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 30
+          pattern: "(methode +regime leurre +regime aligne)"
+          transform: text
+        rust:
+          cell: 30
+          pattern: "(methode +regime leurre +regime aligne)"
+          transform: text
+    - id: entete_tableau_graines
+      description: "En-tete du tableau des dix graines (cellule 35)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 35
+          pattern: "(methode +regime leurre +regime aligne)"
+          transform: text
+        rust:
+          cell: 35
+          pattern: "(methode +regime leurre +regime aligne)"
+          transform: text
+    - id: exercice_1
+      description: "Stub de l'exercice 1 (poids extreme du ridge), execute des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "(Exercice \\d+)"
+          transform: text
+        rust:
+          cell: 11
+          pattern: "(Exercice \\d+)"
+          transform: text
+    - id: exercice_2
+      description: "Stub de l'exercice 2 (rang du signal), execute des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "(Exercice \\d+)"
+          transform: text
+        rust:
+          cell: 16
+          pattern: "(Exercice \\d+)"
+          transform: text
+    - id: exercice_3
+      description: "Stub de l'exercice 3 (regime equivalent), execute des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(Exercice \\d+)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "(Exercice \\d+)"
+          transform: text
+
+    # --- profil du modele vrai : stable au tirage, tolerance etroite --------
+    - id: r2_modele_vrai
+      description: "R2 du modele vrai (bloc B seul) sur le train -- 0.966 contre 0.973"
+      tolerance: 0.02
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "R2 du modele vrai \\(bloc B seul\\) sur train : ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 2
+          pattern: "R2 du modele vrai \\(bloc B seul\\) sur train : ([0-9.]+)"
+          transform: float
+    - id: correlation_bloc_b
+      description: "Correlation intra-bloc B realisee (visee 0.6) -- 0.616 contre 0.669"
+      tolerance: 0.1
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "correlation intra-B mesuree \\(2 premieres\\)  : ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 2
+          pattern: "correlation intra-B mesuree \\(2 premieres\\)  : ([0-9.]+)"
+          transform: float
+    - id: plancher_bruit
+      description: "Plancher irreductible du RMSE de test (bruit en unites z) -- 0.181 contre 0.169"
+      tolerance: 0.05
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "plancher irreductible \\(bruit en unites z\\) ~ ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 5
+          pattern: "plancher irreductible \\(bruit en unites z\\) ~ ([0-9.]+)"
+          transform: float
+
+    # --- stabilite de l'OLS minimum-norme -----------------------------------
+    - id: norme_ols
+      description: "Norme L2 des coefficients OLS minimum-norme -- 0.64 contre 0.62"
+      tolerance: 0.05
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "norme des coefficients : ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 5
+          pattern: "norme des coefficients : ([0-9.]+)"
+          transform: float
+
+    # --- ridge : le remede que le 2.3 annoncait -----------------------------
+    - id: norme_ridge
+      description: "Norme L2 des coefficients ridge a lambda de la CV -- 0.59 contre 0.60"
+      tolerance: 0.05
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "norme L2 des coefficients : ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 8
+          pattern: "norme L2 des coefficients : ([0-9.]+)"
+          transform: float
+    - id: grille_ridge_argmin
+      description: >-
+        Position du minimum de la grille ridge, en log10 lambda -- 1.15 des deux
+        cotes : le balayage place son optimum au meme endroit de la grille, la
+        valeur du minimum, elle, depend du tirage et n'est pas declaree.
+      tolerance: 0.5
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "optimum [0-9.]+ \\(log10 lambda = ([0-9.]+)\\)"
+          transform: float
+        rust:
+          cell: 8
+          pattern: "optimum [0-9.]+ \\(log10 lambda = ([0-9.]+)\\)"
+          transform: float
+
+    # --- ACP : le spectre du dispositif, quasi invariant --------------------
+    - id: variance_40_composantes
+      description: "Part de variance des 40 premieres composantes -- 0.887 contre 0.888"
+      tolerance: 0.01
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "variance expliquee des 40 premieres composantes : ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 13
+          pattern: "variance expliquee des 40 premieres composantes : ([0-9.]+)"
+          transform: float
+    - id: part_variance_c1
+      description: "Part de variance de la premiere composante -- 0.048 contre 0.051"
+      tolerance: 0.01
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "la 1re composante porte ([0-9.]+) de la variance -- et [0-9.]+ de la contribution"
+          transform: float
+        rust:
+          cell: 13
+          pattern: "la 1re composante porte ([0-9.]+) de la variance -- et [0-9.]+ de la contribution"
+          transform: float
+    - id: part_bloc_b_c1
+      description: "Contribution du bloc B aux loadings de la premiere composante -- 0.0289 contre 0.0244"
+      tolerance: 0.01
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "la 1re composante porte [0-9.]+ de la variance -- et ([0-9.]+) de la contribution"
+          transform: float
+        rust:
+          cell: 13
+          pattern: "la 1re composante porte [0-9.]+ de la variance -- et ([0-9.]+) de la contribution"
+          transform: float
+    - id: variance_cumulee_composante_b
+      description: >-
+        Variance cumulee atteinte par la composante la plus chargee en bloc B --
+        0.880 contre 0.904 : dans les deux tirages cette composante arrive tard
+        dans le spectre. Son indice et sa part de bloc B, eux, dependent du
+        tirage (38 a 0.223 contre 43 a 0.104) et ne sont pas declares.
+      tolerance: 0.05
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "variance cumulee ([0-9.]+)\\)"
+          transform: float
+        rust:
+          cell: 13
+          pattern: "variance cumulee ([0-9.]+)\\)"
+          transform: float
+    - id: seuil_15_pct
+      description: >-
+        Ligne « premiere composante ou le bloc B pese > 15% » : le carnet Python
+        l'imprime (indice 38, part 0.223), le jumeau Rust n'a pas de composante
+        au-dessus du seuil et n'emet donc rien.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "(premiere composante ou le bloc B pese > 15%)"
+          transform: text
+        rust:
+          absent: >-
+            Aucune des 40 premieres composantes du tirage Rust n'atteint 15% de
+            contribution du bloc B (maximum a l'indice 43, part 0.104) : la ligne,
+            conditionnelle, n'est pas emise. Cote declare absent, mesure a la
+            generation ; la comparaison stricte porte sur Python.
+
+    # --- PCR et PLS : ordre de grandeur des k retenus -----------------------
+    - id: pcr_k_optimal
+      description: "k retenu par le balayage PCR sur le test -- 44 (Python) contre 45 (Rust, plafond de grille)"
+      tolerance: 2
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "PCR : meilleur k = (\\d+)"
+          transform: int
+        rust:
+          cell: 13
+          pattern: "PCR : meilleur k = (\\d+)"
+          transform: int
+    - id: pls_k_optimal
+      description: "k retenu par le balayage PLS sur le test -- 5 (Python) contre 7 (Rust)"
+      tolerance: 3
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "PLS : meilleur k = (\\d+)"
+          transform: int
+        rust:
+          cell: 18
+          pattern: "PLS : meilleur k = (\\d+)"
+          transform: int
+    - id: part_bloc_b_w1_pls
+      description: "Part du bloc B dans la premiere direction PLS -- 0.610 contre 0.682"
+      tolerance: 0.1
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "part du bloc B dans la 1re direction : PLS = ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 18
+          pattern: "part du bloc B dans la 1re direction : PLS = ([0-9.]+)"
+          transform: float
+    - id: ratio_pcr_pls_k5
+      description: "Rapport PCR/PLS a k = 5 -- 3.9x contre 5.1x : un petit k suffit a la PLS, pas a la PCR"
+      tolerance: 2
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "\\(ratio ([0-9.]+)x\\)"
+          transform: float
+        rust:
+          cell: 21
+          pattern: "\\(ratio ([0-9.]+)x\\)"
+          transform: float
+
+    # --- choix par validation croisee ---------------------------------------
+    - id: k_cv_pcr
+      description: "k PCR retenu par la validation croisee -- 45 des deux cotes, au plafond de la grille"
+      tolerance: 3
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: "k CV retenu : PCR = (\\d+)"
+          transform: int
+        rust:
+          cell: 24
+          pattern: "k CV retenu : PCR = (\\d+)"
+          transform: int
+    - id: k_cv_pls
+      description: "k PLS retenu par la validation croisee -- 7 (Python) contre 9 (Rust)"
+      tolerance: 3
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: "k CV retenu : PCR = \\d+ \\(RMSE CV [0-9.]+\\)   PLS = (\\d+)"
+          transform: int
+        rust:
+          cell: 24
+          pattern: "k CV retenu : PCR = \\d+ \\(RMSE CV [0-9.]+\\)   PLS = (\\d+)"
+          transform: int
+
+    # --- loadings : masse repartie entre les deux blocs ---------------------
+    - id: masse_pca_bloc_a
+      description: "Masse |loading| de la premiere composante ACP sur le bloc A -- 10.83 contre 11.20"
+      tolerance: 0.5
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "PCA u1 : ([0-9.]+) de masse \\|loading\\| sur bloc A"
+          transform: float
+        rust:
+          cell: 27
+          pattern: "PCA u1 : ([0-9.]+) de masse \\|loading\\| sur bloc A"
+          transform: float
+    - id: masse_pca_bloc_b
+      description: "Masse |loading| de la premiere composante ACP sur le bloc B -- 0.37 contre 0.34"
+      tolerance: 0.1
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "PCA u1 : [0-9.]+ de masse \\|loading\\| sur bloc A vs ([0-9.]+) sur bloc B"
+          transform: float
+        rust:
+          cell: 27
+          pattern: "PCA u1 : [0-9.]+ de masse \\|loading\\| sur bloc A vs ([0-9.]+) sur bloc B"
+          transform: float
+    - id: masse_pls_bloc_a
+      description: "Masse |loading| de la premiere direction PLS sur le bloc A -- 7.03 contre 6.59"
+      tolerance: 0.6
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "PLS w1 : ([0-9.]+) de masse \\|loading\\| sur bloc A"
+          transform: float
+        rust:
+          cell: 27
+          pattern: "PLS w1 : ([0-9.]+) de masse \\|loading\\| sur bloc A"
+          transform: float
+    - id: masse_pls_bloc_b
+      description: "Masse |loading| de la premiere direction PLS sur le bloc B -- 1.75 contre 1.85"
+      tolerance: 0.2
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "PLS w1 : [0-9.]+ de masse \\|loading\\| sur bloc A vs ([0-9.]+) sur bloc B"
+          transform: float
+        rust:
+          cell: 27
+          pattern: "PLS w1 : [0-9.]+ de masse \\|loading\\| sur bloc A vs ([0-9.]+) sur bloc B"
+          transform: float
+    - id: part_masse_signal
+      description: "Part de la masse de w1 portee par les 5 variables du signal -- 20% contre 22%"
+      tolerance: 5
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "part de la masse PLS w1 sur les 5 variables du signal : (\\d+)%"
+          transform: int
+        rust:
+          cell: 27
+          pattern: "part de la masse PLS w1 sur les 5 variables du signal : (\\d+)%"
+          transform: int
+
+    # --- dix graines : regularite de l'OLS ----------------------------------
+    - id: ols_derniere_leurre
+      description: "Nombre de graines ou l'OLS arrive dernier, regime leurre -- 8/10 contre 7/10"
+      tolerance: 2
+      reference: python
+      sides:
+        python:
+          cell: 35
+          pattern: "OLS min-norme derniere : (\\d+)/10 graines"
+          transform: int
+        rust:
+          cell: 35
+          pattern: "OLS min-norme derniere : (\\d+)/10 graines"
+          transform: int
+    - id: ols_derniere_aligne
+      description: "Nombre de graines ou l'OLS arrive dernier, regime aligne -- 6/10 des deux cotes"
+      tolerance: 2
+      reference: python
+      sides:
+        python:
+          cell: 35
+          pattern: "graines \\(leurre\\), (\\d+)/10 \\(aligne\\)"
+          transform: int
+        rust:
+          cell: 35
+          pattern: "graines \\(leurre\\), (\\d+)/10 \\(aligne\\)"
+          transform: int

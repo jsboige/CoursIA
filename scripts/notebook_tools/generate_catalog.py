@@ -652,7 +652,7 @@ def _run_git_log() -> tuple[list[dict], float]:
     try:
         result = subprocess.run(
             [
-                "git", "log", GIT_LOG_RENAME_FLAG,
+                "git", "-c", "core.quotePath=false", "log", GIT_LOG_RENAME_FLAG,
                 "--name-status", "--format=COMMIT:%H|%ai|%ae|%s",
                 "--", GIT_LOG_PATHSPEC,
             ],
