@@ -49,7 +49,7 @@ est **independante** (voie a). Voir `scripts/symmetry/README.md`.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from fractions import Fraction
 from math import gcd
@@ -681,19 +681,28 @@ class _Line:
         return (self.direction, self.offset)
 
 
-def _lines_of(group: WallpaperGroup) -> tuple[list[_Line], list[_Line]]:
+def _lines_of(
+    group: WallpaperGroup, elements: Iterable[Affine] | None = None
+) -> tuple[list[_Line], list[_Line]]:
     """Les lignes de miroir et les axes de glissade du groupe.
 
     Pour chaque partie lineaire orientation-reversing ``A``, les elements du
     coset sont ``(A, t_A + lambda)``. Un element est un **miroir** si sa
     composante le long de l'axe est nulle ; sinon c'est une **glissade**, dont
     l'axe est la droite parallele a celle du miroir mais decalee.
+
+    ``elements`` permet de lire les lignes sur un autre jeu de representants
+    (un par classe modulo le reseau), par exemple l'ensemble ferme de
+    `symmetry.closure`. Par defaut, le parcours en largeur du groupe.
     """
     metric = group.lattice.metric
     lattice = translation_lattice(group)
+    if elements is None:
+        elements = _representatives(group).values()
     mirrors: dict[tuple, _Line] = {}
     glides: dict[tuple, _Line] = {}
-    for matrix, element in _representatives(group).items():
+    for element in elements:
+        matrix = element.matrix
         if mat_det(matrix) >= 0:
             continue
         axis = _primitive_direction(_eigen_direction(matrix, F(1)))
@@ -741,7 +750,9 @@ def _glide_directions(group: WallpaperGroup) -> int:
     return len({line.direction for line in glide_lines})
 
 
-def _rotation_centers(group: WallpaperGroup) -> list[tuple[Vector, int]]:
+def _rotation_centers(
+    group: WallpaperGroup, elements: Iterable[Affine] | None = None
+) -> list[tuple[Vector, int]]:
     """Les centres de rotation du groupe, avec leur ordre maximal.
 
     Un centre est un point fixe d'un element de rotation. Pour chaque partie
@@ -749,13 +760,20 @@ def _rotation_centers(group: WallpaperGroup) -> list[tuple[Vector, int]]:
     fixe ``(I - A)^{-1} (t_A + lambda)`` ; on enumere les centres distincts
     modulo le reseau, puis on attribue a chacun l'**ordre maximal** des
     rotations qui le fixent.
+
+    ``elements`` permet de lire les centres sur un autre jeu de representants
+    (un par classe modulo le reseau), par exemple l'ensemble ferme de
+    `symmetry.closure`. Par defaut, le parcours en largeur du groupe.
     """
     metric = group.lattice.metric
     lattice = translation_lattice(group)
-    representatives = _representatives(group)
+    if elements is None:
+        elements = _representatives(group).values()
+    representatives = list(elements)
     identity = identity_matrix()
     candidates: set[Vector] = set()
-    for matrix, element in representatives.items():
+    for element in representatives:
+        matrix = element.matrix
         if matrix == identity or mat_det(matrix) <= 0:
             continue
         for i in range(-6, 7):
@@ -771,7 +789,8 @@ def _rotation_centers(group: WallpaperGroup) -> list[tuple[Vector, int]]:
     result: list[tuple[Vector, int]] = []
     for center in sorted(candidates):
         best = 1
-        for matrix, element in representatives.items():
+        for element in representatives:
+            matrix = element.matrix
             if matrix == identity or mat_det(matrix) <= 0:
                 continue
             order = _matrix_order(matrix)
@@ -815,6 +834,7 @@ def _center_on_mirror(
     center: Vector,
     group: WallpaperGroup,
     lattice: tuple[Vector, Vector],
+    elements: Iterable[Affine] | None = None,
 ) -> bool:
     """Le centre est-il situe sur une ligne de miroir ?
 
@@ -824,8 +844,13 @@ def _center_on_mirror(
     quand ``(I - A) c - t_A`` appartient au reseau de translation -- et un
     element orientation-reversing qui a un point fixe est un miroir (une
     glissade n'en a pas).
+
+    ``elements`` : jeu de representants a balayer (cf. `_lines_of`).
     """
-    for matrix, element in _representatives(group).items():
+    if elements is None:
+        elements = _representatives(group).values()
+    for element in elements:
+        matrix = element.matrix
         if mat_det(matrix) >= 0:
             continue
         value = _apply_inverse_minus(matrix, center)
@@ -838,6 +863,7 @@ def _center_on_glide_axis(
     center: Vector,
     group: WallpaperGroup,
     lattice: tuple[Vector, Vector],
+    elements: Iterable[Affine] | None = None,
 ) -> bool:
     """Le centre est-il situe sur un axe de glissade ?
 
@@ -846,9 +872,14 @@ def _center_on_glide_axis(
     ``A`` pour la valeur ``-1`` : c'est l'axe de la glissade. On balaie les
     elements du coset ``(A, t_A + lambda)`` et on retient ceux dont la
     composante le long de l'axe est non nulle (une glissade, pas un miroir).
+
+    ``elements`` : jeu de representants a balayer (cf. `_lines_of`).
     """
     metric = group.lattice.metric
-    for matrix, element in _representatives(group).items():
+    if elements is None:
+        elements = _representatives(group).values()
+    for element in elements:
+        matrix = element.matrix
         if mat_det(matrix) >= 0:
             continue
         axis = _primitive_direction(_eigen_direction(matrix, F(1)))

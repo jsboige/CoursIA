@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-23
+> REFERENCE — vivante — dernière révision 2026-11-24
 
 # Périmètre PRODUCTION — dérivation mécanique v1
 
@@ -46,7 +46,7 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 | GenAI Video — Foundation | EPF GenAI Bachelor 3A | `01-1-Video-Operations-Basics.ipynb` | 5 | |
 | GenAI Texte (1-8) | EPF GenAI Bachelor 3A | `01_OpenAI_Intro.ipynb` | 8 | |
 | Search — Part 1 Foundations | EPITA Programmation par Contraintes | `Search-01-StateSpace.ipynb` | 13 | |
-| Search — Part 2 CSP | EPITA Programmation par Contraintes | `CSP-1-Fundamentals.ipynb` | 9 | |
+| Search — Part 2 CSP | EPITA Programmation par Contraintes | `CSP-01-Fundamentals-Python.ipynb` | 9 | |
 | Argument Analysis | EPITA IA Symbolique | `Argumentation-01-Toulmin-Model-Python.ipynb` | 4 | |
 | Tweety | EPITA IA Symbolique | `Tweety-02-Basic-Logics-Python.ipynb` | 6 | |
 | Lean | EPITA IA Symbolique | `Lean-02-Dependent-Types-Lean.ipynb` | 2 | |
@@ -152,15 +152,15 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 - [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb`
 <!-- MyIA.AI.Notebooks/Search/Part2-CSP -->
 
-- [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb`
-- [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb`
-- [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb`
-- [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb`
-- [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb`
-- [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb`
-- [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb`
-- [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb`
-- [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb`
+- [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb`
 
 ### EPITA — IA Symbolique (19)
 
@@ -213,15 +213,15 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-5-Bonsai-Image-Ternary.ipynb`
 <!-- MyIA.AI.Notebooks/GenAI/Audio/02-Advanced -->
 
-- [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-1-Chatterbox-TTS-Python.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-5-Multi-Model-TTS-Gateway-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-6-MIDI-Generation-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-7-YuE2-Song-Generation-Python.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-9-AceStep-Music-Generation-Python.ipynb`
 <!-- MyIA.AI.Notebooks/GenAI/Video/02-Advanced -->
 
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-1-HunyuanVideo-Generation.ipynb`

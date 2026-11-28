@@ -1,0 +1,18 @@
+# TRANCHE7 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE7
+guards:
+  -
+    name: "Repeated-prose advisory (per-notebook, non-blocking)"
+    argv: ["python", "scripts/notebook_tools/detect_repeated_prose.py", "--json", "--fail-on-findings", "{changed_paths}"]
+    source: "repeated-prose-advisory.yml"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "scripts/notebook_tools/detect_repeated_prose.py", "scripts/notebook_tools/tests/test_detect_repeated_prose.py", ".github/workflows/repeated-prose-advisory.yml"]
+    blocking: false
+    iterates_paths: true
+    absorbed: true
+    warn_rc:
+      -
+        1
+      -
+        2
+    iterate_paths: ["MyIA.AI.Notebooks/**/*.ipynb"]
+    pre_argv: ["python", "scripts/notebook_tools/detect_repeated_prose.py", "--self-test"]

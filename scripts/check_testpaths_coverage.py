@@ -173,6 +173,12 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # mais absent des testpaths de pytest.ini -- la convergence
         # local <-> CI est un invariant de ce garde (#22735).
         "scripts/ci/tests",
+        # scripts/curriculum/tests : suite neuve de #27657 (temoins des
+        # fonctions pures du generateur de carte des prerequis), pure et sans
+        # reseau. Cablee des trois cotes dans la meme PR (pytest.ini,
+        # liste pytest de scripts-tests.yml, ce dict) -- sans quoi le second
+        # sens du garde (#22735) la voyait sur le disque et non jouee.
+        "scripts/curriculum/tests",
         "MyIA.AI.Notebooks/GameTheory/tests",
         # ICT-Series scripts/tests : dir entier (#23730, classe #22735) —
         # 45 tests sur 3 fichiers (protocol, records, reward_dynamics),
@@ -182,6 +188,21 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # (pytest.ini testpaths, liste pytest de ce workflow, ce dict).
         "MyIA.AI.Notebooks/IIT/ICT-Series/scripts/tests",
         "MyIA.AI.Notebooks/QuantConnect/scripts/tests",
+        # HalloweenIndicator-QC/tests (#27482) : dossier neuf apporté avec son
+        # test (trace d'ombre, AlgorithmImports maquetté, 13 tests en 0,1 s),
+        # câblé des trois côtés dans la même PR.
+        "MyIA.AI.Notebooks/QuantConnect/projects/HalloweenIndicator-QC/tests",
+        # Option-Wheel/tests (#28618) : dossier neuf apporte avec son test,
+        # hermétique (AlgorithmImports maquetté, zéro réseau ; 8 tests en
+        # 0,12 s en local). Cablé des trois côtés dans la même PR — testpaths,
+        # bloc pytest littéral de ce workflow, ce dict — plutôt que déclaré en
+        # dette tolérée : un test ajouté pour prouver un plafond doit tourner.
+        "MyIA.AI.Notebooks/QuantConnect/projects/Option-Wheel/tests",
+        # BitcoinRegimeGate-QC/tests (#27482) : marqueur CI-EXCLUDED leve. Le
+        # tri T1 l'avait range en « classe hypothesis » ; son fichier unique
+        # n'importe pas hypothesis (maquette AlgorithmImports, stdlib + pytest)
+        # et passe depuis la racine sous PYTHONNOUSERSITE=1 (36 tests, 0,2 s).
+        "MyIA.AI.Notebooks/QuantConnect/projects/BitcoinRegimeGate-QC/tests",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests",
@@ -282,8 +303,16 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
     # aussi `test_thermal_safe_train.py` (entraînement torch, ~35 s de
     # collecte seule) qu'un garde léger ne doit PAS collecter — d'où pas
     # d'entrée `pytest.ini` testpaths et pas de cible-dossier ici.
+    # Depuis #28619 la jambe joue trois cibles-fichier, toutes déclarées :
+    # `test_inference_trace.py` entree par #27222 mais jamais inscrite ici
+    # (derive declaration <-> reel du meme garde), et `test_path_profile.py`
+    # (#27214), que la CI ne collectait pas. Une cible déclarée doit
+    # apparaitre VERBATIM dans un bloc `run:` du workflow
+    # (verify_declared_targets) : retirer l'une des trois du pytest rougit.
     ".github/workflows/sudoku-tests.yml": [
         "MyIA.AI.Notebooks/Sudoku/tests/test_dlx_certificates.py",
+        "MyIA.AI.Notebooks/Sudoku/tests/test_inference_trace.py",
+        "MyIA.AI.Notebooks/Sudoku/tests/test_path_profile.py",
     ],
     # geometry-tests.yml : dir entier (issue #23359) — 13 tests Z3/sympy du
     # pont réel real_geometry_bridge.py (tests/test_real_geometry_bridge.py
@@ -370,7 +399,6 @@ CI_EXCLUDED_PLAN: dict[str, str] = {
     # dossier cable dans scripts-tests.yml et pytest.ini (#25366).
     "MyIA.AI.Notebooks/Probas/DecisionTheory/voi/tests": "quotidien",
     "MyIA.AI.Notebooks/QuantConnect/projects/AdaptiveAssetAllocation/tests": "quotidien",
-    "MyIA.AI.Notebooks/QuantConnect/projects/BitcoinRegimeGate-QC/tests": "quotidien",
     "MyIA.AI.Notebooks/QuantConnect/projects/Crypto-MultiCanal/tests": "quotidien",
     "MyIA.AI.Notebooks/QuantConnect/projects/Filing-Language-Stability/tests": "quotidien",
     "MyIA.AI.Notebooks/QuantConnect/projects/FuturesTrend/tests": "quotidien",
@@ -405,7 +433,15 @@ CI_EXCLUDED_PLAN: dict[str, str] = {
 # mort n'excluait plus rien depuis le rename #26392) : 25 marqueurs. Les
 # fichiers et items ne bougent pas (67 / 1110) : l'orphelin ne comptait
 # pour aucun fichier, le dossier Causalite n'a jamais ete dans la population.
-CI_EXCLUDED_BASELINE = {"marqueurs": 25, "fichiers": 67, "items": 1110}
+# #27482 : BitcoinRegimeGate-QC/tests quitte la population (marqueur leve,
+# dossier cable des trois cotes) : 24 marqueurs, 66 fichiers, 1083 items.
+# #25835 : la suite zonos3 de `v4/tests` grandit de 29 a 53 items (24
+# fonctions de test ajoutees, mesurees par collectible_item_count — pas des
+# cas parametres). Le repertoire est sous exclusion motivee (`quotidien`
+# dans CI_EXCLUDED_PLAN), donc sa croissance est declaree ici plutot que
+# silencieuse : marqueurs et fichiers ne bougent pas, seuls les items
+# suivent la suite (1083 + 24 = 1107, mesure sur l'arbre fusionne).
+CI_EXCLUDED_BASELINE = {"marqueurs": 24, "fichiers": 66, "items": 1107}
 
 # Une suite de tests de la famille `scripts/**/tests/` : le repertoire doit
 # porter au moins un `test_*.py` pour compter comme suite (#22735).
