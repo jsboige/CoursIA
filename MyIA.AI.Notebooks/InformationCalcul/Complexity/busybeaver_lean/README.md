@@ -55,7 +55,7 @@ fige l'ensemble d'axiomes attendu, si bien qu'un axiome supplementaire, une preu
 compilation** de ce lake. Le garde s'execute donc avant nos propres reimpressions,
 et non apres elles.
 
-Le carnet `Lean-42-Independance-Arithmetique-BusyBeaver-Lean` (et son jumeau
+Le carnet `Complexity-08f-Independance-Arithmetique-BusyBeaver-Lean-Python` (et son jumeau
 anglais) montre le build et l'audit depuis Python, puis discute le resultat sans
 le re-demontrer.
 

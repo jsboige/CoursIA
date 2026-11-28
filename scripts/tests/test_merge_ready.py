@@ -4230,7 +4230,7 @@ def test_attestation_a_une_tete_anterieure_et_commit_de_contenu_donne_un_skip(tm
 # motif generique « pas d'attestation » ne nomme ni le lake ni le geste. La
 # garde rend donc un motif NOMME.
 
-BUSYBEAVER = "MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean"
+BUSYBEAVER = "MyIA.AI.Notebooks/InformationCalcul/Complexity/busybeaver_lean"
 BUSYBEAVER_LAKEFILE = BUSYBEAVER + "/lakefile.lean"
 CONWAY_LAKEFILE = "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lakefile.lean"
 

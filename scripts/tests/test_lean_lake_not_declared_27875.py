@@ -35,7 +35,7 @@ import lean_build_attestation as lba  # noqa: E402
 
 
 #: Racine du lake introduit par la PR #27587 (cas fondateur).
-BUSYBEAVER = "MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean"
+BUSYBEAVER = "MyIA.AI.Notebooks/InformationCalcul/Complexity/busybeaver_lean"
 BUSYBEAVER_LAKEFILE = BUSYBEAVER + "/lakefile.lean"
 #: Un lake deja declare au manifeste (entree `conway`).
 CONWAY = "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean"
