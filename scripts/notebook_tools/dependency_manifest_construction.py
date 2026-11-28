@@ -130,6 +130,34 @@ def _specifiers_compatible(left: dict, right: dict) -> bool:
     return True
 
 
+#: Extensions des fichiers de dependances, toutes conventions de nom confondues.
+_DEPENDENCY_FILE_SUFFIXES = (".txt", ".yml", ".yaml")
+
+#: Convention `<Carnet>-requirements.txt` (serie `SymbolicAI/Lean/Noeuds`), avec
+#: ses variantes suffixees (`-requirements-legacy.txt`) et sa forme conda
+#: (`-environment.yml`). Le nom du carnet precede toujours un tiret.
+_NOTEBOOK_PREFIXED_DEPENDENCY = re.compile(
+    r"-(?:requirements|environment)(?:-[A-Za-z0-9_.]+)?\.(?:txt|ya?ml)$"
+)
+
+
+def is_dependency_file(path: str) -> bool:
+    """Vrai si ``path`` declare des dependances, quelle que soit sa convention.
+
+    Deux conventions coexistent dans le depot : le fichier de serie
+    (``requirements*.txt``, ``environment*.yml``) et le fichier rattache a un
+    carnet (``<Carnet>-requirements.txt``). Lire l'une sans l'autre laisse une
+    serie entiere hors du manifeste, donc hors de l'image d'apprentissage
+    (#28878) : les deux sont reconnues ici, en un seul endroit.
+    """
+    name = Path(path).name
+    if not name.endswith(_DEPENDENCY_FILE_SUFFIXES):
+        return False
+    if name.startswith(("requirements", "environment")):
+        return True
+    return _NOTEBOOK_PREFIXED_DEPENDENCY.search(name) is not None
+
+
 def build_manifest(repo_root: Path) -> dict:
     """Construit le manifeste complet (donnees brutes, sans rendu)."""
     _VERSION_FALLBACK_CALLS.clear()
@@ -145,12 +173,7 @@ def build_manifest(repo_root: Path) -> dict:
 
     tracked = git_ls_files(repo_root)
     notebooks = [f for f in tracked if f.endswith(".ipynb")]
-    dependency_files = [
-        f
-        for f in tracked
-        if Path(f).name.startswith(("requirements", "environment"))
-        and f.endswith((".txt", ".yml", ".yaml"))
-    ]
+    dependency_files = [f for f in tracked if is_dependency_file(f)]
 
     # --- groupes (repertoires qui portent directement des carnets ou deps) ---
     groups: dict[str, Group] = {}

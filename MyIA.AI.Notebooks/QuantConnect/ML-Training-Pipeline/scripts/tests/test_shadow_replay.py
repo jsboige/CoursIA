@@ -28,10 +28,12 @@ from shadow_replay import (
     main,
     metrics,
     plan_qc,
+    qc_benchmark_absent,
     QC_FROZEN_SESSIONS,
     qc_daily_equity,
     qc_entrypoint,
     qc_frozen_sessions,
+    qc_publication_witness,
     replay_local,
     save_registry,
     validate,
@@ -848,3 +850,164 @@ def test_cli_plan_qc_then_ingest_qc(qc_repo, tmp_path, capsys):
     assert main(base + ["plan-qc", "--pass-date", "2025-11-20", "--repo", str(qc_repo),
                         "--out-dir", str(tmp_path / "plans2")]) == 0
     assert capsys.readouterr().out == "" and not (tmp_path / "plans2").exists()
+
+
+# Graphique `Benchmark` d'un projet qui fixe le modele de courtage IB sans `set_benchmark` :
+# 0.0 sur tous ses points (mesure sur fs774, splits-lo, levetf-base et levetf-postfix le
+# 2026-11-27). Le temoin de publication vient alors d'un autre backtest de la meme passe.
+
+def _zero_benchmark(start: str, n_days: int) -> dict:
+    return _benchmark([0.0] * n_days, start)
+
+
+def _witness(pass_date: str = "2025-11-14", created: str = "2025-11-14 09:00:00",
+             benchmark: dict | None = None, **backtest) -> dict:
+    """Ce que l'operateur passe en `--witness-dir` : une autre candidate de la meme passe."""
+    plan = _qc_plan({"id": "other-v1", "sha": "b" * 40, "frozen_on": "2025-10-01"}, pass_date)
+    return {"plan": plan, "backtest": _backtest(plan, created=created, **backtest),
+            "benchmark": benchmark if benchmark is not None else _live_benchmark("2025-10-01", 48)}
+
+
+def _absent_passage():
+    """Le passage standard de `qc-demo`, lance a 10:00, sans benchmark."""
+    candidate = _qc_candidate()
+    plan = _qc_plan(candidate)
+    days = _sessions("2025-10-01", 32)
+    return (candidate, plan, _backtest(plan, created="2025-11-14 10:00:00"),
+            _chart(days, _equity(32)), _zero_benchmark("2025-10-01", 48))
+
+
+def test_qc_benchmark_absent_reads_zero_on_every_point():
+    assert qc_benchmark_absent(_zero_benchmark("2025-10-01", 48))
+    assert not qc_benchmark_absent(_live_benchmark("2025-10-01", 48))
+    # Un seul point cote suffit : le graphique n'est plus absent, il se lit tel quel.
+    assert not qc_benchmark_absent(_benchmark([0.0, 0.0, 700.0], "2025-10-01"))
+
+
+def test_ingest_qc_refuses_a_benchmark_at_zero_without_witness():
+    # Sans temoin, chaque seance se lirait figee : le refus dit la cause, pas "figee".
+    candidate, plan, backtest, chart, benchmark = _absent_passage()
+    with pytest.raises(ValueError, match=r"^qc-demo: chart 'Benchmark' is 0\.0 on its 48 "
+                                         r"points -- the project sets no benchmark"):
+        ingest_qc(candidate, plan, backtest, chart, benchmark)
+
+
+def test_ingest_qc_reads_the_publication_on_a_witness():
+    # Le temoin ne change que la lecture de la publication : la ligne est celle du passage
+    # dont le graphique `Benchmark` aurait cote le meme marche.
+    candidate, plan, backtest, chart, benchmark = _absent_passage()
+    witness = _witness()
+    row = ingest_qc(candidate, plan, backtest, chart, benchmark, witness=witness)
+    assert row == ingest_qc(candidate, plan, backtest, chart, witness["benchmark"])
+    assert qc_publication_witness(candidate, plan, backtest, benchmark, witness) == (
+        witness["benchmark"], "other-v1")
+
+
+def test_ingest_qc_accepts_a_witness_launched_at_the_same_second():
+    candidate, plan, backtest, chart, benchmark = _absent_passage()
+    row = ingest_qc(candidate, plan, backtest, chart, benchmark,
+                    witness=_witness(created="2025-11-14 10:00:00"))
+    assert row["candidate"] == "qc-demo"
+
+
+def test_ingest_qc_reads_frozen_sessions_on_the_witness():
+    # Le temoin du backtest 273d04de : ses deux dernieres seances ne sont pas publiees, la
+    # candidate lancee apres lui ne les mesure pas davantage.
+    candidate, plan, backtest, chart = _passage_273d04de()
+    backtest["created"] = "2026-11-20 10:00:00"
+    witness = _witness(pass_date="2026-11-20", created="2026-11-20 09:00:00",
+                       benchmark=_benchmark(BENCHMARK_273D04DE, "2026-11-12"))
+    with pytest.raises(ValueError, match=r"^short-intl-v2: benchmark bars of witness other-v1 "
+                                         r"of the last 2 sessions"):
+        ingest_qc(candidate, plan, backtest, chart, _zero_benchmark("2026-11-12", 9),
+                  witness=witness)
+
+
+def test_ingest_qc_names_the_witness_of_a_coverage_break():
+    candidate, plan, backtest, chart = _passage_273d04de()
+    backtest["created"] = "2026-11-20 10:00:00"
+    witness = _witness(pass_date="2026-11-20", created="2026-11-20 09:00:00",
+                       benchmark=_benchmark_days([("2026-11-16", 100.0), ("2026-11-17", 100.0),
+                                                  ("2026-11-19", 101.0), ("2026-11-20", 101.0)]))
+    with pytest.raises(ValueError, match=r"^short-intl-v2: witness other-v1: chart 'Benchmark': "
+                                         r"no point on 2026-11-18"):
+        ingest_qc(candidate, plan, backtest, chart, _zero_benchmark("2026-11-12", 9),
+                  witness=witness)
+
+
+def test_ingest_qc_names_the_witness_of_a_truncated_benchmark():
+    candidate, plan, backtest, chart, benchmark = _absent_passage()
+    with pytest.raises(ValueError, match=r"chart 'Benchmark' of witness other-v1 ends on "):
+        ingest_qc(candidate, plan, backtest, chart, benchmark,
+                  witness=_witness(benchmark=_live_benchmark("2025-10-01", 20)))
+
+
+@pytest.mark.parametrize("change, message", [
+    (lambda w: w["backtest"].update(created="2025-11-14 10:00:01"),
+     "witness other-v1 was launched after the candidate"),
+    (lambda w: w["plan"].update(pass_date="2025-10-14"),
+     "witness other-v1 belongs to the pass of 2025-10-14, not 2025-11-14"),
+    (lambda w: w["backtest"].update(completed=False),
+     "the backtest of witness other-v1 is not completed"),
+    (lambda w: w["backtest"].update(error="Runtime Error"),
+     "the backtest of witness other-v1 is not completed"),
+    (lambda w: w["backtest"].update(name="other"), "witness backtest 'other' is not "),
+    (lambda w: w.update(benchmark=_zero_benchmark("2025-10-01", 48)),
+     "chart .Benchmark. of witness other-v1 is 0.0 everywhere too"),
+    (lambda w: w["plan"].update(candidate="qc-demo"), "the witness is the candidate itself"),
+    (lambda w: w["backtest"].pop("created"), "witness other-v1: backtest launch time None is "
+                                             "unreadable"),
+])
+def test_ingest_qc_refuses_the_witness(change, message):
+    candidate, plan, backtest, chart, benchmark = _absent_passage()
+    witness = _witness()
+    change(witness)
+    with pytest.raises(ValueError, match=f"^qc-demo: {message}"):
+        ingest_qc(candidate, plan, backtest, chart, benchmark, witness=witness)
+
+
+def test_ingest_qc_refuses_a_candidate_without_launch_time():
+    # L'ordre des deux lancements se lit sur `created` : un backtest.json sans lui ne se
+    # compare pas.
+    candidate, plan, backtest, chart, benchmark = _absent_passage()
+    backtest.pop("created")
+    with pytest.raises(ValueError, match="^qc-demo: backtest launch time None is unreadable"):
+        ingest_qc(candidate, plan, backtest, chart, benchmark, witness=_witness())
+
+
+def test_ingest_qc_refuses_a_witness_for_a_quoted_benchmark():
+    # Une seule lecture par passage : la candidate qui cote le marche est son propre temoin.
+    candidate, plan, backtest, chart, _ = _absent_passage()
+    with pytest.raises(ValueError, match="quotes a market, it is its own witness"):
+        ingest_qc(candidate, plan, backtest, chart, _live_benchmark("2025-10-01", 48),
+                  witness=_witness())
+
+
+def test_cli_ingest_qc_reads_the_witness_dir(tmp_path, capsys):
+    reg, out = tmp_path / "registry.json", tmp_path / "passes.csv"
+    candidate, plan, backtest, chart, benchmark = _absent_passage()
+    save_registry(reg, [candidate])
+    plan_dir, witness_dir = tmp_path / "qc-demo", tmp_path / "other-v1"
+    plan_dir.mkdir()
+    witness_dir.mkdir()
+    for name, data in (("plan", plan), ("backtest", backtest), ("chart", chart),
+                       ("benchmark", benchmark)):
+        (plan_dir / f"{name}.json").write_text(json.dumps(data), encoding="utf-8")
+    witness = _witness()
+    for name in ("plan", "backtest"):
+        (witness_dir / f"{name}.json").write_text(json.dumps(witness[name]), encoding="utf-8")
+    base = ["--registry", str(reg), "--csv", str(out), "ingest-qc", "--plan-dir", str(plan_dir)]
+
+    with pytest.raises(ValueError, match="is 0.0 on its 48 points"):
+        main(base)
+    assert main(base + ["--witness-dir", str(witness_dir)]) == 1
+    assert "INVALID qc-demo: witness dir lacks benchmark.json" in capsys.readouterr().out
+    assert not out.exists()
+
+    (witness_dir / "benchmark.json").write_text(json.dumps(witness["benchmark"]),
+                                                encoding="utf-8")
+    assert main(base + ["--witness-dir", str(witness_dir)]) == 0
+    printed = capsys.readouterr().out.splitlines()
+    assert printed[0] == "WITNESS qc-demo: publication read on the chart 'Benchmark' of other-v1"
+    rows = load_rows(out)
+    assert len(rows) == 1 and rows[0]["candidate"] == "qc-demo"
