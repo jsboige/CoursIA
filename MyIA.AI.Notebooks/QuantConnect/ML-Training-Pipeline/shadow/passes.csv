@@ -13,3 +13,4 @@ lsh-lag,fd068a90ff9117e0b42634d6137c951690d23645,2026-10-09,2026-11-02,2026-10-3
 levetf-base,f1a93779396b77398ed23ad8a02678acd786adfd,2026-10-10,2026-11-02,2026-10-30,14,-4.7188,-0.9891,-0.212,0.070178,7.3e-05,modèle de frais par défaut de Lean pour ce courtier
 levetf-postfix,51f26ad1bcbf9bcc325ca86a92fbc83662a3bfeb,2026-10-27,2026-11-02,2026-10-30,3,-13.0253,-1.0,-0.1412,0.326231,6.9e-05,modèle de frais par défaut de Lean pour ce courtier
 btc-voltarget-v2,fa1d63e7071faed29bb2c048f04c9b0feaa1a8b7,2026-11-12,2026-11-15,2026-11-14,2,-84.2963,-1.0,-0.0742,0.357109,0.001429,"modèle de frais par défaut de Lean pour ce courtier (Bitfinex crypto, IBKR equity)"
+short-intl-v2,fa1d63e7071faed29bb2c048f04c9b0feaa1a8b7,2026-11-12,2026-11-22,2026-11-20,6,-7.2281,-0.2823,-0.0072,0.169533,0.000772,"modèle de frais par défaut de Lean, sans courtier déclaré (frais IBKR sur les actions)"
