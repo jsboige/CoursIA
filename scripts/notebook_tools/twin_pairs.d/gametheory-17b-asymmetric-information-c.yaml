@@ -1,7 +1,7 @@
 - name: "GameTheory-17b-Asymmetric-Information C#"
   family: GameTheory
-  python: MyIA.AI.Notebooks/GameTheory/GameTheory-17b-Asymmetric-Information-Python.ipynb
-  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-17b-Asymmetric-Information-CSharp.ipynb
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL/GameTheory-17b-Asymmetric-Information-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL/GameTheory-17b-Asymmetric-Information-CSharp.ipynb
   parity_level: semantic
   known_differences:
     - "2026-11-25 (myia-po-2028:claudish) : parity_level corrige de native-both a semantic -- le niveau natif des deux cotes exige de nommer un moteur externe par cote (_schema.yaml) ; ici cote Python : numpy, pandas et matplotlib seulement ; cote C# : aucune directive #r, aucun using hors System. Aucun verdict de pont n'est porte : il se juge sur le travail, pas sur l'inventaire des imports."

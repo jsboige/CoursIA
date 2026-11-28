@@ -1,6 +1,6 @@
 - name: "GameTheory-17f-Market-to-Balance-Sheet C#"
   family: GameTheory
-  python: MyIA.AI.Notebooks/GameTheory/GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL/GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-17f-Market-to-Balance-Sheet-CSharp.ipynb
   parity_level: native-both
   known_differences:
