@@ -20,7 +20,7 @@ name: testpaths-coverage-guard
 # --- verts locaux, hermeticite runner non demontree (12 testpaths) ---
 # CI-EXCLUDED: MyIA.AI.Notebooks/InformationCalcul/Compression/tests — 13 tests verts (projet-is) ; pas de cible workflow, hermeticite runner a demontrer (T1 #25366)
 # CI-EXCLUDED: MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/tests — 7 tests verts (projet-is) ; pas de cible workflow, hermeticite runner a demontrer (T1 #25366)
-# CI-EXCLUDED: MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests — 284 tests verts (projet-is) ; 5 fichiers deja joues par scripts-tests.yml (T1-B #25909), hermeticite runner a demontrer pour le reste (T1 #25366)
+# CI-EXCLUDED: MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests — 284 tests verts (projet-is) ; 6 fichiers deja joues par scripts-tests.yml (T1-B #25909, #19694), hermeticite runner a demontrer pour le reste (T1 #25366)
 # CI-EXCLUDED: MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/tests — 16 tests verts (projet-is) ; pas de cible workflow, hermeticite runner a demontrer (T1 #25366)
 # CI-EXCLUDED: MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/notebooks/examples/sample_project/tests — 13 tests verts, autonomes (projet-is) ; exemple pedagogique, hermeticite runner a demontrer (T1 #25366)
 # CI-EXCLUDED: MyIA.AI.Notebooks/ML/ML.Net/tests — 10 tests verts (projet-is) ; pas de cible workflow, hermeticite runner a demontrer (T1 #25366)

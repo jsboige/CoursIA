@@ -441,7 +441,17 @@ CI_EXCLUDED_PLAN: dict[str, str] = {
 # dans CI_EXCLUDED_PLAN), donc sa croissance est declaree ici plutot que
 # silencieuse : marqueurs et fichiers ne bougent pas, seuls les items
 # suivent la suite (1083 + 24 = 1107, mesure sur l'arbre fusionne).
-CI_EXCLUDED_BASELINE = {"marqueurs": 24, "fichiers": 66, "items": 1107}
+# #19694 : le marqueur de 04-Applications/v4/tests est au niveau du DOSSIER,
+# donc tout test ajoute dans ses limites compte dans la population meme
+# lorsqu'une jambe le joue. `test_p5_audiocpp_fish_route.py` (21 tests
+# hermetiques, monkeypatch et tmp_path seulement, 2,7 s en local) y entre et
+# est cable dans scripts-tests.yml comme ses cinq voisins : 67 fichiers,
+# 1104 items. L'exclusion du dossier n'est pas levee pour autant (les tests
+# restants du dossier ne sont toujours pas joues par la CI).
+# Les deux croissances se composent sur l'arbre fusionne avec main le 28/11
+# (fusion de #25835) : 67 fichiers, 1083 + 24 + 21 = 1128 items — valeur
+# re-mesuree par cet organe sur l'arbre fusionne, pas recopiee d'un cote.
+CI_EXCLUDED_BASELINE = {"marqueurs": 24, "fichiers": 67, "items": 1128}
 
 # Une suite de tests de la famille `scripts/**/tests/` : le repertoire doit
 # porter au moins un `test_*.py` pour compter comme suite (#22735).
