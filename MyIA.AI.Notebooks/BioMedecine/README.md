@@ -12,7 +12,7 @@ Le parcours s'adresse aux étudiants en biologie, médecine, mathématiques appl
 
 Le principe [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) distingue entrée dans le sujet, approfondissements et recherche.
 
-- **Vous découvrez** : choisissez une question dans la table du parcours principal. [Dynamiques](Dynamiques/README.md) offre la première expérience concrète — trois modèles classiques, trois contrôles indépendants, un contre-témoin qui doit échouer. [Structures](Structures/README.md) part de l'autre bout, la molécule : une chaîne peptidique construite à la main, sa liaison hydrogène, et la carte des hélices régulières ; son second carnet pose la même chaîne, réduite à deux espèces de résidus, sur un réseau carré, et en énumère toutes les conformations ; un troisième transporte le comptage des paires sur un ARN circulaire, où aucune base n'a de côté libre.
+- **Vous découvrez** : choisissez une question dans la table du parcours principal. [Dynamiques](Dynamiques/README.md) offre la première expérience concrète — trois modèles classiques, trois contrôles indépendants, un contre-témoin qui doit échouer. [Structures](Structures/README.md) part de l'autre bout, la molécule : une chaîne peptidique construite à la main, sa liaison hydrogène, et la carte des hélices régulières ; son second carnet pose la même chaîne, réduite à deux espèces de résidus, sur un réseau carré, et en énumère toutes les conformations ; un troisième transporte le comptage des paires sur un ARN circulaire, où aucune base n'a de côté libre. [Séquences](Sequences/README.md) prend le troisième objet, la comparaison : deux récurrences écrites à partir de zéro, un contrôle par énumération exhaustive, et un juge qui ne partage ni code ni convention — la bibliothèque Biopython, sur des protéines publiques.
 - **Vous approfondissez** : la section « Sous-séries » dit ce que contient chaque dossier et ce qui reste à écrire. Les plis sont indépendants ; les numéros des carnets décrivent une progression à l'intérieur d'un pli.
 - **Vous explorez des fondements** : chaque carnet sépare par écrit ce qui est **mesuré** dans le carnet, ce qui est **cité** d'une source et ce qui reste **ouvert**. Cette séparation est le cœur de la méthode, plus encore que les résultats.
 
@@ -38,7 +38,7 @@ Deux règles s'y ajoutent :
 | Question | Pli et premier carnet | Ce qu'on y apprend | Prérequis et public | Pour approfondir |
 |---|---|---|---|---|
 | Comment une population ou une épidémie évolue-t-elle ? | [Dynamiques](Dynamiques/README.md) → [Populations et épidémies](Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb) | Croissance logistique et solution exacte, Lotka-Volterra et son intégrale première, SIR avec $R_0$ et taille finale ; ordre de convergence mesuré. | Licence : Python, équations différentielles ordinaires. | L'épidémie sur réseau de contacts, puis l'inférence des paramètres avec `Probas/PyMC/`. |
-| Comment comparer et lire des séquences d'ADN ou de protéines ? | Séquences — à venir | Alignements de Needleman-Wunsch et Smith-Waterman par programmation dynamique, matrices de substitution, pénalités de brèche, matrices de poids positionnelles. | Licence : algorithmique de base, probabilités. | Les HMM de profil et l'inférence du motif planté avec `Probas/Infer/`. |
+| Comment comparer et lire des séquences d'ADN ou de protéines ? | [Séquences](Sequences/README.md) → [Alignement par programmation dynamique](Sequences/Sequences-01-Alignement-Programmation-Dynamique-Python.ipynb) | Alignements global et local à brèches affines, écrits à partir de zéro et contrôlés par énumération exhaustive ; matrices de substitution construites depuis un modèle de mutation, et contrôle par la bibliothèque de référence sur des protéines publiques. La feuille suivante : recherche de motif et matrice de poids positionnelle. | Licence : algorithmique de base, probabilités. | Les HMM de profil et l'inférence du motif planté avec `Probas/Infer/`. |
 | Comment l'évolution se calcule-t-elle ? | Évolution — à venir | Hardy-Weinberg, Wright-Fisher et Moran, probabilité de fixation, coalescent, reconstruction phylogénétique, jeux évolutionnaires. | Licence : probabilités, génétique de population élémentaire. | La dynamique des réplicateurs de `GameTheory/Dynamics/`, qui est la même mécanique. |
 | Comment un réseau de gènes produit-il un comportement ? | Réseaux du vivant — à venir | Action de masse, Michaelis-Menten, Hill, interrupteur bistable, répressilateur, motifs de Turing. | Licence avancée : cinétique chimique, équations différentielles. | Les motifs de réaction-diffusion de `IIT/ICT-Series/`. |
 | Comment un neurone émet-il un potentiel d'action ? | Neurones — à venir | Hodgkin-Huxley, FitzHugh-Nagumo, intègre-et-tire, plan de phase et excitabilité. | Licence avancée : équations différentielles, analyse qualitative. | La réduction de FitzHugh-Nagumo confrontée au modèle complet. |
@@ -65,9 +65,15 @@ La sous-série s'étendra à l'épidémie sur réseau de contacts simulée par a
 
 La sous-série s'étendra au repliement d'ARN par minimisation d'une énergie, et à l'apprentissage sur des graphes de protéines.
 
-### Les cinq autres plis
+### Séquences — Licence
 
-Séquences, Évolution, Réseaux du vivant, Neurones et Mesure médicale sont décrits dans la table du parcours principal. Leurs carnets ne sont pas encore écrits ; leurs dossiers apparaîtront avec leur première feuille, et non avant.
+[Séquences](Sequences/README.md) prend la comparaison comme objet. [Séquences-01](Sequences/Sequences-01-Alignement-Programmation-Dynamique-Python.ipynb) écrit à la main l'alignement global et l'alignement local à brèches affines, puis les confronte à deux voies qui ne partagent pas leur code : l'énumération de tous les alignements — `900` paires de séquences à deux lettres, `127 180` alignements, écart maximal `0.0` — et la bibliothèque Biopython, sur deux insulines et deux globines, où les scores coïncident exactement. La matrice de substitution est construite depuis un modèle de mutation déclaré, et son score moyen vérifié contre l'information mutuelle calculée ; la simulation à vérité connue donne la part des sites homologues que l'alignement retrouve, de `0,996` à `0,592` selon la distance. Ses contre-témoins disent ce que les contrôles savent voir : un glouton s'écarte de l'optimum sur `97` paires sur `100`, une récurrence fautive est relevée deux fois, et le contrôle de vérité échoue à grande distance.
+
+La sous-série s'étendra à la recherche de motif — matrice de poids positionnelle, inférence du motif planté avec `Probas/Infer/` — puis aux modèles de profil et aux heuristiques de graines.
+
+### Les quatre autres plis
+
+Évolution, Réseaux du vivant, Neurones et Mesure médicale sont décrits dans la table du parcours principal. Leurs carnets ne sont pas encore écrits ; leurs dossiers apparaîtront avec leur première feuille, et non avant.
 
 ## Liens avec les autres séries
 
@@ -79,24 +85,25 @@ Séquences, Évolution, Réseaux du vivant, Neurones et Mesure médicale sont d�
 
 ## Installation — pratique, tous niveaux
 
-Les carnets de Dynamiques et de Structures tournent sur le noyau `python3`, sans GPU, et sont livrés avec leurs sorties. NumPy, SciPy et Matplotlib suffisent.
+Les carnets de Dynamiques, de Structures et de Séquences tournent sur le noyau `python3`, sans GPU, et sont livrés avec leurs sorties. NumPy, SciPy, Matplotlib et Biopython suffisent ; seul Séquences-01 appelle le réseau, une fois, pour charger quatre séquences publiques.
 
 Depuis la racine du dépôt :
 
 ```bash
 python -m venv .venv-biomedecine
 source .venv-biomedecine/bin/activate
-python -m pip install jupyterlab ipykernel numpy scipy matplotlib
+python -m pip install jupyterlab ipykernel numpy scipy matplotlib biopython
 python -m ipykernel install --user --name coursia-biomedecine --display-name "Python — Bio & Médecine"
 jupyter lab MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb
 jupyter lab MyIA.AI.Notebooks/BioMedecine/Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb
 jupyter lab MyIA.AI.Notebooks/BioMedecine/Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb
 jupyter lab MyIA.AI.Notebooks/BioMedecine/Structures/Structures-03-ARN-Circulaire-Repliement-Paires-Python.ipynb
+jupyter lab MyIA.AI.Notebooks/BioMedecine/Sequences/Sequences-01-Alignement-Programmation-Dynamique-Python.ipynb
 ```
 
 Sous Windows, activer l'environnement avec `.\.venv-biomedecine\Scripts\Activate.ps1`. Sélectionner le noyau « Python — Bio & Médecine », puis exécuter les cellules dans l'ordre. Les [commandes communes](../../docs/reference/common-commands.md) complètent l'aide à l'environnement.
 
-Les plis à venir ajouteront leurs dépendances : `biopython` pour les alignements de référence, `networkx` pour les réseaux, `scikit-survival` pour l'analyse de survie. Aucun GPU n'est requis.
+Les plis à venir ajouteront leurs dépendances : `networkx` pour les réseaux, `scikit-survival` pour l'analyse de survie. Aucun GPU n'est requis.
 
 ## Statut et gouvernance
 
