@@ -165,10 +165,13 @@ Le matériel QuantConnect se répartit en zones, chacune avec son README feuille
 |------|---------|--------|
 | **`Python/`** | Le parcours pédagogique et ses compléments, détaillés ci-dessus — parcourus en Python (kernel Jupyter), exécutables sur QC Cloud ou en local selon le carnet | [README Python](Python/README.md) |
 | **`projects/`** | Les stratégies prêtes à backtester (`main.py`), classées par robustesse ; l'inventaire et le statut de chaque entrée vivent dans le doc canonique | [README projects](projects/README.md) · [statut des stratégies](../../docs/qc/qc-strategies-status.md) |
-| **`research/`** | Recherche autonome sur données locales (yfinance, sklearn) : effets calendaires, anomalie IVOL, composites, volatilité HAR-RV-J | [README research](research/README.md) |
+| **`Python/research/`** | Les notebooks de recherche **compagnons** du parcours : chacun approfondit sur QuantBook le notebook de cours auquel il est apparié (catégorie (b), exécution QC Cloud) | [README Python research](Python/research/README.md) |
+| **`research/`** | Le hub de recherche autonome sur données locales (yfinance, sklearn) : effets calendaires, anomalie IVOL, composites, volatilité HAR-RV-J, reinforcement learning, écriture d'options | [README research](research/README.md) |
 | **`ML-Training-Pipeline/`** | Campagnes d'entraînement systématiques (échelle de complexité des modèles, curriculum, registre des runs et checkpoints) | [README ML pipeline](ML-Training-Pipeline/README.md) |
 | **`partner-course-quant-trading/`** | Exemples de recherche avancée du cours partenaire, kit de transition et templates de projets étudiants | [README cours partenaire](partner-course-quant-trading/README.md) |
 | **`examens/`** | Sujets de rattrapage 2024 et 2025 avec corrigés et sources LaTeX, rattachés notion par notion aux notebooks | [README examens](examens/README.md) |
+
+Les deux zones « research » de la série ne sont pas la même chose : `research/` est le hub de recherche autonome (données locales, hors QC Cloud), `Python/research/` regroupe les companions du parcours, exécutés sur QuantConnect Cloud. Chaque zone porte son README feuille.
 
 Une particularité de cette famille : le parcours et la recherche sont en **Python**, tandis que la preuve formelle du dimensionnement de position (critère de Kelly) vit dans le lake **Lean 4** [`kelly_lean/`](kelly_lean/README.md) — présenté sous [Pour aller plus loin](#pour-aller-plus-loin), car il formalise le parcours sans en être une étape.
 

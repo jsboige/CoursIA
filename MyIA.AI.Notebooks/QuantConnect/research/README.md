@@ -9,9 +9,26 @@ maturity:
 
 Recherche indépendante utilisant des données locales (yfinance, pandas, sklearn). La majorité des notebooks s'exécutent en local sans QuantConnect Cloud ; les notebooks des familles M11/M12 (`research_btc_ml`, `research_m11ef_ensemble`, `research_m12_har_rv_j`, `research_m12_har_rv_j_minute`) chargent leurs données crypto via `QuantBook` QC Cloud (type (b), signalés dans le tableau ci-dessous).
 
-## Notebooks
+## Comment lire ce README
 
-| Notebook | Sujet | Type | Source de données |
+- **Vous voulez une carte du dossier** : la colonne « Ce qu'on y apprend » de la table ci-dessous
+  dit, pour chaque carnet, la question qu'il tranche et le verdict qu'il publie.
+- **Vous débutez** : `intraday_volume_periodicity.ipynb` est la seule illustration entièrement
+  synthétique — elle ne demande ni compte QuantConnect ni données téléchargées.
+- **Vous cherchez un résultat publiable** : commencez par les carnets qui portent un verdict
+  explicite (`NO BEATS`, `INCONCLUSIVE`) — la colonne le nomme, et la section [Ce que vous avez
+  appris](#ce-que-vous-avez-appris) dit ce que chaque famille en tire.
+- **Vous voulez la famille volatilité haute fréquence** : les carnets M12 forment une paire —
+  l'estimation, puis le test qui la valide.
+- **Vous devez choisir votre environnement** : la colonne « Type » sépare les carnets locaux des
+  carnets QuantBook ; la [Conclusion](#conclusion--prochaines-etapes) donne la commande
+  d'installation locale.
+- Les nombres d'inventaire vivent dans le bloc `CATALOG-STATUS` et le catalogue généré ; ce README
+  ne les recopie pas.
+
+## Parcours principal
+
+| Notebook | Ce qu'on y apprend | Type | Source de données |
 |----------|-------|------|-------------------|
 | `intraday_volume_periodicity.ipynb` | Periodicite intraday du volume (illustration pedagogique CPU-only) | (c) Standalone | simulation synthetique (numpy) |
 | `research_btc_ml.ipynb` | Caractéristiques de prédiction ML BTC | (b) QuantBook QC Cloud | QC Cloud crypto (BTCUSDT Binance) |
@@ -40,6 +57,21 @@ Recherche indépendante utilisant des données locales (yfinance, pandas, sklear
 | `research_vrp_putwrite.ipynb` | Stratégie VRP put-write | (c) Standalone | yfinance |
 
 Sur l'ensemble de la série, la **majorité est de type (c) standalone research** (exécution locale avec `pip install yfinance pandas matplotlib scikit-learn` ; la famille M12-HF utilise des données tick BTC Bitstamp possédées agrégées en minute localement) ; le reste est de type (b), research lié au quantbook QC Cloud (`research_btc_ml`, `research_m11ef_ensemble`, `research_m12_har_rv_j` exécutés, et la variante `_minute` qui instancie `QuantBook` sans outputs committés — à exécuter sur QC Cloud). Le décompte par type se lit dans le tableau ci-dessus ; les totaux relèvent de la régénération du catalogue.
+
+## Approfondissements
+
+| Fil | Carnets | Ce qu'on y apprend |
+|---|---|---|
+| Effets de calendrier | `research_day_of_week`, `research_month_of_year`, `research_turn_of_month` | trois anomalies calendaires testées de la même façon — brut, net de coûts, walk-forward et test de significativité — et trois verdicts négatifs, ce qui est le résultat |
+| Facteurs et allocation | `research_fifty_two_week_high`, `research_idio_vol_anomaly`, `research_quality_lowvol`, `research_risk_parity`, `research_composite_ff_aw`, `research_composite_mom_regime`, `research_regime_pairs`, `research_vrp_putwrite` | un facteur se teste en cross-section et net de frais ; un composite assemble des briques mesurées séparément au lieu d'empiler des signaux non validés |
+| Volatilité et haute fréquence | `research_m12_har_rv_j`, `research_m12_har_rv_j_minute`, `research_m12_hf_btc_local`, `research_m12_hf_dm_test` | la chaîne complète : estimer la variance réalisée, la décomposer, puis établir par un test de significativité que le gain vient de l'estimation et non du décor |
+| Reinforcement learning | `research_rl_intro`, `research_rl_ppo`, `research_rl_grpo`, `research_rl_reward_shaping`, `research_rl_multi_asset`, `research_rl_tactical_overlay` | le RL se prototype localement ; la spécification de la récompense décide de la politique convergée, et un verdict négatif se publie comme un autre |
+| Lecture méthodologique | section [Ce que vous avez appris](#ce-que-vous-avez-appris) | pourquoi un edge mesuré mais non significatif reste `INCONCLUSIVE`, et pourquoi une moyenne d'experts corrélés dilue au lieu de diversifier |
+
+Pour prolonger hors du dossier : le parcours de cours [QC-Py](../Python/README.md), le pipeline
+d'entraînement [ML-Training-Pipeline](../ML-Training-Pipeline/README.md), les stratégies portées en
+`main.py` dans [`projects/`](../projects/), et les companions pédagogiques de
+[`Python/research/`](../Python/research/README.md).
 
 ---
 
