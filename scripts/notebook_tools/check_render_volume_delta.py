@@ -11,7 +11,7 @@ seul arbre. Le cas fondateur (mesure ai-01 sur PR #11351, base
 
     Infer-3-Factor-Graphs       45 715 ->    840 B   (-98,2 %)
     Infer-8-TrueSkill          127 081 ->  1 613 B   (-98,7 %)
-    Infer-13-Crowdsourcing      22 896 ->    840 B   (-96,3 %)
+    Infer-12-Crowdsourcing      22 896 ->    840 B   (-96,3 %)
                                  -------     ------     integralement text/html
     TOTAL                      195 692 ->  3 293 B   (-98,3 %)
 

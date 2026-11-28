@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-08
+> REFERENCE — vivante — dernière révision 2026-11-25
 
 # Portage Infer.NET → Python — `MyIA.AI.Notebooks/Probas/`
 
@@ -45,19 +45,19 @@ L'objectif du portage (intent original, 2024) : **rendre la série accessible au
 | 4 | Bayesian Networks | DAG, conditional probability | pgmpy | **Absorbé** (`PyMC-04-Bayesian-Networks.ipynb`, `pgmpy` corespondance) |
 | 5 | Causal Inference | do-calculus, contrefactuels | PyMC + DoWhy | **Absorbé** (`PyMC-05-Causal-Inference.ipynb`) |
 | 6 | Debugging | Diagnostic des chaînes MCMC | PyMC | **Absorbé** (`PyMC-02b-Debugging-Python.ipynb`, ex-06) |
-| 7 | Skills / IRT | Item Response Theory | PyMC | **Absorbé** (`PyMC-07-Skills-IRT.ipynb`) |
-| 8 | TrueSkill | Matchmaking, ratings | PyMC | **Absorbé** (`PyMC-08-TrueSkill.ipynb`) |
-| 9 | Classification | Modèles discriminatifs | PyMC | **Absorbé** (`PyMC-09-Classification.ipynb`) |
-| 10 | Model Selection | WAIC, LOO, comparaison | PyMC (ArviZ) | **Absorbé** (`PyMC-10-Model-Selection.ipynb`) |
-| 11 | Topic Models (LDA) | Latent Dirichlet Allocation | **NumPyro** | **Absorbé** (`PyMC-11-Topic-Models.ipynb`) |
-| 12 | Modèles Hiérarchiques | Partial pooling | PyMC | **Absorbé** (`PyMC-12-Modeles-Hierarchiques.ipynb`) |
-| 13 | Crowdsourcing | Worker reliability, Dawid-Skene | PyMC | **Absorbé** (`PyMC-13-Crowdsourcing.ipynb`) |
-| 14 | Sequences (HMM) | Hidden Markov Models | **NumPyro ou hmmlearn** | **Absorbé** (`PyMC-14-Sequences.ipynb`) |
-| 15 | Recommenders | Collaborative filtering | PyMC | **Absorbé** (`PyMC-15-Recommenders.ipynb`) |
-| 16 | Sparse Gaussian Process | Kernel sparse, inducing points | PyMC | **Absorbé** (`PyMC-16-Sparse-Gaussian-Process.ipynb`) |
-| 17 | Kalman Filter | Filtre de Kalman, état-espace | PyMC | **Absorbé** (`PyMC-17-Kalman-Filter.ipynb`) |
-| 18 | Change Point Detection | Détection de ruptures | PyMC | **Absorbé** (`PyMC-18-Change-Point.ipynb`) |
-| 19 | Survival Analysis | Modèles de survie, censures | PyMC (lifelines) | **Absorbé** (`PyMC-19-Survival-Analysis.ipynb`) |
+| 7 | Skills / IRT | Item Response Theory | PyMC | **Absorbé** (`PyMC-06-Skills-IRT.ipynb`) |
+| 8 | TrueSkill | Matchmaking, ratings | PyMC | **Absorbé** (`PyMC-07-TrueSkill.ipynb`) |
+| 9 | Classification | Modèles discriminatifs | PyMC | **Absorbé** (`PyMC-08-Classification.ipynb`) |
+| 10 | Model Selection | WAIC, LOO, comparaison | PyMC (ArviZ) | **Absorbé** (`PyMC-09-Model-Selection.ipynb`) |
+| 11 | Topic Models (LDA) | Latent Dirichlet Allocation | **NumPyro** | **Absorbé** (`PyMC-10-Topic-Models.ipynb`) |
+| 12 | Modèles Hiérarchiques | Partial pooling | PyMC | **Absorbé** (`PyMC-11-Modeles-Hierarchiques.ipynb`) |
+| 13 | Crowdsourcing | Worker reliability, Dawid-Skene | PyMC | **Absorbé** (`PyMC-12-Crowdsourcing.ipynb`) |
+| 14 | Sequences (HMM) | Hidden Markov Models | **NumPyro ou hmmlearn** | **Absorbé** (`PyMC-13-Sequences.ipynb`) |
+| 15 | Recommenders | Collaborative filtering | PyMC | **Absorbé** (`PyMC-14-Recommenders.ipynb`) |
+| 16 | Sparse Gaussian Process | Kernel sparse, inducing points | PyMC | **Absorbé** (`PyMC-15-Sparse-Gaussian-Process.ipynb`) |
+| 17 | Kalman Filter | Filtre de Kalman, état-espace | PyMC | **Absorbé** (`PyMC-16-Kalman-Filter.ipynb`) |
+| 18 | Change Point Detection | Détection de ruptures | PyMC | **Absorbé** (`PyMC-17-Change-Point.ipynb`) |
+| 19 | Survival Analysis | Modèles de survie, censures | PyMC (lifelines) | **Absorbé** (`PyMC-18-Survival-Analysis.ipynb`) |
 | 20 | Decision Theory (track séparé) | Utility, value of information | PyMC | **Absorbé** (`DecisionTheory/DecPyMC/DecPyMC-01..07.ipynb`) |
 
 **Total : 20 notebooks PyMC + 7 notebooks DecPyMC + 1 notebook Pyro_RSA = 28 notebooks Python trackés**, soit **largement plus que les 20 initialement planifiés** — le périmètre a été étendu (track Decision Theory) et plusieurs notebooks ont été dédoublés.
@@ -76,7 +76,7 @@ Si un nouveau portage équivalent était à planifier aujourd'hui, l'estimer à 
 | Track Decision Theory | `DecPyMC-{N}-{Title}.ipynb` | `DecPyMC-01-Utility-Foundations.ipynb` |
 | Numéro non-Infer | Préfixe thématique | `Pyro_RSA_Hyperbole.ipynb` |
 
-**Nommage par concept, pas par source** : un `PyMC-12-Modeles-Hierarchiques.ipynb` est rangé par le concept qu'il couvre (modèles hiérarchiques), pas par le numéro du notebook Infer correspondant.
+**Nommage par concept, pas par source** : un `PyMC-11-Modeles-Hierarchiques.ipynb` est rangé par le concept qu'il couvre (modèles hiérarchiques), pas par le numéro du notebook Infer correspondant.
 
 ## Dépendances (borne haute indicative)
 

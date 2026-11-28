@@ -54,9 +54,9 @@ FRAMEWORK_LABELS = frozenset(
 DEFAULT_NOTEBOOKS = (
     "Infer-02-Gaussian-Mixtures.ipynb",
     "Infer-05-Causal-Inference.ipynb",
-    "Infer-11-Topic-Models.ipynb",
-    "Infer-15-Recommenders.ipynb",
-    "Infer-16-Sparse-Gaussian-Process.ipynb",
+    "Infer-10-Topic-Models.ipynb",
+    "Infer-14-Recommenders.ipynb",
+    "Infer-15-Sparse-Gaussian-Process.ipynb",
 )
 
 

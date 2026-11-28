@@ -85,7 +85,7 @@ class TestPreflight(unittest.TestCase):
         """Le carnet servi est le jumeau Python : un seul fichier, deux usages."""
         serves = (core_dir() / run_gateway.SERVICE_NOTEBOOK).resolve()
         self.assertTrue(serves.is_file(), serves)
-        self.assertEqual(serves.name, "Infer-08b-TrueSkill-Formules-Fermees-Python.ipynb")
+        self.assertEqual(serves.name, "Infer-07b-TrueSkill-Formules-Fermees-Python.ipynb")
         self.assertEqual(serves.parent.name, "Infer")
 
 
@@ -99,7 +99,7 @@ class TestCommandLine(unittest.TestCase):
         """
         arguments = build_arguments(core_dir(), 8901, [])
         self.assertIn(
-            "--KernelGatewayApp.seed_uri=../Infer-08b-TrueSkill-Formules-Fermees-Python.ipynb",
+            "--KernelGatewayApp.seed_uri=../Infer-07b-TrueSkill-Formules-Fermees-Python.ipynb",
             arguments,
         )
         self.assertIn("--KernelGatewayApp.port=8901", arguments)

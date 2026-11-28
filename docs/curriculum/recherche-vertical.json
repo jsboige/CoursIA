@@ -122,8 +122,8 @@
       "branch": "valider-une-experience",
       "notebooks": [
         "Probas/Infer/Infer-04-Bayesian-Networks.ipynb",
-        "Probas/Infer/Infer-08-TrueSkill.ipynb",
-        "Probas/Infer/Infer-17-Kalman-Filter.ipynb"
+        "Probas/Infer/Infer-07-TrueSkill.ipynb",
+        "Probas/Infer/Infer-16-Kalman-Filter.ipynb"
       ]
     }
   ]

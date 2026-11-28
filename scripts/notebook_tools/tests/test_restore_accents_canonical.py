@@ -67,9 +67,9 @@ class TestMarkdownOnly:
 class TestLinkTargetProtection:
     def test_link_target_not_accented(self):
         # la cible du lien doit matcher le fichier reel sur disque (sans accent).
-        line = "Voir [le modele de selection](Infer-10-Model-Selection.ipynb)."
+        line = "Voir [le modele de selection](Infer-09-Model-Selection.ipynb)."
         cured, n = rac._cure_line(line)
-        assert "](Infer-10-Model-Selection.ipynb)" in cured  # cible intacte
+        assert "](Infer-09-Model-Selection.ipynb)" in cured  # cible intacte
         assert "sélection.ipynb" not in cured  # cible NON accentuee
         assert "modèle" in cured  # prose accented
 
@@ -97,31 +97,31 @@ class TestLinkTargetProtection:
     def test_filename_label_not_accented(self):
         # #17222 : un libelle qui NOMME le fichier cible reste byte-identique
         # au fichier. Mesure : la serie PyMC rendait
-        # [PyMC-10-Model-Sélection](PyMC-10-Model-Selection.ipynb).
-        line = "[PyMC-10-Model-Selection](PyMC-10-Model-Selection.ipynb)"
+        # [PyMC-09-Model-Sélection](PyMC-09-Model-Selection.ipynb).
+        line = "[PyMC-09-Model-Selection](PyMC-09-Model-Selection.ipynb)"
         cured, n = rac._cure_line(line)
         assert cured == line
         assert n == 0
         assert "Sélection" not in cured
 
     def test_filename_label_not_accented_in_puce(self):
-        line = "- Theme connexe : [PyMC-10-Model-Selection](PyMC-10-Model-Selection.ipynb) (selection bayesienne)."
+        line = "- Theme connexe : [PyMC-09-Model-Selection](PyMC-09-Model-Selection.ipynb) (selection bayesienne)."
         cured, n = rac._cure_line(line)
-        assert "[PyMC-10-Model-Selection](PyMC-10-Model-Selection.ipynb)" in cured
+        assert "[PyMC-09-Model-Selection](PyMC-09-Model-Selection.ipynb)" in cured
         assert "Sélection" not in cured
 
     def test_partial_reference_label_not_accented(self):
         # libelle abrege du meme fichier : sous-chaine de la cible
-        line = "Voir [PyMC-10](PyMC-10-Model-Selection.ipynb) pour la selection."
+        line = "Voir [PyMC-09](PyMC-09-Model-Selection.ipynb) pour la selection."
         cured, n = rac._cure_line(line)
-        assert "[PyMC-10](PyMC-10-Model-Selection.ipynb)" in cured
+        assert "[PyMC-09](PyMC-09-Model-Selection.ipynb)" in cured
 
     def test_prose_label_still_cured(self):
         # contre-temoin : un libelle de PROSE garde sa cure, la cible reste intacte
-        line = "Voir [les modeles](PyMC-10-Model-Selection.ipynb)."
+        line = "Voir [les modeles](PyMC-09-Model-Selection.ipynb)."
         cured, n = rac._cure_line(line)
         assert "modèles" in cured
-        assert "](PyMC-10-Model-Selection.ipynb)" in cured
+        assert "](PyMC-09-Model-Selection.ipynb)" in cured
 
 
 # ---------------------------------------------------------------------------
@@ -170,7 +170,7 @@ class TestNbformatStructure:
         assert "paramètre" in "".join(src)
 
     def test_paragraph_break_preserved_list_source(self, tmp_path):
-        # Regression : bug blank-line collapse firsthand sur Infer-14 (28/33 cellules,
+        # Regression : bug blank-line collapse firsthand sur Infer-13 (28/33 cellules,
         # po-2024 c.634). Un chunk standalone "\n" (separateur de paragraphe) ne doit
         # JAMAIS etre absorbe par un join->split->re-chunk. La cure per-chunk preserve
         # byte-pour-byte le paragraph break markdown ("\n\n").
@@ -1025,7 +1025,7 @@ class Test21277CitationMask:
 
 class TestNestedMaskRestoration:
     def test_citation_with_inline_code_from_pymc_15(self):
-        # Extrait réel de PyMC-15-Recommenders, cellule 15.
+        # Extrait réel de PyMC-14-Recommenders, cellule 15.
         text = 'Le warning dit : « Increase `target_accept` or reparameterize ».'
         assert rac._cure_line(text, fr_context=True) == (text, 0)
 

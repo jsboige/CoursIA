@@ -9,7 +9,7 @@ Une pièce a produit davantage de piles que de faces : quelle gamme de biais res
 Pour [choisir sa vitesse de lecture](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture), partez de la question que vous voulez résoudre.
 
 - Vous découvrez : suivez les numéros du parcours, à partir de la pièce biaisée.
-- Vous creusez un palier : ouvrez 02b pour un diagnostic ou l'instrumentation après 12 pour mesurer le temps de calcul.
+- Vous creusez un palier : ouvrez 02b pour un diagnostic ou l'instrumentation après 11 pour mesurer le temps de calcul.
 - Vous cherchez la recherche en cours : essayez le problème inverse de percolation après les modèles hiérarchiques.
 
 ## Parcours principal — licence et master
@@ -28,24 +28,24 @@ Pour [choisir sa vitesse de lecture](https://github.com/jsboige/CoursIA#choisir-
 
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|---|---|---|---|
-| 07 | [Évaluer une compétence](PyMC-07-Skills-IRT.ipynb) | Séparer difficulté de la question et aptitude de l’élève ; interpréter une réussite sans confondre les deux paramètres. | Master | — |
-| 08 | [Classer des joueurs](PyMC-08-TrueSkill.ipynb) | Après un match, réviser à la fois le niveau estimé et son incertitude ; un débutant et un vétéran ne reçoivent pas la même correction. | Master | — |
-| 09 | [Classifier](PyMC-09-Classification.ipynb) | Transformer un score latent en probabilité, puis vérifier si les fréquences observées correspondent aux probabilités annoncées. | Master | — |
-| 10 | [Choisir un modèle](PyMC-10-Model-Selection.ipynb) | Comparer les performances prédictives avec LOO, puis vérifier ce que les simulations du modèle reproduisent réellement. | Master | — |
-| 11 | [Extraire des thèmes](PyMC-11-Topic-Models.ipynb) | Relier documents, thèmes et mots ; étudier comment les lois a priori influencent les thèmes que l’on peut distinguer. | Master | — |
-| 12 | [Partager entre groupes](PyMC-12-Modeles-Hierarchiques.ipynb) | Entre une moyenne commune et une moyenne indépendante par groupe, le partage partiel ramène davantage les groupes peu observés vers la population. | Master | [Instrumentation](PyMC-Observabilite-OTel.ipynb) |
-| 13 | [Agréger des annotations](PyMC-13-Crowdsourcing.ipynb) | Comparer le vote majoritaire à une estimation qui apprend la fiabilité des annotateurs en même temps que les étiquettes. | Master | — |
+| 06 | [Évaluer une compétence](PyMC-06-Skills-IRT.ipynb) | Séparer difficulté de la question et aptitude de l’élève ; interpréter une réussite sans confondre les deux paramètres. | Master | — |
+| 07 | [Classer des joueurs](PyMC-07-TrueSkill.ipynb) | Après un match, réviser à la fois le niveau estimé et son incertitude ; un débutant et un vétéran ne reçoivent pas la même correction. | Master | — |
+| 08 | [Classifier](PyMC-08-Classification.ipynb) | Transformer un score latent en probabilité, puis vérifier si les fréquences observées correspondent aux probabilités annoncées. | Master | — |
+| 09 | [Choisir un modèle](PyMC-09-Model-Selection.ipynb) | Comparer les performances prédictives avec LOO, puis vérifier ce que les simulations du modèle reproduisent réellement. | Master | — |
+| 10 | [Extraire des thèmes](PyMC-10-Topic-Models.ipynb) | Relier documents, thèmes et mots ; étudier comment les lois a priori influencent les thèmes que l’on peut distinguer. | Master | — |
+| 11 | [Partager entre groupes](PyMC-11-Modeles-Hierarchiques.ipynb) | Entre une moyenne commune et une moyenne indépendante par groupe, le partage partiel ramène davantage les groupes peu observés vers la population. | Master | [Instrumentation](PyMC-Observabilite-OTel.ipynb) |
+| 12 | [Agréger des annotations](PyMC-12-Crowdsourcing.ipynb) | Comparer le vote majoritaire à une estimation qui apprend la fiabilité des annotateurs en même temps que les étiquettes. | Master | — |
 
 ### Exploiter une structure temporelle ou spatiale — master
 
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|---|---|---|---|
-| 14 | [Suivre un état caché](PyMC-14-Sequences.ipynb) | Comparer un classement instantané au lissage avant-arrière : deux observations identiques peuvent recevoir des états différents selon leur voisinage. | Master | — |
-| 15 | [Recommander](PyMC-15-Recommenders.ipynb) | Inférer les préférences à partir d’une matrice incomplète ; distinguer l’incertitude sur un score d’un désaccord entre clics et jugements. | Master | — |
-| 16 | [Classer par processus gaussien](PyMC-16-Sparse-Gaussian-Process.ipynb) | Apprendre une frontière non linéaire avec un noyau RBF ; comparer le modèle dense à une approximation spectrale dont on règle le budget. | Master | — |
-| 17 | [Filtrer une trajectoire](PyMC-17-Kalman-Filter.ipynb) | Séparer bruit de mesure et bruit de dynamique : la récursion de Kalman filtre un état continu ; le carnet Python examine aussi les réglages de l’échantillonnage. | Master | — |
-| 18 | [Dater une rupture](PyMC-18-Change-Point.ipynb) | Inférer une distribution sur l’instant du changement, puis se demander si les données exigent vraiment deux régimes. | Master | — |
-| 19 | [Étudier la survie](PyMC-19-Survival-Analysis.ipynb) | Une observation censurée indique que l’événement n’a pas encore eu lieu. L’intégrer par la fonction de survie plutôt que comme une durée complète. | Master | — |
+| 13 | [Suivre un état caché](PyMC-13-Sequences.ipynb) | Comparer un classement instantané au lissage avant-arrière : deux observations identiques peuvent recevoir des états différents selon leur voisinage. | Master | — |
+| 14 | [Recommander](PyMC-14-Recommenders.ipynb) | Inférer les préférences à partir d’une matrice incomplète ; distinguer l’incertitude sur un score d’un désaccord entre clics et jugements. | Master | — |
+| 15 | [Classer par processus gaussien](PyMC-15-Sparse-Gaussian-Process.ipynb) | Apprendre une frontière non linéaire avec un noyau RBF ; comparer le modèle dense à une approximation spectrale dont on règle le budget. | Master | — |
+| 16 | [Filtrer une trajectoire](PyMC-16-Kalman-Filter.ipynb) | Séparer bruit de mesure et bruit de dynamique : la récursion de Kalman filtre un état continu ; le carnet Python examine aussi les réglages de l’échantillonnage. | Master | — |
+| 17 | [Dater une rupture](PyMC-17-Change-Point.ipynb) | Inférer une distribution sur l’instant du changement, puis se demander si les données exigent vraiment deux régimes. | Master | — |
+| 18 | [Étudier la survie](PyMC-18-Survival-Analysis.ipynb) | Une observation censurée indique que l’événement n’a pas encore eu lieu. L’intégrer par la fonction de survie plutôt que comme une durée complète. | Master | — |
 
 ## Approfondissements — master
 
@@ -57,7 +57,7 @@ Dans [le diagnostic des modèles](PyMC-02b-Debugging-Python.ipynb), une loi a pr
 
 Les densités se superposent à gauche. Ce graphique ne suffit pas pour écarter les divergences signalées dans la sortie de l'échantillonneur.
 
-### Autour de 12 : partager les observations sans confondre les groupes
+### Autour de 11 : partager les observations sans confondre les groupes
 
 Écrire `θ = μ + σ z` avec `z` gaussien standard permet de faire varier l'écart d'un groupe sur une échelle indépendante de `σ`. Cette paramétrisation non centrée évite le « funnel de Neal », l'entonnoir que révèlent les divergences du modèle centré quand `σ` devient petit ; elle aide lorsque les données renseignent peu chaque groupe. [L'instrumentation OpenTelemetry](PyMC-Observabilite-OTel.ipynb) reprend le modèle hiérarchique pour séparer compilation et échantillonnage ; la durée d'une exécution ne mesure pas la qualité des tirages.
 
@@ -67,19 +67,19 @@ Les densités se superposent à gauche. Ce graphique ne suffit pas pour écarter
 
 ![Densités de la moyenne et de la précision du trajet](assets/readme/pymc2-gaussian-mixtures.png)
 
-**Réussite à un item (07).** La courbe ROC compare taux de vrais et de faux positifs quand on déplace le seuil de décision. L'image affiche une aire de 0,788 ; la sortie numérique du carnet donne 0,784. Ni l'une ni l'autre ne représente une probabilité de réussite individuelle.
+**Réussite à un item (06).** La courbe ROC compare taux de vrais et de faux positifs quand on déplace le seuil de décision. L'image affiche une aire de 0,788 ; la sortie numérique du carnet donne 0,784. Ni l'une ni l'autre ne représente une probabilité de réussite individuelle.
 
 ![Courbe ROC en escalier et diagonale du hasard](assets/readme/pymc5-irt-curves.png)
 
-**États cachés (14).** Les barres empilées représentent les probabilités des états haut et bas, sans transitions en haut et avec transitions en bas. Pour observer nettement l'effet du voisinage, comparer les deux observations égales à 17,5 dans la table du carnet.
+**États cachés (13).** Les barres empilées représentent les probabilités des états haut et bas, sans transitions en haut et avec transitions en bas. Pour observer nettement l'effet du voisinage, comparer les deux observations égales à 17,5 dans la table du carnet.
 
 ![Probabilités par instant avec et sans transitions](assets/readme/pymc11-sequences.png)
 
-**Recommandation (15).** À gauche, le document 3 présente un écart entre clics et jugements. À droite, son histogramme rappelle que le score latent est une distribution et non la simple moyenne des deux barres.
+**Recommandation (14).** À gauche, le document 3 présente un écart entre clics et jugements. À droite, son histogramme rappelle que le score latent est une distribution et non la simple moyenne des deux barres.
 
 ![Clics, jugements et histogrammes des scores par document](assets/readme/pymc12-recommenders.png)
 
-**Processus gaussien (16).** La carte de gauche montre la frontière entre le centre et la couronne ; celle de droite, l'incertitude sur la fonction latente. Le titre de l'illustration indique « probit » ; le modèle Python du carnet utilise un lien logistique. Il s'agit ici du modèle dense, pas de l'approximation spectrale.
+**Processus gaussien (15).** La carte de gauche montre la frontière entre le centre et la couronne ; celle de droite, l'incertitude sur la fonction latente. Le titre de l'illustration indique « probit » ; le modèle Python du carnet utilise un lien logistique. Il s'agit ici du modèle dense, pas de l'approximation spectrale.
 
 ![Probabilité prédite et écart-type de la fonction latente sur une couronne](assets/readme/pymc15-sparse-gp.png)
 
@@ -107,13 +107,13 @@ Le [pont causal](../Causalite/README.md) demande si l'effet est identifiable ava
 | Calculer puis lire la loi | `InferenceEngine` renvoie la distribution demandée | `pm.sample()` produit des tirages ; examiner le groupe `posterior` et ses dimensions chaîne et tirage |
 | Inspecter la structure | `ShowFactorGraph` | `pm.model_to_graphviz()` ; compléter le graphe par les diagnostics des chaînes |
 
-Gibbs est aussi disponible côté C# ; ADVI, côté Python, est une approximation variationnelle et non un échantillonneur. Sur un modèle conjugué, la loi analytique fournit un témoin. Sur des groupes clairsemés, une estimation indépendante peut être extrême : le partage partiel réduit cette variabilité sans imposer une moyenne identique à tous. Comparer le modèle de classes du palier 12 au [diagnostic multi-sites](../DecisionTheory/DecPyMC/DecPyMC-01-Utility-Foundations.ipynb), aux [réseaux de décision](../DecisionTheory/DecPyMC/DecPyMC-04-Decision-Networks.ipynb) et aux [systèmes experts](../DecisionTheory/DecPyMC/DecPyMC-06-Expert-Systems.ipynb).
+Gibbs est aussi disponible côté C# ; ADVI, côté Python, est une approximation variationnelle et non un échantillonneur. Sur un modèle conjugué, la loi analytique fournit un témoin. Sur des groupes clairsemés, une estimation indépendante peut être extrême : le partage partiel réduit cette variabilité sans imposer une moyenne identique à tous. Comparer le modèle de classes du palier 11 au [diagnostic multi-sites](../DecisionTheory/DecPyMC/DecPyMC-01-Utility-Foundations.ipynb), aux [réseaux de décision](../DecisionTheory/DecPyMC/DecPyMC-04-Decision-Networks.ipynb) et aux [systèmes experts](../DecisionTheory/DecPyMC/DecPyMC-06-Expert-Systems.ipynb).
 
 ### Dépannage et choix d’une entrée — pratique
 
 - **Module introuvable** : installer les dépendances avec le Python du noyau. Dans un environnement activé, `python -m ipykernel install --user --name pymc-env` enregistre un noyau sélectionnable dans Jupyter.
 - **Évaluation initiale impossible** : vérifier les dimensions et le support de la vraisemblance (par exemple, des durées négatives ne conviennent pas à une loi Gamma). Examiner aussi les valeurs initiales des paramètres et les prédictions a priori.
-- **Divergences** : consulter les traces et `az.summary`, puis comparer la géométrie centrée et non centrée. Les carnets visent `r_hat < 1.01` et `ess_bulk > 400` (02b, 15, 18) ; `r_hat > 1.05` signale un échantillonnage non convergé (10). Relever `target_accept` de sa valeur par défaut, 0,8, à 0,95 réduit le pas et peut faire disparaître des divergences ; ne pas remplacer ce diagnostic par une augmentation aveugle du nombre de tirages.
-- **Première séance Python** : pièce, pelouse puis classification (01, 04, 09). Pour la comparaison entre langages, garder le même numéro. Pour la décision, suivre plutôt [la piste Python](../DecisionTheory/DecPyMC/README.md) ; la souscription et la ruine continuent en [actuariat](../DecisionTheory/Actuariat/README.md).
+- **Divergences** : consulter les traces et `az.summary`, puis comparer la géométrie centrée et non centrée. Les carnets visent `r_hat < 1.01` et `ess_bulk > 400` (02b, 14, 17) ; `r_hat > 1.05` signale un échantillonnage non convergé (09). Relever `target_accept` de sa valeur par défaut, 0,8, à 0,95 réduit le pas et peut faire disparaître des divergences ; ne pas remplacer ce diagnostic par une augmentation aveugle du nombre de tirages.
+- **Première séance Python** : pièce, pelouse puis classification (01, 04, 08). Pour la comparaison entre langages, garder le même numéro. Pour la décision, suivre plutôt [la piste Python](../DecisionTheory/DecPyMC/README.md) ; la souscription et la ruine continuent en [actuariat](../DecisionTheory/Actuariat/README.md).
 
 Les [exemples PyMC](https://www.pymc.io/projects/examples/en/latest/) complètent la documentation de l'API. Pour replacer les applications, comparer les [modèles de prédiction](../../ML/README.md) et les [stratégies de marché](../../QuantConnect/README.md). La [provenance des illustrations](assets/readme/MANIFEST.md) permet de retrouver les figures sans confondre l'image conservée avec une nouvelle exécution.

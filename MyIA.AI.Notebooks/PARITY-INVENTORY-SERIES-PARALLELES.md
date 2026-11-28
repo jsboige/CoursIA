@@ -9,6 +9,8 @@
 
 > **Actualisation** : la paire Safe Subgame Solving est désormais enregistrée et ses deux variantes portent `13b`. Le tableau ci-dessous conserve la mesure historique.
 
+> **Actualisation (2026-11-24)** : la famille Probas Infer⇄PyMC (§7) a été renumérotée ([#26707](https://github.com/jsboige/CoursIA/issues/26707)) — le trou symétrique n° 6 est comblé, `07 … 19` deviennent `06 … 18` des deux côtés et l'extension unilatérale `Infer-08b` devient `Infer-07b` ; état daté dans l'inventaire propre. La mesure du §7 est conservée.
+
 ## 1. Table de verdicts par famille
 
 Vocabulaire aligné sur l'EPIC : `alignée` (même numéro complet et titre base, seuls les suffixes kernels varient) · `compagnon-b` (la seule différence d'identifiant est un `b`/`c` porté par un seul côté — forme documentée légitime par `_schema.yaml` `numbering_exception`, mais **décalée au sens strict de la doctrine**) · `décalée-numéro` (numéros divergents autrement) · `décalée-titre` (même numéro, titres base différents) · `extension unilatérale` (célibataires, §4). `fausse paire` : aucune détectée dans le périmètre.

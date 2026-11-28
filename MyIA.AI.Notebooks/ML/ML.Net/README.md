@@ -81,7 +81,7 @@ Cette série se lit à plusieurs vitesses ; le principe est exposé une fois pou
 | # | Notebook | Ce qu'on y apprend | Écosystème | Durée |
 |---|----------|---------|------------|-------|
 | 07b | [ML-07b-SemanticIDs-Recommandation](ML-07b-SemanticIDs-Recommandation-Python.ipynb) | **Identifiants sémantiques** : tokeniser un item en codes quantifiés (le dispositif des recommandateurs génératifs), mesurer ce que cela vaut au démarrage à froid contre populaires, collaboratif et contenu, et tester les écarts au bruit (McNemar, bootstrap) | *standalone Python (scikit-learn, scipy — la limite froide de la factorisation matricielle, mesurée)* | 45-60 min |
-| 07c | [ML-07c-Sona-Recommandeur-Generatif](ML-07c-Sona-Recommandeur-Generatif-Python.ipynb) | **Recommandeur génératif mono-modèle** : digérer l'architecture de production Sona (un transformer sur l'historique chronologique, décodage auto-régressif de Semantic IDs, module de ranking sur mémoire d'encodeur partagée) et la relier aux quatre fils du dépôt (ML-07/07b, Infer-15, RAG-02, stack Qwen-Omni) | *standalone Python (numpy — le paradigme et le vocabulaire, aucune valeur du papier)* | 45-60 min |
+| 07c | [ML-07c-Sona-Recommandeur-Generatif](ML-07c-Sona-Recommandeur-Generatif-Python.ipynb) | **Recommandeur génératif mono-modèle** : digérer l'architecture de production Sona (un transformer sur l'historique chronologique, décodage auto-régressif de Semantic IDs, module de ranking sur mémoire d'encodeur partagée) et la relier aux quatre fils du dépôt (ML-07/07b, Infer-14, RAG-02, stack Qwen-Omni) | *standalone Python (numpy — le paradigme et le vocabulaire, aucune valeur du papier)* | 45-60 min |
 
 <a id="approfondissement-09-detection-anomalies"></a>
 
@@ -294,7 +294,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | Section | Contenu |
 |---------|---------|
 | Objet | Digérer l'architecture de production du recommandeur génératif Sona (Yandex Music) : un seul transformer sur l'historique chronologique, décodeur auto-régressif de Semantic IDs + module de ranking sur mémoire d'encodeur partagée, tokeniseur Qwen2.5-Omni figé |
-| Résonances cross-séries | Quatre fils du dépôt : ML-07/07b (génération de candidats par Semantic IDs), Infer-15 (versant probabiliste explicite), RAG-02 (retrieve → rerank), stack Qwen-Omni locale (même famille que le tokeniseur) |
+| Résonances cross-séries | Quatre fils du dépôt : ML-07/07b (génération de candidats par Semantic IDs), Infer-14 (versant probabiliste explicite), RAG-02 (retrieve → rerank), stack Qwen-Omni locale (même famille que le tokeniseur) |
 | Cellules auto-contenues | Quatre démos numpy : encodeur partagé à deux têtes, RQ → tuple de Semantic IDs, retrieve-then-rerank, contrastif génératif (rang) vs. probabiliste (crédibilité) |
 | Provenance | Aucune valeur numérique du rapport : le paradigme et le vocabulaire, écrits depuis la copie archivée au gisement |
 

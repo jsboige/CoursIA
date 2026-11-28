@@ -64,7 +64,7 @@ paire, du titre.
 | Notebook | Côté | Accrétion | Anomalie de nom |
 |---|---|---|---|
 | `Infer-1b-Premiers-Modeles.ipynb` | C# | `1b` | numéro non zero-padé (la série PyMC n'a pas de `01b`) — extension unilatérale C# à documenter, ou future paire `PyMC-01b` |
-| `Infer-08b-TrueSkill-Formules-Fermees-CSharp.ipynb` | C# | `08b` | **double non-canonicité** : (a) zero-pad `08b` alors que toute la série Infer est à numéro nu — incohérent dans les DEUX conventions ; (b) suffixe kernel `-CSharp` DANS le titre, redondant avec le préfixe de série `Infer` (doctrine : le kernel ne vit que dans le suffixe canonique) |
+| `Infer-07b-TrueSkill-Formules-Fermees-CSharp.ipynb` | C# | `08b` | **double non-canonicité** : (a) zero-pad `08b` alors que toute la série Infer est à numéro nu — incohérent dans les DEUX conventions ; (b) suffixe kernel `-CSharp` DANS le titre, redondant avec le préfixe de série `Infer` (doctrine : le kernel ne vit que dans le suffixe canonique) |
 
 Aucune extension unilatérale côté Python : les 19 carnets PyMC sont tous appariés.
 
@@ -101,7 +101,7 @@ La reconciliation naturelle padding la série **Infer** sur la série **PyMC** :
   (ii) conserver les sous-titres distincts et documenter la paire comme extension
   partiellement distincte. Le `-Python` résiduel de `PyMC-02b-Debugging-Python` (#14873)
   ne correspond à aucune convention du corpus : à retirer dans les deux lectures.
-- **Tranche C — `Infer-08b-TrueSkill-Formules-Fermees-CSharp`** : après Tranche A, le
+- **Tranche C — `Infer-07b-TrueSkill-Formules-Fermees-CSharp`** : après Tranche A, le
   zero-pad devient cohérent ; reste à retirer le suffixe `-CSharp` redondant →
   `Infer-08b-TrueSkill-Formules-Fermees`. Décider en même temps si l'accrétion `08b` doit
   être rapprochée de la paire 8 (companion formel de TrueSkill, comme `DecInfer-01b-Lean-…`
@@ -121,6 +121,14 @@ jamais de composite renommage + contenu.
 > Les tranches B, C et D restent **non couvertes** — arbitrages coordinateur, mapping inchangé
 > ci-dessus. Le statut D (extension unilatérale de `01b`) est laissé ouvert : la Tranche A
 > a paddé le nom, sans trancher le statut de paire.
+
+> **État mesuré au 2026-11-24** — renumérotation [#26707](https://github.com/jsboige/CoursIA/issues/26707)
+> (lane `myia-po-2024:CoursIA` ; décision user Q214 b : un trou se comble par renumérotation
+> argumentée, ce qui remplace la consigne de conservation du §3) : le trou symétrique du numéro 6
+> est **comblé**. Des deux côtés, `07 … 19` deviennent `06 … 18` et l'accrétion `08b` devient
+> `07b` ; les paires `probas-7 … 19` du registre twin deviennent `probas-6 … 18`. Les sections 1 à 5
+> décrivent l'état au HEAD `bbde4dd0eb` et sont conservées comme historique de l'inventaire : leur
+> « pas de paire 6 » et leurs numéros 7 à 19 ne décrivent plus l'arbre courant.
 
 ## 6. Ce que cette tranche ne fait pas
 

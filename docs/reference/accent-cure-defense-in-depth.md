@@ -1,6 +1,6 @@
 # Cure des accents FR & défense contre les régressions — #2876
 
-> REFERENCE — vivante — dernière révision 2026-11-11
+> REFERENCE — vivante — dernière révision 2026-11-25
 
 Référence consolidée du registre [#2876](https://github.com/jsboige/CoursIA/issues/2876) : restauration des accents français dans les notebooks pédagogiques **ET** défense contre les 4 classes de défauts qu'une cure mal bornée introduit. Issue du travail convergent du cluster (cycles ~600-617, juil. 2026) — cette doc remplace la connaissance éparpillée dans les mémoires de session et le dashboard éphémère.
 
@@ -33,7 +33,7 @@ Une cure dont le path `list-source` fait `join → split → re-chunk` **absorbe
 
 ### 5. Link-target regression (régression de cure, fonctionnelle — la + grave)
 
-Une cure accente le **nom de fichier** à l'intérieur d'une cible de lien markdown `](Infer-10-Model-Selection.ipynb)` devient `](Infer-10-Model-sélection.ipynb)`. Le fichier pointé **n'existe pas** (le vrai fichier sur disque garde sa capitale non accentuée) → **lien cassé 404**. C'est le défaut fonctionnellement le plus grave (le lecteur clique → page introuvable), et il a été le **3e angle-mort découvert** : les gates identifiants (#7157, code-only) et caps (#7198, prose positionnelle ; #7197 CLOSED) ne scannent **pas** les cibles de liens. Détecteur : `detect_link_target_regression.py` (PR #7210). **Incident firsthand** : #7196 Infer-18 portait 4 cibles cassées (`Infer-10-Model-sélection.ipynb` cells 0/12/14/22) — confirmé `git ls-tree origin/main` (fichier réel = `Infer-10-Model-Selection.ipynb`, capitale S). La cure canonique #7186 le couvre by construction (`_LINK_TARGET_RE` masque les cibles avant cure).
+Une cure accente le **nom de fichier** à l'intérieur d'une cible de lien markdown `](Infer-09-Model-Selection.ipynb)` devient `](Infer-09-Model-sélection.ipynb)`. Le fichier pointé **n'existe pas** (le vrai fichier sur disque garde sa capitale non accentuée) → **lien cassé 404**. C'est le défaut fonctionnellement le plus grave (le lecteur clique → page introuvable), et il a été le **3e angle-mort découvert** : les gates identifiants (#7157, code-only) et caps (#7198, prose positionnelle ; #7197 CLOSED) ne scannent **pas** les cibles de liens. Détecteur : `detect_link_target_regression.py` (PR #7210). **Incident firsthand** : #7196 Infer-18 portait 4 cibles cassées (`Infer-09-Model-sélection.ipynb` cells 0/12/14/22) — confirmé `git ls-tree origin/main` (fichier réel = `Infer-09-Model-Selection.ipynb`, capitale S). La cure canonique #7186 le couvre by construction (`_LINK_TARGET_RE` masque les cibles avant cure).
 
 ## Defense-in-depth — 4 rôles d'outils
 

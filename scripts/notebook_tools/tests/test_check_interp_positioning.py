@@ -14,7 +14,7 @@ Couvre les invariants de la regle de detection :
 - scan_notebook OK: interp en fin de notebook (pas de cellule suivante)
 - Integration : 3 pins de non-regression FP (GameTheory-16, Aspire-01, Z3-09,
   les notebooks que le gate a fait echouer a tort) + 1 pin de detection reelle
-  (PyMC-15 cell#9)
+  (PyMC-14 cell#9)
 
 Run : python scripts/notebook_tools/test_check_interp_positioning.py
 """
@@ -423,7 +423,7 @@ class TestRealNotebooks(unittest.TestCase):
     correctement ancrees a un code cell, signalees a tort, bloquant toute PR
     de contenu notebook. Ils doivent rester a 0.
 
-    Le 4e pin (PyMC-15 cell#9) prouve que le detecteur n'est pas devenu
+    Le 4e pin (PyMC-14 cell#9) prouve que le detecteur n'est pas devenu
     aveugle : ce notebook garde son defaut reel -- deux cellules interp
     consecutives, la seconde n'ayant aucun code dans sa section.
     """
@@ -461,17 +461,17 @@ class TestRealNotebooks(unittest.TestCase):
         self.assertEqual(found, [], f"FP c.95 reintroduit : {found}")
 
     def test_pymc15_repaired_is_clean(self):
-        """PyMC-15 a ete repare sur main (#10687 + #10876) : 0 finding.
+        """PyMC-14 a ete repare sur main (#10687 + #10876) : 0 finding.
 
         Le pin de detection reelle de c.95 (cell#9) est obsolete -- le
         notebook a depuis ete reordonne. La non-cecite du detecteur est
         couverte par les cas synthetiques (parachute entre deux headers) et
         par les findings live de la baseline.
         """
-        found = self._misplaced("MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb")
+        found = self._misplaced("MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Recommenders.ipynb")
         if found is None:
-            self.skipTest("PyMC-15 absent")
-        self.assertEqual(found, [], "PyMC-15 ne doit plus avoir de finding (repare c.96)")
+            self.skipTest("PyMC-14 absent")
+        self.assertEqual(found, [], "PyMC-14 ne doit plus avoir de finding (repare c.96)")
 
 
 if __name__ == "__main__":

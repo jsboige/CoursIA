@@ -41,7 +41,7 @@ CORE_MODULE = "trueskill_core.py"
 # cours, les exercices et la cellule annotee ``# POST /probas/trueskill``. Le
 # chemin est relatif au dossier du lanceur, qui est aussi le dossier de travail
 # du gateway (voir ``main``), d'ou le ``../``.
-SERVICE_NOTEBOOK = "../Infer-08b-TrueSkill-Formules-Fermees-Python.ipynb"
+SERVICE_NOTEBOOK = "../Infer-07b-TrueSkill-Formules-Fermees-Python.ipynb"
 DEFAULT_PORT = 8897
 CORE_DIR_ENV = "PROBAS_GATEWAY_CORE_DIR"
 

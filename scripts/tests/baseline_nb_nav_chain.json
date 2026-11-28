@@ -572,17 +572,17 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb",
       "series": "MyIA.AI.Notebooks/Probas/PyMC"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Change-Point.ipynb",
       "series": "MyIA.AI.Notebooks/Probas/PyMC"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb",
       "series": "MyIA.AI.Notebooks/Probas/PyMC"
     },
     {

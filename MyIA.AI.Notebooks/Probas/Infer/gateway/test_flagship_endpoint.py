@@ -2,7 +2,7 @@
 """Tests de l'endpoint porte par le carnet jumeau Python (issue #27217).
 
 Le service n'a pas de carnet dedie : la cellule annotee ``# POST /probas/trueskill``
-vit dans ``../Infer-08b-TrueSkill-Formules-Fermees-Python.ipynb``, celui du cours.
+vit dans ``../Infer-07b-TrueSkill-Formules-Fermees-Python.ipynb``, celui du cours.
 Ces tests verifient les deux moities du contrat :
 
 1. **Structure** : le carnet jumeau porte exactement une cellule annotee, et son
@@ -28,10 +28,10 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 GATEWAY_DIR = Path(__file__).resolve().parent
-NOTEBOOK = (GATEWAY_DIR / ".." / "Infer-08b-TrueSkill-Formules-Fermees-Python.ipynb").resolve()
+NOTEBOOK = (GATEWAY_DIR / ".." / "Infer-07b-TrueSkill-Formules-Fermees-Python.ipynb").resolve()
 
 ANNOTATION = "# POST /probas/trueskill"
-# Match 1v1 : A bat B, au prior. Le posterior publie (Infer-08 section 3) est
+# Match 1v1 : A bat B, au prior. Le posterior publie (Infer-07 section 3) est
 # mu_A ~29.21, mu_B ~20.79, sigma ~7.19.
 MATCH_1V1 = {"games": [{"teams": [["A"], ["B"]], "ranks": [1, 2]}]}
 
@@ -150,7 +150,7 @@ class TestEndpointBehaviour(unittest.TestCase):
         players = response["data"]["players"]
         self.assertEqual(set(players), {"A", "B"}, response)
         self.assertGreater(players["A"]["mu"], players["B"]["mu"], response)
-        # Posterior publie Infer-08 section 3 : mu_A ~29.21, mu_B ~20.79.
+        # Posterior publie Infer-07 section 3 : mu_A ~29.21, mu_B ~20.79.
         self.assertAlmostEqual(players["A"]["mu"], 29.21, delta=0.05)
         self.assertAlmostEqual(players["B"]["mu"], 20.79, delta=0.05)
         self.assertAlmostEqual(players["A"]["sigma"], 7.19, delta=0.05)

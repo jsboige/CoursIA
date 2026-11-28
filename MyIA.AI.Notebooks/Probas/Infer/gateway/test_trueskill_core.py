@@ -2,7 +2,7 @@
 """Tests du coeur TrueSkill (pli 0 v2, Epic #19571 / issue #27217).
 
 Trois familles de controles :
-  1. valeurs publiees d'Infer-08 / Infer-08b-CSharp (posterior 2 joueurs egaux,
+  1. valeurs publiees d'Infer-07 / Infer-07b-CSharp (posterior 2 joueurs egaux,
      online WinnerUpdate) ;
   2. verification INDEPENDANTE contre la bibliotheque ``trueskill``
      (Heungsub Lee) — reference communautaire, jamais appelee par le coeur ;
@@ -50,7 +50,7 @@ def test_V_W_proprietes():
 def test_match_update_1v1_priors_egaux():
     """Match 1v1 a priors egaux : gagnant monte, perdant descend, sigma baisse.
 
-    Valeurs de reference = posterior exact d'Infer-08 section 3 / Infer-08b
+    Valeurs de reference = posterior exact d'Infer-07 section 3 / Infer-07b
     cellule 3 (A bat B, mu0=25, sigma0=25/3, beta=sigma0/2).
     """
     mu0, sigma0 = DEFAULT_MU, DEFAULT_SIGMA
@@ -64,7 +64,7 @@ def test_match_update_1v1_priors_egaux():
     # Variance reduite, et egale des deux cotes (priors symetriques).
     assert vw == pytest.approx(vl, abs=1e-12)
     assert vw < v0
-    # Valeurs publices Infer-08 (posterior 2 joueurs) : mu ~29.21 / 20.79,
+    # Valeurs publices Infer-07 (posterior 2 joueurs) : mu ~29.21 / 20.79,
     # sigma ~7.19.
     assert mw == pytest.approx(29.21, abs=0.05)
     assert ml == pytest.approx(20.79, abs=0.05)

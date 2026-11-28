@@ -14,7 +14,7 @@ Mesure du cas fondateur (ai-01 verbatim, post-merge #11351) :
 
     Infer-3-Factor-Graphs       45 715 ->    840 B   (-98,2 %)
     Infer-8-TrueSkill          127 081 ->  1 613 B   (-98,7 %)
-    Infer-13-Crowdsourcing      22 896 ->    840 B   (-96,3 %)
+    Infer-12-Crowdsourcing      22 896 ->    840 B   (-96,3 %)
     TOTAL                      195 692 ->  3 293 B   (-98,3 %)
 
 Ces sorties ne sont PAS vides (840-1613 B > seuil blank_figures 70 B), ne

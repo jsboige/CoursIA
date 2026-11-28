@@ -172,9 +172,9 @@
       "Probas/DecisionTheory/DecPyMC/DecPyMC-5-Value-Information.ipynb"
     ],
     "Probas/PyMC": [
-      "Probas/PyMC/PyMC-17-Kalman-Filter.ipynb",
-      "Probas/PyMC/PyMC-18-Change-Point.ipynb",
-      "Probas/PyMC/PyMC-19-Survival-Analysis.ipynb",
+      "Probas/PyMC/PyMC-16-Kalman-Filter.ipynb",
+      "Probas/PyMC/PyMC-17-Change-Point.ipynb",
+      "Probas/PyMC/PyMC-18-Survival-Analysis.ipynb",
       "Probas/PyMC/PyMC-Observabilite-OTel.ipynb"
     ],
     "QuantConnect/Python": [

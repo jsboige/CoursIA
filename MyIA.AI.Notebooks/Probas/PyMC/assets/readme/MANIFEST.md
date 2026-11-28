@@ -16,7 +16,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## pymc5-irt-curves.png
 
-- **Source** : notebook `PyMC-07-Skills-IRT.ipynb` (cellule 15, output 3)
+- **Source** : notebook `PyMC-06-Skills-IRT.ipynb` (cellule 15, output 3)
 - **Description visuelle** : Courbe ROC matplotlib (690×590, fond blanc) titrée « Courbe ROC - Modele IRT ». Axes standard ROC : X « Taux de faux positifs » (0.0-1.0), Y « Taux de vrais positifs » (0.0-1.0). **Une seule courbe en escalier bleue pleine** « IRT (AUC = 0.788) » + **diagonale pointillée noire** « Aleatoire » (référence hasard, ligne y=x). Légende interne coin haut-gauche (2 entrées). Stats RGB PIL : moyenne (249.09, 249.09, 250.90), std (35.07, 35.07, 28.93) — **R=G (249/249)** signature d'une diagonale pointillée pure (la courbe IRT bleue tire B vers le bas à 250.90). Pas d'autres marqueurs ni séries. Cohérent avec une **évaluation ROC sklearn** sur modèle IRT binaire.
 - **Alt-text (FR)** : Évaluation IRT : courbe ROC du modèle sur la prédiction de réussite aux items, AUC=0.788 au-dessus du hasard.
 - **Poids** : 29.3 KB (PIL optimisé)
@@ -25,7 +25,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## pymc11-sequences.png
 
-- **Source** : notebook `PyMC-14-Sequences.ipynb` (cellule 14, output 0)
+- **Source** : notebook `PyMC-13-Sequences.ipynb` (cellule 14, output 0)
 - **Description visuelle** : Figure matplotlib 2 subplots empilés verticalement (989×489, fond blanc), partagée axe X temporel « Temps » (0-7). Haut subplot titré « Classification independante (sans transitions) » : barres empilées P(haut) orange + P(bas) bleu ciel, axe Y 0.0-1.0 « Probabilite ». Annotations texte rouge « ambigu » sur les barres des temps 2 et 5 (où la classification hésite). Bas subplot titré « Forward-Backward (avec transitions) » : même structure barres mais avec une **bande orange naissante au temps 2** (P(haut) non nulle) + annotations texte vert « lisse » sur temps 2 et 5 (transitions propageant l'incertitude). Légende interne droite (2 entrées : P(haut) orange, P(bas) bleu ciel). Stats RGB PIL : moyenne (209.74, 197.49, 199.05), std (65.16, 59.04, 70.77) — **std élevé sur les 3 canaux** signature de barres colorées saturées orange+bleu occupant ~50% de la hauteur. Cohérent avec un **comparatif HMM Forward-Backward vs classification i.i.d.** (smoothing via transitions).
 - **Alt-text (FR)** : Inférence sur séquences : comparatif HMM Forward-Backward vs classification indépendante, où les transitions lissent les états ambigus.
 - **Poids** : 30.2 KB (PIL optimisé)
@@ -34,7 +34,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## pymc12-recommenders.png
 
-- **Source** : notebook `PyMC-15-Recommenders.ipynb` (cellule 48, output 0)
+- **Source** : notebook `PyMC-14-Recommenders.ipynb` (cellule 48, output 0)
 - **Description visuelle** : Figure matplotlib 2 panneaux côte à côte (1200×423, fond blanc). Gauche « Sources vs Score latent » : **barplot grouped** par Document (0-5, axe X), axe Y « Score » (0-5), avec **3 barres groupées par document** : bleu « Jugements », orange « Score latent », vert « Clics (rescaled) ». Hauteur quasi identique des 3 barres par document (le score latent suit les sources observées). Légende interne haut-droit. Droite « Distributions posterieures des scores » : **6 histogrammes ArviZ superposés** colorés par Document (0-5, palette 6 couleurs pastel : Doc 0 bleu, Doc 1 orange, Doc 2 vert, Doc 3 rouge, Doc 4 violet, Doc 5 marron), axe X « Score latent » (1-6), axe Y « Frequence » (0-500), un histogramme par document avec des distributions gaussiennes-like empilées en couches. Légende interne droite (6 entrées). Stats RGB PIL : moyenne (221.20, 222.74, 213.69), std (63.19, 48.11, 66.40) — std modéré sur les 3 canaux, signature de barres groupées 3-couleurs à gauche + histogrammes 6-couleurs à droite. Cohérent avec un **système de recommandation bayésien à facteurs latents** (estimations ponctuelles à gauche, posteriors d'incertitude à droite).
 - **Alt-text (FR)** : Système de recommandation bayésien : facteurs latents par document (estimations ponctuelles vs distributions postérieures d'incertitude).
 - **Poids** : 58.4 KB (PIL optimisé, downscale manuel 1389→1200 px — voir note PR)
@@ -52,9 +52,9 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## pymc15-sparse-gp.png
 
-- **Source** : notebook `PyMC-16-Sparse-Gaussian-Process.ipynb` (cellule 14, output 2)
+- **Source** : notebook `PyMC-15-Sparse-Gaussian-Process.ipynb` (cellule 14, output 2)
 - **Description visuelle** : Figure matplotlib 2 **contour plots côte à côte** (1174×533, axes x1/x2 ∈ [-2, 2]) titrée « Classification GP probit sur le donut ». Gauche « Probabilite predite P(classe 1) » : **colormap bleu→rouge** (échelle 0.0-1.0, palette RdBu_r inversée), **frontière de décision en courbe noire** (isosurface P=0.5) en forme de beignet/donut, points bleus (classe 0) au centre du donut + carrés rouges (classe 1) en couronne extérieure, colorbar verticale à droite (8 ticks). Droite « Incertitude (ecart-type de f*) » : **colormap jaune→orange** (échelle 0.725-1.025, palette YlOrBr), contour concentriques en bandes jaune-clair au centre (faible incertitude) → orange-foncé aux coins (forte incertitude), carrés noirs en couronne (les points « test » vus en noir), colorbar verticale à droite (8 ticks). Stats RGB PIL : moyenne (235.26, 208.12, 183.66), std (44.73, 68.10, 95.39) — **R > G > B** avec std énorme sur B (95.39) signature du contour plot colormap **bleu→rouge à gauche** (tire les bleus vers le bas) + **jaune→orange à droite** (tire les bleus encore plus bas). Cohérent avec une **classification GP probit 2D dense sur jouet donut** (sans inducing points visibles — voir *Ce qui n'est PAS dans la figure*).
 - **Alt-text (FR)** : Classification par Processus Gaussien sur un problème jouet en « donut » : probabilité prédite de la classe 1 et incertitude associée (écart-type de f*), sans inducer points (illustration dense classique).
 - **Poids** : 60.1 KB (PIL optimisé)
 - **Contenu réel vérifié (2026-07-14, c.483)** : **2 panneaux côte à côte** : gauche « Probabilite predite P(classe 1) » — contour plot x1∈[-2,2], x2∈[-2,2], colormap bleu→rouge (échelle 0-1), points bleus (classe 0) au centre + carrés rouges (classe 1) en couronne, frontière de décision en noir ; droite « Incertitude (ecart-type de f*) » — contour plot colormap jaune→orange (échelle 0.725-1.025), mêmes axes et points (carrés noirs cette fois). Title « Classification GP probit sur le donut ».
-- **Ce qui n'est PAS dans la figure** : aucun **inducing point** (le « sparse » de l'alt-text v1) n'est visible — il s'agit d'un **GP classification 2D dense classique** sur un problème jouet en donut, PAS d'un sparse GP avec inducteurs. Le notebook `PyMC-16-Sparse-Gaussian-Process.ipynb` introduit probablement les inducteurs dans des cellules ultérieures ; la cellule 14 output 2 illustre le pré-requis (GP dense jouet). Alt-text v1 sur-vendeur corrigé pour refléter ce qui est réellement affiché.
+- **Ce qui n'est PAS dans la figure** : aucun **inducing point** (le « sparse » de l'alt-text v1) n'est visible — il s'agit d'un **GP classification 2D dense classique** sur un problème jouet en donut, PAS d'un sparse GP avec inducteurs. Le notebook `PyMC-15-Sparse-Gaussian-Process.ipynb` introduit probablement les inducteurs dans des cellules ultérieures ; la cellule 14 output 2 illustre le pré-requis (GP dense jouet). Alt-text v1 sur-vendeur corrigé pour refléter ce qui est réellement affiché.

@@ -695,8 +695,8 @@
           }
         },
         {
-          "path": "Probas/Infer/Infer-08-TrueSkill.ipynb",
-          "title": "Infer-08-TrueSkill : Système de Classement et Apprentissage en Ligne",
+          "path": "Probas/Infer/Infer-07-TrueSkill.ipynb",
+          "title": "Infer-07-TrueSkill : Système de Classement et Apprentissage en Ligne",
           "duration_minutes": 60,
           "kernel": ".NET (C#)",
           "execution_constraints": {
@@ -708,7 +708,7 @@
           }
         },
         {
-          "path": "Probas/Infer/Infer-17-Kalman-Filter.ipynb",
+          "path": "Probas/Infer/Infer-16-Kalman-Filter.ipynb",
           "title": "Infer-17 — Filtre de Kalman : systèmes dynamiques linéaires gaussiens",
           "duration_minutes": 30,
           "kernel": ".NET (C#)",

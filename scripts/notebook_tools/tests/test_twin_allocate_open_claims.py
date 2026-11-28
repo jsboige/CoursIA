@@ -40,8 +40,8 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent.parent
 SCRIPT = SCRIPT_DIR / "check_twin_parity.py"
 
-PAIR_NAME = "Probas-13 Crowdsourcing"
-PAIR_SLUG = "probas-13-crowdsourcing"
+PAIR_NAME = "Probas-12 Crowdsourcing"
+PAIR_SLUG = "probas-12-crowdsourcing"
 
 
 def _load_module():

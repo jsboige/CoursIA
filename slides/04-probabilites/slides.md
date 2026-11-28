@@ -415,7 +415,7 @@ class: fig
   - P(m | s) = P(s | m) P(m) / P(s) = 0.8 × 0.0001 / 0.1 = 0.0008
   - La probabilité a posteriori est encore très faible
 
-<p class="nb-ref">Notebooks : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-04-Bayesian-Networks.ipynb" target="_blank" rel="noopener">Infer-04-Bayesian-Networks</a> (règle de Bayes, modèle naïf) · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-09-Classification.ipynb" target="_blank" rel="noopener">Infer-09-Classification</a> (classification bayésienne naïve).</p>
+<p class="nb-ref">Notebooks : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-04-Bayesian-Networks.ipynb" target="_blank" rel="noopener">Infer-04-Bayesian-Networks</a> (règle de Bayes, modèle naïf) · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-08-Classification.ipynb" target="_blank" rel="noopener">Infer-08-Classification</a> (classification bayésienne naïve).</p>
 
 
 ---
@@ -832,7 +832,7 @@ $$
 
 </TeachingStep>
 
-<p class="nb-ref">Notebooks : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-02-Gaussian-Mixtures.ipynb" target="_blank" rel="noopener">Infer-02-Gaussian-Mixtures</a> (gaussiennes, lois conjuguées) · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb" target="_blank" rel="noopener">Infer-16-Sparse-Gaussian-Process</a> (processus gaussiens, classification probit).</p>
+<p class="nb-ref">Notebooks : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-02-Gaussian-Mixtures.ipynb" target="_blank" rel="noopener">Infer-02-Gaussian-Mixtures</a> (gaussiennes, lois conjuguées) · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-15-Sparse-Gaussian-Process.ipynb" target="_blank" rel="noopener">Infer-15-Sparse-Gaussian-Process</a> (processus gaussiens, classification probit).</p>
 
 ---
 layout: default
@@ -1076,7 +1076,7 @@ layout: section
 - **Besoin d'introduire le temps (ou l'espace) dans nos modèles**
 - Exemples modernes : vehicules autonomes (fusion capteurs), LLMs contextuels (attention temporelle)
 
-<p class="nb-ref">Notebooks : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-14-Sequences.ipynb" target="_blank" rel="noopener">Infer-14-Sequences</a> (HMM, séries temporelles) · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-17-Kalman-Filter.ipynb" target="_blank" rel="noopener">Infer-17-Kalman-Filter</a> (filtres de Kalman) · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Sequences.ipynb" target="_blank" rel="noopener">PyMC-14-Sequences</a> (jumeau PyMC).</p>
+<p class="nb-ref">Notebooks : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-13-Sequences.ipynb" target="_blank" rel="noopener">Infer-13-Sequences</a> (HMM, séries temporelles) · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-16-Kalman-Filter.ipynb" target="_blank" rel="noopener">Infer-16-Kalman-Filter</a> (filtres de Kalman) · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Sequences.ipynb" target="_blank" rel="noopener">PyMC-13-Sequences</a> (jumeau PyMC).</p>
 
 
 ---
@@ -1663,7 +1663,7 @@ class: fig
 
 </TeachingStep>
 
-<p class="nb-ref">Notebooks : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-14-Sequences.ipynb" target="_blank" rel="noopener">Infer-14-Sequences</a> (HMM, Viterbi contre classification indépendante) · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Sequences.ipynb" target="_blank" rel="noopener">PyMC-14-Sequences</a> (même modèle en PyMC).</p>
+<p class="nb-ref">Notebooks : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-13-Sequences.ipynb" target="_blank" rel="noopener">Infer-13-Sequences</a> (HMM, Viterbi contre classification indépendante) · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Sequences.ipynb" target="_blank" rel="noopener">PyMC-13-Sequences</a> (même modèle en PyMC).</p>
 
 ---
 layout: default
@@ -1812,15 +1812,15 @@ class: nb-map nb-k96
 
 <div class="nb-grid nb-cols-3">
 
-<div class="nb-card"><p class="nb-step">HMM et Viterbi</p><p class="nb-what">Séquences d’états cachés : Viterbi contre une classification point par point, coût O(T·K²).</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-14-Sequences.ipynb" target="_blank" rel="noopener">Infer-14-Sequences</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Sequences.ipynb" target="_blank" rel="noopener">PyMC-14</a></p></div>
+<div class="nb-card"><p class="nb-step">HMM et Viterbi</p><p class="nb-what">Séquences d’états cachés : Viterbi contre une classification point par point, coût O(T·K²).</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-13-Sequences.ipynb" target="_blank" rel="noopener">Infer-13-Sequences</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Sequences.ipynb" target="_blank" rel="noopener">PyMC-13</a></p></div>
 
-<div class="nb-card"><p class="nb-step">Filtre de Kalman</p><p class="nb-what">Prédiction, correction, réglage des bruits Q et R, borne de Riccati, lissage.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-17-Kalman-Filter.ipynb" target="_blank" rel="noopener">Infer-17-Kalman-Filter</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb" target="_blank" rel="noopener">PyMC-17</a></p></div>
+<div class="nb-card"><p class="nb-step">Filtre de Kalman</p><p class="nb-what">Prédiction, correction, réglage des bruits Q et R, borne de Riccati, lissage.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-16-Kalman-Filter.ipynb" target="_blank" rel="noopener">Infer-16-Kalman-Filter</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb" target="_blank" rel="noopener">PyMC-16</a></p></div>
 
-<div class="nb-card"><p class="nb-step">Points de rupture</p><p class="nb-what">Quand le régime d’une série change-t-il ? Catastrophes minières (Poisson), deux ruptures, changement de variance.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-18-Change-Point.ipynb" target="_blank" rel="noopener">Infer-18-Change-Point</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb" target="_blank" rel="noopener">PyMC-18</a></p></div>
+<div class="nb-card"><p class="nb-step">Points de rupture</p><p class="nb-what">Quand le régime d’une série change-t-il ? Catastrophes minières (Poisson), deux ruptures, changement de variance.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-17-Change-Point.ipynb" target="_blank" rel="noopener">Infer-17-Change-Point</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Change-Point.ipynb" target="_blank" rel="noopener">PyMC-17</a></p></div>
 
-<div class="nb-card"><p class="nb-step">Analyse de survie</p><p class="nb-what">Durées jusqu’à l’événement, données censurées, fonctions de risque.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-19-Survival-Analysis.ipynb" target="_blank" rel="noopener">Infer-19-Survival-Analysis</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb" target="_blank" rel="noopener">PyMC-19</a></p></div>
+<div class="nb-card"><p class="nb-step">Analyse de survie</p><p class="nb-what">Durées jusqu’à l’événement, données censurées, fonctions de risque.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-18-Survival-Analysis.ipynb" target="_blank" rel="noopener">Infer-18-Survival-Analysis</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb" target="_blank" rel="noopener">PyMC-18</a></p></div>
 
-<div class="nb-card"><p class="nb-step">Processus gaussiens</p><p class="nb-what">Une loi a priori sur les fonctions ; classification probit, base parcimonieuse.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb" target="_blank" rel="noopener">Infer-16-Sparse-Gaussian-Process</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb" target="_blank" rel="noopener">PyMC-16</a></p></div>
+<div class="nb-card"><p class="nb-step">Processus gaussiens</p><p class="nb-what">Une loi a priori sur les fonctions ; classification probit, base parcimonieuse.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-15-Sparse-Gaussian-Process.ipynb" target="_blank" rel="noopener">Infer-15-Sparse-Gaussian-Process</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb" target="_blank" rel="noopener">PyMC-15</a></p></div>
 
 <div class="nb-card"><p class="nb-step">Marches aléatoires</p><p class="nb-what">Théorème de Pólya : la marche revient-elle à l’origine ? Intégrale de Watson, marche anisotrope.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Applications/Marches-01-Retour-Polya-Watson-Python.ipynb" target="_blank" rel="noopener">Marches-01</a></p></div>
 
@@ -1850,7 +1850,7 @@ class: nb-concept nb-center nb-k84
 
 <p class="nb-foot"><strong>À observer.</strong> Dans l’exercice sur la sensibilité à Q, multipliez Q par 10 : l’estimation suit-elle davantage le bruit des mesures ?</p>
 
-<p class="notebook-reference">Notebook : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-17-Kalman-Filter.ipynb" target="_blank" rel="noopener">Infer-17-Kalman-Filter.ipynb</a>.</p>
+<p class="notebook-reference">Notebook : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-16-Kalman-Filter.ipynb" target="_blank" rel="noopener">Infer-16-Kalman-Filter.ipynb</a>.</p>
 
 ---
 layout: section
@@ -2481,7 +2481,7 @@ class: nb-map nb-k96
 
 <div class="nb-grid nb-cols-3">
 
-<div class="nb-card"><p class="nb-step">Infer.NET avancé</p><p class="nb-what">Compétences (IRT), TrueSkill, modèles de sujets (LDA), modèles hiérarchiques, recommandation.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-07-Skills-IRT.ipynb" target="_blank" rel="noopener">07</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-08-TrueSkill.ipynb" target="_blank" rel="noopener">08</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb" target="_blank" rel="noopener">11</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-12-Modeles-Hierarchiques.ipynb" target="_blank" rel="noopener">12</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-15-Recommenders.ipynb" target="_blank" rel="noopener">15</a></p></div>
+<div class="nb-card"><p class="nb-step">Infer.NET avancé</p><p class="nb-what">Compétences (IRT), TrueSkill, modèles de sujets (LDA), modèles hiérarchiques, recommandation.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-06-Skills-IRT.ipynb" target="_blank" rel="noopener">06</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-07-TrueSkill.ipynb" target="_blank" rel="noopener">07</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-10-Topic-Models.ipynb" target="_blank" rel="noopener">10</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-11-Modeles-Hierarchiques.ipynb" target="_blank" rel="noopener">11</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-14-Recommenders.ipynb" target="_blank" rel="noopener">14</a></p></div>
 
 <div class="nb-card"><p class="nb-step">Fondations</p><p class="nb-what">Le théorème central limite par la simulation.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Fondations/Probas-CLT-Theoreme-Central-Limite.ipynb" target="_blank" rel="noopener">CLT Python</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Fondations/Probas-CLT-Theoreme-Central-Limite-CSharp.ipynb" target="_blank" rel="noopener">CLT C#</a></p></div>
 

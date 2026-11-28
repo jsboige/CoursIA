@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Coeur du service TrueSkill (Probas/Infer.NET), pli 0 v2 de l'Epic #19571.
 
-Logique reprise du jumeau ``Infer-08b-TrueSkill-Formules-Fermees-CSharp.ipynb``
+Logique reprise du jumeau ``Infer-07b-TrueSkill-Formules-Fermees-CSharp.ipynb``
 (formes fermees EP de Herbrich-Minka-Graepel, NIPS 19 / 2006), adaptee au
 contrat REST JSON du service notebook-http (issue #27217).
 
@@ -12,7 +12,7 @@ n'est utilisee QUE par les tests, comme verification independante du cœur —
 jamais appelee par ce module (regle organ-first : l'organe calcule, la
 reference verifie).
 
-Contrat REST (carnet phare ``Infer-08b-...-Python.ipynb``, cellule annotee) :
+Contrat REST (carnet phare ``Infer-07b-...-Python.ipynb``, cellule annotee) :
     POST /probas/trueskill
       {"games": [{"teams": [["A","B"],["C"]], "ranks": [1,2]}, ...],
        "initial": {"mu": 25.0, "sigma": 8.333}?,
@@ -34,7 +34,7 @@ from __future__ import annotations
 import math
 from typing import Dict, List, Optional, Sequence, Tuple
 
-# Parametres TrueSkill par defaut (identiques a Infer-08 / Infer-08b).
+# Parametres TrueSkill par defaut (identiques a Infer-07 / Infer-07b).
 DEFAULT_MU = 25.0
 DEFAULT_SIGMA = 25.0 / 3.0
 # beta = ecart-type du bruit de performance ; sa variance vaut beta^2.
@@ -237,7 +237,7 @@ def _propagate_pair(
     # production TrueSkill) :
     #   mu_j   += (var_j / var_equipe) * dmu_equipe
     #   var_j  += (var_j / var_equipe) * dvar_equipe
-    # Exact en 1v1 (mu 29.21/20.79, sigma 7.1948 = posterior Infer-08) ; en
+    # Exact en 1v1 (mu 29.21/20.79, sigma 7.1948 = posterior Infer-07) ; en
     # equipe, concorde en mu avec la reference EP iteree (27.97), la variance
     # individuelle etant plus reduite en une passe qu'a convergence (divergence
     # online vs EP iteree, documentee dans le carnet).

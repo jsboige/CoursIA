@@ -1273,7 +1273,7 @@ layout: section
 </div>
 </div>
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-14-Sequences.ipynb">Infer-14-Sequences.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-17-Kalman-Filter.ipynb">Infer-17-Kalman-Filter.ipynb</a>.</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-13-Sequences.ipynb">Infer-13-Sequences.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-16-Kalman-Filter.ipynb">Infer-16-Kalman-Filter.ipynb</a>.</p>
 ---
 
 

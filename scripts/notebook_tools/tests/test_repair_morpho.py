@@ -156,7 +156,7 @@ class TestAuxiliaires(unittest.TestCase):
             "Etant donne les contraintes, on propose X.\n\nLe sup "))
 
     def test_locution_coupee_par_saut_de_ligne_simple(self):
-        """Witness corpus ``PyMC-10-Model-Selection`` : « l'inférence bayésienne :
+        """Witness corpus ``PyMC-09-Model-Selection`` : « l'inférence bayésienne :
         étant\\ndonne un jeu de données ». Un saut de ligne SIMPLE reste dans la
         phrase -- le borner casserait une locution reelle (1 cas mesure, legitime,
         le seul verdict que le saut simple changerait sur le corpus)."""
