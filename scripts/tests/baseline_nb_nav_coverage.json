@@ -24,11 +24,11 @@
       "GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-CSharp.ipynb"
     ],
     "GenAI/Audio/02-Advanced": [
-      "GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb"
+      "GenAI/Audio/02-Advanced/Audio-02-7-YuE2-Song-Generation-Python.ipynb"
     ],
     "GenAI/Audio/04-Applications": [
-      "GenAI/Audio/04-Applications/04-15-MERT2-Music-Understanding.ipynb",
-      "GenAI/Audio/04-Applications/04-20-Separation-Avancee-Qualite.ipynb",
+      "GenAI/Audio/04-Applications/Audio-04-15-MERT2-Music-Understanding-Python.ipynb",
+      "GenAI/Audio/04-Applications/Audio-04-20-Separation-Avancee-Qualite-Python.ipynb",
       "GenAI/Audio/04-Applications/04-8-Lecture-Analytique.ipynb"
     ],
     "GenAI/Audio/05-Diffusion-from-scratch": [

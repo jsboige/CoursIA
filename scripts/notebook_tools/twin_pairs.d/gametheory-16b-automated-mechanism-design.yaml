@@ -1,0 +1,11 @@
+- name: "GameTheory-16b Automated Mechanism Design"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-16b-Automated-Mechanism-Design-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-16b-Automated-Mechanism-Design-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Le carnet est sans solveur externe des deux cotes : Python enumere avec itertools, C# avec la BCL seule (aucun NuGet). Aucune asymetrie de machinerie a corriger."
+  known_differences:
+    - "2026-11-26 (myia-po-2026:CoursIA-2, #28644) : le cote C# est cree (portage du carnet Python). Le lien de navigation vers le jumeau C# est porte par la ligne de navigation du jumeau Rust et par la ligne du carnet dans le README de serie ; le carnet Python n'est pas modifie (lien entrant differe : la PR ouverte #25262 modifie ce fichier). Attestation emise apres la modification, en derniere operation (cf #8957)."
+    - "Le verificateur C# redelinit ses propres primitives et ne reference pas le generateur (types distincts `MecanismeVerifie` et `MecanismeGen`) : meme contrainte structurelle que le cote Python, ou le verificateur ne fait pas `import` du generateur."
+    - "Representation dictionnaires Python et tableaux C# ; memes comptes entiers, memes chaines de messages du temoin de divergence."

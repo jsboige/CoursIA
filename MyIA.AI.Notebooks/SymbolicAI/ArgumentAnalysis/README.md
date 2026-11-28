@@ -76,7 +76,7 @@ Les extensions lettrées creusent un palier du parcours ; elles ne le font pas a
 
 ### Autour de 01 — Argumentation informelle
 
-- [01b — Schémas de Walton](Argumentation-01b-Schemes-Walton-Python.ipynb) : reconnaître des formes stéréotypées d'argument par un classifieur lexical déterministe, les départager dans un ordre canonique et utiliser leurs questions critiques ; une absence de correspondance reste un résultat honnête, jamais une étiquette fabriquée.
+- [01b — Schémas de Walton](Argumentation-01b-Schemes-Walton-Python.ipynb) · [jumeau C#](Argumentation-01b-Schemes-Walton-CSharp.ipynb) : reconnaître des formes stéréotypées d'argument par un classifieur lexical déterministe, les départager dans un ordre canonique et utiliser leurs questions critiques ; une absence de correspondance reste un résultat honnête, jamais une étiquette fabriquée. Le jumeau C# réimplante le moteur en BCL pure et atteste les mêmes valeurs par des assertions exécutables.
 
 ### Autour de 02 — Sophismes et taxonomie
 

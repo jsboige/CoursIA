@@ -205,7 +205,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-09-Guardrails-AI-Shield-Python.ipynb` | ArgumentAnalysis | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-10-Privacy-Export-Python.ipynb` | ArgumentAnalysis | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb` | ArgumentAnalysis | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
-| `MyIA.AI.Notebooks/GenAI/Audio/06-Diffusion-SOTA/06-3-AudioDiffusion-Comparison-A-vs-B.ipynb` | Audio | python3 | - | - |
+| `MyIA.AI.Notebooks/GenAI/Audio/06-Diffusion-SOTA/Audio-06-3-AudioDiffusion-Comparison-A-vs-B-Python.ipynb` | Audio | python3 | - | - |
 | `MyIA.AI.Notebooks/InformationCalcul/Automata/Automata-01-AutomatesFinis-Python.ipynb` | Automata | python3 | - | - |
 | `MyIA.AI.Notebooks/Probas/Causalite/Causalite-00-Echelle-de-Pearl-Intro-Python.ipynb` | Causalite | python3 | matplotlib==3.10.8, networkx==3.6.1, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Probas/Causalite/Causalite-07-Quasi-Experimentales-Python.ipynb` | Causalite | coursia-ml-training | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2, scikit-learn==1.8.0, scipy==1.18.0, statsmodels==0.14.6 | - |
