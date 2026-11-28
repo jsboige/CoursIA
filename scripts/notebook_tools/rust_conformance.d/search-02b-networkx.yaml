@@ -1,0 +1,136 @@
+- name: "Search-02b NetworkX"
+  family: Search
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Rust.ipynb
+  measures:
+    - id: degre_paris
+      description: "Degré du noeud Paris dans le graphe de reference"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: 'Degr[ée] Paris\s*:\s*(\d+)'
+          transform: int
+        rust:
+          cell: 6
+          pattern: 'degre de Paris\s*:\s*(\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Les 10 cellules code du jumeau C# ne portent aucune sortie
+            commitee (carnet non re-execute avec outputs) : cote declare
+            ABSENT, pas mesure.
+    - id: degre_moyen
+      description: "Degré moyen du graphe"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: 'Degr[ée] moyen\s*:\s*(\d[.,]\d+)'
+          transform: float
+        rust:
+          cell: 6
+          pattern: 'degre moyen\s*:\s*(\d[.,]\d+)'
+          transform: float
+        csharp:
+          absent: >-
+            Meme raison que `degre_paris` : aucune sortie commitee cote C#.
+    - id: densite
+      description: "Densite du graphe"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: 'Densit[ée]e?\s*:\s*(\d[.,]\d+)'
+          transform: float
+        rust:
+          cell: 6
+          pattern: 'densite\s*:\s*(\d[.,]\d+)'
+          transform: float
+        csharp:
+          absent: >-
+            Meme raison que `degre_paris` : aucune sortie commitee cote C#.
+    - id: distance_paris_toulouse
+      description: "Distance ponderee Paris -> Toulouse (km)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: 'Paris (?:→|->) Toulouse[^\n]*\((\d+) km\)'
+          transform: int
+        rust:
+          cell: 13
+          pattern: 'Paris -> Toulouse \(pondere, km\)\s*:\s*(\d+) km'
+          transform: int
+        csharp:
+          absent: >-
+            Meme raison que `degre_paris` : aucune sortie commitee cote C#.
+    - id: distance_paris_marseille
+      description: "Distance ponderee Paris -> Marseille (km)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: 'Paris (?:→|->) Marseille[^\n]*\((\d+) km\)'
+          transform: int
+        rust:
+          cell: 13
+          pattern: 'Paris -> Marseille \(pondere, km\)\s*:\s*(\d+) km'
+          transform: int
+        csharp:
+          absent: >-
+            Meme raison que `degre_paris` : aucune sortie commitee cote C#.
+    - id: betweenness_paris
+      description: "Centralite d'intermediarite (betweenness) de Paris"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: 'Paris\s+0\.600\s+(\d[.,]\d+)'
+          transform: float
+        rust:
+          cell: 24
+          pattern: 'Paris\s+0\.600\s+(\d[.,]\d+)'
+          transform: float
+        csharp:
+          absent: >-
+            Meme raison que `degre_paris` : aucune sortie commitee cote C#.
+    - id: flot_max
+      description: "Flot maximum du reseau (tonnes/jour)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: 'Flot maximum\s*:\s*(\d+)'
+          transform: int
+        rust:
+          cell: 29
+          pattern: 'flot maximum\s*:\s*(\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Meme raison que `degre_paris` : aucune sortie commitee cote C#.
+    - id: matching_somme
+      description: "Somme des preferences du matching optimal"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 31
+          pattern: 'somme des pr[ée]f[ée]rences\s*=\s*(\d+)'
+          transform: int
+        rust:
+          cell: 37
+          pattern: 'somme des preferences\s*=\s*(\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Meme raison que `degre_paris` : aucune sortie commitee cote C#.

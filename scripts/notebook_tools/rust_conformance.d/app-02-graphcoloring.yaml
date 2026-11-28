@@ -1,0 +1,80 @@
+- name: "App-02 GraphColoring (departements)"
+  family: Search
+  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-Rust.ipynb
+  measures:
+    - id: sommets
+      description: "Nombre de sommets du graphe de contiguite des departements"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: 'Sommets\s*:\s*(\d+)'
+          transform: int
+        rust:
+          cell: 4
+          pattern: 'Sommets\s*:\s*(\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# (13/13 cellules code porteuses de sorties commitees)
+            traite des graphes canoniques -- K_n, C_n, Petersen, K_{m,n},
+            Mycielski, G(n, 0.5) -- et non le graphe de contiguite des
+            departements : la grandeur n'existe pas de ce cote, declare
+            ABSENT, pas mesure.
+    - id: aretes
+      description: "Nombre d'aretes du graphe de contiguite des departements"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: 'Aretes\s*:\s*(\d+)'
+          transform: int
+        rust:
+          cell: 4
+          pattern: 'Aretes\s*:\s*(\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Meme raison que `sommets` : le jumeau C# ne charge pas le graphe
+            de contiguite des departements (graphes canoniques seulement).
+    - id: chromatic_departements
+      description: "Nombre chromatique du graphe des departements"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 29
+          pattern: 'chi\(G\)\s*=\s*(\d+)'
+          transform: int
+        rust:
+          cell: 13
+          pattern: 'k = (\d+)\s*:\s*1 solution'
+          transform: int
+        csharp:
+          absent: >-
+            Meme raison que `sommets` : le nombre chromatique publie cote C#
+            porte sur des graphes canoniques, pas sur le graphe des
+            departements.
+    - id: petersen_solutions
+      description: "Nombre de colorations du graphe de Petersen (k = 3)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: 'solutions trouvees\s*:\s*(\d+)'
+          transform: int
+        rust:
+          cell: 14
+          pattern: 'k = 3\s*:\s*(\d+) solution'
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# publie le nombre chromatique exact de Petersen
+            (chi = 3, via DSATUR et backtracking), pas le nombre de
+            colorations valides a k = 3 : grandeur differente, declare
+            ABSENT, pas mesure.

@@ -1,0 +1,31 @@
+- name: "Search-01 StateSpace"
+  family: Search
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-Rust.ipynb
+  measures:
+    - id: bordeaux_strasbourg_km
+      description: "Distance du chemin optimal Bordeaux -> Strasbourg (Dijkstra)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 32
+          pattern: 'Distance totale\s*:\s*(\d+) km'
+          transform: int
+        rust:
+          cell: 26
+          pattern: 'Bordeaux -> Strasbourg\s*:\s*(\d+) km'
+          transform: int
+        csharp:
+          cell: 26
+          # La cellule C# compare deux itineraires et publie deux distances
+          # totales (1075 / 1475 km) ; l'ancrage sur "Itineraire 1" capte
+          # celui que le carnet designe comme le plus court (via Paris),
+          # conforme a la reference Python (1075 km).
+          pattern: 'Itineraire 1.*?Distance totale\s*:\s*(\d+) km'
+          transform: int
+  # NB : la taille de l'espace d'etats du 8-puzzle (9! des deux cotes : la
+  # factorielle porte sur les cases, tuiles + case vide) est VOLONTE hors
+  # registre : grandeur pedagogique du tableau, la conformite se mesure sur
+  # la distance de Dijkstra.
