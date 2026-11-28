@@ -341,7 +341,7 @@ def test_a_rename_carried_by_the_merge_alone_keeps_its_new_name(
     repo.git("mv", "old.txt", "new.txt")
     repo.git("commit", "-q", "-m", "merge then rename")
     head = repo.oid()
-    assert repo.git("rev-list", "--parents", "-n", "1", "head").split()[1:] == [
+    assert repo.git("rev-list", "--parents", "-n", "1", head).split()[1:] == [
         repo.git("rev-parse", "pr~1"), tip], "la tete est bien la fusion"
     monkeypatch.chdir(repo.root)
 
