@@ -35,8 +35,11 @@ jusqu'à ce que quelque chose casse.
   Chaque paragraphe « Lecture du résultat » cite les nombres produits par sa propre figure, et un
   contrôle automatique vérifie que chaque valeur citée figure bien dans la sortie de la cellule.
 - **Un widget par notion**, sous le paragraphe « À manipuler ». Il faut un noyau vivant et
-  `ipywidgets` ; hors de là, le carnet bascule en **mode batch** (`BATCH_MODE = True`, injecté par
-  Papermill) et chaque widget imprime une ligne au lieu de s'afficher.
+  `ipywidgets` : la première cellule de code importe la bibliothèque, sans garde, donc sans elle le
+  carnet s'arrête à cette cellule. Le **mode batch** (`BATCH_MODE = True`, la valeur du carnet
+  committé) est un réglage, pas un repli : il fait imprimer à chaque cellule de widget la valeur par
+  défaut au lieu d'afficher le curseur. Pour manipuler, passez `BATCH_MODE` à `False` dans la cellule
+  de paramètres et relancez-la.
 
 ## Exécution
 
@@ -47,8 +50,21 @@ python scripts/notebook_tools/notebook_tools.py execute \
     --kernel python3 --batch-mode
 ```
 
-Dépendances : `numpy`, `matplotlib`, `ipywidgets` (8.x). Sans `ipywidgets`, seule la branche batch
-du carnet est atteignable.
+Le rendu avec les widgets s'obtient en passant `BATCH_MODE` à `False`, dans l'image d'apprentissage
+du dépôt, qui fournit les dépendances ([sous-issue 1.3](../../../docker-configurations/notebook-runner/README.md)) :
+
+```bash
+docker run --rm --entrypoint bash -v "<depot>:/work" ghcr.io/jsboige/coursia-learning:latest -lc \
+    'python3 -m papermill /work/MyIA.AI.Notebooks/cross-series/NotionsInteractives/NotionsInteractives-01-Atelier-Python.ipynb \
+     /work/NotionsInteractives-01-widgets.ipynb --kernel python3 --cwd /work -p BATCH_MODE False'
+```
+
+Dépendances : `numpy`, `matplotlib`, `ipywidgets` (8.x), les trois dans les deux modes, puisque
+l'import d'`ipywidgets` figure dans la première cellule de code : sans la bibliothèque, le carnet
+s'arrête à cette cellule, mode batch compris.
+
+JupyterLite ne sert pas ce carnet : `ipywidgets` est absent de la distribution Pyodide, et l'atelier
+figure parmi les carnets refusés de [`docs/reference/pyodide-eligibilite.md`](../../../docs/reference/pyodide-eligibilite.md).
 
 ## Trois exercices
 
