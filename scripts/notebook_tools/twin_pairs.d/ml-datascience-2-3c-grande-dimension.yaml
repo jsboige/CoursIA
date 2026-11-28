@@ -6,5 +6,6 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: C# orchestre les tirages et les plis, calcule les métriques et contributions des variables ; les vrais estimateurs sklearn OLS, RidgeCV, PCA/PCR et PLS NIPALS sont utilisés via Python.NET.
   known_differences:
+    - "Attestation 0005 (PR #28726) : rebaseline après l'édition du carnet Python portée par cette PR — la ligne **Navigation** gagne le lien [Version Rust] vers le nouveau jumeau, et la fin de source est normalisée. Aucune cellule de code, aucune sortie : la parité `semantic` Python↔C# n'est pas affectée, les deux blobs sont ré-attestés tels qu'ils sont à cette tête."
     - Les figures sont des SVG statiques et les durées dépendent de l'environnement.
     - La standardisation du train complet précède la validation croisée ; les k du régime leurre sont réutilisés sur l'aligné, comme dans la source.
