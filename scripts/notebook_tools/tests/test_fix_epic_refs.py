@@ -324,3 +324,456 @@ def test_scan_et_apply_refusent_le_meme_carnet_a_note_de_pied_deja_presente(tmp_
     assert "note de pied deja presente" in outcome
     # Le carnet n'a pas ete touche : une seule note de pied.
     assert path.read_text(encoding="utf-8").count("Carnet issu de l'EPIC") == 1
+
+
+def _test_forme_tweety(tmp_path: Path, header: str, expected_header: str,
+                       expected_ref: str) -> None:
+    """Applique une forme reelle et exige une reparation chirurgicale."""
+    path = tmp_path / "n.ipynb"
+    _write(path, _notebook("# Titre\n\n" + header))
+    outcome = fer.apply_one(path, dry_run=False)
+    assert "en-tete nettoye" in outcome
+    nb = json.loads(path.read_text(encoding="utf-8"))
+    assert nb["cells"][0]["source"] == "# Titre\n\n" + expected_header
+    assert f"> Carnet issu de l'EPIC #{expected_ref}." in "".join(nb["cells"][2]["source"])
+
+
+def test_forme_tweety_banniere_marathon_dotnet(tmp_path: Path) -> None:
+    """Le prefixe de coordination absorbe « .NET », pas le texte pedagogique."""
+    _test_forme_tweety(
+        tmp_path,
+        "Le grounded canonique est coherent. Marathon parite .NET <-> Python : EPIC #4956.",
+        "Le grounded canonique est coherent.",
+        "4956",
+    )
+
+
+def test_forme_tweety_prong_avant_reference_et_titre_sans_espace_final(tmp_path: Path) -> None:
+    """Le groupe « (Prong B, EPIC #N) » part sans laisser d'espace terminal."""
+    _test_forme_tweety(
+        tmp_path,
+        "### Value-add du jumeau C# (Prong B, EPIC #3801)\n",
+        "### Value-add du jumeau C#\n",
+        "3801",
+    )
+
+
+def test_forme_tweety_elision_et_parenthese_de_renvoi(tmp_path: Path) -> None:
+    """L'elision emporte les deux parentheses du renvoi, sans orpheline."""
+    _test_forme_tweety(
+        tmp_path,
+        "Ce notebook est la variante du Chantier 2 de l'(EPIC #4956 Prong B) : apres le moteur.",
+        "Ce notebook est la variante du Chantier 2 : apres le moteur.",
+        "4956",
+    )
+
+
+def test_forme_tweety_reference_par_lien_markdown_nu(tmp_path: Path) -> None:
+    """Un lien qui ne fait que pointer l'EPIC est retire avec sa reference."""
+    _test_forme_tweety(
+        tmp_path,
+        "Moteur hybride (EPIC [#4667](https://github.com/jsboige/CoursIA/issues/4667)).",
+        "Moteur hybride.",
+        "4667",
+    )
+
+
+def test_forme_tweety_genitif_de_l_epic(tmp_path: Path) -> None:
+    """La forme genitive mesuree est retiree sans laisser d'elision pendante."""
+    _test_forme_tweety(
+        tmp_path,
+        "> Position : troisieme labo croise de l'EPIC #15066, apres le propositionnel.",
+        "> Position : troisieme labo croise, apres le propositionnel.",
+        "15066",
+    )
+
+
+def test_forme_planners_value_add_prong_sans_virgule(tmp_path: Path) -> None:
+    """Le retrait conserve le mecanisme pedagogique decrit apres la reference."""
+    _test_forme_tweety(
+        tmp_path,
+        "Le *value-add* (EPIC #4956 Prong B) est pedagogique : chaque mecanisme "
+        "(composition d'Allen, propagation STN) est visible dans le code C#.",
+        "Le *value-add* est pedagogique : chaque mecanisme "
+        "(composition d'Allen, propagation STN) est visible dans le code C#.",
+        "4956",
+    )
+
+
+def test_forme_z3_api_genitif_apres_epic(tmp_path: Path) -> None:
+    """Une formulation « de l'Epic #N : » est couverte sans absorber le contrat."""
+    _test_forme_tweety(
+        tmp_path,
+        "Premier service du **pli 0** de l'Epic #19571 : exposer le carnet phare en REST.",
+        "Premier service du **pli 0** : exposer le carnet phare en REST.",
+        "19571",
+    )
+
+def test_note_de_pied_apres_dernier_code_sans_interrompre_stub(tmp_path: Path) -> None:
+    """Un enonce suivi de son stub ne peut pas recevoir le pied entre les deux."""
+    path = tmp_path / "n.ipynb"
+    nb = _notebook("# Titre\n\nEPIC #1206.\n")
+    nb["cells"] = [
+        nb["cells"][0],
+        {"cell_type": "markdown", "id": "aaaa0004", "metadata": {},
+         "source": "### Exercice 4\n\nIdentifier le cas limite.\n"},
+        {"cell_type": "code", "id": "aaaa0005", "metadata": {},
+         "source": ["print('Exercice a completer')\n"],
+         "outputs": [], "execution_count": None},
+        {"cell_type": "code", "id": "aaaa0007", "metadata": {},
+         "source": ["result = None  # TODO etudiant\n"],
+         "outputs": [], "execution_count": None},
+        {"cell_type": "markdown", "id": "aaaa0006", "metadata": {},
+         "source": "## Conclusion\n\nBilan.\n"},
+    ]
+    _write(path, nb)
+
+    outcome = fer.apply_one(path, dry_run=False)
+
+    assert "en-tete nettoye (#1206)" in outcome
+    after = json.loads(path.read_text(encoding="utf-8"))["cells"]
+    assert "Carnet issu de l'EPIC #1206." in after[4]["source"]
+    assert "Carnet issu de l'EPIC" not in after[1]["source"]
+    assert "print('Exercice a completer')" in "".join(after[2]["source"])
+    assert "result = None  # TODO etudiant" in "".join(after[3]["source"])
+
+
+def test_refus_si_aucun_markdown_apres_dernier_code(tmp_path: Path) -> None:
+    """Le fixer refuse plutôt que de déposer le pied dans un énoncé/stub."""
+    path = tmp_path / "n.ipynb"
+    nb = _notebook("# Titre\n\nEPIC #1206.\n")
+    nb["cells"] = [
+        nb["cells"][0],
+        {"cell_type": "markdown", "id": "aaaa0004", "metadata": {},
+         "source": "### Dernier exercice\n\nIdentifier le cas limite.\n"},
+        {"cell_type": "code", "id": "aaaa0005", "metadata": {},
+         "source": ["print('Exercice a completer')\n"],
+         "outputs": [], "execution_count": None},
+    ]
+    _write(path, nb)
+
+    before = path.read_bytes()
+    info = fer.analyse(path)
+    outcome = fer.apply_one(path, dry_run=False)
+
+    assert info["refused"] == outcome
+    assert "triage manuel" in outcome
+    assert path.read_bytes() == before
+
+
+def test_refus_si_parenthese_vide(tmp_path: Path) -> None:
+    """Une clause retiree au milieu d'une parenthese laisse « ( » : refus."""
+    path = tmp_path / "n.ipynb"
+    header = "# Titre\n\nCloture du bloc (Epic #4677, jambe Python-large du planificateur #1206).\n"
+    _write(path, _notebook(header))
+    outcome = fer.apply_one(path, dry_run=False)
+    assert "refus" in outcome
+    # Le carnet n'a pas ete touche.
+    assert "Epic #4677" in path.read_text(encoding="utf-8")
+
+
+def test_parenthese_dont_le_contenu_est_la_clause(tmp_path: Path) -> None:
+    """Un groupe parenthese dont le contenu est exactement la clause part avec.
+
+    C'est la forme mesuree sur la serie ArgumentAnalysis :
+    « de la convention `fallacy_rules.py` (epic #4960), ». Le retrait emporte
+    les parentheses -- sinon il laisserait « () ».
+    """
+    path = tmp_path / "n.ipynb"
+    header = (
+        "# Titre\n"
+        "| **Rung** | 0-init |\n"
+        "\n"
+        "Ce carnet suit la convention `fallacy_rules.py` (epic #4960), "
+        "et montre le graphe.\n"
+    )
+    _write(path, _notebook(header))
+    outcome = fer.apply_one(path, dry_run=False)
+    assert "en-tete nettoye (#4960)" in outcome
+    nb = json.loads(path.read_text(encoding="utf-8"))
+    header_after = nb["cells"][0]["source"]
+    assert "fallacy_rules.py`," in header_after
+    assert "()" not in header_after
+    assert "EPIC" not in header_after
+
+
+def test_espace_apres_parenthese_ouverte_nettoye(tmp_path: Path) -> None:
+    """« (Epic #2137 Phase 2) » doit devenir « (Phase 2) », pas « ( Phase 2) ».
+
+    L'espace residuel apres la parenthese ouvrante est un artefact du
+    retrait : il est nettoye localement, la couture reste surgically.
+    """
+    path = tmp_path / "n.ipynb"
+    header = (
+        "# Titre\n"
+        "| **Rung** | 0-init (Epic #2137 Phase 2, setup environnement) |\n"
+    )
+    _write(path, _notebook(header))
+    outcome = fer.apply_one(path, dry_run=False)
+    assert "en-tete nettoye (#2137)" in outcome
+    nb = json.loads(path.read_text(encoding="utf-8"))
+    header_after = nb["cells"][0]["source"]
+    assert "(Phase 2, setup environnement)" in header_after
+    assert "( Phase" not in header_after
+    assert "EPIC" not in header_after
+
+
+def test_structure_de_la_source_preservee(tmp_path: Path) -> None:
+    """Le retrait ne re-serialise pas la liste de lignes de la cellule.
+
+    Une cellule dont un element contient un saut de ligne vide (« ## Source\\n\\n… »)
+    garderait cette forme si l'outil re-serialisait la source : le diff
+    montrerait alors un churn de lignes sans changement de texte.
+    """
+    path = tmp_path / "n.ipynb"
+    nb = _notebook("# Titre\n")
+    nb["cells"][0]["source"] = [
+        "# Titre\n",
+        "\n",
+        "## Source\n\nCe carnet s'inscrit dans la serie.",
+        " EPIC #1206, Prong B.",
+    ]
+    _write(path, nb)
+    outcome = fer.apply_one(path, dry_run=False)
+    assert "en-tete nettoye (#1206)" in outcome
+    after = json.loads(path.read_text(encoding="utf-8"))
+    source = after["cells"][0]["source"]
+    assert len(source) == 4
+    assert source[3] == ""
+
+
+def test_refus_si_parentheses_desequilibrees(tmp_path: Path) -> None:
+    """Un retrait qui laisse une parenthese orpheline est refuse."""
+    path = tmp_path / "n.ipynb"
+    header = "# Titre\n\nBloc ((epic #4677)) de la distillation.\n"
+    _write(path, _notebook(header))
+    outcome = fer.apply_one(path, dry_run=False)
+    assert "refus" in outcome
+    assert "epic #4677" in path.read_text(encoding="utf-8")
+
+
+def test_refus_si_carnet_non_canonique(tmp_path: Path) -> None:
+    """Un carnet dont le round-trip n'est pas byte-identique n'est pas reecrit."""
+    path = tmp_path / "n.ipynb"
+    header = "# Titre\n\n> Port. EPIC #1206, Prong B."
+    _write(path, _notebook(header))
+    # Changer la forme du fichier sans toucher au contenu des cellules.
+    raw = path.read_text(encoding="utf-8").replace('"x = 1\\n"', '"x = 1\\n"   ')
+    path.write_text(raw, encoding="utf-8")
+    outcome = fer.apply_one(path, dry_run=False)
+    assert "byte-identique" in outcome
+    assert "EPIC #1206" in path.read_text(encoding="utf-8")
+
+
+def test_scan_signale_les_refus_sans_ecrire(tmp_path: Path) -> None:
+    path = tmp_path / "n.ipynb"
+    header = "# Titre\n\nCloture du bloc (Epic #4677, jambe Python-large du planificateur #1206).\n"
+    _write(path, _notebook(header))
+    info = fer.analyse(path)
+    assert info["refs"] == ["4677"]
+    assert info["refused"]
+
+
+def test_scan_et_apply_refusent_le_meme_carnet_non_canonique(tmp_path: Path) -> None:
+    """Un carnet non canonique est refuse par le scan ET par l'application.
+
+    Le scan annoncait « repariable » (la reference etait trouvee, aucun refus
+    enregistre) alors que l'application repondait « round-trip non
+    byte-identique » : le decompte « avant/apres » d'une fournee ne voulait
+    donc rien dire. Le predicat d'eligibilite est desormais UNIQUE : les deux
+    portes rendent le MEME motif de refus.
+    """
+    path = tmp_path / "n.ipynb"
+    header = "# Titre\n\n> Port. EPIC #1206, Prong B."
+    _write(path, _notebook(header))
+    # Changer la forme du fichier sans toucher au contenu des cellules.
+    raw = path.read_text(encoding="utf-8").replace('"x = 1\\n"', '"x = 1\\n"   ')
+    path.write_text(raw, encoding="utf-8")
+
+    info = fer.analyse(path)
+    assert info["refs"] == ["1206"]
+    assert info["refused"]
+    outcome = fer.apply_one(path, dry_run=True)
+    assert outcome == info["refused"]
+    assert "byte-identique" in outcome
+    # Le carnet n'a pas ete touche.
+    assert "EPIC #1206" in path.read_text(encoding="utf-8")
+
+
+def test_le_scan_compte_un_carnet_non_canonique_comme_refuse(tmp_path: Path,
+                                                            capsys) -> None:
+    """Le decompte du scan classe un carnet non canonique en « refuse ».
+
+    C'est la consequence comptable du predicat unique : un carnet que
+    l'application refuse ne peut plus etre annonce comme « repariable » par
+    le scan.
+    """
+    path = tmp_path / "n.ipynb"
+    header = "# Titre\n\n> Port. EPIC #1206, Prong B."
+    _write(path, _notebook(header))
+    raw = path.read_text(encoding="utf-8").replace('"x = 1\\n"', '"x = 1\\n"   ')
+    path.write_text(raw, encoding="utf-8")
+
+    rc = fer.main(["--scan", str(tmp_path)])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "repairables : 0" in out
+    assert "(refuses) : 1" in out
+
+
+def test_scan_et_apply_refusent_le_meme_reference_non_couverte(tmp_path: Path) -> None:
+    """Une reference citee mais non retirable est refusee par les deux portes.
+
+    L'en-tete porte la reference coupee sur deux elements de la source
+    (['Intro. EP', 'IC #1206.']) : le scan la voyait ('EPIC #1206' sur le texte
+    joint), mais aucune clause n'est retirable element par element -- et
+    l'application repondait « aucune reference d'EPIC en en-tete » sans que le
+    scan le sache.
+    """
+    path = tmp_path / "n.ipynb"
+    nb = _notebook("# Titre\n")
+    nb["cells"][0]["source"] = ["Intro. EP", "IC #1206."]
+    _write(path, nb)
+
+    info = fer.analyse(path)
+    assert info["refs"] == ["1206"]
+    assert info["refused"]
+    outcome = fer.apply_one(path, dry_run=True)
+    assert outcome == info["refused"]
+    assert "non couverte" in outcome
+    # Le carnet n'a pas ete touche.
+    assert "IC #1206." in path.read_text(encoding="utf-8")
+
+
+def test_scan_et_apply_refusent_le_meme_carnet_a_une_seule_cellule_markdown(tmp_path: Path) -> None:
+    """Un carnet d'une seule cellule markdown n'a pas de pied distinct.
+
+    Ces deux controles de DESTINATION vivaient dans `apply_one` : le scan
+    annoncait « repariable » la ou l'application refusait d'ecrire. Ils sont
+    desormais dans `_plan`, donc les deux portes rendent le MEME motif.
+    """
+    path = tmp_path / "n.ipynb"
+    nb = {
+        "cells": [{"cell_type": "markdown", "id": "aaaa0001", "metadata": {},
+                   "source": "# Titre\n\nEPIC #1206."}],
+        "metadata": {},
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    }
+    _write(path, nb)
+
+    info = fer.analyse(path)
+    assert info["refs"] == ["1206"]
+    assert info["refused"]
+    outcome = fer.apply_one(path, dry_run=True)
+    assert outcome == info["refused"]
+    assert "une seule cellule markdown" in outcome
+    # Le carnet n'a pas ete touche.
+    assert "EPIC #1206." in path.read_text(encoding="utf-8")
+
+
+def test_scan_et_apply_refusent_le_meme_carnet_a_note_de_pied_deja_presente(tmp_path: Path) -> None:
+    """Une note de pied deja deposee rend le carnet non eligible.
+
+    Deuxieme forme du meme residu : le scan annoncait « repariable » la ou
+    l'application refusait d'ecrire une seconde fois.
+    """
+    path = tmp_path / "n.ipynb"
+    nb = _notebook("# Titre\n\nEPIC #1206.\n",
+                   tail="> Carnet issu de l'EPIC #1206.\n")
+    _write(path, nb)
+
+    info = fer.analyse(path)
+    assert info["refs"] == ["1206"]
+    assert info["refused"]
+    outcome = fer.apply_one(path, dry_run=True)
+    assert outcome == info["refused"]
+    assert "note de pied deja presente" in outcome
+    # Le carnet n'a pas ete touche : une seule note de pied.
+    assert path.read_text(encoding="utf-8").count("Carnet issu de l'EPIC") == 1
+
+
+def _test_forme_tweety(tmp_path: Path, header: str, expected_header: str,
+                       expected_ref: str) -> None:
+    """Applique une forme reelle et exige une reparation chirurgicale."""
+    path = tmp_path / "n.ipynb"
+    _write(path, _notebook("# Titre\n\n" + header))
+    outcome = fer.apply_one(path, dry_run=False)
+    assert "en-tete nettoye" in outcome
+    nb = json.loads(path.read_text(encoding="utf-8"))
+    assert nb["cells"][0]["source"] == "# Titre\n\n" + expected_header
+    assert f"> Carnet issu de l'EPIC #{expected_ref}." in "".join(nb["cells"][2]["source"])
+
+
+def test_forme_tweety_banniere_marathon_dotnet(tmp_path: Path) -> None:
+    """Le prefixe de coordination absorbe « .NET », pas le texte pedagogique."""
+    _test_forme_tweety(
+        tmp_path,
+        "Le grounded canonique est coherent. Marathon parite .NET <-> Python : EPIC #4956.",
+        "Le grounded canonique est coherent.",
+        "4956",
+    )
+
+
+def test_forme_tweety_prong_avant_reference_et_titre_sans_espace_final(tmp_path: Path) -> None:
+    """Le groupe « (Prong B, EPIC #N) » part sans laisser d'espace terminal."""
+    _test_forme_tweety(
+        tmp_path,
+        "### Value-add du jumeau C# (Prong B, EPIC #3801)\n",
+        "### Value-add du jumeau C#\n",
+        "3801",
+    )
+
+
+def test_forme_tweety_elision_et_parenthese_de_renvoi(tmp_path: Path) -> None:
+    """L'elision emporte les deux parentheses du renvoi, sans orpheline."""
+    _test_forme_tweety(
+        tmp_path,
+        "Ce notebook est la variante du Chantier 2 de l'(EPIC #4956 Prong B) : apres le moteur.",
+        "Ce notebook est la variante du Chantier 2 : apres le moteur.",
+        "4956",
+    )
+
+
+def test_forme_tweety_reference_par_lien_markdown_nu(tmp_path: Path) -> None:
+    """Un lien qui ne fait que pointer l'EPIC est retire avec sa reference."""
+    _test_forme_tweety(
+        tmp_path,
+        "Moteur hybride (EPIC [#4667](https://github.com/jsboige/CoursIA/issues/4667)).",
+        "Moteur hybride.",
+        "4667",
+    )
+
+
+def test_forme_tweety_genitif_de_l_epic(tmp_path: Path) -> None:
+    """La forme genitive mesuree est retiree sans laisser d'elision pendante."""
+    _test_forme_tweety(
+        tmp_path,
+        "> Position : troisieme labo croise de l'EPIC #15066, apres le propositionnel.",
+        "> Position : troisieme labo croise, apres le propositionnel.",
+        "15066",
+    )
+
+
+def test_forme_planners_value_add_prong_sans_virgule(tmp_path: Path) -> None:
+    """Le retrait conserve le mecanisme pedagogique decrit apres la reference."""
+    _test_forme_tweety(
+        tmp_path,
+        "Le *value-add* (EPIC #4956 Prong B) est pedagogique : chaque mecanisme "
+        "(composition d'Allen, propagation STN) est visible dans le code C#.",
+        "Le *value-add* est pedagogique : chaque mecanisme "
+        "(composition d'Allen, propagation STN) est visible dans le code C#.",
+        "4956",
+    )
+
+
+def test_forme_z3_api_genitif_apres_epic(tmp_path: Path) -> None:
+    """Une formulation « de l'Epic #N : » est couverte sans absorber le contrat."""
+    _test_forme_tweety(
+        tmp_path,
+        "Premier service du **pli 0** de l'Epic #19571 : exposer le carnet phare en REST.",
+        "Premier service du **pli 0** : exposer le carnet phare en REST.",
+        "19571",
+    )
+
+

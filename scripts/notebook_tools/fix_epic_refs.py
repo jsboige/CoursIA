@@ -59,24 +59,53 @@ from pathlib import Path
 #     « ... . EPIC #1206, Prong B. »
 #     « ... . EPIC #1206, Prong B. (La section B7 Rational du C#, ...) »
 #
+# Formes de la serie Tweety (phase 3, tranche Tweety) :
+#     « ... Marathon parite .NET <-> Python : EPIC #4956. »   (prefixe -> :)
+#     « ... **Value-add du jumeau C# (Prong B, EPIC #3801)** » (Prong avant ref)
+#     « ... (marathon #4956, parite .NET <-> Python, axe-2 SOTA #3801 Prong B) »
+#     « ... (EPIC [#4667](https://github.com/jsboige/CoursIA/issues/4667)) »
+#       (reference portee par un lien Markdown nu : le lien ne dit rien de plus
+#       que le numero, il part avec lui ; un lien portant un titre propre,
+#       comme « [Tw-3 Advanced-Logics] », n'est PAS de cette forme)
+#
 # Le motif retient la reference d'EPIC **et** le vocabulaire de revue qui la
 # suit dans la meme phrase (« Prong A/B »), qui n'a pas sa place dans un carnet
 # presente a l'apprenant. Il ne retient PAS la reference elle-meme : elle est
-# re-deposee en pied de carnet.
+# re-deposee en pied de carnet. Les informations pedagogiques (nom du twin,
+# librairies, transports, classe de verdict, position dans la serie) sont
+# conservees : seule la reference de coordination part en pied.
 #
 # La frontiere est volontairement etroite : une reference d'EPIC **hors** des
-# formes ci-dessous (autre casse, « issue #N », « PR #N ») n'est pas traitee
-# par cet outil — la phase 3 de l'EPIC #20250 les laisse au triage manuel.
-_EPIC_CORE = r"EPIC\s*#\d+(?:[ \t]*,[ \t]*Prong[ \t]+[A-Z]\.)?"
+# formes ci-dessous (autre casse, « issue #N » isolee, « PR #N ») n'est pas
+# traitee par cet outil — la phase 3 de l'EPIC #20250 les laisse au triage
+# manuel. Les genitifs mesures sont couverts ; les comptages et les formes
+# dont le retrait laisserait un residu restent refuses au triage manuel.
+_EPIC_REF = r"(?:#\d+|\[#\d+\]\(https://github\.com/[^)]*\))"
+_EPIC_CORE = r"EPIC[ \t]*" + _EPIC_REF + r"(?:[ \t]*,?[ \t]*Prong[ \t]+[A-Z]\.?)?"
 
 EPIC_CLAUSE_RE = re.compile(
     # branche 1 : un groupe parenthese dont le contenu est **exactement** la
-    # clause (« (epic #4960) ») -- le retrait emporte alors les parentheses,
-    # donc il ne laisse pas de parenthese vide derriere lui.
-    r"\([ \t]*" + _EPIC_CORE + r"[ \t]*\)"
-    # branche 2 : la clause nue, eventuellement precedee de son elision
-    # (« l'EPIC #1206 ») et suivie de son point final.
-    r"|[ \t]*(?:[A-Za-z]'[ \t]*)?" + _EPIC_CORE + r"\.?",
+    # clause (« (epic #4960) », « (Prong B, EPIC #3801) ») -- le retrait
+    # emporte alors les parentheses, donc il ne laisse pas de parenthese vide
+    # derriere lui.
+    r"\([ \t]*(?:" + _EPIC_CORE + r"|Prong[ \t]+[A-Z][ \t]*,[ \t]*" + _EPIC_CORE + r")[ \t]*\)"
+    # branche 2 : la clause nue, avec ses prefixes de coordination bornes
+    # (marathon, parite, axe-SOTA), son elision ou son genitif mesure.
+    # (« l'EPIC #1206 », « l'(EPIC #4956 Prong B) » : l'elision qui precede
+    # directement une parenthese ouvrante emporte les DEUX parentheses du
+    # renvoi -- sinon la fermante orpheline desequilibre la cellule), d'un
+    # prefixe en deux-points (« Marathon parite .NET <-> Python : EPIC #4956. »)
+    # ou d'une virgule de renvoi (« , parite ..., axe-2 SOTA #N Prong B »), et
+    # suivie de son point final.
+    # Les prefixes sont bornes a UNE suite de vocabulaire de coordination
+    # (parite/marathon/axe-SOTA/Prong) : un « : » de prose ordinaire n'est
+    # jamais absorbe (seuls ces prefixes terminent par le separateur).
+    r"|[ \t]*(?:\b[Dd]e[ \t]+)?(?:[A-Za-z]'[ \t]*)?"
+    r"(?:"
+    r"[Mm]arathon[ \t]+[^,;:\n]{0,80}:[ \t]*"          # « Marathon parite .NET <-> Python : »
+    r"|,[ \t]*parite[ \t]+[^.,;:\n]{0,60},[ \t]*axe-2[ \t]+SOTA[ \t]+#\d+[ \t]+Prong[ \t]+[A-Z]\.?"  # queue de parenthese de renvoi
+    r")?"
+    r"(\((?=" + _EPIC_CORE + r"[ \t]*\)))?(" + _EPIC_CORE + r"\.?(\))?)",
     re.IGNORECASE,
 )
 
@@ -92,7 +121,13 @@ PRONG_RE = re.compile(r"(?<=[\s.!?])Prong\s+[A-Z]\.?(?=\s|$|[),.])", re.IGNORECA
 # paire de caracteres a la couture meme.
 SEAM_RESIDUE_RE = re.compile(
     r"[ \t]{2,}"
-    r"|[ \t]+[,;:]"
+    # Espace avant « , ; ». Les deux-points ne sont PAS controles : la prose
+    # francaise en use couramment avec espace avant (« transparence : chaque
+    # mecanisme », banniere « **Position** : »), et le retrait d'une clause
+    # ne cree jamais ce separateur -- le restreindre ici refuse des carnets
+    # sains (mesure tranche Tweety). La couture reelle est couverte par les
+    # autres regles et par SEAM_BAD_PAIRS.
+    r"|[ \t]+[,;]"
     r"|\(\s*[,;:]"          # parenthese vide, suite a une clause retiree
     r"|[,;]\s*[)]"          # virgule fermant une parenthese
     r"|[A-Za-z]'[ ,;:.]"    # elision danglingue (« l'EPIC #N » -> « l', »)
@@ -100,6 +135,65 @@ SEAM_RESIDUE_RE = re.compile(
 )
 SEAM_WINDOW = 40
 SEAM_BAD_PAIRS = {(".", "."), (",", ","), (";", ";")}
+POSTCOND_WINDOW = 12
+_SEP_RUN = re.compile(r"[,;·—–/|]\s+[,;:·—–/]")
+_PREP_ORPHAN_RE = re.compile(
+    r"\b(?:de|du|des|à|au|aux|dans|sur|par|pour|avec|sans|vers|entre)\s*[,;:)]",
+    re.IGNORECASE,
+)
+
+
+def _postcondition(text: str, start: int, original: str, original_start: int, original_end: int) -> None:
+    """Refuse les constructions vidées par le retrait à la couture.
+
+    La fenêtre reste courte et ancrée au point de coupe : une recherche large
+    signale à tort les fermetures Markdown légitimes éloignées du retrait.
+    """
+    before = text[start - 1:start]
+    after = text[start:start + 2]
+    removed = original[original_start:original_end]
+    left = original[max(0, original_start - POSTCOND_WINDOW):original_start]
+    right = original[original_end:original_end + POSTCOND_WINDOW]
+    if re.search(r"\[\s*$", left) and re.match(r"\s*\]\(", right):
+        raise ValueError("texte de lien vide apres retrait -- ecriture refusee")
+    if re.search(r"\*\s*$", left) and re.match(r"\s*[,;:]", right) and re.match(r"\*?EPIC\b", removed, re.IGNORECASE):
+        raise ValueError("accentuation videe apres retrait -- ecriture refusee")
+    if re.match(r"\s*l['’]\s*EPIC\b", removed, re.IGNORECASE):
+        raise ValueError("elision orpheline apres retrait -- ecriture refusee")
+    if re.search(r"\b(?:relève|releve|dépend|depend|provient|résulte|resulte)\s*$", left, re.IGNORECASE) and re.match(
+        r"\s+(?:de|du|des|d['’]|à|au|aux)\b", removed, re.IGNORECASE
+    ):
+        raise ValueError("preposition orpheline : complement requis supprime avec la reference -- ecriture refusee")
+    seam = text[max(0, start - 1):start + 4]
+    if _SEP_RUN.search(seam):
+        raise ValueError("separateurs orphelins a la couture -- ecriture refusee")
+    if _PREP_ORPHAN_RE.search(seam):
+        raise ValueError("preposition orpheline apres retrait -- ecriture refusee")
+    if re.search(r"\b(?:relève|releve|dépend|depend|provient|résulte|resulte)\s+de\s*,", seam, re.IGNORECASE):
+        raise ValueError("preposition orpheline apres retrait -- ecriture refusee")
+    if before in ",;:" and after[:1] == "]":
+        raise ValueError("separateur colle a une fermante -- ecriture refusee")
+    if before in ",;:/—–" and after[:1] == ")":
+        raise ValueError("separateur orphelin avant fermante -- ecriture refusee")
+    seam = text[max(0, start - 1):start + 3]
+    if _SEP_RUN.search(seam):
+        raise ValueError("separateurs orphelins a la couture -- ecriture refusee")
+    removed = original[original_start:original_end]
+    left = original[max(0, original_start - POSTCOND_WINDOW):original_start]
+    if re.match(r"\s*l['’]\s*EPIC\b", removed, re.IGNORECASE):
+        raise ValueError("elision orpheline apres retrait -- ecriture refusee")
+    # Inspect only the *new* seam. Searching a broad window can mistake a
+    # preposition elsewhere in the sentence for one orphaned by this deletion.
+    seam = text[max(0, start - POSTCOND_WINDOW):start + POSTCOND_WINDOW]
+    if _PREP_ORPHAN_RE.search(seam):
+        raise ValueError("preposition orpheline apres retrait -- ecriture refusee")
+    # Refuser les constructions où la suppression enlève aussi une préposition
+    # exigée par le verbe restant (ex. « relève de l'Epic #N »). La décision
+    # porte sur la couture originale, avant que le span ne soit perdu.
+    if re.search(r"\b(?:relève|releve|dépend|depend|provient|résulte|resulte)\s*$", left, re.IGNORECASE) and re.match(
+        r"\s+(?:de|du|des|d['’]|à|au|aux)\b", removed, re.IGNORECASE
+    ):
+        raise ValueError("preposition orpheline : complement requis supprime avec la reference -- ecriture refusee")
 
 # La note de pied de carnet deposee par l'organe.
 FOOTER_TEMPLATE = "> Carnet issu de l'EPIC #{ref}."
@@ -134,7 +228,18 @@ def _header_index(cells: list[dict]) -> int | None:
 
 
 def _last_markdown_index(cells: list[dict]) -> int | None:
-    for i in range(len(cells) - 1, -1, -1):
+    """Retourne le dernier markdown qui n'est suivi d'aucun code.
+
+    Une cellule markdown suivie d'une cellule de code peut être l'énoncé d'un
+    exercice : y déposer le pied séparerait l'énoncé de son stub. Si le carnet
+    ne possède aucun markdown terminal après son dernier code, le caller refuse
+    l'application pour triage manuel.
+    """
+    last_code = max(
+        (i for i, cell in enumerate(cells) if cell.get("cell_type") == "code"),
+        default=-1,
+    )
+    for i in range(len(cells) - 1, last_code, -1):
         if cells[i].get("cell_type") == "markdown":
             return i
     return None
@@ -170,7 +275,8 @@ def _clean_seam(text: str, pos: int) -> tuple[str, int]:
       (« `fallacy_rules.py` (epic #4960), » -> « `fallacy_rules.py`, ») ;
     - l'espace qui suivait la clause et qui se retrouve apres une parenthese
       ouvrante (« (Epic #2137 Phase 2 » -> « (Phase 2 ») ;
-    - le double espace.
+    - le double espace, et l'espace terminale laissee par un groupe parenthese
+      retire a la fin d'un titre.
 
     Le nettoyage est **local** (deux caracteres de part et d'autre de la
     coupe) : le reste de la cellule reste byte-identique.
@@ -182,6 +288,14 @@ def _clean_seam(text: str, pos: int) -> tuple[str, int]:
             text = text[:pos] + text[pos + 1:]
             continue
         if before == " " and after in ",;:)":
+            text = text[: pos - 1] + text[pos:]
+            pos -= 1
+            continue
+        # Une reference de la forme « titre (Prong B, EPIC #N)\n » laissait
+        # l'espace qui precedait le groupe parenthese en fin de ligne. Ce
+        # reliquat est produit par la coupe : l'oter est chirurgical et evite
+        # un titre markdown avec une espace terminale.
+        if before == " " and after == "\n":
             text = text[: pos - 1] + text[pos:]
             pos -= 1
             continue
@@ -206,10 +320,15 @@ def _strip_clause(text: str) -> tuple[str, list[str]] | None:
     if not matches:
         return None
     refs = [m.group(0).strip() for m in matches]
-    numbers = re.findall(r"EPIC\s*#(\d+)", " ".join(refs), re.IGNORECASE)
+    numbers = [a or b for a, b in re.findall(
+        r"EPIC\s*#(\d+)|EPIC\s*\[#(\d+)\]", " ".join(refs), re.IGNORECASE
+    )]
     new = text
-    for start, end in reversed([m.span() for m in matches]):
+    offset = 0
+    for original_start, original_end in [m.span() for m in matches]:
+        start, end = original_start - offset, original_end - offset
         new = new[:start] + new[end:]
+        offset += original_end - original_start
         new, start = _clean_seam(new, start)
         if start > 0 and start < len(new) and new[start - 1] == "(" and new[start] == ")":
             raise ValueError("parenthese vide apres retrait -- ecriture refusee")
@@ -219,6 +338,7 @@ def _strip_clause(text: str) -> tuple[str, list[str]] | None:
         seam = new[max(0, start - 1): start + 1]
         if len(seam) == 2 and (seam[0], seam[1]) in SEAM_BAD_PAIRS:
             raise ValueError("ponctuation orpheline a la couture -- ecriture refusee")
+        _postcondition(new, start, text, original_start, original_end)
     # Le vocabulaire de revue qui suivait la reference sans virgule.
     new = PRONG_RE.sub("", new)
     return new, numbers
@@ -259,7 +379,7 @@ def _rewrite_source(source) -> tuple[object, list[str]] | None:
     if not changed:
         return None
     joined = "".join(elements)
-    if re.search(r"EPIC\s*#\d+", joined, re.IGNORECASE):
+    if re.search(r"EPIC\s*(?:#\d+|\[#\d+\])", joined, re.IGNORECASE):
         raise ValueError(
             "reference d'EPIC a cheval sur deux elements de la source -- ecriture refusee"
         )
@@ -305,7 +425,7 @@ def _plan(path: Path) -> dict:
     2. round-trip non byte-identique -> carnet non canonique, refuse ;
     3. le retrait echoue (residu de ponctuation, parenthese desequilibree) ;
     4. une reference est citee mais aucune clause n'est retirable ;
-    5. pas de cellule markdown distincte pour le pied de carnet ;
+    5. pas de cellule markdown distincte, apres le dernier code, pour le pied ;
     6. la note de pied est deja presente.
     """
     raw = path.read_bytes()
@@ -332,7 +452,9 @@ def _plan(path: Path) -> dict:
         return plan
     plan["canonical"] = _serialise(nb, trailing) == raw
     header_text = _source_text(cells[hidx])
-    plan["refs"] = re.findall(r"EPIC\s*#(\d+)", header_text, re.IGNORECASE)
+    plan["refs"] = [a or b for a, b in re.findall(
+        r"EPIC\s*#(\d+)|EPIC\s*\[#(\d+)\]", header_text, re.IGNORECASE
+    )]
     if not plan["canonical"]:
         plan["refused"] = ("round-trip non byte-identique (carnet non canonique) "
                            "-- ecriture refusee")
@@ -357,7 +479,10 @@ def _plan(path: Path) -> dict:
     # « avant/apres » d'une fournee ne voulait alors rien dire.
     lidx = _last_markdown_index(cells)
     if lidx is None:
-        plan["refused"] = "aucune cellule markdown pour le pied de carnet"
+        plan["refused"] = (
+            "aucune cellule markdown apres la derniere cellule de code "
+            "pour le pied de carnet -- triage manuel requis"
+        )
         return plan
     if lidx == hidx:
         plan["refused"] = "une seule cellule markdown (pas de pied distinct) -- ecriture refusee"
