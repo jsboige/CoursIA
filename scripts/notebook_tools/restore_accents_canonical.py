@@ -190,6 +190,7 @@ def _cure_line(line: str, fr_context: bool = False) -> tuple[str, int]:
     masked = _LINK_TARGET_RE.sub(_mask, labelled)
     masked = _INLINE_SPAN_RE.sub(_mask, masked)
     masked = _BARE_URL_RE.sub(_mask, masked)
+    masked = _PROTECTED_TERMS_RE.sub(_mask, masked)
     # guillemets inline «...» / "..." : masques s'ils ne portent PAS de preuve
     # FR, UNIQUEMENT dans un contexte deja francais (fr_context), et APRES les
     # spans de lien/code/URL ci-dessus -- une citation en PROSE seule. Un titre
@@ -393,6 +394,14 @@ _EN_COLLIDING_FORMS = {
     "equivalent", "creation", "episode", "episodes",
 }
 _EN_COLLIDING = {k for k in ACCENT_PAIRS if k in _EN_COLLIDING_FORMS}
+
+# Termes techniques dont un mot est aussi une forme du dictionnaire. La preuve
+# positive de contexte FR ne suffit pas ici : la ligne est bien francaise, mais
+# le mot y est le nom standard anglais d'une contrainte, pas de la prose.
+# Mesure #16638 (Sudoku-15-Infer-CSharp, signalement myia-po-2027:CoursIA le
+# 2026-11-24) : `contraintes all-different` est devenu `all-différent`.
+# Liste fermee, un terme par mesure ; ils traversent la cure tels quels.
+_PROTECTED_TERMS_RE = re.compile(r"\ball-different\b", re.IGNORECASE)
 
 # #21277 -- formes FR hors table canonique. Elles sont AUSSI des mots anglais
 # valides, donc elles n'entrent PAS dans `das.ACCENT_PAIRS` (source de la
