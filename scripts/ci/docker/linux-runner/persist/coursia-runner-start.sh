@@ -244,4 +244,46 @@ if [ "${1:-start}" = "start" ] && [ -e "$COURSIA_RUNNER_STATE_DIR/stop" ]; then
 fi
 # ---------------------------------------------------------------------------
 
+# PORTE DE LIEN FACTURE ET VEILLE (#28916).
+#
+# LE DEFAULT MESURE (po-2027, 27/11 18:02Z) : sur un lien facture (partage USB
+# du telephone), les runners CI ont tourne environ 45 min et consomme 3,6 Go
+# (debit hote 52,23 MiB/min ; RX 2 859,4 MiB a 17:50:16Z puis 3 589,2 MiB a
+# 17:56:31Z). Trois defauts distincts, tous mesures :
+#   1. le verdict n'etait rendu qu'AU DEMARRAGE -- le pont avait pris sa
+#      branche LAUNCH deux fois a 17:06:53Z, 86 s apres le boot, et le meme
+#      test rendait BILLED a 17:46Z puis a 17:59Z sans que personne le
+#      relise ;
+#   2. le holder contournait `systemctl disable` : hold-runner.ps1 lance
+#      lui-meme `systemctl start coursia-runner` (lignes 33 et 40) ;
+#   3. un verdict BILLED n'arretait rien : un SKIP empeche un LANCEMENT, il ne
+#      stoppe pas un runner deja en marche.
+#
+# La porte ferme le defaut 1 par le haut (aucun lancement sans verdict lu) et
+# la veille le ferme par le bas (verdict relu periodiquement, arret reel sur
+# BILLED). Les deux sont fail-closed : si le verdict ne peut pas etre lu, le
+# runner ne demarre pas -- la regle du dispatch : « no launch without a
+# verdict read ».
+#
+# Le refus est NOMME, jamais muet : un checkout perime ou un fichier absent
+# doit se diagnostiquer en une ligne, sans intervention physique sur la
+# machine.
+if [ "${1:-start}" = "start" ]; then
+  GARDE="$REPO_DIR/scripts/ci/docker/linux-runner/persist/link-guard.sh"
+  VEILLE="$REPO_DIR/scripts/ci/docker/linux-runner/persist/link-watch.sh"
+  if [ ! -r "$GARDE" ] || [ ! -r "$VEILLE" ]; then
+    echo "FATAL: garde ou veille de lien facturation introuvable dans le checkout ($REPO_DIR) -- demarrage refuse (fail-closed) ; mettre le checkout a jour." >&2
+    exit 4
+  fi
+  if ! bash "$GARDE"; then
+    echo "FATAL: verdict de lien facturation -- demarrage refuse (le motif est sur la ligne REFUSE ci-dessus)." >&2
+    exit 4
+  fi
+  mkdir -p "$COURSIA_RUNNER_STATE_DIR"
+  # La veille est un enfant de l'unite : elle meurt avec elle (KillMode
+  # control-group par defaut), elle ne survit donc pas a l'arret du runner.
+  nohup bash "$VEILLE" >>"$COURSIA_RUNNER_STATE_DIR/link-watch.log" 2>&1 &
+  echo "veille de lien demarree (pid $!) -- re-verification toutes les ${LINK_WATCH_INTERVAL:-60} s, journal dans $COURSIA_RUNNER_STATE_DIR/link-watch.log"
+fi
+
 exec "$SUPERVISE" "$@"
