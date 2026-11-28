@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-27
+> REFERENCE — vivante — dernière révision 2026-11-28
 
 # Mapping des modèles OpenAI — génération courante (tranche 1, #14755)
 
