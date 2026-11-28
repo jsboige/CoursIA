@@ -58,6 +58,8 @@ Projet QC 38955440, espace sponsorisé ESGF_School, backtests du 2026-11-05 (mod
 
 Le Sharpe affiché par QC inclut un taux sans risque. Pour comparer au carnet, le Sharpe « sans taux » est recalculé depuis la trace `shadow` de chaque backtest : valeur du portefeuille à l'ouverture de chaque séance de SPY, répartie sur les séries e0 à e4 (contrat #18923), soit 2911 dates. Rendements journaliers, `moyenne / écart-type × √252`, taux nul.
 
+Ces backtests précèdent la garde de la règle 2 du suivi en ombre (#28997). Depuis, la trace saute le point d'une séance dont la clôture de la veille est recopiée vers l'avant, pour SPY ou pour une ligne détenue ; la statistique `Shadow skips FF` compte ces points. Le noyau complet, rejoué le 2026-11-28 sur les mêmes séances (backtest `1cbb85174dedc3556dd162f74674546f`), trace 2910 dates : le point du 2023-01-30 est sauté, la barre du 2023-01-27 étant recopiée vers l'avant dans les données QC. La garde ne touche qu'au tracé, pas aux ordres : Sharpe à taux nul 0,79, drawdown −15,7 %, 453 stops et 6 coupures, comme dans le tableau ; CAGR +7,34 % au lieu de +7,35 %.
+
 | Variante | Backtest | CAGR | Sharpe (taux nul) | Sharpe QC | Drawdown max | Stops | Coupures |
 |---|---|---|---|---|---|---|---|
 | Sans noyau | `5272a10ad58c578d457ad657a04f1385` | +7,08 % | 0,59 | 0,28 | −29,4 % | 0 | 0 |
