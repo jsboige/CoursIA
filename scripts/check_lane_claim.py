@@ -2515,12 +2515,29 @@ def _run_bounded(cmd, *, timeout, env=None):
 
 
 def _gh_repo_name_with_owner() -> str:
-    """`owner/name` du depot courant (meme resolution que `gh pr list`).
+    """`owner/name` du depot dont on lit le fil : `GH_REPO` d'abord, cwd sinon.
+
+    `GH_REPO` passe AVANT `gh repo view` (mesure 27/11) : `gh repo view` ne le
+    lit pas -- il resout le depot depuis le remote du repertoire COURANT -- alors
+    que `gh issue view` / `gh api` de la jambe ISSUE l'honorent. Lance depuis un
+    autre checkout avec `GH_REPO=jsboige/CoursIA`, l'organe lisait donc l'issue
+    dans CoursIA et les PRs ouvertes dans le depot du cwd : plus aucune PR ne
+    citait le grain, `implicit_occupation: []` avec
+    `implicit_occupation_measured: true` -- un CLEAR qui ne prouve rien
+    (#28097 : un tirage reporte, 0 token, sur ce faux CLEAR).
 
     L'enumeration GraphQL a besoin de l'identifiant du depot ; le CLI ne le
     resout pas tout seul pour une requete `gh api graphql`. La forme rendue
-    est validee par motif : la chaine part dans une requete GraphQL.
+    est validee par motif : la chaine part dans une requete GraphQL, donc un
+    `GH_REPO` mal forme est refuse plutot que propage.
     """
+    override = (os.environ.get("GH_REPO") or "").strip()
+    if override:
+        if not re.match(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", override):
+            raise RuntimeError(
+                f"GH_REPO n'est pas un slug owner/name : {override!r}"
+            )
+        return override
     try:
         # #21436 -- `_run_bounded` et non `subprocess.run` : sur Windows, ce
         # dernier perd sa borne a la premiere expiration (join infini sur les
@@ -6155,8 +6172,15 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # outcome* -- a cet instant le registre portait un claim actif, donc la
     # jambe n'a pas tourne. Le booleen separe la mesure de son absence.
     implicit_occupation_measured = False
+    # #28869 -- la jambe a-t-elle ete DEMANDEE ? `measured: false` confondait
+    # deux etats : « pas demandee » (lazy by outcome, aucun verdict du a la
+    # jambe) et « demandee mais pas tournee » (l'organe doit refuser de
+    # conclure). Le booleen les separe ; le verdict CLEAR ne sort plus dans le
+    # second cas.
+    implicit_leg_requested = False
     if (check_open_pr_paths and not others
             and payload.get("number") is not None):
+        implicit_leg_requested = True
         implicit_occupation_measured = True
         try:
             implicit_occupation = _find_open_prs_referencing_issue(
@@ -7050,6 +7074,27 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             "deconflicter avant d'editer (#14300)."
         )
         return 3
+    # #28869 -- la jambe IMPLICIT a ete DEMANDEE et n'a pas tourne : ce n'est
+    # pas un CLEAR, c'est une mesure ABSENTE. Jusqu'ici l'organe imprimait
+    # `implicit_occupation_measured: false`, un WARN sur stderr, puis
+    # `CLEAR` a `exit 0` -- un appelant qui lit le code de retour y voyait
+    # l'autorisation d'editer sur un perimetre que l'organe n'avait pas lu
+    # (#28097, 27/11 : un tirage reporte sur ce faux CLEAR, `GH_REPO` mal
+    # forme). `exit 2`, la famille io/gh-error deja documentee pour ce mode :
+    # ni BLOCKED (aucune lane n'est nommee) ni IMPLICIT (rien n'a ete lu).
+    if implicit_leg_requested and not implicit_occupation_measured:
+        print(
+            f"\nIMPLICIT_UNMEASURED: la jambe IMPLICIT (#14300) a ete "
+            f"demandee sur #{payload.get('number')} et n'a pas pu tourner : "
+            f"l'organe ne dit rien des PRs OUVERTES d'une autre lane qui "
+            f"referencent ce grain, et ne rend donc PAS CLEAR (#28869). Le "
+            f"WARN ci-dessus nomme la cause (slug `GH_REPO`, `gh` "
+            f"joignable) ; la corriger et relancer. `exit 2` : l'appelant "
+            f"branche sur l'absence de mesure, sans la lire comme un "
+            f"BLOCKED d'une autre lane.",
+            file=sys.stderr,
+        )
+        return 2
     parts = []
     if mine:
         parts.append("resuming your own active claim")
@@ -7207,6 +7252,7 @@ def _summarize_run_check_output(verdict_text: str, returncode: int) -> str:
 _VERDICT_LINE_PREFIXES = (
     "CLEAR:", "BLOCKED:", "IMPLICIT:", "LOCKED",
     "DEAD-SCOPE", "NOT_SCOPED", "SCOPED_OCCUPIED", "DUMP",
+    "IMPLICIT_UNMEASURED",  # #28869 : jambe demandee, non tournee (exit 2)
 )
 
 

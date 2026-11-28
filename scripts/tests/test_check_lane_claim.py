@@ -6641,9 +6641,22 @@ def _no_open_prs(monkeypatch):
     happened the day this leg was first wired (#16451, #16306, #16102 all
     touched `check_unaddressed_nits.py`). A guard test must not depend on the
     fleet's live plateau.
+
+    #28869 -- the leg has TWO seams, and neutralising one left the other live:
+    `_compute_open_pr_collisions` (the `--paths` intersection) AND
+    `_find_open_prs_referencing_issue` (the IMPLICIT leg of #14300, which
+    resolves the repo through `GH_REPO`/`gh repo view`). Since #28869 an
+    IMPLICIT leg that was REQUESTED and could not run returns `exit 2` instead
+    of printing a CLEAR nobody measured -- correct, but it made these three
+    tests fail on any surface whose `GH_REPO` is unset or unusable, the CI
+    included, with `assert 2 == 0` and no claim of theirs in the way. Both
+    seams are patched here: the leg runs, measures nothing, and CLEAR is
+    earned rather than assumed.
     """
     monkeypatch.setattr(clc, "_compute_open_pr_collisions",
                         lambda paths, my_lane, prs=None: ([], []))
+    monkeypatch.setattr(clc, "_find_open_prs_referencing_issue",
+                        lambda issue_number, my_lane, prs=None, threshold=None: [])
 
 
 def _write_mixed_paths_payload(tmp_path):
@@ -6850,8 +6863,7 @@ def test_issue_mode_clear_when_pr_is_own_lane(monkeypatch, tmp_path, capsys):
     source = _write_payload(payload(comment(
         "[RELEASED] lane other:CoursIA", "2026-08-15T00:00:00Z",
     ), number=16176), tmp_path)
-    monkeypatch.setattr(clc, "_compute_open_pr_collisions",
-                        lambda paths, my_lane, prs=None: ([], []))
+    _no_open_prs(monkeypatch)
     rc = clc.main([
         "16176", "--lane", "myia-po-2024:CoursIA", "--from-json", source,
         "--no-stale", "--paths", "scripts/notebook_tools/wsl_papermill.py",
@@ -6874,7 +6886,8 @@ def test_issue_mode_degrades_to_warn_when_gh_fails(monkeypatch, tmp_path, capsys
     def _boom(paths, my_lane, prs=None):
         raise RuntimeError("gh pr list --state open failed (exit 1)")
 
-    monkeypatch.setattr(clc, "_compute_open_pr_collisions", _boom)
+    _no_open_prs(monkeypatch)       # the IMPLICIT leg runs and measures nothing
+    monkeypatch.setattr(clc, "_compute_open_pr_collisions", _boom)   # this one dies
     rc = clc.main([
         "16176", "--lane", "myia-po-2024:CoursIA", "--from-json", source,
         "--no-stale", "--paths", "scripts/notebook_tools/wsl_papermill.py",
@@ -8028,19 +8041,25 @@ def test_implicit_leg_is_opt_in_at_the_run_check_level(monkeypatch, capsys):
     assert "IMPLICIT" not in capsys.readouterr().out
 
 
-def test_implicit_gh_failure_degrades_to_clear_with_warn(monkeypatch, capsys):
-    # Fail-open SIGNALE (#16570, meme posture) : une jambe qui ne peut pas
-    # mesurer ne fabrique pas de verdict -- WARN + CLEAR, jamais un 3 muet.
+def test_implicit_gh_failure_is_exit_2_unmeasured_never_clear(monkeypatch, capsys):
+    # #28869 (relecture ai-01 sur #28870, 27/11) -- ce contrat REMPLACE
+    # « WARN + CLEAR » (#16570) pour la jambe IMPLICIT : une jambe DEMANDEE
+    # qui ne peut pas mesurer ne rend pas CLEAR. Le code de retour etait lu
+    # comme une autorisation d'editer sur un perimetre que l'organe n'avait
+    # pas lu (#28097 : un tirage reporte sur un faux CLEAR). Elle rend
+    # `exit 2` (famille io/gh-error) : l'appelant branche, et le WARN nomme
+    # la cause. Toujours pas de 3 muet -- aucune lane n'est accusee.
     def _boom():
         raise RuntimeError("gh pr list --state open failed (exit 1): rate limit")
     monkeypatch.setattr(clc, "_gh_open_prs_with_files", _boom)
     p = payload(number=14259)
     rc = clc._run_check(p, "myia-po-2024:CoursIA",
                         check_open_pr_paths=True)
-    assert rc == 0
+    assert rc == 2
     captured = capsys.readouterr()
     assert "WARN" in captured.err and "IMPLICIT" in captured.err
-    assert "CLEAR" in captured.out
+    assert "IMPLICIT_UNMEASURED" in captured.err
+    assert "CLEAR:" not in captured.out
 
 
 def test_implicit_skipped_when_a_claim_blocks(monkeypatch, capsys):
@@ -9575,3 +9594,100 @@ def test_backticked_scope_is_not_read_as_epic_wide():
 def test_lane_reference_index_deduplicates_repeated_issue():
     prs = [{"number": 9, "body": "[CLAIMED] lane myia-a:CoursIA -- #45\nVoir #45"}]
     assert clc._lane_open_prs_referencing(45, "myia-a:CoursIA", prs) == [9]
+
+
+# --- #28097 -- le depot des PRs ouvertes est celui de l'ISSUE --------------
+# Mesure du 2026-11-27 : `gh repo view` ne lit PAS `GH_REPO` (il resout le
+# remote du repertoire COURANT) alors que `gh issue view` / `gh api` de la
+# jambe ISSUE l'honorent. Lance depuis un autre checkout avec
+# `GH_REPO=jsboige/CoursIA`, l'organe lisait l'issue dans CoursIA et les PRs
+# ouvertes dans le depot du cwd : aucune PR ne citait plus le grain, d'ou
+# `implicit_occupation: []` AVEC `implicit_occupation_measured: true` -- un
+# CLEAR qui ne prouve rien (CoursIA#28097 : un tirage reporte, 0 token).
+
+
+def test_repo_des_prs_suit_gh_repo_sans_appeler_gh(monkeypatch):
+    monkeypatch.setenv("GH_REPO", "jsboige/CoursIA")
+
+    def _gh_interdit(*args, **kwargs):
+        raise AssertionError(
+            "gh repo view ne doit pas etre appele quand GH_REPO est pose")
+
+    monkeypatch.setattr(clc, "_run_bounded", _gh_interdit)
+    assert clc._gh_repo_name_with_owner() == "jsboige/CoursIA"
+
+
+def test_gh_repo_mal_forme_est_refuse_avec_sa_valeur(monkeypatch):
+    # La chaine part dans une requete GraphQL : une forme inattendue se refuse
+    # (la jambe devient NON MESUREE, bruyante) au lieu d'etre propagee.
+    monkeypatch.setenv("GH_REPO", "pas/un/slug")
+    monkeypatch.setattr(
+        clc, "_run_bounded",
+        lambda *a, **k: (_ for _ in ()).throw(
+            AssertionError("transport appele pour un GH_REPO invalide")))
+    with pytest.raises(RuntimeError) as excinfo:
+        clc._gh_repo_name_with_owner()
+    assert "pas/un/slug" in str(excinfo.value)
+
+
+def test_gh_repo_absent_garde_la_resolution_par_le_cwd(monkeypatch):
+    # Sans GH_REPO, rien ne change : `gh repo view` resout le depot courant.
+    monkeypatch.delenv("GH_REPO", raising=False)
+
+    class _Proc:
+        returncode = 0
+        stdout = "jsboige/CoursIA\n"
+        stderr = ""
+
+    monkeypatch.setattr(clc, "_run_bounded", lambda *a, **k: _Proc())
+    assert clc._gh_repo_name_with_owner() == "jsboige/CoursIA"
+
+
+# --- #28869 -- une jambe IMPLICIT DEMANDEE qui n'a pas tourne n'est pas CLEAR
+# Relecture ai-01 sur #28870 (27/11) : un `GH_REPO` mal forme fait lever la
+# jambe, rattrapee en `implicit_occupation_measured: false` + WARN -- puis
+# l'organe imprimait `CLEAR` a `exit 0`. Le code de retour disait a
+# l'appelant qu'il pouvait editer sur un perimetre que l'organe n'avait pas
+# lu (#28097 : un tirage reporte, 0 token, sur ce faux CLEAR).
+
+
+def test_implicit_leg_requested_but_unmeasured_is_exit_2_never_clear(
+        monkeypatch, capsys):
+    monkeypatch.setattr(clc, "_OPEN_PRS_MEMO", None)
+    monkeypatch.delenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", raising=False)
+    monkeypatch.setenv("GH_REPO", "pas/un/slug")
+
+    def _transport_interdit(*args, **kwargs):
+        raise AssertionError(
+            "aucun transport ne doit etre paye pour un GH_REPO invalide")
+
+    monkeypatch.setattr(clc, "_run_bounded", _transport_interdit)
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2024:CoursIA -- build the guard",
+        "2026-08-06T22:43:31Z",
+    ))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA", check_open_pr_paths=True)
+    captured = capsys.readouterr()
+    assert rc == 2
+    # Le coeur du defaut : plus AUCUN CLEAR quand la mesure n'a pas eu lieu.
+    assert "CLEAR:" not in captured.out
+    assert "IMPLICIT_UNMEASURED" in captured.err
+    # La cause voyage avec le verdict : l'appelant corrige sans relire l'organe.
+    assert "pas/un/slug" in captured.err
+
+
+def test_implicit_leg_not_requested_keeps_clear_at_exit_0(
+        monkeypatch, capsys):
+    # Controle : sans demande de la jambe (lazy by outcome), l'absence de
+    # mesure n'est pas un verdict -- le CLEAR d'avant #28869 reste le
+    # comportement attendu, meme avec un GH_REPO invalide dans l'environnement.
+    monkeypatch.setattr(clc, "_OPEN_PRS_MEMO", None)
+    monkeypatch.setenv("GH_REPO", "pas/un/slug")
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2024:CoursIA -- build the guard",
+        "2026-08-06T22:43:31Z",
+    ))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA")
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "CLEAR:" in out
