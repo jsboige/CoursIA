@@ -132,6 +132,27 @@ def test_un_grain_refuse_par_la_qualification_n_est_pas_serve(monkeypatch):
     assert refus[7]["motif"]
 
 
+def test_un_grain_labelise_candidate_delivered_n_est_jamais_serve(monkeypatch):
+    """c0172 / #28114 : un grain porte le label `candidate-delivered`.
+
+    La qualification (ce que `tapis_prise_en_charge --issues` rejoue) ne le
+    sert JAMAIS : l'ecart `LABEL` est une **donnees** (`tapis_labels`), comme
+    au tirage -- il ne depend ni du fil ni de la preuve par le diff. Mesure
+    c0172 : 20 grains ainsi labels etaient servis par la qualification avant
+    que la livraison repartie ne soit corrigee (#28723) ; le label, lui,
+    ecarte toujours. Le refus est declare (code + motif), jamais en silence.
+    """
+    def faux_qualifier(run, depot, numeros=None):
+        return {n: _issue(n, labels=["candidate-delivered"]) for n in numeros}
+
+    monkeypatch.setattr(tq.tapis_lot.gh_selection, "qualifier", faux_qualifier)
+    servis, ecartees, *_ = tq.qualifier([7], LANE, NOW, 45, [],
+                                        lambda *a: "[]", preuve=None)
+    assert [e.numero for e in servis] == [], \
+        "un grain labelise candidate-delivered n'est JAMAIS servi"
+    assert ecartees[7]["code"] == "LABEL", "l'ecart est declare, pas un silence"
+
+
 def test_un_grain_non_qualifie_n_est_pas_serve(monkeypatch, tmp_path):
     """Une qualification qui n'a pas pu decider ne sert RIEN (fail-CLOSED).
 
