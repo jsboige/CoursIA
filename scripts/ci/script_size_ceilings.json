@@ -54,8 +54,8 @@
       "note": "Hashlife : cible T7 (second rang). Plafond pose sur la taille du 13/11."
     },
     "scripts/lean/lean_exec.py": {
-      "lines": 2997,
-      "note": "Execution Lean (`run_command`, 465 lignes) : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 80 lignes depuis la mesure du 13/11 (2917 -> 2997)"
+      "lines": 3010,
+      "note": "Execution Lean (`run_command`, 465 lignes) : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 80 lignes depuis la mesure du 13/11 (2917 -> 2997). Tranche T7 #26364 : extraction de la terminaison et de la supervision en fonctions distinctes, sans modification de la CLI ; signatures et passage explicite des ressources ajoutent 13 lignes (2997 -> 3010). Admission restant a extraire."
     },
     "scripts/notebook_tools/check_twin_parity.py": {
       "lines": 2562,
