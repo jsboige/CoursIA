@@ -99,6 +99,12 @@ Chaque marche ci-dessous descend vers le carnet de tête de sa sous-série ; en 
 
 ## Notebooks
 
+### Strate 0 — le substrat témoin (capstone 01)
+
+| Document | Contenu |
+|----------|---------|
+| [ICT-01-UniverselFragile-Python](ICT-01-UniverselFragile-Python.ipynb) | **Capstone de la strate 0 — trois faces du témoin, trois statuts épistémiques** : le Jeu de la Vie (B3/S23) est **certifié** (calibration canonique rejouée par `ict.life.calibrate_all`, 5/5 verdicts ; pont Lean `HashlifeCorrectness.lean`, 0 `sorry` réels mesuré par `count_code_sorry.py`, jamais un `grep -c sorry`), **universel** — Turing-complétude **citée** (Cook 2004 ; construction BCG 1982) et **jamais re-prouvée** : le carnet mesure à la place ce que le théorème consomme, le transport localisé d'un glider de période 4 à $c/4$ — et **fragile**, mesuré par l'organe `glider_collision` : deux gliders de même masse (dix cellules) et de même énergie d'approche, seul l'offset varie, et le destin bascule (annihilation à l'offset 0, un glider survivant à l'offset 8). La lecture émergence est rejouée sur le substrat lui-même : la partition par destin restaure 0.998 d'effectiveness là où le micro rend 0.344 et où le témoin négatif « population » s'effondre à 0.278. Il ouvre l'escalier : chaque strate haute hérite de la garantie de preuve de la section 2, du service de transport de la section 3 et de la leçon de fragilité de la section 4 |
+
 ### Strate 1 — le tri auto-organisé (transparent et calculable)
 
 | Document | Contenu |
