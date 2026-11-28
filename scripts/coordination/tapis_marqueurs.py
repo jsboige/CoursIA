@@ -3,8 +3,7 @@
 
 Fonctions pures, sans reseau : un commentaire d'issue devient une suite
 d'evenements (`Evt`) lus en tete de ligne, avec la decoration que tolere
-`check_lane_claim.py`. Extrait de `tapis_rapide.py` pour tenir son plafond de
-lignes ; `tapis_rapide.py` reexporte ce qu'il utilise.
+`check_lane_claim.py`. Extrait de `tapis_rapide.py` pour son plafond.
 """
 from __future__ import annotations
 
@@ -58,6 +57,7 @@ class Evt:
     reste: str
     #: La condition d'une pause explicite (#27726) : `attend: #N`. None sinon.
     attend: str | None = None
+    corps: str = ""  # le corps du commentaire : le motif est souvent plus loin
 
 
 def _dt(texte: str | None) -> datetime | None:
@@ -104,7 +104,7 @@ def evenements(comments: list[dict]) -> list[Evt]:
             p = _PATHS_RE.search(m.group(2))
             evts.append(Evt(quand, m.group(1).upper(), _lane(m.group(0), texte),
                             p.group(1).strip() if p else None, m.group(2),
-                            a.group(1).strip() if a else None))
+                            a.group(1).strip() if a else None, corps=texte))
     return sorted(evts, key=lambda e: e.quand)
 
 

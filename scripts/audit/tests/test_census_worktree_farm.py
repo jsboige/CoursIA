@@ -14,6 +14,7 @@ Run : python -m pytest scripts/audit/tests/test_census_worktree_farm.py
 """
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -23,12 +24,16 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import census_worktree_farm  # noqa: E402
 from census_worktree_farm import (  # noqa: E402
     census,
     dir_size,
+    fetch_prs,
     gh_slug,
+    is_recyclable,
     lane_from_body,
     parse_worktree_list,
+    pr_status_for,
     read_lane_owner,
 )
 
@@ -148,6 +153,107 @@ def test_gh_slug_lit_le_remote(tmp_path):
     subprocess.run(["git", "-C", str(repo), "remote", "set-url", "origin",
                     "git@github.com:jsboige/CoursIA.git"], check=True, env=env)
     assert gh_slug(str(repo)) == "jsboige/CoursIA"
+
+
+def test_pr_status_for_distingue_hors_index_d_aucune_pr():
+    """Ask 2 #28685 : un index Borne ne lit pas une branche absente comme
+    « sans PR » — c'est un etat distinct (`hors_index`), pas un zero verifie.
+    Un index COMPLET (sous le plafond) peut, lui, affirmer `aucune_pr`."""
+    assert pr_status_for({"state": "OPEN"}, True) == "vue"
+    assert pr_status_for(None, True) == "hors_index"
+    assert pr_status_for(None, False) == "aucune_pr"
+    assert pr_status_for({"state": "MERGED"}, False) == "vue"
+
+
+def test_pr_fermee_hors_index_nest_pas_lue_sans_pr():
+    """Cas minimum #28685 : PR hors de l'index borne -> `hors_index`, jamais
+    « aucune PR » (le faux zero de l'organe)."""
+    assert pr_status_for(None, truncated=True) == "hors_index"
+    assert pr_status_for(None, truncated=True) != "aucune_pr"
+
+
+def test_is_recyclable_pr_fermee_propre_preserve():
+    """Les trois conditions tiennent a la fois -> recyclable."""
+    pr = {"state": "MERGED"}
+    state = {"modified": 0, "untracked": 0, "ahead": 0}
+    assert is_recyclable(pr, state) is True
+
+
+def test_is_recyclable_arbre_sale_pas_recyclable():
+    """Cas minimum #28685 : PR fermee mais arbre sale (contenu non committe)
+    -> pas recyclable. La PR fermee seule n'est pas un verdict de
+    retirabilite (ask 3)."""
+    pr = {"state": "MERGED"}
+    assert is_recyclable(pr, {"modified": 1, "untracked": 0, "ahead": 0}) is False
+    assert is_recyclable(pr, {"modified": 0, "untracked": 1, "ahead": 0}) is False
+
+
+def test_is_recyclable_head_non_preserve_pas_retirable():
+    """Cas minimum #28685 : PR fermee, arbre propre, mais HEAD au-dela de
+    origin/<br> (commits non pousses) -> pas retirable. `ahead` inconnu
+    (None, ex. HEAD detache) est non preserve (fail-safe)."""
+    pr = {"state": "CLOSED"}
+    assert is_recyclable(pr, {"modified": 0, "untracked": 0, "ahead": 2}) is False
+    assert is_recyclable(pr, {"modified": 0, "untracked": 0, "ahead": None}) is False
+
+
+def test_is_recyclable_pr_open_nest_pas_recyclable():
+    """Sans PR fermee, aucun recyclage : PR ouverte ou absente."""
+    state = {"modified": 0, "untracked": 0, "ahead": 0}
+    assert is_recyclable({"state": "OPEN"}, state) is False
+    assert is_recyclable(None, state) is False
+
+
+def _fake_gh(prs):
+    """Fabrique un objet de sortie `gh pr list` porte de la liste donnee."""
+    class R:
+        returncode = 0
+        stdout = json.dumps(prs)
+        stderr = ""
+    return R()
+
+
+def _pr(n, br, state):
+    return {"number": n, "headRefName": br, "state": state, "body": "",
+            "title": "", "mergedAt": None}
+
+
+def test_fetch_prs_signale_la_troncature_au_plafond(monkeypatch):
+    """Le nombre de PRs remises ATTEIGNANT `limit` -> `tronque=True`. C'est ce
+    drapeau qui interdit de lire une branche absente comme « sans PR »."""
+    monkeypatch.setattr(
+        census_worktree_farm.subprocess, "run",
+        lambda cmd, **kw: _fake_gh([_pr(1, "b1", "OPEN"),
+                                    _pr(2, "b2", "MERGED"),
+                                    _pr(3, "b3", "OPEN")]))
+    index, err, truncated = fetch_prs("jsboige/CoursIA", limit=3)
+    assert err is None
+    assert truncated is True
+    assert set(index) == {"b1", "b2", "b3"}
+
+
+def test_fetch_prs_complet_sous_le_plafond(monkeypatch):
+    """Sous le plafond, l'index est complet -> `tronque=False` : on peut
+    affirmer `aucune_pr` pour une branche absente."""
+    monkeypatch.setattr(
+        census_worktree_farm.subprocess, "run",
+        lambda cmd, **kw: _fake_gh([_pr(1, "b1", "OPEN")]))
+    index, err, truncated = fetch_prs("jsboige/CoursIA", limit=600)
+    assert err is None
+    assert truncated is False
+    assert set(index) == {"b1"}
+
+
+def test_fetch_prs_gh_indisponible_pas_tronque(monkeypatch):
+    """`gh` absent -> index vide + erreur, et PAS tronque (pas de faux
+    `hors_index` sur un echec de mesure)."""
+    def boom(cmd, **kw):
+        raise OSError("gh not found")
+    monkeypatch.setattr(census_worktree_farm.subprocess, "run", boom)
+    index, err, truncated = fetch_prs("jsboige/CoursIA", limit=600)
+    assert index == {}
+    assert err is not None
+    assert truncated is False
 
 
 if __name__ == "__main__":

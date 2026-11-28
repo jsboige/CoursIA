@@ -98,38 +98,109 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
-#: Les modules qui DECIDENT le tirage. Une divergence avec origin/main fait
-#: servir des grains sous un contrat perime : c'est l'incident po-2028 du
-#: 14/11 -- l'avertissement du picker a ete lu, puis ignore. Une lane qui
-#: developpe ces fichiers passe par --allow-stale, en le sachant.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from coordination import tapis_borne  # noqa: E402
+
+#: Les organes du chemin de tirage : tout module dont le contenu change le
+#: grain servi doit correspondre a `origin/main`, sinon le tirage est refuse
+#: (`ORGANE_DIVERGENT`).
+#:
+#: La liste est **verifiee**, pas declaree : la fermeture d'import **statique**
+#: des points d entree du tirage (la voie rapide, la voie legere, la prise en
+#: charge, le tapis lourd) doit y etre incluse, et le tableau des modules de
+#: `docs/reference/tapis-rapide.md` aussi. Un module du tirage entre dans
+#: cette liste **avec** sa premiere livraison (la prescription du document) ;
+#: l y entrer separement, plus tard, est un trou de la garde -- et le trou
+#: se voit : la PR qui livre le module porte son propre rouge.
+#:
+#: Organe : `scripts/tests/test_main_freshness_organes.py`.
 ORGANES = (
-    "scripts/coordination/tapis_rapide.py",
-    "scripts/coordination/tapis_marqueurs.py",
-    "scripts/coordination/tapis_sature.py",
+    # La LECTURE : le volume, le cache, la selection, la lecture ciblee,
+    # le fil complet -- un module lu change la fenetre servie.
     "scripts/coordination/gh_bulk.py",
-    # La LECTURE elle-meme : le conteneur, l'echec qui interdit de servir a
-    # moitie, et la mise a plat d'une issue -- dont le `comments_total`
-    # INCONNU, qui decide si la fenetre est prouvee complete.
+    "scripts/coordination/gh_cache.py",
+    "scripts/coordination/gh_cache_fichier.py",
+    "scripts/coordination/gh_issues.py",
     "scripts/coordination/gh_lecture.py",
     "scripts/coordination/gh_recherche.py",
+    "scripts/coordination/gh_selection.py",
+    "scripts/coordination/gh_snapshot.py",
+
+    # Le CHEMIN DU TIRAGE : classement, rotation, fenetre, qualification,
+    # service, reprise, occupation, etats et tranche -- tous modifient le
+    # grain servi, donc tous doivent correspondre a origin/main.
+    # La grammaire des marqueurs de claim y entre par `tapis_attente.relachee()`,
+    # qui y lit la clause `paths:` d'une remise (#28899).
+    "scripts/coordination/claim_grammar.py",
+    "scripts/coordination/tapis_acceptance.py",
+    "scripts/coordination/tapis_age.py",
+    "scripts/coordination/tapis_ancre.py",
+    "scripts/coordination/tapis_assiette.py",
+    "scripts/coordination/tapis_attente.py",
+    "scripts/coordination/tapis_avance.py",
+    "scripts/coordination/tapis_avantages.py",
+    "scripts/coordination/tapis_borne.py",
+    "scripts/coordination/tapis_cap_livraisons.py",
+    "scripts/coordination/tapis_citations.py",
+    "scripts/coordination/tapis_composition.py",
+    "scripts/coordination/tapis_dernier_grain.py",
+    "scripts/coordination/tapis_diff.py",
+    "scripts/coordination/tapis_ecarts_fond.py",
+    "scripts/coordination/tapis_entrelace.py",
+    "scripts/coordination/tapis_equilibre.py",
+    "scripts/coordination/tapis_etat.py",
+    "scripts/coordination/tapis_etat_commit.py",
+    "scripts/coordination/tapis_etat_schema.py",
+    "scripts/coordination/tapis_fenetre.py",
+    "scripts/coordination/tapis_fil_complet.py",
+    "scripts/coordination/tapis_hors_flotte.py",
+    "scripts/coordination/tapis_labels.py",
+    "scripts/coordination/tapis_leger.py",
+    "scripts/coordination/tapis_leger_fenetre.py",
+    "scripts/coordination/tapis_leger_rapport.py",
+    "scripts/coordination/tapis_leger_texte.py",
+    "scripts/coordination/tapis_leger_texte_occupation.py",
+    "scripts/coordination/tapis_lot.py",
+    "scripts/coordination/tapis_marqueurs.py",
+    "scripts/coordination/tapis_non_tente.py",
+    "scripts/coordination/tapis_occupation.py",
+    "scripts/coordination/tapis_origami.py",
+    "scripts/coordination/tapis_perimetre.py",
+    "scripts/coordination/tapis_position.py",
+    "scripts/coordination/tapis_preuve.py",
+    "scripts/coordination/tapis_preuves.py",
+    "scripts/coordination/tapis_prise_en_charge.py",
+    "scripts/coordination/tapis_public.py",
+    "scripts/coordination/tapis_qualification.py",
+    "scripts/coordination/tapis_qualification_fil.py",
+    "scripts/coordination/tapis_rapide.py",
+    "scripts/coordination/tapis_relache.py",
+    "scripts/coordination/tapis_relache_forme.py",
+    "scripts/coordination/tapis_relache_motif.py",
+    "scripts/coordination/tapis_repartie.py",
+    "scripts/coordination/tapis_repli.py",
+    "scripts/coordination/tapis_reprise_livree.py",
+    "scripts/coordination/tapis_retry.py",
+    "scripts/coordination/tapis_reverif.py",
+    "scripts/coordination/tapis_rotation.py",
+    "scripts/coordination/tapis_sature.py",
+    "scripts/coordination/tapis_seance.py",
+    "scripts/coordination/tapis_service.py",
+    "scripts/coordination/tapis_tete.py",
+    "scripts/coordination/tapis_tranche.py",
+    "scripts/coordination/tapis_universel.py",
+    "scripts/coordination/tapis_universel_rapport.py",
+    "scripts/coordination/tapis_verdict.py",
+    "scripts/coordination/tapis_visites.py",
+    "scripts/coordination/tapis_voie_leger.py",
+
+    # Les PERIPHERIES du tirage : le parcage, la journalisation, les
+    # campagnes gelees, la garde elle-meme et le tapis lourd.
     "scripts/coordination/frozen_campaigns.py",
     "scripts/coordination/main_freshness.py",
-    # Le CHEMIN DU TIRAGE (bascule #27225) : le classement, ses deux
-    # priorites, la rotation, la qualification sur fil complet et la relecture
-    # de service -- tous modifient le grain servi, donc tous doivent
-    # correspondre a origin/main pour que le tirage soit recevable.
-    "scripts/coordination/gh_selection.py",
-    "scripts/coordination/gh_issues.py",
-    "scripts/coordination/gh_snapshot.py",
-    "scripts/coordination/tapis_universel.py",
-    "scripts/coordination/tapis_avantages.py",
-    "scripts/coordination/tapis_leger.py",
-    "scripts/coordination/tapis_qualification.py",
-    "scripts/coordination/tapis_fil_complet.py",
-    "scripts/coordination/tapis_prise_en_charge.py",
-    "scripts/coordination/tapis_reverif.py",
-    "scripts/coordination/tapis_fenetre.py",
-    "scripts/coordination/tapis_origami.py",
+    "scripts/coordination/origami_parking.py",
+    "scripts/coordination/tirage_journal.py",
+    "scripts/pick_idle_grain.py",
 )
 
 FETCH_TIMEOUT_S = 120
@@ -140,7 +211,8 @@ RAISONS_DURES = frozenset({"MESURE_IMPOSSIBLE"})
 
 #: Les conditions DEGRADABLES (invariant I4 de #28114) : l'etat est mesure et
 #: imparfait -- le tirage rend sa file, avec un avertissement.
-RAISONS_DEGRADABLES = frozenset({"MAIN_PERIME", "ORGANE_DIVERGENT"})
+RAISONS_DEGRADABLES = frozenset({"MAIN_PERIME", "ORGANE_DIVERGENT",
+                                 "FRAICHEUR_BORNEE"})
 
 #: Runner injectable : argv + timeout -> (rc, stdout, stderr), tous strippes.
 Run = Callable[[list[str], int], tuple[int, str, str]]
@@ -158,13 +230,28 @@ def run_defaut(argv: list[str], timeout: int) -> tuple[int, str, str]:
     return out.returncode, out.stdout.strip(), out.stderr.strip()
 
 
+def _run_borne(run, argv: list[str], cap: float, echeance: float | None):
+    """L'appel git, borne par la commande : (rc, out, err, borne).
+
+    `borne` dit si c'est NOTRE borne qui a coupe l'appel, et non une panne du
+    depot : la distinction change le verdict -- une mesure IMPOSSIBLE refuse
+    le tirage (invariant I4), une mesure coupee par le BUDGET le degrade (la
+    freshness ne se mesure plus, mais le tirage rend sa file).
+    """
+    timeout = tapis_borne.timeout_borne(cap, echeance)
+    if timeout <= 0:
+        return 124, "", "budget de commande epuise", True
+    rc, out, err = run(argv, timeout)
+    return rc, out, err, (rc == 124 and timeout < int(cap))
+
+
 def _premiere_ligne(err: str) -> str:
     """Premiere ligne d'un stderr git, bornee : c'est elle qui nomme la panne."""
     return err.splitlines()[0][:160] if err else "(sans message)"
 
 
 def mesurer(depot: str | Path, organes: tuple[str, ...] = ORGANES,
-            run: Run = run_defaut) -> dict:
+            run: Run = run_defaut, echeance: float | None = None) -> dict:
     """La mesure brute : ecart main..origin/main et organes divergents.
 
     Rend un dict toujours serialisable. `cause` non nul = mesure impossible :
@@ -172,17 +259,28 @@ def mesurer(depot: str | Path, organes: tuple[str, ...] = ORGANES,
     (meme doctrine que session_hygiene.check_fetch).
     """
     depot = Path(depot)
+    # La garde de fraicheur prend SA PART du budget de la commande : elle ne
+    # peut pas affamer le tirage (mesure du 25/11 : 35 s sur ce depot).
+    echeance = tapis_borne.part(echeance, tapis_borne.FRAICHEUR_S)
     m: dict = {"depot": str(depot), "branche": None, "ref_mesure": None,
-               "ecart": None, "organes_divergents": [], "cause": None}
+               "ecart": None, "organes_divergents": [], "cause": None,
+               "borne": False}
     git = ["git", "-C", str(depot)]
 
-    rc, _, err = run([*git, "fetch", "-q", "origin", "main"], FETCH_TIMEOUT_S)
+    rc, _, err, borne = _run_borne(run, [*git, "fetch", "-q", "origin", "main"],
+                                   FETCH_TIMEOUT_S, echeance)
     if rc != 0:
-        m["cause"] = (f"git fetch origin main a echoue (rc={rc}, {_premiere_ligne(err)}) : "
-                      "la fraicheur ne peut pas etre mesuree")
+        if borne:
+            m["cause"] = ("budget de commande epuise : la fraicheur n'a pas "
+                          "pu etre mesuree")
+            m["borne"] = True
+        else:
+            m["cause"] = (f"git fetch origin main a echoue (rc={rc}, {_premiere_ligne(err)}) : "
+                          "la fraicheur ne peut pas etre mesuree")
         return m
 
-    rc, out, _ = run([*git, "rev-parse", "--abbrev-ref", "HEAD"], 30)
+    rc, out, _ = _run_borne(run, [*git, "rev-parse", "--abbrev-ref", "HEAD"],
+                           30, echeance)[:3]
     if rc == 0:
         m["branche"] = out or "(detache)"
 
@@ -194,15 +292,22 @@ def mesurer(depot: str | Path, organes: tuple[str, ...] = ORGANES,
     # retenir le plus petit ecart, et nommer la reference qui l'a donne
     # (mesure du 15/11 : une lane refusee a 381 commits depuis un worktree
     # frais, sans pouvoir toucher le checkout partage).
-    rc, out, _ = run([*git, "rev-parse", "--verify", "-q", "refs/heads/main"], 30)
+    rc, out, _ = _run_borne(run, [*git, "rev-parse", "--verify", "-q",
+                                    "refs/heads/main"], 30, echeance)[:3]
     candidates = (["refs/heads/main"] if rc == 0 and out else []) + ["HEAD"]
     meilleur: tuple[int, str] | None = None
     for ref in candidates:
-        rc, out, err = run([*git, "rev-list", "--count", f"{ref}..origin/main"], 60)
+        rc, out, err, borne = _run_borne(
+            run, [*git, "rev-list", "--count", f"{ref}..origin/main"], 60, echeance)
         if rc != 0 or not out.strip().isdigit():
             m["ref_mesure"] = ref
-            m["cause"] = (f"rev-list --count {ref}..origin/main illisible "
-                          f"(rc={rc}, {_premiere_ligne(err) or out[:80]})")
+            if borne:
+                m["cause"] = ("budget de commande epuise : l'ecart de "
+                              f"{ref} n'a pas pu etre mesure")
+                m["borne"] = True
+            else:
+                m["cause"] = (f"rev-list --count {ref}..origin/main illisible "
+                              f"(rc={rc}, {_premiere_ligne(err) or out[:80]})")
             return m
         ecart = int(out.strip())
         if meilleur is None or ecart < meilleur[0]:
@@ -211,17 +316,24 @@ def mesurer(depot: str | Path, organes: tuple[str, ...] = ORGANES,
             break
     m["ecart"], m["ref_mesure"] = meilleur
 
-    rc, out, err = run([*git, "diff", "--name-only", "origin/main", "--", *organes], 60)
+    rc, out, err, borne = _run_borne(
+        run, [*git, "diff", "--name-only", "origin/main", "--", *organes], 60, echeance)
     if rc != 0:
-        m["cause"] = (f"diff origin/main -- <organes du tirage> illisible "
-                      f"(rc={rc}, {_premiere_ligne(err)})")
+        if borne:
+            m["cause"] = ("budget de commande epuise : les organes divergents "
+                          "n'ont pas pu etre compares")
+            m["borne"] = True
+        else:
+            m["cause"] = (f"diff origin/main -- <organes du tirage> illisible "
+                          f"(rc={rc}, {_premiere_ligne(err)})")
         return m
     m["organes_divergents"] = [l.strip() for l in out.splitlines() if l.strip()]
     return m
 
 
 def garder(depot: str | Path, allow_stale: bool = False,
-           organes: tuple[str, ...] = ORGANES, run: Run | None = None) -> dict:
+           organes: tuple[str, ...] = ORGANES, run: Run | None = None,
+           echeance: float | None = None) -> dict:
     """Le verdict de garde : trois etats, `raisons` nomment le remede.
 
     * `refuse` : l'etat n'a pas pu etre mesure -- le tirage s'arrete ;
@@ -242,11 +354,16 @@ def garder(depot: str | Path, allow_stale: bool = False,
                     "outre_passe": False, "raisons": [], "raisons_dures": [],
                     "raisons_degradees": [], "passe": "pytest"}
         run = run_defaut
-    m = mesurer(depot, organes=organes, run=run)
+    m = mesurer(depot, organes=organes, run=run, echeance=echeance)
     raisons: list[dict] = []
     if m["cause"]:
-        raisons.append({"code": "MESURE_IMPOSSIBLE", "motif": m["cause"],
-                        "remede": "retablir le fetch (reseau, credential) puis relancer"})
+        if m.get("borne"):
+            raisons.append({"code": "FRAICHEUR_BORNEE", "motif": m["cause"],
+                            "remede": ("rejouer le tirage ; elargir --budget-s si "
+                                      "le reseau est lent")})
+        else:
+            raisons.append({"code": "MESURE_IMPOSSIBLE", "motif": m["cause"],
+                            "remede": "retablir le fetch (reseau, credential) puis relancer"})
     else:
         if m["ecart"]:
             remede = ("git pull --ff-only" if m["branche"] == "main" else
@@ -273,7 +390,8 @@ def garder(depot: str | Path, allow_stale: bool = False,
             "raisons_degradees": degradees}
 
 
-def garder_et_dire(depot: str | Path, allow_stale: bool = False) -> dict:
+def garder_et_dire(depot: str | Path, allow_stale: bool = False,
+                   echeance: float | None = None) -> dict:
     """La garde et son rendu pour le tapis : le verdict tel quel, imprime.
 
     Le refus va sur ses deux canaux -- chaque raison sur stderr avec son
@@ -287,7 +405,7 @@ def garder_et_dire(depot: str | Path, allow_stale: bool = False) -> dict:
     stdout porte le RAPPORT du tirage, qui doit rester du JSON parseable.
     Le verdict complet voyage dans le rapport (`fraicheur`).
     """
-    v = garder(depot, allow_stale=allow_stale)
+    v = garder(depot, allow_stale=allow_stale, echeance=echeance)
     if v["refuse"]:
         for r in v["raisons"]:
             print(f"TIRAGE REFUSE [{r['code']}] : {r['motif']} -- remede : {r['remede']}",

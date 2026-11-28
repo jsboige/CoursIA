@@ -1,0 +1,3647 @@
+{
+ "PILOT": [
+  {
+   "name": "probeAddresses banner guard (main-repo notebooks)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/strip_probe_banner.py",
+    "--scan-all",
+    "--check",
+    "--exclude-submodules"
+   ],
+   "source": "banner-guard.yml",
+   "paths": [
+    "**/*.ipynb",
+    "scripts/notebook_tools/strip_probe_banner.py",
+    ".github/workflows/banner-guard.yml"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "!pip install HIGH delta guard (#6314)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/audit_pip_install_cells.py",
+    "--scan-all",
+    "--json"
+   ],
+   "source": "pip-leak-guard.yml",
+   "paths": [
+    "**/*.ipynb",
+    ".github/workflows/pip-leak-guard.yml",
+    "scripts/notebook_tools/audit_pip_install_cells.py",
+    "scripts/notebook_tools/pip_leak_delta.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [
+    "python",
+    "scripts/notebook_tools/pip_leak_delta.py",
+    "{base_json}",
+    "{head_json}"
+   ],
+   "swap_paths": [
+    "MyIA.AI.Notebooks"
+   ],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "Solution-leak HIGH delta (advisory, WARN phase, #8053)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/audit_solution_leaks.py",
+    "--json"
+   ],
+   "source": "solution-leak-guard.yml",
+   "paths": [
+    "**/*.ipynb",
+    "scripts/notebook_tools/audit_solution_leaks.py",
+    "scripts/notebook_tools/solution_leak_delta.py",
+    ".github/workflows/solution-leak-guard.yml"
+   ],
+   "blocking": false,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [
+    "python",
+    "scripts/notebook_tools/solution_leak_delta.py",
+    "{base_json}",
+    "{head_json}"
+   ],
+   "swap_paths": [
+    "MyIA.AI.Notebooks"
+   ],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "prose-counts",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_prose_quantitative_claims.py",
+    "--diff",
+    "{base_ref}...HEAD",
+    "--strict"
+   ],
+   "source": "prose-counts-guard.yml",
+   "paths": [
+    "**/*.ipynb",
+    "**/*.md"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "perimeter-review-guard",
+   "argv": [
+    "python",
+    "scripts/check_pr_perimeter.py",
+    "{pr_number}",
+    "--scan-thread"
+   ],
+   "source": "perimeter-review-guard.yml",
+   "paths": [],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": false,
+   "shadow_reason": "phase pilote #11835, aucun autre emetteur : le workflow d'origine ne declenche pas sur `pull_request`. Critere de bascule : absorber, ou retirer la garde.",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "hr-substitution-guard",
+   "argv": [
+    "python",
+    "scripts/ci/check_hr_substitution.py",
+    "{pr_number}"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**/*.ipynb"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": false,
+   "shadow_reason": "phase pilote #11835, garde natif : aucun workflow d'origine, donc aucun autre emetteur du nom de check-run. Critere de bascule : absorber (convention des tranches depuis TRANCHE8).",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "No bare cross-dir #load in changed notebooks",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/detect_bare_cross_dir_load.py",
+    "{changed_paths}",
+    "--check"
+   ],
+   "source": "bare-cross-dir-load-gate.yml",
+   "paths": [
+    "**/*.ipynb",
+    "scripts/notebook_tools/detect_bare_cross_dir_load.py",
+    ".github/workflows/bare-cross-dir-load-gate.yml"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": true,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "check-navlinks",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_notebook_navlinks.py",
+    "--check",
+    "--diff-base",
+    "{base_ref}"
+   ],
+   "source": "notebook-navlink-check.yml",
+   "paths": [
+    "**/*.ipynb",
+    "scripts/notebook_tools/check_notebook_navlinks.py",
+    "scripts/tests/baseline_nb_navlinks.json",
+    ".github/workflows/notebook-navlink-check.yml"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": true,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "check-nav-chain",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_notebook_nav_chain.py",
+    "--check",
+    "--diff-base",
+    "{base_ref}"
+   ],
+   "source": "notebook-nav-chain-guard.yml",
+   "paths": [
+    "**/*.ipynb",
+    "MyIA.AI.Notebooks/**/README.md",
+    "scripts/notebook_tools/check_notebook_nav_chain.py",
+    "scripts/tests/baseline_nb_nav_chain.json",
+    ".github/workflows/notebook-nav-chain-guard.yml"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": true,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "Audit README -> .ipynb links",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/dump_readme_link_violations.py"
+   ],
+   "source": "readme-ipynb-links-guard.yml",
+   "paths": [
+    "MyIA.AI.Notebooks/**/README.md",
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "_quarto.yml",
+    "scripts/ci/regen_quarto_render.py",
+    "scripts/notebook_tools/dump_readme_link_violations.py",
+    "scripts/notebook_tools/diff_readme_link_violations.py",
+    "scripts/notebook_tools/fix_ipynb_links.py",
+    "scripts/notebook_tools/tests/test_fix_ipynb_links.py",
+    "scripts/notebook_tools/tests/test_readme_link_violations.py",
+    "scripts/notebook_tools/tests/test_readme_links_guard_workflow.py",
+    "scripts/tests/test_regen_quarto_render.py",
+    ".github/workflows/readme-ipynb-links-guard.yml"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [
+    "python",
+    "scripts/notebook_tools/diff_readme_link_violations.py",
+    "{base_json}",
+    "{head_json}",
+    "--base-sha",
+    "{base_sha}",
+    "--head-sha",
+    "{head_sha}"
+   ],
+   "swap_paths": [
+    "MyIA.AI.Notebooks",
+    "_quarto.yml"
+   ],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "check_interp_positioning.py",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_interp_positioning.py",
+    "--check",
+    "--baseline",
+    "scripts/notebook_tools/interp_positioning_baseline.json"
+   ],
+   "source": "notebook-interp-positioning.yml",
+   "paths": [
+    "**/*.ipynb",
+    "scripts/notebook_tools/check_interp_positioning.py",
+    "scripts/notebook_tools/interp_positioning_baseline.json",
+    ".github/workflows/notebook-interp-positioning.yml"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "markdown-rendering guard (main-repo notebooks)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/detect_markdown_rendering.py",
+    "--check",
+    "--baseline",
+    "scripts/notebook_tools/markdown_rendering_baseline.json"
+   ],
+   "source": "markdown-rendering-guard.yml",
+   "paths": [
+    "**/*.ipynb",
+    "_quarto.yml",
+    "scripts/notebook_tools/detect_markdown_rendering.py",
+    "scripts/notebook_tools/scan_md_hierarchy.py",
+    "scripts/notebook_tools/markdown_rendering_baseline.json",
+    ".github/workflows/markdown-rendering-guard.yml"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "self-hosted-runner-policy",
+   "argv": [
+    "python",
+    "scripts/ci/check_self_hosted_runner_policy.py",
+    "--check"
+   ],
+   "source": "fast-lane-shadow.yml",
+   "paths": [
+    ".github/workflows/*.yml",
+    ".github/workflows/*.yaml",
+    "scripts/ci/check_self_hosted_runner_policy.py",
+    "scripts/tests/test_check_self_hosted_runner_policy.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": false,
+   "shadow_reason": "phase pilote #11835, aucun autre emetteur : le workflow d'origine ne declenche pas sur `pull_request`. Critere de bascule : absorber, ou retirer la garde.",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "duplicate-notebook-index-guard",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_duplicate_notebook_index.py",
+    "--base",
+    "{base_ref}",
+    "--head",
+    "HEAD"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**/*.ipynb",
+    "scripts/notebook_tools/check_duplicate_notebook_index.py",
+    "scripts/notebook_tools/naming_canon.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": false,
+   "shadow_reason": "phase pilote #11835, garde natif : aucun workflow d'origine, donc aucun autre emetteur du nom de check-run. Critere de bascule : absorber (convention des tranches depuis TRANCHE8).",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "kernel-suffix-canon-guard",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_kernel_suffix_canon.py",
+    "--base",
+    "{base_ref}",
+    "--head",
+    "HEAD"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**/*.ipynb",
+    "scripts/notebook_tools/check_kernel_suffix_canon.py",
+    "scripts/notebook_tools/kernel_suffix_canon.json",
+    "scripts/notebook_tools/naming_canon.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": false,
+   "shadow_reason": "phase pilote #11835, garde natif : aucun workflow d'origine, donc aucun autre emetteur du nom de check-run. Critere de bascule : absorber (convention des tranches depuis TRANCHE8).",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "slot-reservation-guard",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_slot_reservation.py",
+    "--base",
+    "{base_ref}",
+    "--head",
+    "HEAD",
+    "--offline"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**/*.ipynb",
+    "scripts/notebook_tools/check_slot_reservation.py",
+    "scripts/notebook_tools/slot_reservations.json",
+    "scripts/notebook_tools/naming_canon.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": false,
+   "shadow_reason": "phase pilote #11835, garde natif : aucun workflow d'origine, donc aucun autre emetteur du nom de check-run. Critere de bascule : absorber (convention des tranches depuis TRANCHE8).",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "accretion-advisory",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_slot_reservation.py",
+    "--base",
+    "{base_ref}",
+    "--head",
+    "HEAD",
+    "--offline",
+    "--accretion-only"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**/*.ipynb",
+    "scripts/notebook_tools/check_slot_reservation.py",
+    "scripts/notebook_tools/slot_reservations.json",
+    "scripts/notebook_tools/naming_canon.py"
+   ],
+   "blocking": false,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": false,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "rename-ledger integrity (union merge guard)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_rename_ledger.py"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "docs/reference/rename-ledger.tsv",
+    "scripts/notebook_tools/check_rename_ledger.py",
+    "scripts/notebook_tools/tests/test_check_rename_ledger.py",
+    "scripts/notebook_tools/rename_notebooks.py",
+    ".gitattributes"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": false,
+   "shadow_reason": "phase pilote #11835, garde natif : aucun workflow d'origine, donc aucun autre emetteur du nom de check-run. Critere de bascule : absorber (convention des tranches depuis TRANCHE8).",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE1": [
+  {
+   "name": "check-links",
+   "argv": [
+    "python",
+    "scripts/check_docs_links.py",
+    "--check",
+    "--base",
+    "{base_ref}"
+   ],
+   "source": "docs-link-check.yml",
+   "paths": [
+    "CLAUDE.md",
+    "index.md",
+    "PARCOURS.md",
+    "index.qmd",
+    "parcours.qmd",
+    ".claude/rules/**",
+    ".claude/agents/**",
+    ".claude/skills/**",
+    "docs/**",
+    "**/README.md",
+    "slides/**",
+    "MyIA.AI.Notebooks/QuantConnect/BOOK_MAPPING.md",
+    "MyIA.AI.Notebooks/index.qmd",
+    "MyIA.AI.Notebooks/GameTheory/index.qmd",
+    "MyIA.AI.Notebooks/Physique/index.qmd",
+    "MyIA.AI.Notebooks/Probas/index.qmd",
+    "MyIA.AI.Notebooks/Search/index.qmd",
+    "MyIA.AI.Notebooks/Sudoku/index.qmd",
+    "scripts/check_docs_links.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "zero-pad guard (series declarees)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_series_zero_pad.py"
+   ],
+   "source": "series-naming-gate.yml",
+   "paths": [
+    "MyIA.AI.Notebooks/GameTheory/**",
+    "MyIA.AI.Notebooks/GenAI/FineTuning/**",
+    "MyIA.AI.Notebooks/IIT/**",
+    "MyIA.AI.Notebooks/ML/ML.Net/**",
+    "MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/**",
+    "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/**",
+    "MyIA.AI.Notebooks/Probas/Infer/**",
+    "MyIA.AI.Notebooks/Probas/PyMC/**",
+    "MyIA.AI.Notebooks/RL/**",
+    "MyIA.AI.Notebooks/Search/Part1-Foundations/**",
+    "MyIA.AI.Notebooks/Search/Part2-CSP/**",
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/**",
+    "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/**",
+    "MyIA.AI.Notebooks/Sudoku/**",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/**",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/**",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/**",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/**",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/**",
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/**",
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/**",
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/**",
+    "MyIA.AI.Notebooks/SymbolicAI/Tweety/**",
+    "scripts/notebook_tools/zero_pad_series.json",
+    "scripts/notebook_tools/check_series_zero_pad.py",
+    "scripts/notebook_tools/naming_canon.py",
+    ".github/workflows/series-naming-gate.yml"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "Exercice-solution HIGH delta guard (#8053)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/detect_solution_leaks.py",
+    "--scan-all"
+   ],
+   "source": "exercise-leak-ci.yml",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "scripts/notebook_tools/detect_solution_leaks.py",
+    "scripts/notebook_tools/exercise_leak_delta.py",
+    ".github/workflows/exercise-leak-ci.yml"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [
+    "python",
+    "scripts/notebook_tools/exercise_leak_delta.py",
+    "{base_json}",
+    "{head_json}"
+   ],
+   "swap_paths": [
+    "MyIA.AI.Notebooks"
+   ],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE2": [
+  {
+   "name": "Output-failure ratchet (base vs PR)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_output_failure_text.py",
+    "{base_ref}"
+   ],
+   "source": "notebook-output-failure-ratchet.yml",
+   "paths": [
+    "**.ipynb",
+    "scripts/notebook_tools/check_output_failure_text.py",
+    ".github/workflows/notebook-output-failure-ratchet.yml"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "scripts/notebook_tools/check_output_failure_text.py",
+    "--self-test"
+   ],
+   "commenters": []
+  },
+  {
+   "name": "Output-flood ratchet (base vs PR)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_output_flood.py",
+    "{base_ref}"
+   ],
+   "source": "notebook-output-flood-ratchet.yml",
+   "paths": [
+    "**.ipynb",
+    "scripts/notebook_tools/check_output_flood.py",
+    ".github/workflows/notebook-output-flood-ratchet.yml"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "scripts/notebook_tools/check_output_flood.py",
+    "--self-test"
+   ],
+   "commenters": []
+  },
+  {
+   "name": "Output-collapse ratchet (base vs PR)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_output_collapse.py",
+    "{base_ref}"
+   ],
+   "source": "notebook-output-collapse-ratchet.yml",
+   "paths": [
+    "**.ipynb",
+    "scripts/notebook_tools/check_output_collapse.py",
+    ".github/workflows/notebook-output-collapse-ratchet.yml"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "scripts/notebook_tools/check_output_collapse.py",
+    "--self-test"
+   ],
+   "commenters": []
+  },
+  {
+   "name": "No fabricated text output in changed notebooks",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/detect_fabricated_outputs.py",
+    "--check",
+    "{changed_paths}"
+   ],
+   "source": "fabricated-output-gate.yml",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "scripts/notebook_tools/detect_fabricated_outputs.py",
+    ".github/workflows/fabricated-output-gate.yml"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": true,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "No degenerate figure in changed notebooks",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/detect_blank_figures.py",
+    "--check",
+    "{changed_paths}"
+   ],
+   "source": "degenerate-figure-gate.yml",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "scripts/notebook_tools/detect_blank_figures.py",
+    ".github/workflows/degenerate-figure-gate.yml"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": true,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "Translation hot-drift (base vs PR, advisory)",
+   "argv": [
+    "python",
+    "scripts/translation/check_pr_translation_drift.py",
+    "{base_ref}"
+   ],
+   "source": "translation-hot-drift-advisory.yml",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "translations/**/*.csv",
+    "scripts/translation/check_pr_translation_drift.py",
+    "scripts/translation/tests/test_check_pr_translation_drift.py",
+    ".github/workflows/translation-hot-drift-advisory.yml"
+   ],
+   "blocking": false,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "scripts/translation/check_pr_translation_drift.py",
+    "--self-test"
+   ],
+   "commenters": []
+  }
+ ],
+ "TRANCHE3": [
+  {
+   "name": "No notebook health regression",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/regression_scan.py",
+    "--guard",
+    "--base",
+    "{base_ref}",
+    "--head",
+    "HEAD",
+    "--paths",
+    "{changed_paths}"
+   ],
+   "source": "regression-guard.yml",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "scripts/notebook_tools/regression_scan.py",
+    "scripts/notebook_tools/regression_allowlist.json",
+    "scripts/notebook_tools/diagnose_broken.py",
+    "scripts/notebook_tools/forensic_scan.py",
+    ".github/workflows/regression-guard.yml"
+   ],
+   "blocking": false,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": true,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE4": [
+  {
+   "name": "No SVG broken-geometry (negative-dim) defect in changed notebooks",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/detect_svg_broken_geometry.py",
+    "{changed_paths}",
+    "--check"
+   ],
+   "source": "svg-broken-geometry-gate.yml",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "scripts/notebook_tools/detect_svg_broken_geometry.py",
+    ".github/workflows/svg-broken-geometry-gate.yml"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": true,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb"
+   ],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "No SVG decimal-comma defect in changed notebooks",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/detect_svg_decimal_commas.py",
+    "{changed_paths}",
+    "--check"
+   ],
+   "source": "svg-decimal-comma-gate.yml",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "scripts/notebook_tools/detect_svg_decimal_commas.py",
+    ".github/workflows/svg-decimal-comma-gate.yml"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": true,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb"
+   ],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "No SVG empty-display defect in changed notebooks",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/detect_svg_empty_display.py",
+    "{changed_paths}",
+    "--check"
+   ],
+   "source": "svg-empty-display-gate.yml",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "scripts/notebook_tools/detect_svg_empty_display.py",
+    ".github/workflows/svg-empty-display-gate.yml"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": true,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb"
+   ],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "No offscreen-flat SVG in changed notebooks",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/detect_svg_offscreen_flat.py",
+    "--check",
+    "{changed_paths}"
+   ],
+   "source": "svg-offscreen-flat-gate.yml",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "scripts/notebook_tools/detect_svg_offscreen_flat.py",
+    ".github/workflows/svg-offscreen-flat-gate.yml"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": true,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb"
+   ],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "No markdown content loss in changed notebooks",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/detect_md_content_loss.py",
+    "--base",
+    "{base_ref}",
+    "--check",
+    "{changed_paths}"
+   ],
+   "source": "md-content-loss-gate.yml",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "scripts/notebook_tools/detect_md_content_loss.py",
+    ".github/workflows/md-content-loss-gate.yml"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": true,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": true,
+   "iterate_paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb"
+   ],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE5": [
+  {
+   "name": "testpaths vs CI coverage",
+   "argv": [
+    "python",
+    "scripts/check_testpaths_coverage.py",
+    "--verbose",
+    "--inventory",
+    "--baseline",
+    "scripts/tests/baseline_testpaths_inventory.json"
+   ],
+   "source": "testpaths-coverage-guard.yml",
+   "paths": [
+    "pytest.ini",
+    "scripts/check_testpaths_coverage.py",
+    "scripts/tests/baseline_testpaths_inventory.json",
+    "**/tests/**",
+    "**/test_*.py",
+    ".github/workflows/scripts-tests.yml",
+    ".github/workflows/ml-tests.yml",
+    ".github/workflows/secret-scan.yml",
+    ".github/workflows/secret-scan-controls.yml",
+    ".github/workflows/ict-tests.yml",
+    ".github/workflows/sudoku-tests.yml",
+    ".github/workflows/testpaths-coverage-guard.yml"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE6": [
+  {
+   "name": "Markdown deaccent advisory (per-notebook, label, non-blocking)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/detect_markdown_deaccent.py",
+    "--json",
+    "--fail-on-findings",
+    "{changed_paths}"
+   ],
+   "source": "markdown-deaccent-advisory.yml",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "scripts/notebook_tools/detect_markdown_deaccent.py",
+    "scripts/notebook_tools/tests/test_detect_markdown_deaccent.py",
+    ".github/workflows/markdown-deaccent-advisory.yml"
+   ],
+   "blocking": false,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": true,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    1,
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb"
+   ],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE7": [
+  {
+   "name": "Repeated-prose advisory (per-notebook, non-blocking)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/detect_repeated_prose.py",
+    "--json",
+    "--fail-on-findings",
+    "{changed_paths}"
+   ],
+   "source": "repeated-prose-advisory.yml",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "scripts/notebook_tools/detect_repeated_prose.py",
+    "scripts/notebook_tools/tests/test_detect_repeated_prose.py",
+    ".github/workflows/repeated-prose-advisory.yml"
+   ],
+   "blocking": false,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": true,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    1,
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb"
+   ],
+   "pre_argv": [
+    "python",
+    "scripts/notebook_tools/detect_repeated_prose.py",
+    "--self-test"
+   ],
+   "commenters": []
+  }
+ ],
+ "TRANCHE8": [
+  {
+   "name": "Smart-contract engine proof ratchet",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/audit_engine_named_not_invoked.py",
+    "--scan-all",
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts",
+    "--json"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/**/*.ipynb",
+    "scripts/notebook_tools/audit_engine_named_not_invoked.py",
+    "scripts/notebook_tools/tests/test_audit_engine_named_not_invoked.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [
+    "python",
+    "scripts/notebook_tools/audit_engine_named_not_invoked.py",
+    "--compare-base",
+    "{base_json}",
+    "--compare-head",
+    "{head_json}",
+    "--json"
+   ],
+   "swap_paths": [
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts"
+   ],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "Smart-contract standards and execution ratchet",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/detect_smartcontract_drift.py",
+    "--scan-all",
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts",
+    "--json"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/**/*.ipynb",
+    "scripts/notebook_tools/detect_smartcontract_drift.py",
+    "scripts/notebook_tools/tests/test_detect_smartcontract_drift.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [
+    "python",
+    "scripts/notebook_tools/detect_smartcontract_drift.py",
+    "--compare-base",
+    "{base_json}",
+    "--compare-head",
+    "{head_json}",
+    "--json"
+   ],
+   "swap_paths": [
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts"
+   ],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE9": [
+  {
+   "name": "interval-kind-consistency-guard",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_interval_kind_consistency.py"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "scripts/notebook_tools/check_interval_kind_consistency.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE10": [
+  {
+   "name": "Notebook outputs required (H.4 schema)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_notebook_outputs_required.py",
+    "--pr-diff",
+    "{base_ref}",
+    "HEAD",
+    "--json"
+   ],
+   "source": "notebook-outputs-required.yml",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "scripts/notebook_tools/check_notebook_outputs_required.py",
+    ".github/workflows/notebook-outputs-required.yml",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE11": [
+  {
+   "name": "Source-collapse ratchet (base vs PR, advisory)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_source_collapse.py",
+    "{base_ref}"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**.ipynb",
+    "scripts/notebook_tools/check_source_collapse.py",
+    "scripts/notebook_tools/tests/test_check_source_collapse.py",
+    ".claude/rules/pr-review-discipline.md",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": false,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "scripts/notebook_tools/check_source_collapse.py",
+    "--self-test"
+   ],
+   "commenters": []
+  }
+ ],
+ "TRANCHE13": [
+  {
+   "name": "Reading-anchor advisory (lecture sans output, #16695)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_reading_anchor.py",
+    "--base",
+    "{base_ref}",
+    "--head",
+    "HEAD",
+    "--fail",
+    "--json"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**.ipynb",
+    "scripts/notebook_tools/check_reading_anchor.py",
+    "scripts/notebook_tools/tests/test_check_reading_anchor.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": false,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "scripts/notebook_tools/check_reading_anchor.py",
+    "--self-test"
+   ],
+   "commenters": []
+  }
+ ],
+ "TRANCHE12": [
+  {
+   "name": "Link-label agreement (per-notebook, advisory)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_link_label_agreement.py",
+    "--fail"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "MyIA.AI.Notebooks/**/README.md",
+    "docs/**/*.md",
+    "slides/**/slides.md",
+    "scripts/notebook_tools/check_link_label_agreement.py",
+    "scripts/notebook_tools/tests/test_check_link_label_agreement.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": false,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE14": [
+  {
+   "name": "Split-reading ratchet (base vs PR)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_split_reading_cells.py",
+    "--base-ref",
+    "{base_ref}",
+    "--head",
+    "HEAD",
+    "--json",
+    "--fail-on-findings"
+   ],
+   "source": "split-reading-advisory.yml",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "scripts/notebook_tools/check_split_reading_cells.py",
+    "scripts/tests/test_check_split_reading_cells.py",
+    ".github/workflows/split-reading-advisory.yml"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "scripts/notebook_tools/check_split_reading_cells.py",
+    "--self-test"
+   ],
+   "commenters": []
+  }
+ ],
+ "TRANCHE15": [
+  {
+   "name": "lake-direct-invocation-guard",
+   "argv": [
+    "python",
+    "scripts/lean/check_lake_direct_invocation.py",
+    "--all",
+    "--check"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**/*.py",
+    "scripts/lean/check_lake_direct_invocation.py",
+    "scripts/lean/lake_direct_allowlist.json",
+    "scripts/lean/tests/test_check_lake_direct_invocation.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE16": [
+  {
+   "name": "control-chars-in-cells-guard",
+   "argv": [
+    "python",
+    "scripts/ci/check_control_chars_in_cells.py",
+    "--diff",
+    "{base_ref}...HEAD"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**/*.ipynb",
+    "scripts/ci/check_control_chars_in_cells.py",
+    "scripts/tests/test_check_control_chars_in_cells.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE17": [
+  {
+   "name": "twin-parity-guard",
+   "argv": [
+    "python",
+    "scripts/translation/check_twin_parity_changed.py",
+    "--diff",
+    "{base_ref}...HEAD"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**/*.ipynb",
+    "scripts/translation/check_translation_parity.py",
+    "scripts/translation/check_twin_parity_changed.py",
+    "scripts/translation/tests/test_check_twin_parity_changed.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE19": [
+  {
+   "name": "eol-blob-guard",
+   "argv": [
+    "python",
+    "scripts/ci/check_eol_blobs.py"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE18": [
+  {
+   "name": "docs-index-guard",
+   "argv": [
+    "python",
+    "scripts/ci/check_docs_index.py"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "docs/**",
+    "scripts/ci/check_docs_index.py",
+    "scripts/tests/test_check_docs_index.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "detect-python-nu-jobs",
+   "argv": [
+    "python",
+    "scripts/ci/detect_python_nu_jobs.py",
+    "--mode",
+    "advisory",
+    "--baseline",
+    "14",
+    "--json"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    ".github/workflows/**",
+    "scripts/ci/detect_python_nu_jobs.py",
+    "scripts/tests/test_detect_python_nu_jobs.py"
+   ],
+   "blocking": false,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE20": [
+  {
+   "name": "Live-read freshness (committed output vs current source)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_live_read_freshness.py"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**.ipynb",
+    "scripts/notebook_tools/check_live_read_freshness.py",
+    "scripts/notebook_tools/live_read_registry.json",
+    "scripts/notebook_tools/tests/test_live_read_freshness.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py",
+    "scripts/tests/test_fast_lane.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/Conway/Life/Pillars.lean",
+    "MyIA.AI.Notebooks/GameTheory/game_theory_lean/Swaps/Basic.lean",
+    "MyIA.AI.Notebooks/GameTheory/game_theory_lean/RepeatedGames/Stage.lean",
+    "MyIA.AI.Notebooks/GameTheory/game_theory_lean/CooperativeGames/ConeKernel.lean",
+    "MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/SortedListCounting.lean",
+    "MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/_SmokeTest.lean",
+    "MyIA.AI.Notebooks/GameTheory/game_theory_lean/RepeatedGames/Panel.lean",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/Conway/Life.lean",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/Conway/Life/Spaceships.lean",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/Conway/Life/Oscillators.lean",
+    "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/CGTTour.lean",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/Conway/FreeWillTheorem.lean",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/Galois/galois_lean/Galois/M23Lean4Web.lean",
+    "MyIA.AI.Notebooks/GameTheory/game_theory_lean/Abstraction/Basic.lean",
+    "MyIA.AI.Notebooks/GameTheory/assignment_lean/Assignment/Counting.lean",
+    "MyIA.AI.Notebooks/GameTheory/assignment_lean/Assignment/Counting.lean",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/Hecke/FltRoute.lean",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/Grothendieck.lean",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/Conway/CHSH.lean",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/Conway/CHSHRandomized.lean",
+    "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/datasets/le_horla_1887.txt",
+    "MyIA.AI.Notebooks/GameTheory/game_theory_lean/LegalLoophole/Toy.lean",
+    "MyIA.AI.Notebooks/GameTheory/game_theory_lean/CooperativeGames/Shapley.lean"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "scripts/notebook_tools/check_live_read_freshness.py",
+    "--self-test"
+   ],
+   "commenters": []
+  }
+ ],
+ "TRANCHE21": [
+  {
+   "name": "activity-leak",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_activity_leak.py",
+    "--diff",
+    "{base_ref}...HEAD",
+    "--strict"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**/*.ipynb",
+    "scripts/notebook_tools/check_activity_leak.py",
+    "scripts/tests/test_check_activity_leak.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE22": [
+  {
+   "name": "Markdown-cell schema ratchet (base vs PR, #24090)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_markdown_cell_schema_ratchet.py",
+    "--base-ref",
+    "{base_ref}",
+    "{changed_paths}"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "scripts/notebook_tools/fix_markdown_cell_schema.py",
+    "scripts/notebook_tools/check_markdown_cell_schema_ratchet.py",
+    "scripts/notebook_tools/tests/test_fix_markdown_cell_schema.py",
+    "scripts/notebook_tools/tests/test_check_markdown_cell_schema_ratchet.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": true,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb"
+   ],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE23": [
+  {
+   "name": "Translation duplicate keys (#21489)",
+   "argv": [
+    "python",
+    "scripts/translation/check_duplicate_keys.py"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "translations/**/*.csv",
+    "scripts/translation/check_duplicate_keys.py",
+    "scripts/translation/dedup_cells_csv.py"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "scripts/translation/check_duplicate_keys.py",
+    "--self-test"
+   ],
+   "commenters": []
+  }
+ ],
+ "TRANCHE24": [
+  {
+   "name": "Verdict on invalid measurement (empty or HTTP-error response)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_empty_verdict.py",
+    "--diff-base",
+    "{base_ref}",
+    "."
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**.ipynb",
+    "scripts/notebook_tools/check_empty_verdict.py",
+    "scripts/tests/test_check_empty_verdict.py"
+   ],
+   "blocking": false,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "scripts/notebook_tools/check_empty_verdict.py",
+    "--self-test"
+   ],
+   "commenters": []
+  }
+ ],
+ "TRANCHE25": [
+  {
+   "name": "lean-added-axioms-cliquet",
+   "argv": [
+    "python",
+    "scripts/lean/check_added_axioms_cliquet.py",
+    "--base",
+    "{base_ref}",
+    "--head",
+    "HEAD"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**/*.lean",
+    "scripts/lean/check_added_axioms_cliquet.py",
+    "scripts/lean/tests/test_check_added_axioms_cliquet.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE26": [
+  {
+   "name": "translation-golden-set-drift (advisory, non-blocking)",
+   "argv": [
+    "python",
+    "scripts/translation/build_golden_set.py",
+    "--check"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**/*.ipynb",
+    "**/*.lean",
+    "**/*.md",
+    "translations/translation_golden_set.json",
+    "scripts/translation/build_golden_set.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": false,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE27": [
+  {
+   "name": "Consecutive code cells >= 2 advisory (label, non-blocking)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/detect_consecutive_code_cells.py",
+    "--json",
+    "{changed_paths}"
+   ],
+   "source": "consecutive-code-cells-advisory.yml",
+   "paths": [
+    "**/*.ipynb",
+    ".github/workflows/consecutive-code-cells-advisory.yml"
+   ],
+   "blocking": false,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": true,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [
+    "**/*.ipynb"
+   ],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "Mermaid fill-without-color advisory (label, non-blocking)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/detect_mermaid_fill_without_color.py",
+    "--json",
+    "--root",
+    ".",
+    "{changed_paths}"
+   ],
+   "source": "mermaid-fill-color-advisory.yml",
+   "paths": [
+    "**/*.md",
+    "**/*.ipynb",
+    "scripts/notebook_tools/detect_mermaid_fill_without_color.py",
+    "scripts/notebook_tools/tests/test_detect_mermaid_fill_without_color.py",
+    "scripts/notebook_tools/tests/fixtures/mermaid_fill_no_color.md",
+    ".github/workflows/mermaid-fill-color-advisory.yml"
+   ],
+   "blocking": false,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": true,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [
+    "**/*.md",
+    "**/*.ipynb"
+   ],
+   "pre_argv": [
+    "python",
+    "scripts/notebook_tools/detect_mermaid_fill_without_color.py",
+    "--self-test"
+   ],
+   "commenters": []
+  },
+  {
+   "name": "Markdown table syntax advisory (label, non-blocking)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/scan_md_table_syntax.py",
+    "--json",
+    "{changed_paths}"
+   ],
+   "source": "markdown-table-guard.yml",
+   "paths": [
+    "**/*.ipynb",
+    "**/*.md",
+    "**/*README*",
+    ".github/workflows/markdown-table-guard.yml",
+    "scripts/notebook_tools/scan_md_table_syntax.py",
+    "scripts/notebook_tools/md_table_sweep_comment.py"
+   ],
+   "blocking": false,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": true,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [
+    "**/*.ipynb",
+    "**/*.md",
+    "**/*README*"
+   ],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE33": [
+  {
+   "name": "Markdown claims anchored to previous output (#11435 advisory)",
+   "argv": [],
+   "source": "markdown-claims-output-advisory.yml",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "scripts/check_markdown_claims_output.py",
+    "scripts/tests/test_check_markdown_claims_output.py",
+    "scripts/check_stale_claims.py",
+    "scripts/tests/test_check_stale_claims.py",
+    "scripts/check_factual_mislabel.py",
+    "scripts/tests/test_check_factual_mislabel.py",
+    "scripts/check_listing_coherence.py",
+    "scripts/tests/test_check_listing_coherence.py",
+    ".github/workflows/markdown-claims-output-advisory.yml"
+   ],
+   "blocking": false,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": [
+    {
+     "header": "markdown-claims-output-advisory",
+     "argv": [
+      "python",
+      "scripts/check_markdown_claims_output.py",
+      "--json",
+      "{changed_paths}"
+     ],
+     "body": "_body_claims_output",
+     "artifact_name": "markdown-claims-output-report",
+     "artifact_file": "claims-output.json",
+     "paths": [
+      "MyIA.AI.Notebooks/**/*.ipynb"
+     ],
+     "max_paths": 50,
+     "needs_pr_body": false,
+     "fatal_rc": []
+    },
+    {
+     "header": "stale-claim-advisory",
+     "argv": [
+      "python",
+      "scripts/check_stale_claims.py",
+      "--json",
+      "{changed_paths}"
+     ],
+     "body": "_body_stale_claim",
+     "artifact_name": "stale-claim-report",
+     "artifact_file": "stale-claim.json",
+     "paths": [
+      "MyIA.AI.Notebooks/**/*.ipynb"
+     ],
+     "max_paths": 50,
+     "needs_pr_body": false,
+     "fatal_rc": []
+    },
+    {
+     "header": "factual-mislabel-advisory",
+     "argv": [
+      "python",
+      "scripts/check_factual_mislabel.py",
+      "--json",
+      "{changed_paths}"
+     ],
+     "body": "_body_factual_mislabel",
+     "artifact_name": "factual-mislabel-report",
+     "artifact_file": "factual-mislabel.json",
+     "paths": [
+      "MyIA.AI.Notebooks/**/*.ipynb"
+     ],
+     "max_paths": 50,
+     "needs_pr_body": false,
+     "fatal_rc": []
+    },
+    {
+     "header": "listing-coherence-advisory",
+     "argv": [
+      "python",
+      "scripts/check_listing_coherence.py",
+      "--json",
+      "{changed_paths}"
+     ],
+     "body": "_body_listing_coherence",
+     "artifact_name": "listing-coherence-report",
+     "artifact_file": "listing-coherence.json",
+     "paths": [
+      "MyIA.AI.Notebooks/**/*.ipynb"
+     ],
+     "max_paths": 50,
+     "needs_pr_body": false,
+     "fatal_rc": []
+    }
+   ]
+  },
+  {
+   "name": "Organ-duplication advisory (non-blocking)",
+   "argv": [],
+   "source": "organ-duplication-advisory.yml",
+   "paths": [
+    "**/*.py",
+    "**/*.ipynb",
+    "**/*.lean",
+    "scripts/audit/detect_organ_duplication.py",
+    "scripts/audit/organ_api_index.yaml",
+    ".github/workflows/organ-duplication-advisory.yml"
+   ],
+   "blocking": false,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": [
+    {
+     "header": "organ-duplication-advisory",
+     "argv": [
+      "python",
+      "scripts/audit/detect_organ_duplication.py",
+      "--base",
+      "{merge_base}",
+      "--head",
+      "HEAD",
+      "--body-file",
+      "{pr_body_file}"
+     ],
+     "body": "_body_organ_duplication",
+     "artifact_name": "",
+     "artifact_file": "",
+     "paths": [],
+     "max_paths": 0,
+     "needs_pr_body": true,
+     "fatal_rc": []
+    }
+   ]
+  },
+  {
+   "name": "scan_md_hierarchy drift (advisory)",
+   "argv": [],
+   "source": "scan-md-hierarchy-drift.yml",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "scripts/notebook_tools/scan_md_hierarchy.py",
+    "scripts/notebook_tools/md_hierarchy_baseline.json"
+   ],
+   "blocking": false,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": [
+    {
+     "header": "md-hierarchy-drift-advisory",
+     "argv": [
+      "python",
+      "scripts/notebook_tools/scan_md_hierarchy.py",
+      "MyIA.AI.Notebooks/",
+      "--baseline",
+      "--diff",
+      "--name-status",
+      "{name_status_file}",
+      "--reference-base",
+      "{base_sha}"
+     ],
+     "body": "_body_md_hierarchy",
+     "artifact_name": "",
+     "artifact_file": "",
+     "paths": [],
+     "max_paths": 0,
+     "needs_pr_body": false,
+     "fatal_rc": [
+      1
+     ]
+    }
+   ]
+  }
+ ],
+ "TRANCHE28": [
+  {
+   "name": "dwell-narrative-pin",
+   "argv": [
+    "python",
+    "-m",
+    "pytest",
+    "-q",
+    "scripts/tests/test_dwell_rule_matches_organ.py"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    ".claude/rules/git-workflow.md",
+    "docs/reference/git-workflow-detail.md",
+    "scripts/tests/test_dwell_rule_matches_organ.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE31": [
+  {
+   "name": "Library versions guard (#23073)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_lib_versions.py",
+    "--changed",
+    "{base_ref}...HEAD"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**/*.ipynb",
+    "scripts/notebook_tools/check_lib_versions.py",
+    "scripts/notebook_tools/lib_versions_manifest.json",
+    "scripts/notebook_tools/tests/test_check_lib_versions.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE29": [
+  {
+   "name": "quant-doc-divergence advisory (non-blocking)",
+   "argv": [
+    "python",
+    "scripts/genai-stack/check_quant_doc_divergence.py"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "docs/genai/genai-services.md",
+    "docker-configurations/services/**/docker-compose*.yml",
+    "docker-configurations/services/**/docker-compose*.yaml",
+    "scripts/genai-stack/check_quant_doc_divergence.py",
+    "scripts/tests/test_check_quant_doc_divergence.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": false,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE30": [
+  {
+   "name": "Obsolete chat model advisory (#22783)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_obsolete_chat_model.py",
+    "{changed_paths}"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**.ipynb",
+    "scripts/notebook_tools/check_obsolete_chat_model.py",
+    "scripts/notebook_tools/tests/test_check_obsolete_chat_model.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": false,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": true,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [
+    "**.ipynb"
+   ],
+   "pre_argv": [
+    "python",
+    "-m",
+    "pytest",
+    "-q",
+    "scripts/notebook_tools/tests/test_check_obsolete_chat_model.py"
+   ],
+   "commenters": []
+  }
+ ],
+ "TRANCHE32": [
+  {
+   "name": "twin-index-collision-guard",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_twin_index_collisions.py",
+    "--base",
+    "{base_ref}",
+    "--head",
+    "HEAD",
+    "--gate"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "scripts/notebook_tools/twin_pairs.d/**",
+    "scripts/notebook_tools/check_twin_index_collisions.py",
+    "scripts/notebook_tools/twin_open_claims.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "twin-attestation-orphan-guard",
+   "argv": [
+    "python",
+    "scripts/ci/check_twin_attestation_orphans.py",
+    "--base",
+    "{base_ref}",
+    "--head",
+    "HEAD",
+    "--gate"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "scripts/notebook_tools/twin_pairs.d/**",
+    "scripts/ci/check_twin_attestation_orphans.py",
+    "scripts/notebook_tools/check_twin_parity.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": true,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  },
+  {
+   "name": "twin-execution-heritage-guard",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_twin_execution_heritage.py",
+    "--diff",
+    "{base_ref}...HEAD",
+    "--gate"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "scripts/notebook_tools/twin_pairs.d/**",
+    "scripts/notebook_tools/rust_conformance.d/**",
+    "**/*.ipynb",
+    "scripts/notebook_tools/check_twin_execution_heritage.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": true,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE37": [
+  {
+   "name": "Series-denominator advisory (denominateur d'en-tete, #23678)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_series_denominator.py",
+    "{changed_paths}"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "scripts/notebook_tools/check_series_denominator.py",
+    "scripts/tests/test_check_series_denominator.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": false,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": true,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb"
+   ],
+   "pre_argv": [
+    "python",
+    "scripts/tests/test_check_series_denominator.py"
+   ],
+   "commenters": []
+  }
+ ],
+ "TRANCHE34": [
+  {
+   "name": "readme-notebook-coverage",
+   "argv": [
+    "python",
+    "scripts/ci/check_readme_notebook_coverage.py",
+    "--diff-base",
+    "{base_ref}"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**/*.ipynb"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE35": [
+  {
+   "name": "encoding-corruption-guard",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_encoding_corruption.py",
+    "--base",
+    "{base_ref}"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**/*.ipynb",
+    "scripts/notebook_tools/check_encoding_corruption.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": true,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE36": [
+  {
+   "name": "papermill machine paths (delta vs base)",
+   "argv": [
+    "python",
+    "scripts/ci/check_papermill_machine_paths.py",
+    "--base-ref",
+    "{base_ref}"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**/*.ipynb",
+    "scripts/ci/check_papermill_machine_paths.py",
+    "scripts/notebook_tools/scrub_papermill_paths.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": true,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE38": [
+  {
+   "name": "MD hierarchy HINT-AS-HEADING (base vs PR, bloquant)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/scan_md_hierarchy.py",
+    "MyIA.AI.Notebooks/",
+    "--baseline",
+    "--diff",
+    "--fail-kinds",
+    "HINT-AS-HEADING",
+    "--base-ref",
+    "{base_ref}"
+   ],
+   "source": "scan-md-hierarchy-drift.yml",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "scripts/notebook_tools/scan_md_hierarchy.py",
+    "scripts/notebook_tools/md_hierarchy_baseline.json"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "-m",
+    "pytest",
+    "-q",
+    "scripts/tests/test_scan_md_hierarchy_fail_kinds.py"
+   ],
+   "commenters": []
+  }
+ ],
+ "TRANCHE41": [
+  {
+   "name": "pcm-single-source-guard",
+   "argv": [
+    "python",
+    "scripts/quantconnect/check_pcm_single_source.py"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "MyIA.AI.Notebooks/QuantConnect/**/*.py",
+    "scripts/quantconnect/check_pcm_single_source.py",
+    "scripts/quantconnect/pcm_single_source.json",
+    "scripts/quantconnect/tests/test_check_pcm_single_source.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE39": [
+  {
+   "name": "No cell-ordering regression in changed notebooks",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/cell_order_ci.py",
+    "--base-ref",
+    "{base_ref}",
+    "--head",
+    "{changed_paths}"
+   ],
+   "source": "cell-order-gate.yml",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "scripts/notebook_tools/scan_cell_ordering.py",
+    "scripts/notebook_tools/cell_order_ci.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": true,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb"
+   ],
+   "pre_argv": [
+    "python",
+    "-m",
+    "pytest",
+    "-q",
+    "scripts/notebook_tools/tests/test_scan_cell_ordering.py"
+   ],
+   "commenters": []
+  }
+ ],
+ "TRANCHE40": [
+  {
+   "name": "Harness autoloaded weight ratchet (base vs PR, bloquant)",
+   "argv": [
+    "python",
+    "scripts/audit/measure_autoloaded_harness.py",
+    "--json"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "CLAUDE.md",
+    ".claude/rules/**",
+    "docs/reference/claude-code-config.md",
+    "scripts/audit/measure_autoloaded_harness.py",
+    "scripts/ci/check_harness_weight_delta.py",
+    "scripts/tests/test_check_harness_weight_delta.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": true,
+   "delta_argv": [
+    "python",
+    "scripts/ci/check_harness_weight_delta.py",
+    "{base_json}",
+    "{head_json}"
+   ],
+   "swap_paths": [
+    "CLAUDE.md",
+    ".claude/rules"
+   ],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "-m",
+    "pytest",
+    "-q",
+    "scripts/tests/test_check_harness_weight_delta.py"
+   ],
+   "commenters": []
+  }
+ ],
+ "TRANCHE42": [
+  {
+   "name": "Detect notebook changes (outputs-required)",
+   "argv": [],
+   "source": "notebook-outputs-required.yml",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "scripts/notebook_tools/check_notebook_outputs_required.py",
+    ".github/workflows/notebook-outputs-required.yml",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": false,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": [
+    {
+     "header": "notebook-outputs-required",
+     "argv": [
+      "python",
+      "scripts/notebook_tools/check_notebook_outputs_required.py",
+      "--pr-diff",
+      "{base_ref}",
+      "HEAD",
+      "--json"
+     ],
+     "body": "_body_outputs_required",
+     "artifact_name": "",
+     "artifact_file": "",
+     "paths": [
+      "MyIA.AI.Notebooks/**/*.ipynb"
+     ],
+     "max_paths": 0,
+     "needs_pr_body": false,
+     "fatal_rc": []
+    }
+   ]
+  },
+  {
+   "name": "cell-source-parses",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_cell_source_parses.py",
+    "--target-py",
+    "3.12",
+    "--pr-diff",
+    "{base_ref}",
+    "HEAD"
+   ],
+   "source": "notebook-cell-source-parses.yml",
+   "paths": [
+    "**/*.ipynb",
+    "scripts/notebook_tools/check_cell_source_parses.py",
+    ".github/workflows/notebook-cell-source-parses.yml",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "-m",
+    "unittest",
+    "scripts.tests.test_notebook_tools_check_cell_source_parses",
+    "-v"
+   ],
+   "commenters": []
+  },
+  {
+   "name": "Papermill ratchet (base vs PR)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_papermill_ratchet.py",
+    "{base_ref}"
+   ],
+   "source": "notebook-papermill-ratchet.yml",
+   "paths": [
+    "**/*.ipynb",
+    "scripts/notebook_tools/check_papermill_ratchet.py",
+    ".github/workflows/notebook-papermill-ratchet.yml",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "-m",
+    "pytest",
+    "-q",
+    "scripts/notebook_tools/tests/test_check_papermill_ratchet.py"
+   ],
+   "commenters": []
+  },
+  {
+   "name": "Cell ID ratchet (base vs PR)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_cell_id_invalid_ratchet.py",
+    "{base_ref}"
+   ],
+   "source": "notebook-cell-id-ratchet.yml",
+   "paths": [
+    "**/*.ipynb",
+    "scripts/notebook_tools/check_cell_id_invalid_ratchet.py",
+    "scripts/notebook_tools/fix_cell_ids.py",
+    "scripts/notebook_tools/tests/test_cell_id_schema.py",
+    ".github/workflows/notebook-cell-id-ratchet.yml",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "-m",
+    "pytest",
+    "-q",
+    "scripts/notebook_tools/tests/test_cell_id_schema.py"
+   ],
+   "commenters": []
+  },
+  {
+   "name": "Companion coverage (ps1/sh + Setup bi-OS)",
+   "argv": [
+    "python",
+    "scripts/ci/check_companion_coverage.py"
+   ],
+   "source": "bios-companion-coverage.yml",
+   "paths": [
+    "**/*.ps1",
+    "**/*.sh",
+    "**/README*.md",
+    "**/*[Ss]etup*.ipynb",
+    "scripts/ci/check_companion_coverage.py",
+    ".github/workflows/bios-companion-coverage.yml",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE43": [
+  {
+   "name": "latex-control-chars",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_latex_control_chars.py",
+    "--pr-diff",
+    "{base_ref}",
+    "HEAD"
+   ],
+   "source": "notebook-latex-control-chars.yml",
+   "paths": [
+    "**.ipynb",
+    "scripts/notebook_tools/check_latex_control_chars.py",
+    "scripts/tests/test_check_latex_control_chars.py",
+    ".github/workflows/notebook-latex-control-chars.yml",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": false,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "-m",
+    "unittest",
+    "scripts.tests.test_check_latex_control_chars",
+    "-v"
+   ],
+   "commenters": []
+  }
+ ],
+ "TRANCHE44": [
+  {
+   "name": "Translation drift (read-only, advisory)",
+   "argv": [
+    "python",
+    "scripts/translation/check_translation_sync.py",
+    "translations",
+    "--check",
+    "--repo-root",
+    ".",
+    "--no-json"
+   ],
+   "source": "translation-drift.yml",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "translations/**",
+    "scripts/translation/**",
+    ".github/workflows/translation-drift.yml"
+   ],
+   "blocking": false,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE45": [
+  {
+   "name": "No notebook plan loss in changed notebooks",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/detect_notebook_plan_loss.py",
+    "--base",
+    "{base_ref}",
+    "--check",
+    "{changed_paths}"
+   ],
+   "source": "notebook-plan-loss-gate.yml",
+   "paths": [],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": true,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": true,
+   "iterate_paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb"
+   ],
+   "pre_argv": [
+    "python",
+    "-m",
+    "pytest",
+    "-q",
+    "scripts/notebook_tools/tests/test_detect_notebook_plan_loss.py"
+   ],
+   "commenters": []
+  }
+ ],
+ "TRANCHE46": [
+  {
+   "name": "Render volume delta (#11656 advisory)",
+   "argv": [
+    "python",
+    "scripts/ci/run_render_volume_guard.py",
+    "--base-ref",
+    "{base_ref}"
+   ],
+   "source": "render-volume-delta-advisory.yml",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "scripts/notebook_tools/check_render_volume_delta.py",
+    "scripts/ci/run_render_volume_guard.py",
+    ".github/workflows/render-volume-delta-advisory.yml"
+   ],
+   "blocking": false,
+   "needs_base": true,
+   "diff_bounded": true,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE47": [
+  {
+   "name": "Uncommented code (#26690)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_uncommented_code.py",
+    "--diff",
+    "{base_ref}"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**.ipynb",
+    "scripts/notebook_tools/check_uncommented_code.py",
+    "scripts/notebook_tools/tests/test_check_uncommented_code.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "-m",
+    "pytest",
+    "-q",
+    "scripts/notebook_tools/tests/test_check_uncommented_code.py"
+   ],
+   "commenters": []
+  }
+ ],
+ "TRANCHE48": [
+  {
+   "name": "Comment-density ratchet (base vs PR)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_code_comment_density.py",
+    "{base_ref}"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**.ipynb",
+    "scripts/notebook_tools/check_code_comment_density.py",
+    "scripts/notebook_tools/tests/test_check_code_comment_density.py",
+    "scripts/notebook_tools/tests/fixtures/z3_20_csharp_26613_sources_only.nb.json"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": true,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "scripts/notebook_tools/check_code_comment_density.py",
+    "--self-test"
+   ],
+   "commenters": []
+  },
+  {
+   "name": "Comment-density readability (advisory)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_code_comment_density.py",
+    "--readability",
+    "{base_ref}"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**.ipynb",
+    "scripts/notebook_tools/check_code_comment_density.py",
+    "scripts/notebook_tools/tests/test_check_code_comment_density.py",
+    "scripts/notebook_tools/tests/fixtures/z3_20_csharp_26613_sources_only.nb.json"
+   ],
+   "blocking": false,
+   "needs_base": true,
+   "diff_bounded": true,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "scripts/notebook_tools/check_code_comment_density.py",
+    "--self-test"
+   ],
+   "commenters": []
+  }
+ ],
+ "TRANCHE53": [
+  {
+   "name": "Rust notebook contract (:dep head, C.1, C.2)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_rust_notebook_contract.py",
+    "--diff",
+    "{base_ref}...HEAD"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*-Rust.ipynb",
+    "scripts/notebook_tools/check_rust_notebook_contract.py",
+    "scripts/notebook_tools/tests/test_check_rust_notebook_contract.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": true,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE51": [
+  {
+   "name": "No machine-path leak (NuGet banner) in changed notebooks",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/strip_machine_paths.py",
+    "--scan",
+    "{changed_paths}",
+    "--check"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "scripts/notebook_tools/strip_machine_paths.py"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": true,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb"
+   ],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE49": [
+  {
+   "name": "SVG html-only ratchet (base vs PR, advisory)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/detect_svg_html_only.py",
+    "{base_ref}"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**.ipynb",
+    "scripts/notebook_tools/detect_svg_html_only.py",
+    "scripts/notebook_tools/tests/test_detect_svg_html_only.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": false,
+   "needs_base": true,
+   "diff_bounded": true,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "scripts/notebook_tools/detect_svg_html_only.py",
+    "--self-test"
+   ],
+   "commenters": []
+  },
+  {
+   "name": "Rich output as text ratchet (base vs PR, advisory)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_rich_output_as_text.py",
+    "{base_ref}"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**.ipynb",
+    "scripts/notebook_tools/check_rich_output_as_text.py",
+    "scripts/notebook_tools/tests/test_check_rich_output_as_text.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": false,
+   "needs_base": true,
+   "diff_bounded": true,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "scripts/notebook_tools/check_rich_output_as_text.py",
+    "--self-test"
+   ],
+   "commenters": []
+  }
+ ],
+ "TRANCHE50": [
+  {
+   "name": "Enrich-quality regression (base vs PR, advisory)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/enrich_quality_delta.py",
+    "--base-ref",
+    "{base_ref}"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "**.ipynb",
+    "scripts/notebook_tools/enrich_quality_delta.py",
+    "scripts/notebook_tools/enrich_quality_ci.py",
+    "scripts/notebook_tools/scan_enrich_quality.py",
+    "scripts/ci/filter_pr_introduced_notebooks.py"
+   ],
+   "blocking": false,
+   "needs_base": true,
+   "diff_bounded": true,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": false,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "scripts/notebook_tools/enrich_quality_delta.py",
+    "--self-test"
+   ],
+   "commenters": []
+  }
+ ],
+ "TOPLEVEL_SERIES_GUARDS": [
+  {
+   "name": "toplevel-series-guard",
+   "argv": [
+    "python",
+    "scripts/ci/check_toplevel_series.py",
+    "--diff",
+    "{base_ref}...HEAD"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "MyIA.AI.Notebooks/**",
+    "scripts/ci/check_toplevel_series.py",
+    "scripts/ci/toplevel_series_allowlist.txt",
+    "scripts/ci/tests/test_check_toplevel_series.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": true,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "RISK_KERNEL_GUARDS": [
+  {
+   "name": "risk-kernel-copies-guard",
+   "argv": [
+    "python",
+    "scripts/quantconnect/check_risk_kernel_copies.py"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "MyIA.AI.Notebooks/QuantConnect/projects/**/*.py",
+    "scripts/quantconnect/check_risk_kernel_copies.py",
+    "scripts/quantconnect/tests/test_check_risk_kernel_copies.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "CURRICULUM_PREREQ_GUARDS": [
+  {
+   "name": "curriculum-prereq-staleness-guard",
+   "argv": [
+    "python",
+    "scripts/curriculum/generate_prereq_map.py",
+    "--check"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "docs/curriculum/taxonomy/**",
+    "docs/curriculum/prerequis.qmd",
+    "scripts/curriculum/generate_prereq_map.py",
+    "scripts/curriculum/tests/test_generate_prereq_map.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE52": [
+  {
+   "name": "Prose-numbers vs outputs ratchet (base vs PR, advisory)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_prose_output_numbers.py",
+    "{base_ref}"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "scripts/notebook_tools/check_prose_output_numbers.py",
+    "scripts/notebook_tools/tests/test_check_prose_output_numbers.py"
+   ],
+   "blocking": false,
+   "needs_base": true,
+   "diff_bounded": true,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": false,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "scripts/notebook_tools/check_prose_output_numbers.py",
+    "--self-test"
+   ],
+   "commenters": []
+  }
+ ],
+ "TRANCHE54": [
+  {
+   "name": "End-block answers (per-notebook, advisory)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_end_block_answers.py",
+    "--fail"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "scripts/notebook_tools/check_end_block_answers.py",
+    "scripts/notebook_tools/tests/test_check_end_block_answers.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": false,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "scripts/notebook_tools/check_end_block_answers.py",
+    "--self-test"
+   ],
+   "commenters": []
+  }
+ ],
+ "TRANCHE55": [
+  {
+   "name": "Dependency manifest freshness (advisory, non-blocking)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/dependency_manifest.py",
+    "--check"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "MyIA.AI.Notebooks/**/requirements*.txt",
+    "MyIA.AI.Notebooks/**/environment*.yml",
+    "MyIA.AI.Notebooks/**/pyproject.toml",
+    "docs/curriculum/manifeste-dependances.*",
+    "scripts/notebook_tools/dependency_manifest.py",
+    "scripts/notebook_tools/dependency_manifest_policy.json",
+    "scripts/notebook_tools/tests/test_dependency_manifest_refresh.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": false,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": false,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
+ "TRANCHE56": [
+  {
+   "name": "path-length ratchet (added paths <= 160 chars)",
+   "argv": [
+    "python",
+    "scripts/ci/check_path_length.py",
+    "--base",
+    "{base_ref}",
+    "--head",
+    "HEAD",
+    "--limit",
+    "160"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": true,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "scripts/ci/check_path_length.py",
+    "--self"
+   ],
+   "commenters": []
+  }
+ ]
+}
