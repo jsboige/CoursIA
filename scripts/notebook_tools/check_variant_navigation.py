@@ -43,6 +43,19 @@ Les contrôles
                         absente) : elle ne peut pas se dire « équivalence vérifiée ».
                         Finding consultatif : il nomme l'asymétrie, il ne bloque pas.
 
+Limite de lecture du comptage `MISSING_VARIANT`
+------------------------------------------------
+La clé de notion est dérivée du **nom de fichier** (voir `notion_key`), et le
+suffixe de noyau n'est pas normalisé. Deux situations sont visibles dans la
+sortie réelle : `Infer-09-Theories-Decision-Predicteur-Python` conserve
+`-Python` dans sa clé — le carnet désigne la notion 09 (la classification), pas
+une notion propre — et les deux `Infer-08b-TrueSkill-Formules-Fermees-{CSharp,
+Python}` comptent pour deux clés distinctes. Le compteur est donc exact **sous
+cette convention** : il mélange des asymétries réelles et des artefacts de
+nommage. Un `MISSING_VARIANT` portant sur ces noms est un **signal à vérifier**,
+pas une asymétrie prouvée ; la normalisation du suffixe de noyau est le chantier
+A de #16231.
+
 Le type de correspondance est **dérivé** du registre, jamais déclaré à la main :
 
     deux côtés + parity_level semantic/native-both + bridge_verdict SOTA-OK
@@ -344,6 +357,9 @@ def notion_key(path: str, dirs: tuple) -> str | None:
     `Infer-01-Setup.ipynb` et `PyMC-01-Setup.ipynb` partagent la cle
     `01-Setup` ; `DecInfer-01-Utility-Foundations` et
     `DecPyMC-01-Utility-Foundations` partagent `01-Utility-Foundations`.
+
+    Le suffixe de noyau n'est pas normalise (limite lue dans le docstring du
+    module) : `-CSharp` / `-Python` restent dans la cle.
     """
     for d in dirs:
         prefix = d.rsplit("/", 1)[-1]
