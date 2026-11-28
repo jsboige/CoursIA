@@ -435,7 +435,13 @@ CI_EXCLUDED_PLAN: dict[str, str] = {
 # pour aucun fichier, le dossier Causalite n'a jamais ete dans la population.
 # #27482 : BitcoinRegimeGate-QC/tests quitte la population (marqueur leve,
 # dossier cable des trois cotes) : 24 marqueurs, 66 fichiers, 1083 items.
-CI_EXCLUDED_BASELINE = {"marqueurs": 24, "fichiers": 66, "items": 1083}
+# #25835 : la suite zonos3 de `v4/tests` grandit de 29 a 53 items (24
+# fonctions de test ajoutees, mesurees par collectible_item_count — pas des
+# cas parametres). Le repertoire est sous exclusion motivee (`quotidien`
+# dans CI_EXCLUDED_PLAN), donc sa croissance est declaree ici plutot que
+# silencieuse : marqueurs et fichiers ne bougent pas, seuls les items
+# suivent la suite (1083 + 24 = 1107, mesure sur l'arbre fusionne).
+CI_EXCLUDED_BASELINE = {"marqueurs": 24, "fichiers": 66, "items": 1107}
 
 # Une suite de tests de la famille `scripts/**/tests/` : le repertoire doit
 # porter au moins un `test_*.py` pour compter comme suite (#22735).
