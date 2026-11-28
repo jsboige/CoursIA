@@ -20,6 +20,15 @@ La couverture de chaque série est mesurée contre l'inventaire RÉEL du disque
 la taxonomie : une série qui ne cite qu'une partie de ses carnets est partielle
 même si sa liste `notebooks` est courte.
 
+`--check` compare UNIQUEMENT la partie dérivée de la taxonomie (#27657, DM
+coordinateur 2026-11-24) : le bloc « Couverture des séries » est mesuré contre
+le DISQUE, donc chaque carnet fusionné hors taxonomie le ferait re-périmer —
+la page commise ne peut jamais tenir cette comparaison, et une PR de contenu
+serait accusée d'une dérive qu'elle ne cause pas. La fraîcheur de ce bloc
+appartient à la régénération périodique (catalog-cron, quarto-pages-deploy :
+il est régénéré avant chaque rendu), pas à un prédicat absolu sur les PRs.
+Le marqueur COVERAGE_BEGIN / COVERAGE_END borne ce bloc.
+
 Issue : #27556 (carte des prérequis, Pli 4.2 de l'Epic #24993).
 """
 
@@ -35,6 +44,11 @@ TAXONOMY_DIR = REPO_ROOT / "docs" / "curriculum" / "taxonomy"
 OUTPUT = REPO_ROOT / "docs" / "curriculum" / "prerequis.qmd"
 PILOT = "z3-linq2z3"
 SCHEMA = "schema.json"
+
+# Bloc de couverture : mesuré contre le disque, donc HORS du prédicat `--check`.
+# Les marqueurs restent dans la page commise pour que la comparaison soit stable.
+COVERAGE_BEGIN = "<!-- COVERAGE-INVENTAIRE-DISQUE:BEGIN -->"
+COVERAGE_END = "<!-- COVERAGE-INVENTAIRE-DISQUE:END -->"
 
 # Le dossier de la page dans l'arbre du site : docs/curriculum/ -> racine = ../../
 SITE_ROOT_FROM_PAGE = "../../"
@@ -119,7 +133,11 @@ def load_series() -> tuple[list[dict], dict, dict]:
     return series_list, by_id, by_path
 
 
-def derive_edges(series_list, by_id, by_path):
+def derive_edges(
+    series_list: list[dict],
+    by_id: dict[str, tuple[dict, dict]],
+    by_path: dict[str, tuple[dict, dict]],
+) -> tuple[dict[tuple[str, str], int], list[dict], int, int]:
     """Dérive les arêtes carnet -> carnet sur toutes les séries.
 
     Retourne (edges, cross, unresolved, total_refs) où edges est un dict
@@ -200,7 +218,7 @@ def real_inventory(series: dict) -> set[str]:
 # --------------------------------------------------------------------- sortie --
 
 
-def mermaid_drawn(edges, series: dict) -> list[tuple[str, str]]:
+def mermaid_drawn(edges: dict[tuple[str, str], int], series: dict) -> list[tuple[str, str]]:
     """Arêtes effectivement dessinées : les deux carnets appartiennent à la série.
 
     Source unique du décompte affiché par la page ET par le résumé de génération :
@@ -238,7 +256,7 @@ def _chapter_label(key: str) -> str:
     return next((label for k, label, _upper in CHAPTERS if k == key), key)
 
 
-def flowchart_direction(nodes, edges) -> str:
+def flowchart_direction(nodes: list[str], edges: list[tuple[str, str]]) -> str:
     """Orientation qui garde les étiquettes lisibles, mesurée sur la forme du graphe.
 
     Un rang large est le piège : en TB ses nœuds s'alignent en largeur (onze
@@ -259,7 +277,7 @@ def flowchart_direction(nodes, edges) -> str:
     return "LR" if widest > 3 else "TB"
 
 
-def overview_source(series: dict, edges) -> tuple[str, dict]:
+def overview_source(series: dict, edges: dict[tuple[str, str], int]) -> tuple[str, dict[str, int]]:
     """Vue d'ensemble : un nœud par plage, une arête par flux entre plages.
 
     Les arêtes internes à une plage ne sont pas dessinées ici (une boucle sur un
@@ -293,7 +311,7 @@ def overview_source(series: dict, edges) -> tuple[str, dict]:
     return "\n".join(lines), internal
 
 
-def detail_source(series: dict, edges, key: str) -> tuple[str, int]:
+def detail_source(series: dict, edges: dict[tuple[str, str], int], key: str) -> tuple[str, int]:
     """Détail d'une plage : ses carnets, plus les carnets d'autres plages qui les alimentent.
 
     Les nœuds d'entrée venus d'une autre plage sont arrondis — sans eux la carte
@@ -355,7 +373,7 @@ def concepts_table(series: dict) -> str:
     return "\n".join(rows)
 
 
-def coverage_table(series_list, pilot) -> tuple[str, list[str]]:
+def coverage_table(series_list: list[dict], pilot: dict | None) -> tuple[str, list[str]]:
     rows = ["| Série | Notions citées | Carnets cités / réels | Couverture |", "|---|---|---|---|"]
     notes: list[str] = []
     # Deux séries peuvent partager un nom d'affichage (tweety et semanticweb
@@ -387,7 +405,13 @@ def coverage_table(series_list, pilot) -> tuple[str, list[str]]:
     return "\n".join(rows), notes
 
 
-def render_page(series_list, edges, cross, unresolved, total_refs) -> str:
+def render_page(
+    series_list: list[dict],
+    edges: dict[tuple[str, str], int],
+    cross: list[dict],
+    unresolved: int,
+    total_refs: int,
+) -> str:
     pilot = next((s for s in series_list if s["key"] == PILOT), None)
     if pilot is None:
         raise SystemExit(f"série pilote '{PILOT}' absente de {TAXONOMY_DIR}")
@@ -484,10 +508,14 @@ def render_page(series_list, edges, cross, unresolved, total_refs) -> str:
         "taxonomie cite. Le dénominateur est l'inventaire mesuré (`*.ipynb` sous le\n"
         "dossier de la série), jamais la liste que la taxonomie déclare : une série qui\n"
         "ne cite qu'une partie de ses carnets reste partielle même si sa liste est courte.\n"
-        "\n" + coverage + "\n"
+        "\n"
+        "Ce bloc suit l'inventaire du disque : il est régénéré avant chaque rendu du\n"
+        "site, et la garde de fraîcheur de la PR compare le reste de la page.\n"
+        + COVERAGE_BEGIN + "\n\n" + coverage + "\n"
     )
     if notes:
-        parts.append("Notes de mesure : " + " ; ".join(notes) + ".\n")
+        parts.append("\nNotes de mesure : " + " ; ".join(notes) + ".\n")
+    parts.append(COVERAGE_END + "\n")
     parts.append("## Liens inter-séries\n")
     if not cross:
         parts.append(
@@ -514,6 +542,22 @@ def render_page(series_list, edges, cross, unresolved, total_refs) -> str:
     return "\n".join(parts).rstrip("\n") + "\n"
 
 
+def strip_disk_measured(page: str) -> str:
+    """Retire de la page le bloc mesuré contre le disque (cf. COVERAGE_BEGIN).
+
+    C'est l'objet de la comparaison `--check` : tout le reste de la page dérive
+    de la taxonomie et du générateur seuls, donc une page commise qui en diffère
+    est périmée. Le bloc de couverture, lui, dépend des carnets présents sur le
+    disque : le comparer condamnerait toute PR ajoutant un carnet hors taxonomie.
+    """
+    begin = page.find(COVERAGE_BEGIN)
+    end = page.find(COVERAGE_END)
+    if begin == -1 or end == -1 or end < begin:
+        # Page sans bloc délimité (antérieure aux marqueurs) : tout comparer.
+        return page
+    return page[:begin] + page[end + len(COVERAGE_END) :]
+
+
 # ----------------------------------------------------------------------- main --
 
 
@@ -528,10 +572,16 @@ def main(argv: list[str]) -> int:
 
     if "--check" in argv:
         current = OUTPUT.read_text(encoding="utf-8") if OUTPUT.exists() else ""
-        if current != page:
-            print(f"PÉRIMÉ : {OUTPUT.relative_to(REPO_ROOT)} — relancer sans --check", file=sys.stderr)
+        if strip_disk_measured(current) != strip_disk_measured(page):
+            print(
+                f"PÉRIMÉ : {OUTPUT.relative_to(REPO_ROOT)} — relancer sans --check "
+                "(le bloc de couverture, mesuré contre le disque, est hors comparaison)",
+                file=sys.stderr,
+            )
             return 1
-        print(f"À JOUR : {OUTPUT.relative_to(REPO_ROOT)}")
+        stale_block = current != page
+        verdict = "À JOUR" if not stale_block else "À JOUR (bloc de couverture seul périmé)"
+        print(f"{verdict} : {OUTPUT.relative_to(REPO_ROOT)}")
         return 0
 
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)

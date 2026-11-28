@@ -228,7 +228,7 @@ NOTEBOOK_SERVICE_MAP = {
     "audio_api": [
         "01-1-OpenAI-TTS-Intro.ipynb",
         "01-2-OpenAI-Whisper-STT.ipynb",
-        "03-3-Realtime-Voice-API.ipynb",
+        "Audio-03-3-Realtime-Voice-API-Python.ipynb",
     ],
     "audio_local": [
         "01-3-Basic-Audio-Operations.ipynb",
@@ -240,7 +240,7 @@ NOTEBOOK_SERVICE_MAP = {
         "01-5-TTS-Local-ONNX.ipynb",
     ],
     "audio_tts_heavy": [
-        "02-1-Chatterbox-TTS.ipynb",
+        "Audio-02-1-Chatterbox-TTS-Python.ipynb",
         "02-2-XTTS-Voice-Cloning.ipynb",
     ],
     "audio_music": [
@@ -248,11 +248,11 @@ NOTEBOOK_SERVICE_MAP = {
         "02-4-Demucs-Source-Separation.ipynb",
     ],
     "audio_orchestration": [
-        "03-1-Multi-Model-Audio-Comparison.ipynb",
-        "03-2-Audio-Pipeline-Orchestration.ipynb",
+        "Audio-03-1-Multi-Model-Audio-Comparison-Python.ipynb",
+        "Audio-03-2-Audio-Pipeline-Orchestration-Python.ipynb",
     ],
     "audio_apps": [
-        "04-1-Educational-Audio-Content.ipynb",
+        "Audio-04-1-Educational-Audio-Content-Python.ipynb",
         "04-2-Transcription-Pipeline.ipynb",
         "04-3-Music-Composition-Workflow.ipynb",
         "04-4-Audio-Video-Sync.ipynb",
@@ -315,13 +315,16 @@ NOTEBOOK_SEARCH_DIRS = {
 
 # --- Profils GPU ---
 
+# Convention d'index (#28423) : gpu_0 = RTX 3080 Ti (16 Go), gpu_1 = RTX 3090
+# (24 Go), c'est-a-dire l'ordre de nvidia-smi sous CUDA_DEVICE_ORDER=PCI_BUS_ID.
+# Les cartes nommees ci-dessous suivent la decision d'allocation #28423 §2.
 GPU_PROFILES: Dict[str, Dict[str, Any]] = {
     "image_default": {
         "description": "Profil par defaut - services Image",
         "services_up": ["comfyui-qwen", "forge-turbo"],
         "services_down": ["comfyui-video"],
-        "gpu_0_usage": "comfyui-qwen (20GB) sur RTX 3090",
-        "gpu_1_usage": "forge-turbo (6GB) sur RTX 3080 Ti",
+        "gpu_0_usage": "comfyui-qwen (6-8 Go au repos) sur RTX 3080 Ti",
+        "gpu_1_usage": "forge-turbo (6-10 Go) sur RTX 3090",
     },
     "audio_api": {
         "description": "Notebooks Audio API-only (pas de GPU local requis)",
@@ -334,45 +337,45 @@ GPU_PROFILES: Dict[str, Dict[str, Any]] = {
         "description": "Notebooks Audio avec modeles locaux (RTX 3090 pour kernel)",
         "services_up": [],
         "services_down": ["comfyui-qwen", "whisper-webui", "vllm-zimage", "comfyui-video"],
-        "gpu_0_usage": "kernel notebook (jusqu'a 24GB RTX 3090)",
-        "gpu_1_usage": "forge-turbo (6GB) sur RTX 3080 Ti",
+        "gpu_0_usage": "forge-turbo (6-10 Go) sur RTX 3080 Ti",
+        "gpu_1_usage": "kernel notebook (jusqu'a 24 Go) sur RTX 3090",
     },
     "video_comfyui": {
         "description": "Video via ComfyUI avec nodes video (AnimateDiff, HunyuanVideo)",
         "services_up": ["comfyui-video"],
         "services_down": ["comfyui-qwen", "whisper-webui", "vllm-zimage"],
-        "gpu_0_usage": "comfyui-video (20GB) sur RTX 3090",
-        "gpu_1_usage": "libre",
+        "gpu_0_usage": "libre (RTX 3080 Ti)",
+        "gpu_1_usage": "comfyui-video (20 Go) sur RTX 3090",
     },
     "video_local_heavy": {
         "description": "Video avec gros modeles locaux (HunyuanVideo 18GB, Qwen-VL 18GB)",
         "services_up": [],
         "services_down": ["comfyui-qwen", "whisper-webui", "vllm-zimage",
                           "comfyui-video", "forge-turbo"],
-        "gpu_0_usage": "kernel notebook (18-24GB RTX 3090)",
-        "gpu_1_usage": "libre (RTX 3080 Ti disponible si besoin)",
+        "gpu_0_usage": "libre (RTX 3080 Ti disponible si besoin)",
+        "gpu_1_usage": "kernel notebook (18-24 Go) sur RTX 3090",
     },
     "video_local_light": {
         "description": "Video avec modeles legers (LTX 8GB, Wan 10GB, SVD 10GB)",
         "services_up": [],
         "services_down": ["comfyui-qwen", "vllm-zimage", "comfyui-video"],
-        "gpu_0_usage": "libre ou kernel notebook (RTX 3090)",
-        "gpu_1_usage": "kernel notebook (8-10GB RTX 3080 Ti)",
+        "gpu_0_usage": "kernel notebook (8-10 Go) sur RTX 3080 Ti",
+        "gpu_1_usage": "libre ou kernel notebook sur RTX 3090",
     },
     # --- Profils Audio APIs ---
     "audio_api_whisper": {
         "description": "Whisper API only (faster-whisper, 4GB VRAM)",
         "services_up": ["whisper-api"],
         "services_down": ["comfyui-qwen", "comfyui-video", "vllm-zimage", "demucs-api"],
-        "gpu_0_usage": "whisper-api (4GB) sur RTX 3080 Ti",
-        "gpu_1_usage": "libre",
+        "gpu_0_usage": "libre",
+        "gpu_1_usage": "whisper-api (4-6 Go) sur RTX 3090",
     },
     "audio_api_tts": {
         "description": "TTS API only (Kokoro, 2GB VRAM)",
         "services_up": ["tts-api"],
         "services_down": ["forge-turbo", "musicgen-api"],
-        "gpu_0_usage": "libre",
-        "gpu_1_usage": "tts-api (2GB) sur RTX 3090",
+        "gpu_0_usage": "tts-api (charge a la demande) sur RTX 3080 Ti",
+        "gpu_1_usage": "libre",
     },
     "audio_api_music": {
         "description": "MusicGen API only (6GB VRAM)",
@@ -385,15 +388,15 @@ GPU_PROFILES: Dict[str, Dict[str, Any]] = {
         "description": "Demucs API only (4GB VRAM)",
         "services_up": ["demucs-api"],
         "services_down": ["comfyui-qwen", "comfyui-video", "whisper-api", "vllm-zimage"],
-        "gpu_0_usage": "demucs-api (4GB) sur RTX 3080 Ti",
-        "gpu_1_usage": "libre",
+        "gpu_0_usage": "libre",
+        "gpu_1_usage": "demucs-api (4 Go) sur RTX 3090",
     },
     "audio_all_apis": {
         "description": "Toutes les APIs Audio (switching GPU 0/1)",
         "services_up": ["whisper-api", "tts-api"],
         "services_down": ["comfyui-qwen", "comfyui-video", "forge-turbo", "vllm-zimage", "musicgen-api", "demucs-api"],
-        "gpu_0_usage": "whisper-api (4GB) sur RTX 3080 Ti",
-        "gpu_1_usage": "tts-api (2GB) sur RTX 3090",
+        "gpu_0_usage": "tts-api (charge a la demande) sur RTX 3080 Ti",
+        "gpu_1_usage": "whisper-api (4-6 Go) sur RTX 3090",
     },
 }
 

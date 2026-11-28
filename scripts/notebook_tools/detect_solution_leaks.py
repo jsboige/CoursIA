@@ -700,7 +700,7 @@ def skeleton_with_instructions_stub(source: str) -> bool:
     #     is `pass` (App-13-TSP pattern: `pass  # Exercice: ...` then
     #     `print('Fonction ... definie')`)
     # (c) last non-empty line is a `print(...)` and the cell contains a
-    #     `pass` followed by `# Exercice` somewhere (CSP-3-Advanced C#,
+    #     `pass` followed by `# Exercice` somewhere (CSP-03-Advanced-Python C#,
     #     App-1b-NQueens where the trailing `; Console.WriteLine` follows
     #     the definition block).
     last = lines[-1].strip()
@@ -1157,7 +1157,7 @@ def scan_notebook(path: str) -> list[dict]:
             # The student replaces the guard branches or fills the body.
             # Suppresses the "real skeleton + pass + instructions block" FP
             # class that tripped the detector on App-13-TSP, Lean-8/10,
-            # Lean-15/17, App-1b-NQueens, CSP-3-Advanced, EdgeDetection, etc.
+            # Lean-15/17, App-1b-NQueens, CSP-03-Advanced-Python, EdgeDetection, etc.
             # Recall-safe: a real solution has 1) at least one substantive
             # line in the body (return/assignment/call) and 2) ends with
             # something other than `pass`. Both make the helper return False.
@@ -1178,7 +1178,7 @@ def scan_notebook(path: str) -> list[dict]:
             if exercise_with_a_completer_minizinc(next_code_source):
                 continue
             # C# exercise with `en attente de votre implementation` announcement.
-            # CSP-3-Advanced / CSP-7-Soft / App-1b-NQueens pattern: a model
+            # CSP-03-Advanced-Python / CSP-07-Soft-Python / App-1b-NQueens pattern: a model
             # constructor + informational Console.WriteLine about expected
             # results, with NO real solver calls. The student writes the
             # constraints in place.
