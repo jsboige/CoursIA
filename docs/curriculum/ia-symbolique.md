@@ -173,8 +173,8 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 82 | [Lean-13f : Corrélation de Bell du vide — OQP 12](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13f-Correlation-Bell-Vide-Lean-Python.ipynb) | BETA | Non |
 | 83 | [Lean-13g : CGLMP — les mesures optimales sur états…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13g-CGLMP-Mesures-Optimales-Lean-Python.ipynb) | BETA | Non |
 | 84 | [Lean-13h : Maps PPT et la borne 2(d−1) — OQP 38](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13h-Maps-PPT-Borne-Lean-Python.ipynb) | BETA | Non |
-| 85 | [Lean-15 : Grothendieck en images](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb) | ALPHA | Non |
-| 86 | [Lean-15b : Monodromie et groupe fondamental — le plan…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb) | BETA | Non |
+| 85 | [Lean-15d : Grothendieck en images](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb) | ALPHA | Non |
+| 86 | [Lean-15e : Monodromie et groupe fondamental — le plan…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb) | BETA | Non |
 | 87 | [Lean-16 - Conway, l'homme et l'oeuvre](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16-Conway-Homme-et-Oeuvre-Lean-Python.ipynb) | BETA | Non |
 | 88 | [Lean-16b : FRACTRAN, la machine universelle de Conway,…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb) | BETA | Non |
 | 89 | [Lean-17 : le pont Conway — du Game of Life (16) à la…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Conway-Bridge-to-Knots-Python.ipynb) | BETA | Non |
@@ -193,9 +193,9 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 102 | [Lean-37 : Capstone — la sous-série « Serre 100 »](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-37-Capstone-Serre100.ipynb) | BETA | Non |
 | 103 | [Capstone Geometry — l'escalier d'entrée : de la figure…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-38-Capstone-Geometry-Lean-Python.ipynb) | BETA | Non |
 | 104 | [Lean-39 : Capstone — la sous-série « GOL »](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-39-Capstone-GOL.ipynb) | BETA | Non |
-| 105 | [Capstone Langlands — l'escalier : de la forme calculée…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb) | BETA | Non |
-| 106 | [Capstone Langlands — l'escalier : de la forme calculée…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Rust.ipynb) | BETA | Non |
-| 107 | [Lean-21 : Capstone — escalier vers la sous-série MIMO…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-Capstone-MIMO-Python.ipynb) | ALPHA | Non |
+| 105 | [Capstone Langlands — l'escalier : de la forme calculée…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb) | BETA | Non |
+| 106 | [Capstone Langlands — l'escalier : de la forme calculée…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Rust.ipynb) | BETA | Non |
+| 107 | [Lean-41 : Capstone — escalier vers la sous-série MIMO…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb) | ALPHA | Non |
 | 108 | [Lean-42 — L'indépendance arithmétique, certifiée : PA…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-42-Independance-Arithmetique-BusyBeaver-Lean.ipynb) | BETA | Non |
 | 109 | [Lean-42 — Arithmetic independence, certified: PA does…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-42-Independance-Arithmetique-BusyBeaver-Lean_en.ipynb) | BETA | Non |
 | 110 | [MIMO-01 : Le budget de descente - quand la decroissance…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-01-Descente-Budget-Lean-Python.ipynb) | BETA | Non |

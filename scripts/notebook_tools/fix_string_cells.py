@@ -54,7 +54,7 @@ def _genuinely_glued(source: List[str]) -> List[int]:
     GAUCHE, donc un element vide n'est jamais un terminateur. Sans cette
     condition, ``''`` se change en '\\n' et fabrique une ligne blanche qui
     n'existait pas au rendu (4 cellules du depot, +7 blanches ; la cellule
-    76 elements ``06-3-AudioDiffusion-Comparison-A-vs-B`` passait de 0 a 7
+    76 elements ``Audio-06-3-AudioDiffusion-Comparison-A-vs-B-Python`` passait de 0 a 7
     blanches entre des lignes de code).
     """
     return [
