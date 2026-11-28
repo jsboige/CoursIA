@@ -9,6 +9,7 @@ FishAudio server and reduce generation time from ~19h (sequential) to
 """
 from __future__ import annotations
 
+import base64
 import hashlib
 import io
 import json
@@ -22,6 +23,7 @@ import tempfile
 
 logger = logging.getLogger(__name__)
 
+import requests
 from dotenv import load_dotenv
 
 from .schemas import AnnotatedSegment, AnnotatedBatch, TTSResult
@@ -987,6 +989,283 @@ def _concat_audio_parts(audio_parts: list[bytes]) -> bytes:
         return b"".join(audio_parts)
 
 
+# ---------------------------------------------------------------------------
+# #19694 criterion 4 — Hybrid Fish route: batch narration through audio.cpp
+# ---------------------------------------------------------------------------
+# Decision ai-01 (2026-11-24): the same S2-Pro model is served two ways.
+# Batch narration goes through the local audio.cpp server (GGUF weights,
+# OpenAI-compatible /v1/audio/speech, no external API); the expressive path
+# -- the theatrical turns -- stays on the FishAudio service (:8197). The two
+# routes differ by the segment's `type`: on Boule de Suif, 265 narration
+# segments against 114 dialogue + 6 thought. `dramatic_ref` and `tags_used`
+# cannot be the discriminator: all 385 segments carry both.
+#
+# Text: the audio.cpp server receives the same tagged text as the service,
+# so the route strips no tag. Measured on Boule de Suif seg 19 (2026-11-28):
+# neither engine vocalizes the tags -- whisper large-v3-turbo WER 0.0 on 32
+# words against the untagged text, with and without tags on audio.cpp.
+#
+# Activation: env flag AUDIOCPP_FISH_ROUTING (default "0" -- the FishAudio
+# service stays the only route until a run opts in), with
+# AUDIOCPP_FISH_BASE_URL and AUDIOCPP_FISH_MODEL (the server-side entry id).
+#
+# Failure contract: an audio.cpp render that fails (server down, non-2xx,
+# unusable reference, empty body) sends the WHOLE segment back to the
+# FishAudio service. A segment is never assembled from two engines (a change
+# of timbre mid-segment is audible), and the fallback is logged and counted
+# -- never silent.
+_AUDIOCPP_FISH_ROUTING: bool = os.getenv("AUDIOCPP_FISH_ROUTING", "0") == "1"
+_AUDIOCPP_FISH_BASE_URL: str = os.getenv(
+    "AUDIOCPP_FISH_BASE_URL", "http://127.0.0.1:8198"
+).rstrip("/")
+_AUDIOCPP_FISH_MODEL: str = os.getenv("AUDIOCPP_FISH_MODEL", "fish-s2-pro")
+# P1's voice references: reference_id -> sample audio + transcript. The P1
+# manifest records absolute paths, which break on any other checkout, so the
+# sample is also looked up beside the manifest.
+_AUDIOCPP_REFERENCE_MANIFEST = (
+    BASE_DIR / "outputs" / "fishaudio_references" / "manifest.json"
+)
+# Server limit on an inline reference (``voice_ref`` of type base64): 5 MiB
+# of decoded audio.
+_AUDIOCPP_MAX_INLINE_REFERENCE_BYTES = 5 * 1024 * 1024
+
+_ROUTE_FISHAUDIO = "fishaudio"
+_ROUTE_AUDIOCPP = "audiocpp"
+# Cache key prefix of an audio.cpp render. Like the narrator engines'
+# reference_id sentinel (#19692), it stops the batch cache from serving an
+# MP3 rendered by one engine for the other when the flag is flipped.
+_AUDIOCPP_CACHE_PREFIX = "audiocpp-fish:"
+
+# seg_index -> number of audio.cpp renders spent before the fallback.
+_AUDIOCPP_FALLBACKS: dict[int, int] = {}
+# (sample path, mtime_ns, size) -> base64 WAV of a P1 reference.
+_AUDIOCPP_WAV_CACHE: dict[tuple[str, int, int], str] = {}
+
+
+def audiocpp_fallbacks() -> dict[int, int]:
+    """Segments of this process that fell back to the FishAudio service.
+
+    Maps ``seg_index`` to the number of audio.cpp renders that failed for it.
+    ``TTSResult`` carries no engine field, so this is the seam a run report
+    reads; a test clears it through ``_AUDIOCPP_FALLBACKS``.
+    """
+    return dict(_AUDIOCPP_FALLBACKS)
+
+
+def _fishaudio_route(seg: AnnotatedSegment) -> str:
+    """Engine that renders a Fish-path segment (#19694 criterion 4).
+
+    Narration goes to audio.cpp when the flag is on; dialogue and thought
+    (the theatrical turns) stay on the FishAudio service. A narrator engine
+    flag (Qwen, CosyVoice3, ...) owns narrator segments before this seam, so
+    the hybrid never claims a segment those engines render.
+    """
+    if not _AUDIOCPP_FISH_ROUTING or seg.type != "narration":
+        return _ROUTE_FISHAUDIO
+    if _selected_narrator_engine() is not None:
+        return _ROUTE_FISHAUDIO
+    return _ROUTE_AUDIOCPP
+
+
+def _fishaudio_cache_hash(route: str, text: str) -> str:
+    """Cache key of a Fish-path segment, made engine-aware.
+
+    With the flag flipped, a stored hash from the other engine never matches:
+    the segment is re-rendered instead of being served as the wrong engine.
+    """
+    if route == _ROUTE_AUDIOCPP:
+        return _text_hash(f"{_AUDIOCPP_CACHE_PREFIX}{text}")
+    return _text_hash(text)
+
+
+def _mp3_to_wav_base64(path: Path) -> str | None:
+    """A P1 reference sample as base64 WAV, or ``None`` when unusable."""
+    try:
+        from pydub import AudioSegment
+
+        buf = io.BytesIO()
+        AudioSegment.from_file(str(path)).export(buf, format="wav")
+        wav = buf.getvalue()
+    except Exception as exc:  # pydub/ffmpeg missing, unreadable sample
+        logger.warning(
+            "audio.cpp: reference '%s' could not be converted to WAV: %s",
+            path.name, exc,
+        )
+        return None
+    if len(wav) > _AUDIOCPP_MAX_INLINE_REFERENCE_BYTES:
+        logger.warning(
+            "audio.cpp: reference '%s' is %d bytes as WAV, over the %d the "
+            "server accepts inline",
+            path.name, len(wav), _AUDIOCPP_MAX_INLINE_REFERENCE_BYTES,
+        )
+        return None
+    return base64.b64encode(wav).decode("ascii")
+
+
+def _audiocpp_reference(reference_id: str) -> tuple[str, str] | None:
+    """Cloning reference of ``reference_id``: ``(base64 WAV, transcript)``.
+
+    ``None`` when the reference cannot be inlined (no manifest, unknown id,
+    unreadable sample, over the server's limit). The caller then fails the
+    render and the segment falls back to the FishAudio service.
+    """
+    manifest = _AUDIOCPP_REFERENCE_MANIFEST
+    if not manifest.exists():
+        logger.warning("audio.cpp: reference manifest not found at %s", manifest)
+        return None
+    try:
+        entries = json.loads(manifest.read_text(encoding="utf-8"))
+        entry = next(
+            (
+                e for e in entries
+                if isinstance(e, dict) and e.get("reference_id") == reference_id
+            ),
+            None,
+        )
+    except (json.JSONDecodeError, OSError, AttributeError, TypeError) as exc:
+        logger.warning("audio.cpp: reference manifest unreadable: %s", exc)
+        return None
+    if entry is None:
+        logger.warning(
+            "audio.cpp: reference '%s' is absent from the P1 manifest", reference_id
+        )
+        return None
+
+    recorded = Path(str(entry.get("sample_mp3_path", "")))
+    sample = recorded if recorded.is_file() else (
+        manifest.parent / "samples" / f"{reference_id}.mp3"
+    )
+    if not sample.is_file():
+        logger.warning(
+            "audio.cpp: sample audio of reference '%s' not found (tried %s)",
+            reference_id, sample,
+        )
+        return None
+
+    try:
+        stat = sample.stat()
+    except OSError as exc:
+        logger.warning("audio.cpp: sample '%s' unreadable: %s", sample, exc)
+        return None
+    key = (str(sample), stat.st_mtime_ns, stat.st_size)
+    wav_b64 = _AUDIOCPP_WAV_CACHE.get(key)
+    if wav_b64 is None:
+        wav_b64 = _mp3_to_wav_base64(sample)
+        if wav_b64 is None:
+            return None
+        _AUDIOCPP_WAV_CACHE[key] = wav_b64
+    return wav_b64, str(entry.get("sample_text", ""))
+
+
+def _wav_to_mp3(wav_bytes: bytes) -> bytes | None:
+    """MP3 at 192 kbps from WAV bytes, or ``None`` when they are not audio.
+
+    The pipeline's file contract and its duration estimate both assume that
+    bitrate, as on the other narrator paths.
+    """
+    if not wav_bytes:
+        return None
+    try:
+        from pydub import AudioSegment
+
+        buf = io.BytesIO()
+        AudioSegment.from_file(io.BytesIO(wav_bytes), format="wav").export(
+            buf, format="mp3", bitrate="192k"
+        )
+        return buf.getvalue()
+    except Exception as exc:  # pragma: no cover — pydub/ffmpeg missing
+        logger.error("audio.cpp: WAV->MP3 conversion failed: %s", exc)
+        return None
+
+
+def audiocpp_fish_audio(
+    text: str,
+    reference_id: str = "",
+    seed: int = 42,
+    temperature: float = 0.7,
+    top_p: float = 0.9,
+    format: str = "mp3",
+    timeout: int = 600,
+) -> bytes | None:
+    """Synthesize speech through the local audio.cpp server (S2-Pro GGUF).
+
+    Same contract as :func:`fishaudio_tts` -- MP3 bytes on success, ``None``
+    on failure -- so the Fish path renders a chunk with either engine. The
+    request is the OpenAI-compatible ``POST /v1/audio/speech``; the voice is
+    the P1 reference of ``reference_id``, inlined as WAV because the server
+    holds no reference library of ours. The server answers WAV.
+    """
+    if format != "mp3":
+        raise ValueError(f"audiocpp_fish_audio renders MP3 only, not {format!r}")
+    reference = _audiocpp_reference(reference_id)
+    if reference is None:
+        return None
+    wav_b64, reference_text = reference
+    payload: dict = {
+        "model": _AUDIOCPP_FISH_MODEL,
+        "input": text,
+        "response_format": "wav",
+        "seed": seed,
+        "voice_ref": {"type": "base64", "data": wav_b64},
+        "reference_text": reference_text,
+        "options": {"temperature": temperature, "top_p": top_p},
+    }
+    try:
+        resp = requests.post(
+            f"{_AUDIOCPP_FISH_BASE_URL}/v1/audio/speech",
+            json=payload,
+            timeout=timeout,
+        )
+        resp.raise_for_status()
+        wav_bytes = resp.content
+    except requests.HTTPError as exc:
+        body = exc.response.text[:300] if exc.response is not None else "<no response>"
+        logger.error("audio.cpp speech error: %s body=%s", exc, body)
+        return None
+    except requests.RequestException as exc:
+        logger.error("audio.cpp speech error: %s", exc)
+        return None
+    return _wav_to_mp3(wav_bytes)
+
+
+def _fishaudio_fallback_to_service(
+    seg: AnnotatedSegment,
+    fishaudio_text: str,
+    reference_id: str,
+    seed: int,
+    mp3_path: Path,
+    *,
+    failed_chunks: int,
+    attempts: int,
+) -> TTSResult:
+    """Re-render a whole segment on the FishAudio service after audio.cpp failed.
+
+    The fallback is recorded -- log, console, :func:`audiocpp_fallbacks` --
+    and the segment is cached under the service's key, so the next audio.cpp
+    run tries it again instead of serving the service's audio as an
+    audio.cpp render.
+    """
+    _AUDIOCPP_FALLBACKS[seg.seg_index] = attempts
+    logger.warning(
+        "[P5] seg %s: audio.cpp route failed (%d chunk(s), %d render(s)) - "
+        "the whole segment goes back to the FishAudio service",
+        seg.seg_index, failed_chunks, attempts,
+    )
+    print(
+        f"  [P5] seg {seg.seg_index} audio.cpp FAILED: {failed_chunks} "
+        f"chunk(s) - falling back to FishAudio for the whole segment"
+    )
+    return _synthesize_fishaudio_path(
+        seg=seg,
+        fishaudio_text=fishaudio_text,
+        reference_id=reference_id,
+        seed=seed,
+        mp3_path=mp3_path,
+        current_hash=_text_hash(fishaudio_text),
+        _route=_ROUTE_FISHAUDIO,
+    )
+
+
 def _synthesize_fishaudio_path(
     seg: AnnotatedSegment,
     fishaudio_text: str,
@@ -994,13 +1273,23 @@ def _synthesize_fishaudio_path(
     seed: int,
     mp3_path: Path,
     current_hash: str,
+    _route: str | None = None,
 ) -> TTSResult:
     """Legacy FishAudio S2-Pro synthesis path (Issue #1600 / F4 mapping).
 
     Extracted from _synthesize_segment on 2026-09-07 (Issue #15002) so the
     narrator-routing branch can delegate to it from tests without touching
     the Qwen gateway. Non-narrator speakers always go through this path.
+
+    #19694: the same model is rendered by one of two engines, chosen per
+    segment by :func:`_fishaudio_route` -- ``audiocpp_fish_audio`` (local
+    audio.cpp server) or ``fishaudio_tts`` (FishAudio service). ``_route``
+    is given only by the fallback re-entry.
     """
+    route = _fishaudio_route(seg) if _route is None else _route
+    if route == _ROUTE_AUDIOCPP:
+        current_hash = _fishaudio_cache_hash(route, fishaudio_text)
+
     if mp3_path.exists():
         # Check if TTS text changed since last generation
         cached_hash = ""
@@ -1083,13 +1372,16 @@ def _synthesize_fishaudio_path(
     # target 72C = light 3s pause, up to 30s pause at 80C+, full cooldown above.
     thermal_backoff(target_temp=72, max_temp=80, base_sleep=3.0, max_sleep=30.0)
 
+    # #19694: every chunk of the segment goes through ONE engine.
+    render = audiocpp_fish_audio if route == _ROUTE_AUDIOCPP else fishaudio_tts
+
     # If single chunk, use direct call
     if len(tts_requests) == 1:
-        audio = fishaudio_tts(**tts_requests[0])
+        audio = render(**tts_requests[0])
         attempts = 1
         if audio is None:
             thermal_wait()
-            audio = fishaudio_tts(**tts_requests[0])
+            audio = render(**tts_requests[0])
             attempts = 2
         audio_parts = [audio] if audio else []
     else:
@@ -1098,11 +1390,11 @@ def _synthesize_fishaudio_path(
         attempts = 0
         failed_chunks: list[int] = []
         for i, req in enumerate(tts_requests, start=1):
-            audio = fishaudio_tts(**req)
+            audio = render(**req)
             attempts += 1
             if audio is None:
                 thermal_wait()
-                audio = fishaudio_tts(**req)
+                audio = render(**req)
                 attempts += 1
             if not audio:
                 # A falsy render is a failed render: the single-chunk branch
@@ -1112,6 +1404,14 @@ def _synthesize_fishaudio_path(
             audio_results.append(audio)
 
         if failed_chunks:
+            if route == _ROUTE_AUDIOCPP:
+                # #19694: the audio.cpp route is the one with a substitute.
+                # The service re-renders the whole segment; mixing the two
+                # engines inside one segment would change timbre mid-passage.
+                return _fishaudio_fallback_to_service(
+                    seg, fishaudio_text, reference_id, seed, mp3_path,
+                    failed_chunks=len(failed_chunks), attempts=attempts,
+                )
             # A failed chunk used to be silently DROPPED: the remaining chunks
             # were concatenated, the segment was written and reported
             # "generated", and the audiobook simply lost up to ~220 characters
@@ -1146,6 +1446,11 @@ def _synthesize_fishaudio_path(
         audio_parts = [a for a in audio_results if a is not None]
 
     if not audio_parts:
+        if route == _ROUTE_AUDIOCPP:
+            return _fishaudio_fallback_to_service(
+                seg, fishaudio_text, reference_id, seed, mp3_path,
+                failed_chunks=1, attempts=attempts,
+            )
         return TTSResult(
             seg_index=seg.seg_index,
             speaker=seg.speaker,
@@ -2168,7 +2473,9 @@ def _synthesize_batch(
         reference_id = _resolve_voice(seg)
         seed = 42 + seg.seg_index
         mp3_path = TTS_DIR / f"seg_{seg.seg_index:04d}_{seg.speaker}.mp3"
-        current_hash = _text_hash(text)
+        # #19694: the expected hash carries the Fish-path engine, so the quick
+        # pass cannot serve an MP3 rendered by the other engine as cached.
+        current_hash = _fishaudio_cache_hash(_fishaudio_route(seg), text)
 
         cache_ok = (
             mp3_path.exists() and cached_hashes.get(seg.seg_index) == current_hash
