@@ -18,9 +18,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from coordination import (tapis_age, tapis_ancre, tapis_composition, tapis_entrelace, tapis_position)
-
-from coordination.tapis_rapide import PART_CONTENEURS
+from coordination import (tapis_age, tapis_ancre, tapis_blocs, tapis_composition, tapis_entrelace, tapis_position)
 
 #: La fenetre avance d'un bloc par tranche de 4 h.
 TRANCHES_JOUR = tapis_position.TRANCHES_JOUR
@@ -43,8 +41,7 @@ def bloc(grains: list, conteneurs: list, n_grains: int, taille: int, lane: str,
     `ages_g` / `exclus_g` : la SELECTION par AGE des grains (mandat du 22/11)
     -- l'ordre d'age, et les numeros deja servis.
     """
-    quota = max(1, int(n_grains * PART_CONTENEURS)) if conteneurs else 0
-    part = max(taille - quota, 1)
+    quota, part = tapis_blocs.quotas(n_grains, taille, len(conteneurs))
     n_g, n_c = len(grains), len(conteneurs)
     compteur = tapis_position.compteur(maintenant) + bloc_suivant
     ancres = ancres or {}
@@ -62,8 +59,7 @@ def bloc(grains: list, conteneurs: list, n_grains: int, taille: int, lane: str,
 
     pool = {g.numero for g in grains} | {g.numero for g in conteneurs}
     visites = {g.numero for g in b_g} | {g.numero for g in b_c}
-    blocs = max((n_g + part - 1) // part if n_g else 1,
-                (n_c + quota - 1) // quota if n_c else 1)
+    blocs = tapis_blocs.nombre_blocs(n_g, n_c, part, quota)
     # Le lot PUBLIC entrelace les CLASSES : chacune a un creneau de lecture.
     return tapis_entrelace.intercale(
         b_g, b_c, tapis_ancre.phase_de(ancres, "grains") % 2 == 1), {

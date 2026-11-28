@@ -24,6 +24,7 @@ from coordination import (
     gh_selection,
     tapis_age,
     tapis_ancre,
+    tapis_blocs,
     tapis_borne,
     tapis_origami,
     tapis_rotation,
@@ -95,6 +96,20 @@ def avancer(dossier: Path, lane: str, blocs: int) -> None:
         pass  # un curseur non ecrit ne change pas le tirage : l'echec est ignore
 
 
+def _servir_bloc(dossier, lane, grains, maintenant, grains_, conteneurs,
+                 ancres, ages, exclus):
+    """Le bloc suivant du cache : l'arithmetique partagee avec la rotation."""
+    quota, part = tapis_blocs.quotas(int(grains), int(grains), len(conteneurs))
+    blocs = tapis_blocs.nombre_blocs(len(grains_), len(conteneurs), part, quota)
+    servis = curseur(dossier, lane)
+    avance = servis % blocs
+    file, fenetre = tapis_rotation.bloc(
+        grains_, conteneurs, grains, grains, lane, maintenant,
+        bloc_suivant=avance, ancres=ancres, ages_g=ages, exclus_g=exclus)
+    avancer(dossier, lane, servis + 1)
+    return file, fenetre, avance, blocs, servis
+
+
 def replir(lane: str, grains: int, maintenant: datetime, jours: int, graine: str,
            depot, echeance: float | None = None) -> tuple[dict, int]:
     """Le repli : (rapport, 0) -- ou l'echec de lecture, leve.
@@ -131,14 +146,8 @@ def replir(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     conteneurs = [e for e in etats_ if e.conteneur]
     ancres = tapis_ancre.lire(lane)
     ages, exclus, _ = tapis_age.tour(grains_, ancres, maintenant, conteneurs)
-    part = max(int(grains), 1)
-    blocs = max(1, -(-len(grains_) // part))
-    servis = curseur(dossier, lane)
-    avance = servis % blocs
-    file, fenetre = tapis_rotation.bloc(grains_, conteneurs, grains, grains, lane,
-                                         maintenant, bloc_suivant=avance,
-                                         ancres=ancres, ages_g=ages, exclus_g=exclus)
-    avancer(dossier, lane, servis + 1)
+    file, fenetre, avance, blocs, servis = _servir_bloc(
+        dossier, lane, grains, maintenant, grains_, conteneurs, ancres, ages, exclus)
     lec = gh_bulk.Lecture(issues=[], prs=prs, citations=citations,
                            lu_a=str(cache.get("lu_a") or ""), secondes=0.0, appels=0)
     _, origami = tapis_origami.mesurer(lec, reseau=False)

@@ -755,6 +755,15 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # extraire sans deplacer le probleme, mesure : `_vise` (13 lignes) vers
 # `tapis_relache.py` le porterait a 103 pour un plafond de 100, et vers
 # `claim_grammar.py` a 2346 pour son entree de `script_size_ceilings.json`.
+#
+# 22/11) ; tapis_blocs.py la trente-quatrieme (les TAILLES du bloc : le quota
+# des conteneurs, la part des grains, le nombre de blocs -- extraites de
+# tapis_rotation.py pour que le repli chronologique et la rotation lisent la
+# MEME arithmetique, 26/11 : le repli comptait 60 blocs pour 80 reels, et
+# 115 issues sur 558 n'etaient jamais servies).
+# 28/11, fusion de main dans #28768 (c0177) : tapis_repli.py passe a 162 lignes
+# apres l'extraction de la fenetre bloc dans `_servir_bloc` ; main ajoute la
+# BORNE de commande et la branche `tapis_blocs`, conservees ensemble.
 
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 523),
                                               ("tapis_marqueurs.py", 130),
@@ -768,7 +777,7 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_reverif.py", 120),
                                               ("gh_issues.py", 80),
                                               ("tapis_leger.py", 220),
-                                              ("tapis_repli.py", 157),
+                                              ("tapis_repli.py", 166),
                                               ("tapis_qualification.py", 140),
                                               ("tapis_fil_complet.py", 100),
                                               ("tapis_prise_en_charge.py", 90),
@@ -809,7 +818,8 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_labels.py", 60),
                                               ("tapis_occupation.py", 298),
                                               ("tapis_leger_rapport.py", 50),
-                                              ("tapis_leger_texte_occupation.py", 33)])
+                                              ("tapis_leger_texte_occupation.py", 33),
+                                              ("tapis_blocs.py", 60)])
 
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
