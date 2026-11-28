@@ -72,7 +72,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-24-Autoencoders-Anomaly | EXÉCUTÉ | |
 | QC-Py-25-Reinforcement-Learning | EXÉCUTÉ | |
 | QC-Py-26-LLM-Trading-Signals | NON EXÉCUTÉ | |
-| QC-Py-27-Production-Deployment | NON EXÉCUTÉ | |
+| QC-Py-27-Production-Deployment | EXÉCUTÉ | CPU local (CPython 3.13), cellules exécutées de bout en bout |
 | QC-Py-28-Market-Regime-Detection | NON EXÉCUTÉ | |
 | QC-Py-28b-Macro-Cycle-Regimes | EXÉCUTÉ | cellules locales exécutées + run QC Cloud 2016-2026 (diagnostic → allocation) |
 | QC-Py-28c-Factor-Preprocessing-Regime | EXÉCUTÉ | cellules locales exécutées sur série synthétique à régimes (port du livre 06/02, issue #18958) |
