@@ -61,7 +61,7 @@ Les numéros donnent l'ordre de lecture conseillé. La colonne « Public et pré
 | 04 | [Théorie des tableaux](04_Array_Theory.ipynb) | Lire avec `Select`, écrire avec `Store`. Les axiomes de McCarthy vérifiés par le solveur, l'échange de deux cases par un double `Store`, puis les missionnaires et les cannibales repris avec des tableaux. | Licence. Le carnet 01 ; tableaux et expressions lambda. | [Autour de 01 à 05](#autour-de-01-à-05) · en Python : [Z3-API 17](../Z3-API/Z3-17-Array-Theory-Python.ipynb) |
 | 05 | [Tableaux imbriqués](05_Nested_Arrays_2D.ipynb) | Poser des grilles avec des tableaux de tableaux (`int[][]`) : carré latin 3×3, Sudoku 4×4, carré magique d'ordre 3, de somme 15. | Licence. Les carnets 02 et 04. | [Autour de 01 à 05](#autour-de-01-à-05) · en Python : [Z3-API 15](../Z3-API/Z3-15-Nested-Arrays-2D-Python.ipynb) |
 | 06 | [Planificateur de repas : modélisation](06_Meal_Planner_Modelisation.ipynb) | Quatre écritures d'un même choix de menu sur dix aliments, puis un plan de cinq jours parmi 18 plats : un glouton sans retour arrière échoue au quatrième jour, le solveur remplit la semaine. Rendu HTML du plan et front de Pareto calories-coût. | Licence. Les carnets 03 et 05 sont conseillés. | [Autour de 06 à 09](#autour-de-06-à-09) · en Python : [Z3-API 16](../Z3-API/Z3-16-Meal-Planner-Python.ipynb) |
-| 07 | [Planificateur de repas : données réelles](07_Meal_Planner_Data_External.ipynb) | Préparer des données réelles, sans solveur : croiser la table de composition Ciqual et un corpus de recettes RecipeML, apparier les noms d'ingrédients, convertir les quantités en grammes, agréger par recette, écrire le cache que lisent les carnets 08 et 09. | Licence. LINQ to Objects et LINQ to XML ; indépendant du solveur. | [Autour de 06 à 09](#autour-de-06-à-09) · en Python : [Z3-API 16b](../Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb) |
+| 07 | [Planificateur de repas : données réelles](../Z3-API/Z3-16b-Meal-Planner-Data-External-CSharp.ipynb) | Préparer des données réelles, sans solveur : croiser la table de composition Ciqual et un corpus de recettes RecipeML, apparier les noms d'ingrédients, convertir les quantités en grammes, agréger par recette, écrire le cache que lisent les carnets 08 et 09. | Licence. LINQ to Objects et LINQ to XML ; indépendant du solveur. | [Autour de 06 à 09](#autour-de-06-à-09) · en Python : [Z3-API 16b](../Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb) |
 | 08 | [Planificateur de repas : théorème patient](08_Meal_Planner_Patient_Capstone.ipynb) | Un théorème hiérarchique à l'échelle réelle : patient, menus, plats, denrées. La composition nutritionnelle est liée au plat choisi, et le patient impose un minimum ou un maximum par constituant. | Lecture avancée. Les carnets 06 et 07. | [Autour de 06 à 09](#autour-de-06-à-09) · en Python : [Z3-API 16c](../Z3-API/Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb) |
 | 09 | [Planificateur de repas : passage à l'échelle](09_Meal_Planner_Convergence_Scale.ipynb) | Trois encodages d'un même problème — sept menus de cinq plats — sur tout le cache. Les disjonctions naïves sont déjà 105 000 pour mille recettes, avant toute résolution ; la théorie des tableaux rend `UNKNOWN` au bout de quinze secondes ; l'encodage pseudo-booléen « un seul vrai parmi n » est satisfiable. | Lecture avancée. Les carnets 04, 06, 07 et 14. | [Autour de 06 à 09](#autour-de-06-à-09) · en Python : [Z3-API 16d](../Z3-API/Z3-16d-Meal-Planner-Convergence-Scale-Python.ipynb) |
 | 10 | [Générer un témoin depuis une expression régulière](10_Witness_Generation_Automata.ipynb) | Passer de « ce mot appartient-il au langage ? » à « donne-moi un mot du langage » : intersection `&` et complément `~` d'expressions régulières, génération d'un mot témoin, émission d'une contrainte SMT-LIB que Z3 résout. | Lecture avancée. Expressions régulières ; indépendant des autres carnets. | [Autour de 10](#autour-de-10) · en Python : [Z3-API 04](../Z3-API/Z3-04-Strings-Regex-Python.ipynb) |
@@ -204,21 +204,37 @@ La même distinction traverse toute la série : vérifier une grille remplie n'e
 
 ### L'ouvrage de référence
 
-Yurichev, D. — *SAT/SMT by Example* (édition du 12 février 2023) : un recueil de problèmes résolus par des solveurs SAT et SMT, que cette série partage avec [Z3-API](../Z3-API/README.md#ouvrage-de-référence). Le tableau relie chaque carnet à la section de l'ouvrage qui traite le même sujet ; les numéros de page sont ceux de l'édition citée.
+**Yurichev, Dennis — *SAT/SMT by Example* (édition publique du 12 février 2023, 666 pages)** — l'ouvrage-ancrage de la série. Compendium pratique de résolution SAT/SMT par l'exemple, centré Z3, organisé en chapitres thématiques (théories, tactiques, optimisation, puzzles, cœurs d'insatisfiabilité, entiers machine, arithmétique réelle) qui correspondent chapitre par chapitre aux carnets de cette série. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\Satisfiability and SMT Solvers\2023 - SAT_SMT_by_example.pdf` (16,45 Mo, magic bytes `%PDF`). La série sœur [Z3-API](../Z3-API/README.md#ouvrage-de-référence) en porte le même index.
 
-| Carnets | Section de l'ouvrage |
-|---------|----------------------|
-| Toute la série | Ch. 1 *Introduction* (p. 11) et ch. 2 *Basics* (p. 14) |
-| 02 et 18 | Ch. 8, §8.1 *Sudoku* (p. 205) et §8.2 *Zebra puzzle* (p. 232) |
-| 04 et 05 | Ch. 8, §8.1.2 *Simple sudoku in SMT using functions and array* (p. 212) ; ch. 12 *Latin squares* (p. 346), §12.4 *Magic/Latin square of Knut Vik design* (p. 361) |
-| 13 | Ch. 8, §8.10 *Alphametics* (p. 276) |
-| 14 | Ch. 14 *MaxSAT/MaxSMT* (p. 383) et ch. 10 *Knapsack problems* (p. 332) |
-| 15 | Ch. 5, §5.1 *Integer overflow* (p. 132) |
-| 16 | Ch. 4 *Proofs* (p. 106) |
-| 17 | Ch. 3, §3.13.2 *Unsat core* (p. 90) et §3.13.3 *Stress test* (p. 92) |
-| 20 | Ch. 4, §4.5 *Simplifying long and messy expressions using Z3* (p. 113) |
+#### Index chapitré (série Z3-Linq2Z3 ↔ Yurichev)
 
-Ce tableau relie des sujets, pas des instances. Le carnet 13 reprend l'alphamétique de l'ouvrage, SEND + MORE = MONEY ; les carnets 02 et 18 en reprennent le cadre d'encodage sur des instances qui leur sont propres.
+| Carnet | Section Yurichev | Thème |
+|--------|-----------------|-------|
+| 01 | Ch. 1 *Introduction* (p. 11), ch. 2 *Basics* (p. 14) | API du solveur, théories de base, modèles |
+| 02 | §8.1 *Sudoku* (p. 205), §8.1.2 *Simple sudoku in SMT using functions and array* (p. 212) | Sudoku en deux écritures, quantificateurs sur domaine fini |
+| 03 | §8.1 *Sudoku* (p. 205) | Transmission d'une collection : tableau Z3 ou constantes |
+| 04 | §5.2 *SMT arrays* (p. 148-149), §8.1.2 (p. 212) | Théorie des tableaux : `Select` / `Store`, axiomes de McCarthy |
+| 05 | Ch. 12 *Latin squares* (p. 346), §12.4 *Magic/Latin square of Knut Vik design* (p. 361) | Tableaux imbriqués, carré latin, carré magique |
+| 06 à 09 | Ch. 14 *MaxSAT/MaxSMT* (p. 383), §14.5 *Assignment problem* (p. 397) | Planificateur de repas : allocation de menus — **voisinage de thème**, ces carnets n'implémentent pas §14.5, ils en traitent la famille de problèmes d'allocation |
+| 10 | Ch. 6 *Regular expressions* (p. 166) | Automates, expressions régulières, génération de témoin |
+| 11 | Ch. 22, §22.8 *Job Shop Scheduling/Problem* (p. 633) | Ordonnancement d'atelier, contraintes disjonctives |
+| 12 | Ch. 9 *Graph coloring* (p. 317) | Coloration de graphe, nombre chromatique |
+| 13 | §8.10 *Alphametics* (p. 276) | Cryptarithmes : SEND + MORE = MONEY |
+| 14 | Ch. 14 *MaxSAT/MaxSMT* (p. 383), ch. 10 *Knapsack problems* (p. 332) | `Optimize`, sac à dos, préférences pondérées |
+| 15 | §5.1 *Integer overflow* (p. 132) | Entiers machine 32 bits, débordement |
+| 16 | Ch. 4 *Proofs* (p. 106), §2.2.1 *School-level system of equations* (p. 14-15) | Réels exacts, irrationnels algébriques |
+| 17 | §3.13.2 *Unsat core* (p. 90), §3.13.3 *Stress test* (p. 92) | Cœur d'insatisfiabilité minimal |
+| 18 | §8.2 *Zebra puzzle* (p. 232), §8.1 *Sudoku* (p. 205) | Énigme d'Einstein, unicité de la solution |
+| 19 | Ch. 1 *Introduction* (p. 11), ch. 2 *Basics* (p. 14) | Choix du solveur, tactiques |
+| 20 | §4.5 *Simplifying long and messy expressions using Z3* (p. 113), §4.6 (p. 114) | Écriture de *rewriters*, extension du DSL |
+
+Toute la série relève de ch. 1 *Introduction* (p. 11) et ch. 2 *Basics* (p. 14) ; l'index ci-dessus précise, carnet par carnet, le chapitre ou la section qui porte le sujet.
+
+**Folio : mesure et convention.** Les folios de cet index ont été relevés **firsthand** sur la copie archivée (666 pages, PyMuPDF 1.27.2.3) : le folio est **l'index PDF moins un**, et il se lit **sur la page elle-même** — jamais dans le sommaire imprimé, dont la pagination diverge de la pagination physique (par exemple §8.1.2 : sommaire p. 206, page physique p. 212). La page d'**ouverture** d'un chapitre ne porte pas de folio imprimé : le folio citable du chapitre est celui de sa page, soit `index − 1` (ch. 8 → p. 205, ch. 9 → p. 317, ch. 14 → p. 383). Les **quatorze** folios déjà cités par les carnets de la série ont été recontrôlés sur cette copie : **quatorze sur quatorze exacts**.
+
+**Crédit explicite ou rattachement thématique.** Le crédit explicite à l'ouvrage est porté par une cellule `## Source` d'introduction : dans cette série, **dix** carnets en portent une — `02_Sudoku_Theorem_vs_Array`, `04_Array_Theory`, `05_Nested_Arrays_2D`, `13_Cryptarithmetic_SMT`, `14_Optimize_MaxSAT`, `15_BitVectors_Overflow`, `16_RealArithmetic`, `17_UnsatCores`, `18_Einsteins_Riddle`, `20_Theorem_Rewriters` — et ce sont exactement les dix qui citent l'ouvrage. Les autres carnets (`01`, `03`, `06` à `12`, `19`) ne le citent pas : leur rattachement à l'index est **thématique**, non un crédit d'instance. À noter : « Z3: An Efficient SMT Solver » (de Moura & Bjørner, TACAS 2008) est le **papier de référence** du solveur, distinct du livre pratique de Yurichev.
+
+**Portée de l'index.** Il relie chaque carnet à la section de l'ouvrage qui traite le même sujet — il n'affirme pas que le carnet reprend l'**instance** de l'ouvrage. Le carnet 13 reprend l'alphamétique de l'ouvrage, SEND + MORE = MONEY ; les carnets 02 et 18 en reprennent le cadre d'encodage sur des instances qui leur sont propres — la grille du livre (§8.1, p. 205) est le « world's hardest sudoku » à 23 indices, et le puzzle du livre a pour réponse que le Japonais possède le zèbre.
 
 ### Articles et textes fondateurs
 

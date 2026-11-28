@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-09
+> REFERENCE — vivante — dernière révision 2026-11-25
 
 # Reproductibilité des socles 3D — mesure sur deux postes
 
@@ -98,6 +98,7 @@ Deux observations qui valent pour la flotte, au-delà de ce poste :
 
 1. **Le carnet `3D-05` n'est pas portable** : `os.environ["CUDA_VISIBLE_DEVICES"] = "1"` est posé dans sa première cellule. Sur une machine à un seul GPU (dont `po-2028`), cette ligne masque le device et fait échouer l'exécution. C'est un défaut de portabilité du carnet, pas de la machine.
 2. Les mesures de `3D-04` / `3D-05` **existent** et sont validées dans le dépôt (PR #20398) ; ce document ne les re-mesure pas, il en **rappelle la provenance** : exécution validée, `gsplat 1.5.3+pt24cu124`, `torch 2.4.1+cu124`, RTX 3080 Ti.
+3. Le moteur est **épinglé** : `gsplat 1.5.3+pt24cu124` est la roue officielle précompilée, publiée comme fichier joint de la version `v1.5.3` de `nerfstudio-project/gsplat` ; le code source correspondant est le SHA `937e29912570c372bed6747a5c9bf85fed877bae`, et l'empreinte de la roue `gsplat-1.5.3+pt24cu124-cp310-cp310-win_amd64.whl` est `sha256:62fae62e2cf233233527ba890fd322825476118edd4bd27a4e6cb36b1723003e` (lisible sur l'API GitHub des fichiers joints de la version). Les noyaux CUDA, eux, ne sont pas dans la roue : le moteur les compile au premier rendu.
 
 ---
 

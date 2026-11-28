@@ -14,11 +14,11 @@ API HTTP pour la separation de sources audio (extraction de stems) avec Demucs v
 ## Demarrage
 
 ```bash
-# Image pre-construite (production, GPU 1)
-docker compose -f docker-compose.yml up -d
+# Build local (developpement, GPU 1 : RTX 3090)
+docker compose -f docker-compose.yml up -d --build
 
-# Build local (developpement, GPU 0)
-docker compose -f docker-compose-hybrid.yml up -d --build
+# Image pre-construite (production, GPU 1 : RTX 3090)
+docker compose -f docker-compose-hybrid.yml up -d
 
 # Logs
 docker compose logs -f demucs-api
@@ -111,6 +111,7 @@ La separation retourne un fichier ZIP contenant les stems extraits :
 
 | Variable | Defaut | Description |
 |----------|--------|-------------|
+| `GPU_PCI_INDEX` | `1` | Carte cible : index `nvidia-smi`, donc index PCI (0 = RTX 3080 Ti, 1 = RTX 3090). Le compose en derive `device_ids`, `CUDA_VISIBLE_DEVICES` et `NVIDIA_VISIBLE_DEVICES` sous `CUDA_DEVICE_ORDER=PCI_BUS_ID` (#28423) |
 | `DEMUCS_MODEL` | htdemucs_ft | Modele par defaut |
 | `DEMUCS_DEVICE` | cuda | Peripherique (cuda / cpu) |
 | `IDLE_TIMEOUT` | 300 | Secondes avant auto-unload du modele |
@@ -130,7 +131,7 @@ La separation retourne un fichier ZIP contenant les stems extraits :
 |---------|-------------|
 | `app.py` | Application FastAPI principale |
 | `Dockerfile` | Image Docker (Python 3.11, Demucs v4) |
-| `docker-compose.yml` | Configuration production (image ghcr.io, GPU 1) |
-| `docker-compose-hybrid.yml` | Configuration developpement (build local, GPU 0) |
+| `docker-compose.yml` | Configuration build local (GPU 1 : RTX 3090) |
+| `docker-compose-hybrid.yml` | Configuration image ghcr.io pre-construite (GPU 1 : RTX 3090) |
 | `start.sh` | Script de demarrage uvicorn |
 | `.env` | Variables d'environnement locales |

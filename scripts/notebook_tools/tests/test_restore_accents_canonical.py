@@ -564,6 +564,36 @@ class TestEnglishGrayZone:
         assert "paramètre" in out and "problème" in out
 
 
+class TestProtectedTechnicalTerms:
+    """#16638 : un terme technique compose loge une forme du dictionnaire.
+    La ligne est francaise, la preuve de contexte est donc satisfaite, et la
+    cure ecrivait `all-différent` (Sudoku-15-Infer-CSharp, signalement
+    myia-po-2027:CoursIA le 2026-11-24) : `all-different` est le nom standard
+    de la contrainte globale. Le terme traverse la cure tel quel."""
+
+    def test_all_different_kept_on_french_line(self, tmp_path):
+        p = _md(tmp_path, "Les contraintes all-different sont violees par le modele\n")
+        rac.cure_markdown(p, write=True)
+        out = p.read_text(encoding="utf-8")
+        assert "all-different" in out
+        assert "all-différent" not in out
+
+    def test_other_forms_of_the_line_still_cured(self, tmp_path):
+        p = _md(tmp_path, "Contrainte all-different : le modele converge vers un parametre\n")
+        rac.cure_markdown(p, write=True)
+        out = p.read_text(encoding="utf-8")
+        assert "all-different" in out
+        assert "modèle" in out and "paramètre" in out
+
+    def test_measured_line_unchanged(self, tmp_path):
+        line = ("   **37 erreurs**. La cause est structurelle : EP (Expectation Propagation) "
+                "converge vers des **optima locaux** qui violent certaines contraintes "
+                "all-different. Le comportement est stochastique (seed EP, grille tirée).\n")
+        p = _md(tmp_path, line)
+        rac.cure_markdown(p, write=True)
+        assert p.read_text(encoding="utf-8") == line
+
+
 # ---------------------------------------------------------------------------
 # #14613 : protections portees de la cure ad-hoc #14139 dans l'organe canonique
 # (fences, inline-code, URLs nues) + cureur BRUYANT (rapport formes hors table)

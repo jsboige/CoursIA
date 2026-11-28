@@ -71,7 +71,7 @@ def git(*args, cwd=None):
     Empty stdout is a valid result and is returned as ''.
     """
     try:
-        out = subprocess.run(["git", *args], cwd=cwd, capture_output=True,
+        out = subprocess.run(["git", "-c", "core.quotePath=false", *args], cwd=cwd, capture_output=True,
                              encoding="utf-8", errors="replace", check=False)
     except OSError as e:
         raise RuntimeError(f"git subprocess failed: {e}") from e
@@ -500,7 +500,7 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
     # reserve de revue sur la serie ICT (pyphi==1.2.0, requires-python
     # >=3.9,<3.10) exige.
     ("MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/"
-     "SL-14-AIFeynman-Discover-Equations.ipynb",
+     "SL-14-AIFeynman-Discover-Equations-Python.ipynb",
      "python3", "3.9", "3.13"):
         "Python 3.9 -> 3.13 : convergence vers le canon d'execution 3.13 ; "
         "le 3.9 du carnet etait impose par le packaging de `aifeynman` "

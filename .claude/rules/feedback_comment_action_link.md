@@ -2,7 +2,7 @@
 
 S'applique à **tous les agents** du cluster CoursIA (workers `po-*` + coordinateur `ai-01`) qui commentent une PR.
 
-**Motif fondateur** : PR #14821 — 31 commentaires / 68 101 caractères d'infra-diagnostic sur 5 jours (25/28 sans action attachée), pour un livrable qui n'avait pas bougé depuis le commit du premier jour. Le commentaire de diagnostic pur coûte une lecture à chaque lane et ne fait pas avancer la PR : c'est une pompe, pas un apport.
+**Motif et mesure fondatrice** : incident #14821 et justification du seuil `DIAG-LOOP` dans [pr-review-context.md — L17](../../docs/reference/pr-review-context.md#l17--le-seuil-diag-loop-et-sa-mesure-fondatrice-14821).
 
 ## Règle
 

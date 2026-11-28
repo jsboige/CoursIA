@@ -34,9 +34,12 @@ from pathlib import Path
 from coordination import gh_bulk, gh_selection, tapis_citations, tapis_equilibre, tapis_labels, tapis_rapide
 from coordination.tapis_rapide import Etat, graine_defaut, ordonner
 # Le rapport a son propre fichier (extraction pour tenir le plafond de lignes
-# de ce module, comme `tapis_leger_texte` pour `tapis_leger`) ; l'alias garde
-# les appelants intacts (`tapis_universel.rapport`, tests).
-from coordination.tapis_universel_rapport import rapport
+# de ce module) ; l'alias garde les appelants intacts.
+from coordination.tapis_universel_rapport import METADONNEES, rapport
+
+#: La provenance de CETTE entree : elle lit les metadonnees, les citations et
+#: les PRs -- **pas le fil** (reserve du coordinateur du 25/11 sur #28345).
+PROVENANCE = METADONNEES
 
 
 def _parent_de_titre(titre: str) -> int | None:
@@ -73,7 +76,17 @@ def etats_leger(metas: list[dict], citations: dict[int, list[dict]],
     for it in metas:
         n = int(it["number"])
         labels = list(it.get("labels") or [])
-        if tapis_labels.ecart_label(labels):
+        # L'URNE (`candidate-delivered`) ne se decide PAS ici : elle a deux
+        # portes -- l'organe d'OCCUPATION (`tapis_occupation`), qui sait qu'une
+        # lane gerante (coordinateur, adjoint, secretaire) ne perd aucun grain
+        # et recoit l'urne en **resume**, et la regle LABEL du tirage complet.
+        # Ecarter l'urne ici supprimerait ce second porteur de la decision, et
+        # le retirage (voie legere) perdrait le grain sans publier son motif.
+        # Les AUTRES labels d'exclusion (la pause) s'appliquent ici, comme
+        # avant : les VAGUES et le REPLI lisent cette fonction.
+        autres = [lab for lab in labels
+                  if lab.strip().lower() != tapis_labels.LABEL_LIVRE]
+        if tapis_labels.ecart_label(autres):
             continue  # exclusion en donnees : le grain n'est pas servable
         titre = it.get("title") or ""
         parent = _parent_de_titre(titre)
@@ -133,7 +146,8 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
                                 graine_defaut(args.lane, maintenant))
     r = rapport(etats_, file, args.lane, maintenant,
                 {"issues": len(metas), "secondes": duree, "budget_s": args.budget_s},
-                ecartees=tapis_labels.ecartees(metas))
+                ecartees=tapis_labels.ecartees(metas),
+                provenance=PROVENANCE)
     out = json.dumps(r, ensure_ascii=False, indent=1) if args.json else "\n".join(
         f"#{g['numero']} {g['titre'][:70]} -- {g['action']}" for g in r["grains"])
     sys.stdout.buffer.write((out + "\n").encode("utf-8"))

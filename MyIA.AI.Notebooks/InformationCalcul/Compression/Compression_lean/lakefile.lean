@@ -100,9 +100,16 @@ l'alphabet entre dans l'arbre (`LTree n`), parcours aligné mot/étiquette
 mots, des profondeurs par symbole et du poids, unicité des étiquettes
 (`Nodup`, `pairs_snd_inj`), et le round-trip étiqueté `decodeL_encode` —
 encoder un message de symboles puis le relire rend le message, le décodage
-restant celui du pli 2 appelé tel quel. -/
+restant celui du pli 2 appelé tel quel ; `Kolmogorov` — la complexité de
+Kolmogorov, cœur combinatoire (pli 10 de #18706) : la machine de nommage
+(`NamingMachine` : arbre de code + décodage), la borne de comptage
+`kraft_short_count` (Kraft lu comme comptage : au plus `2 ^ k` mots de longueur
+≤ `k`), sa lecture sur les données nommées `atMostK`, l'incompressibilité
+`incompressible` (sur `2 ^ n` données, au moins `2 ^ (n-1)` exigent ≥ `n` bits),
+et la facture MDL `mdlCost` dont la part du modèle tend vers `0`
+(`mdlModelShareTendsToZero`). -/
 @[default_target]
 lean_lib «PrefixCodes» where
   -- Module plat (fichiers racine, aucune arborescence `PrefixCodes/`) :
   -- pas de `.submodules`, cf la note `MathUniverse` de `learning_theory_lean`.
-  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode, `McMillan, `Huffman, `Optimalite, `Echange, `Appariement, `Expansion, `Feuilles, `Soeurs, `Descente, `DeuxMinima, `HuffmanOptimal, `SymbolCodec, `SymbolCodec_en]
+  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode, `McMillan, `Huffman, `Optimalite, `Echange, `Appariement, `Expansion, `Feuilles, `Soeurs, `Descente, `DeuxMinima, `HuffmanOptimal, `SymbolCodec, `SymbolCodec_en, `Kolmogorov]

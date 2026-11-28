@@ -1,0 +1,11 @@
+deck	image	origine	licence	remplacable	preuve
+S3-acculturation	images/img_101.png	figure generee par slides/S3-acculturation/images/gen_img_101.py	oui	nc	#12278 (5240f477e1d) : regenerer img_101.png, porte sigmoide LSTM (forget gate)
+03-logique	images/argumentum_qrcode.png	QR code encodant https://www.argumentum.games/fallacies_fr.html	oui	nc	decode au cv2.QRCodeDetector ; ajoute en 4d4937c8e0a (#1244)
+S1-argumentation	images/argumentum_qrcode.png	QR code encodant https://www.argumentum.games/fallacies_fr.html	oui	nc	meme fichier que 03-logique/images/argumentum_qrcode.png (sha256 3bc3fa04e254) ; ajoute en 4d4937c8e0a (#1244)
+07-elargissements	images/turing_test.png	Wikimedia Commons	non	non	554062be033 : « free-licensed images (CC BY-SA, CC0) from Wikimedia Commons » ; licence par fichier et attribution absentes du deck
+07-elargissements	images/trolley_problem.png	Wikimedia Commons	non	non	554062be033 : « free-licensed images (CC BY-SA, CC0) from Wikimedia Commons » ; licence par fichier et attribution absentes du deck
+07-elargissements	images/federated_learning.png	Wikimedia Commons	non	non	554062be033 : « free-licensed images (CC BY-SA, CC0) from Wikimedia Commons » ; licence par fichier et attribution absentes du deck
+07-elargissements	images/gan_architecture.png	Wikimedia Commons	non	non	554062be033 : « free-licensed images (CC BY-SA, CC0) from Wikimedia Commons » ; licence par fichier et attribution absentes du deck
+07-elargissements	images/decision_tree_xai.png	Wikimedia Commons	non	non	554062be033 : « free-licensed images (CC BY-SA, CC0) from Wikimedia Commons » ; licence par fichier et attribution absentes du deck
+07-elargissements	images/recursive_self_improvement.png	Wikimedia Commons	non	non	554062be033 : « free-licensed images (CC BY-SA, CC0) from Wikimedia Commons » ; licence par fichier et attribution absentes du deck
+S3-acculturation	images/img_robot_extracted.png	extrait du PPTX du deck S3	non	nc	05cba7e95fd (#12077) « extraire robot PPTX » ; droits du dessin non etablis

@@ -42,7 +42,7 @@ discrète (tout crible couvre). Fait de niveau lattice : ⊥ ≤ ⊤.
 -/
 
 /-- ÉTALONNAGE (decide/rfl) : la topologie triviale est sous la topologie discrète
-    in the lattice of Grothendieck topologies. -/
+    dans le réseau des topologies de Grothendieck. -/
 theorem trivial_le_discrete {C : Type*} [Category C] :
     (GrothendieckTopology.trivial C : GrothendieckTopology C) ≤
     GrothendieckTopology.discrete C := by
