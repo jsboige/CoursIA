@@ -49,7 +49,7 @@ flowchart TB
 ```
 
 Le nombre porté par une flèche compte les arêtes carnet→carnet entre deux
-plages ; les arêtes internes restent dans les détails (**Carnets 01–04** 6 arête(s) · **Carnets 05–09** 3 arête(s)).
+plages ; les arêtes internes restent dans les détails (**Carnets 01–04** 5 arête(s) · **Carnets 05–09** 3 arête(s)).
 
 ### Détail — Carnets 01–04
 
@@ -65,7 +65,6 @@ flowchart TB
   n01 --> n02
   n01 --> n03
   n01 --> n04
-  n02 --> n01
   n02 --> n03
   n02 --> n04
   click n01 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.html" "Ouvrir le carnet"
@@ -154,7 +153,7 @@ flowchart LR
   click n13 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/20_Theorem_Rewriters.html" "Ouvrir le carnet"
 ```
 
-Mesuré à la génération : **34 arêtes** carnet→carnet sur **20 carnets**, 0 référence(s) de prérequis non résolue(s) sur 1304. Chaque flèche se lit « le carnet source est un prérequis du carnet cible » ; le nombre d'arêtes suit la taxonomie, pas un dessin.
+Mesuré à la génération : **33 arêtes** carnet→carnet sur **20 carnets**, 0 référence(s) de prérequis non résolue(s) sur 1301. Chaque flèche se lit « le carnet source est un prérequis du carnet cible » ; le nombre d'arêtes suit la taxonomie, pas un dessin.
 Dans les détails, un nœud **arrondi** est un carnet d'une autre plage, rappelé
 comme entrée : sans lui la plage paraîtrait sans prérequis.
 
