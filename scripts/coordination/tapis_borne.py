@@ -31,14 +31,14 @@ FRAICHEUR_S = 30.0
 
 #: La borne de la COMMANDE entiere -- la borne du CLI, prise au point
 #: d'entree. C'est le CONTRAT : I6 de #28114 dit qu'un tirage rend en moins
-#: de 60 s (55 s ici, marge 5 s). Les parts des etages (30 s la garde, 30 s
+#: de 60 s (55 s ici, marge 5 s). Les parts des etages (30 s la garde, 48 s
 #: le tirage) sont volontairement SUPERIEURES a cette enveloppe : elles ne
 #: s'additionnent pas, elles se PARTAGENT (chaque etage prend
 #: `min(echeance, maintenant + sa part)`). La commande ne peut donc pas
 #: depasser l'enveloppe : elle est COUPEE, pas attendue. Le pire cas est
 #: assume ainsi : l'etage degradable (la garde) encaisse la coupe, l'etage
 #: decisionnel (la selection) garde son budget dans le cas normal (23,7 s
-#: mesurees -> 31,3 s pour un tirage qui en demande 30).
+#: mesurees -> 31,3 s pour un tirage qui en demande 48).
 BUDGET_S = 55.0
 
 

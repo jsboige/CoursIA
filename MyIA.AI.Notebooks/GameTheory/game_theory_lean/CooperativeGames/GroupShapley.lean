@@ -3,13 +3,29 @@
   =======================================================================
 
   Formalisation de la valeur de Shapley de groupes de Flores, Molina &
-  Tejada (2018), « Evaluating groups with the generalized Shapley value »,
-  4OR 17(4), DOI 10.1007/s10288-018-0380-8 (Definition 2), construite sur
-  le jeu fusionne de Lehrer (1988).
+  Tejada, « Evaluating groups with the generalized Shapley value »,
+  4OR-Q J Oper Res 17(2), 141-172 (2019), DOI 10.1007/s10288-018-0380-8
+  (Definition 2), construite sur le jeu fusionne de Lehrer (1988).
 
-  Source archivee (lecture depuis la copie archivee, convention
-  bibliographie) :
-  `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\Cooperative Games and the Shapley Value\2018 - Flores Molina Tejada - Evaluating groups with the generalized Shapley value.pdf`
+  Reference publiee (depot Crossref du DOI, mesuree le 2026-11-28) :
+  titre « Evaluating groups with the generalized Shapley value », volume
+  17, numero 2, pages 141-172 ; publication en ligne le 2018-06-14,
+  impression le 2019-06. Le preprint arXiv 1412.5429 porte le titre
+  « The Shapley Group Value » : c'est le meme article, sous son titre de
+  preprint. Ni le numero 4 ni l'annee 2018 ne sont la reference
+  bibliographique de l'article publie.
+
+  Source archivee (copie complete certifiable, convention bibliographie) :
+  `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\Cooperative Games and the Shapley Value\2014 - Flores Molina Tejada - The Shapley Group Value (arXiv 1412.5429, preprint de l'article publie en 4OR 17(2) 141-172).pdf`
+  sha256 `6b22ccc7f1c0b29b69e01c3020ead604c9c481c69acfa82515988279607ff71a`
+  (sha8 `6b22ccc7`) ; 29 pages, marqueur de fin a l'octet 496 528, identite
+  verifiee sur la premiere page (les trois auteurs et leurs laboratoires).
+  La copie de la version officielle qui portait le meme article
+  (`2018 - Flores Molina Tejada - Evaluating groups with the generalized
+  Shapley value.pdf`) est **tronquee** : 131 586 octets lus sur 673 147
+  declares, sans marqueur de fin, illisible en PDF. Elle est conservee
+  (elle n'est pas supprimee) et son etat est decrit dans
+  `NOTES-Flores-Molina-Tejada-troncage.txt`, dans le meme rayon.
 
   Palier 1 (issue #25966, fille de #14468) :
   - le type des joueurs fusionnes `MergedPlayers C` et le proxy `proxy C` ;
@@ -72,8 +88,8 @@ def expandFinset (C : Finset N) (S : Finset (MergedPlayers C)) : Finset N :=
 
 /-- Le jeu fusionne de Lehrer (1988) sur les joueurs `MergedPlayers C` :
     la valeur d'une coalition S est celle de sa reexpansion — v(S) si
-    `c ∉ S`, v(S ∪ C) si `c ∈ S` (Definition 1 de Flores-Molina-Tejada
-    2018, forme developpee). -/
+    `c ∉ S`, v(S ∪ C) si `c ∈ S` (Definition 1 de Flores-Molina-Tejada,
+    forme developpee). -/
 noncomputable def mergedGame (G : TUGame N) (C : Finset N) :
     TUGame (MergedPlayers C) where
   v := fun S => G.v (expandFinset C S)
@@ -85,8 +101,8 @@ noncomputable def mergedGame (G : TUGame N) (C : Finset N) :
     (S : Finset (MergedPlayers C)) :
     (mergedGame G C).v S = G.v (expandFinset C S) := rfl
 
-/-- Valeur de Shapley d'un groupe (Definition 2 de Flores-Molina-Tejada
-    2018) : la valeur de Shapley du proxy `c` dans le jeu fusionne
+/-- Valeur de Shapley d'un groupe (Definition 2 de Flores-Molina-Tejada) :
+    la valeur de Shapley du proxy `c` dans le jeu fusionne
     `(N_C, v^C)`. Pour `C = ∅` le proxy est un joueur nul (l'expansion
     de `C` est vide) — la definition reste alors valable et vaut 0. -/
 noncomputable def shapleyGroupValue (G : TUGame N) (C : Finset N) : ℝ :=
@@ -175,7 +191,7 @@ private def liftSingleton (i : N) (j : N) : MergedPlayers ({i} : Finset N) :=
 
 /-- **Theoreme-coeur du palier 1 (reduction au singleton).**
     La valeur de Shapley d'un groupe singleton `{i}` au sens de
-    Flores-Molina-Tejada 2018 (Definition 2) coïncide avec la valeur de
+    Flores-Molina-Tejada (Definition 2) coïncide avec la valeur de
     Shapley individuelle du joueur `i` dans le jeu original.
 
     Preuve : bijection `Finset.sum_bij'` entre les coalitions sans proxy

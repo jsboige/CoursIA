@@ -1,0 +1,352 @@
+# Paire ML 2.6 : jumeau Python + portage Rust (issue #27134, Lot 6 de l'Epic
+# Origami #26510). Cote Rust = evcxr + smartcore 0.7.0.
+# Le carnet 2.6 n'a pas de cote C# (jumeau Rust seul).
+#
+# Les deux carnets N'ONT PAS la meme structure de cellules : la source compte
+# 67 cellules (26 code, dont 5 appels `question(` du dispositif d'auto-evaluation
+# de la serie, non portes) et le portage 47 (16 code). La correspondance est donc
+# ECRITE par cote, comme l'impose le schema — jamais deduite de l'index.
+#
+# Ecarts de forme declares (le contenu pedagogique est le meme) :
+#   - les tirets cadratins des sorties Python sont rendus par `-` cote Rust ;
+#     les motifs ci-dessous matchent donc le separateur par `.` (un caractere) ;
+#   - la source affiche ses figures (matplotlib), le portage affiche des tables,
+#     des vignettes ASCII et des mesures. Les cartes ASCII (cellules Rust 3 et 24)
+#     sont des RENDUS, hors registre : comparees qualitativement dans le body de
+#     la PR (chiffre 0 lisible en 8 x 8, reconstruction a 50 composantes).
+#
+# Les nuages de la section 8 ne sont PAS ceux de scikit-learn : les deux carnets
+# Rust de la serie partagent un generateur maison (xorshift64, graine 42) la ou
+# scikit-learn tire son `make_moons` de numpy. Ce qui se compare est le REGIME
+# (KMeans echoue, DBSCAN et le lien simple reussissent), pas le tirage — d'ou les
+# tolerances de 0,20 sur les ARI. Ecart maximal mesure : 0.03 (KMeans demi-lunes,
+# 0.51 contre 0.48). Le nombre d'outliers n'est pas compare (15 contre 25 a
+# eps = 0.2) : il depend directement du tirage.
+#
+# L'exercice 6 est re-aime cote Rust : smartcore n'expose que le lien simple et
+# aucune hauteur de fusion, donc la grandeur demandee change (la coupe a
+# `n_clusters` au lieu du lien). Le prefixe de la ligne reste commun, et l'absence
+# du lien complet est declaree ABSENTE avec motif, pas mesuree manquante.
+#
+# La parite SHA par cote (twin_pairs.d, cote rust) attend, comme pour 2.7, le
+# point 1 de #27098 : declaree ici, pas reimplementee.
+- name: "ML 2.6 Clustering (KMeans) et ACP"
+  family: ML/DataScienceWithAgents/02-ML-Cours
+  python: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.6-Clustering-KMeans-PCA.ipynb
+  rust: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.6-Clustering-KMeans-PCA-Rust.ipynb
+  measures:
+    - id: banniere_configuration
+      description: "Bannière de configuration du carnet (identique des deux côtés)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 1
+          pattern: "(Configuration OK : 2\\.6 - Clustering \\(KMeans\\) et ACP)"
+          transform: text
+        rust:
+          cell: 1
+          pattern: "(Configuration OK : 2\\.6 - Clustering \\(KMeans\\) et ACP)"
+          transform: text
+    - id: forme_digits
+      description: "Forme du jeu de données digits (1797 images de 64 pixels)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "(X shape : \\(1797, 64\\))"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "(X shape : \\(1797, 64\\))"
+          transform: text
+    - id: nombre_classes
+      description: "Nombre de classes de chiffres (10)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "Nombre de classes : (\\d+)"
+          transform: int
+        rust:
+          cell: 3
+          pattern: "Nombre de classes : (\\d+)"
+          transform: int
+    - id: inertie_k10
+      description: "Inertie de KMeans à k = 10 (Python 1165256.30 ; tolérance = 5 % de cette valeur)"
+      tolerance: 58263
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "Inertie \\(within-cluster sum of squares\\) : ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 6
+          pattern: "Inertie \\(within-cluster sum of squares\\) : ([0-9.]+)"
+          transform: float
+    - id: inertie_k10_table
+      description: "Ligne de verdict de la table du coude, k = 10 (Python 1165256.30)"
+      tolerance: 58263
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "Inertie pour k=10 : ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 9
+          pattern: "Inertie pour k=10 : ([0-9.]+)"
+          transform: float
+    - id: verdict_coude
+      description: "Verdict de la méthode du coude : coude autour de k = 10"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "(Un coude est visible autour de k=10)"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "(Un coude est visible autour de k=10)"
+          transform: text
+    - id: exercice_1
+      description: "Ligne d'exercice 1 (préfixe commun ; la grandeur demandée change côté Rust)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "(Exercice 1 a completer)"
+          transform: text
+        rust:
+          cell: 12
+          pattern: "(Exercice 1 a completer)"
+          transform: text
+    - id: variance_deux_composantes
+      description: "Variance expliquée par les 2 premières composantes (0.285 des deux côtés)"
+      tolerance: 0.02
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "Variance expliquee par les 2 premieres composantes : ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 14
+          pattern: "Variance expliquee par les 2 premieres composantes : ([0-9.]+)"
+          transform: float
+    - id: verdict_pca
+      description: "Verdict de la projection ACP : les classes forment des groupes visibles"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "(Meme en 2D, les classes de chiffres forment des groupes visibles)"
+          transform: text
+        rust:
+          cell: 14
+          pattern: "(Meme en 2D, les classes de chiffres forment des groupes visibles)"
+          transform: text
+    - id: exercice_2
+      description: "Ligne d'exercice 2 (composantes pour 95 % de variance, stub des deux côtés)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "(Exercice 2 a completer)"
+          transform: text
+        rust:
+          cell: 17
+          pattern: "(Exercice 2 a completer)"
+          transform: text
+    - id: contingence_entete
+      description: "En-tête de la table de contingence vrai chiffre x cluster"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 25
+          pattern: "(Chaque ligne = un vrai chiffre)"
+          transform: text
+        rust:
+          cell: 19
+          pattern: "(Chaque ligne = un vrai chiffre)"
+          transform: text
+    - id: exercice_3
+      description: "Ligne d'exercice 3 (cluster dominant du chiffre 0, stub des deux côtés)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 28
+          pattern: "(Exercice 3 a completer)"
+          transform: text
+        rust:
+          cell: 22
+          pattern: "(Exercice 3 a completer)"
+          transform: text
+    - id: verdict_reconstruction
+      description: "Verdict de la reconstruction : la netteté croît avec le nombre de composantes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 32
+          pattern: "(Plus on garde de composantes)"
+          transform: text
+        rust:
+          cell: 24
+          pattern: "(Plus on garde de composantes)"
+          transform: text
+    - id: ari_kmeans_demi_lunes
+      description: "ARI de KMeans (k = 2) sur les demi-lunes imbriquées (Python 0.48)"
+      tolerance: 0.2
+      reference: python
+      sides:
+        python:
+          cell: 46
+          pattern: "ARI KMeans . demi-lunes : ([-0-9.]+)"
+          transform: float
+        rust:
+          cell: 28
+          pattern: "ARI KMeans . demi-lunes : ([-0-9.]+)"
+          transform: float
+    - id: ari_kmeans_anneaux
+      description: "ARI de KMeans (k = 2) sur les anneaux concentriques (Python -0.00)"
+      tolerance: 0.2
+      reference: python
+      sides:
+        python:
+          cell: 46
+          pattern: "ARI KMeans . anneaux\\s*: ([-0-9.]+)"
+          transform: float
+        rust:
+          cell: 28
+          pattern: "ARI KMeans . anneaux\\s*: ([-0-9.]+)"
+          transform: float
+    - id: ari_dbscan_demi_lunes
+      description: "ARI de DBSCAN (eps = 0.3, min_samples = 5) sur les demi-lunes (Python 0.99)"
+      tolerance: 0.2
+      reference: python
+      sides:
+        python:
+          cell: 49
+          pattern: "ARI DBSCAN . demi-lunes : ([-0-9.]+)"
+          transform: float
+        rust:
+          cell: 31
+          pattern: "ARI DBSCAN . demi-lunes : ([-0-9.]+)"
+          transform: float
+    - id: clusters_dbscan_demi_lunes
+      description: "Nombre de clusters de DBSCAN (eps = 0.3) sur les demi-lunes (2 des deux côtés)"
+      tolerance: 1
+      reference: python
+      sides:
+        python:
+          cell: 49
+          pattern: "Demi-lunes eps=0.3 : ARI=[0-9.]+  clusters=(\\d+)"
+          transform: int
+        rust:
+          cell: 31
+          pattern: "Demi-lunes eps=0.3 : ARI=[0-9.]+  clusters=(\\d+)"
+          transform: int
+    - id: ari_dbscan_anneaux
+      description: "ARI de DBSCAN (eps = 0.3) sur les anneaux (1.00 des deux côtés)"
+      tolerance: 0.2
+      reference: python
+      sides:
+        python:
+          cell: 49
+          pattern: "ARI DBSCAN . anneaux\\s*: ([-0-9.]+)"
+          transform: float
+        rust:
+          cell: 31
+          pattern: "ARI DBSCAN . anneaux\\s*: ([-0-9.]+)"
+          transform: float
+    - id: exercice_5
+      description: "Ligne d'exercice 5 (rayon eps qui sépare sans fragmenter, stub des deux côtés)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 52
+          pattern: "(Exercice 5 a completer)"
+          transform: text
+        rust:
+          cell: 34
+          pattern: "(Exercice 5 a completer)"
+          transform: text
+    - id: ari_hierarchique_demi_lunes
+      description: "ARI du clustering hiérarchique (lien simple, 2 groupes) sur les demi-lunes (1.00)"
+      tolerance: 0.2
+      reference: python
+      sides:
+        python:
+          cell: 54
+          pattern: "ARI hierarchique lien simple . demi-lunes : ([-0-9.]+)"
+          transform: float
+        rust:
+          cell: 36
+          pattern: "ARI hierarchique lien simple . demi-lunes : ([-0-9.]+)"
+          transform: float
+    - id: ari_hierarchique_anneaux
+      description: "ARI du clustering hiérarchique (lien simple, 2 groupes) sur les anneaux (1.00)"
+      tolerance: 0.2
+      reference: python
+      sides:
+        python:
+          cell: 54
+          pattern: "ARI hierarchique lien simple . anneaux\\s*: ([-0-9.]+)"
+          transform: float
+        rust:
+          cell: 36
+          pattern: "ARI hierarchique lien simple . anneaux\\s*: ([-0-9.]+)"
+          transform: float
+    - id: lien_complet_anneaux
+      description: "ARI du lien COMPLET sur les anneaux (Python 0.01)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 54
+          pattern: "Anneaux lien=complete\\s*: ARI=([-0-9.]+)"
+          transform: float
+        rust:
+          absent: >-
+            AgglomerativeClustering de smartcore 0.7.0 n'implemente que le lien
+            simple et n'expose aucune hauteur de fusion (src/cluster/agglomerative.rs,
+            `pub labels: Vec<usize>` seul) : ni la comparaison simple / complet ni
+            le dendrogramme ne peuvent etre rejoues. L'absence est declaree dans le
+            carnet (section 10) et non comblee par un substitut.
+    - id: exercice_6
+      description: "Ligne d'exercice 6 (préfixe commun ; la grandeur demandée change côté Rust)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 57
+          pattern: "(Exercice 6 a completer)"
+          transform: text
+        rust:
+          cell: 39
+          pattern: "(Exercice 6 a completer)"
+          transform: text
+    - id: exercice_7
+      description: "Ligne d'exercice 7 (quel algorithme pour quelle forme, identique des deux côtés)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 60
+          pattern: "(Exercice 7 a completer : \\(a\\) None, \\(b\\) None)"
+          transform: text
+        rust:
+          cell: 42
+          pattern: "(Exercice 7 a completer : \\(a\\) None, \\(b\\) None)"
+          transform: text

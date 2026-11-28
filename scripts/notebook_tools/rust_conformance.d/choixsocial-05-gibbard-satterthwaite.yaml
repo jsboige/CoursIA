@@ -1,0 +1,451 @@
+# Triplet ChoixSocial-05 : jumeau Python + C# + portage Rust (issue #27131, spec de portage).
+# Les trois carnets ont exactement la meme structure 26 cellules (meme indices) :
+# les cotes se correspondent par index. Cellules code : 3, 6, 9, 12, 15, 18, 21.
+# Cote Rust = evcxr + ndarray 0.17.2 + plotters 0.3.7 (feature evcxr seule).
+# Le carnet ne calcule aucun flottant : toutes les grandeurs sont entieres, des
+# candidats ou des verdicts. Toutes les tolerances sont donc 0 (egalite stricte).
+# Les deux figures (cellules 6 et 18) sont des RENDUS : hors registre, comparees
+# a l'oeil dans le body de la PR (memes cases, memes hauteurs de barres).
+# Les cellules 9, 15 et 21 sont des stubs C.1 (« Exercice a completer ») : non comparees.
+#
+# Cote C# : declare (le jumeau CSharp est sur main depuis #27221). Il ne porte pas
+# les mesures de rendu ligne a ligne, pour deux raisons mesurees sur ses sorties :
+# il imprime les listes sans crochets (B, A, C) la ou Python et Rust impriment
+# ['B', 'A', 'C'], et il pad les colonnes differemment. Les mesures de valeurs
+# (vainqueurs, rangs, scores, marge, verdicts) le portent ; les mesures de lignes
+# brutes sont Python/Rust.
+#
+# La parite SHA par cote (twin_pairs.d, cote rust) attend le point 1 de #27098 :
+# declare ici, pas reimplemente.
+- name: "ChoixSocial-05 Gibbard-Satterthwaite"
+  family: SocialChoice
+  python: MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-05-Gibbard-Satterthwaite-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-05-Gibbard-Satterthwaite-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-05-Gibbard-Satterthwaite-Rust.ipynb
+  measures:
+    - id: profil_canonique
+      description: "Profil canonique imprime : V1=['A', 'B', 'C'], V2=['B', 'A', 'C'], V3=['C', 'B', 'A'] (rendu des listes identique a l'octet)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "(Profil : V1=\\['A', 'B', 'C'\\], V2=\\['B', 'A', 'C'\\], V3=\\['C', 'B', 'A'\\])"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "(Profil : V1=\\['A', 'B', 'C'\\], V2=\\['B', 'A', 'C'\\], V3=\\['C', 'B', 'A'\\])"
+          transform: text
+    - id: vainqueur_pluralite_sincere
+      description: "Vainqueur de la Pluralite sincere (A)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "Vainqueur Pluralite sincere *: *(\\w)"
+          transform: text
+        csharp:
+          cell: 3
+          pattern: "Vainqueur Pluralite sincere *: *(\\w)"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "Vainqueur Pluralite sincere *: *(\\w)"
+          transform: text
+    - id: vainqueur_borda_sincere
+      description: "Vainqueur de Borda sincere (B)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "Vainqueur Borda sincere *: *(\\w)"
+          transform: text
+        csharp:
+          cell: 3
+          pattern: "Vainqueur Borda sincere *: *(\\w)"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "Vainqueur Borda sincere *: *(\\w)"
+          transform: text
+    - id: verdict_divergence
+      description: "Conclusion derivee des vainqueurs : les deux regles divergent"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "-> Pluralite \\w+, Borda \\w+ : (\\w+)\\."
+          transform: text
+        csharp:
+          cell: 3
+          pattern: "-> Pluralite \\w+, Borda \\w+ : (\\w+)\\."
+          transform: text
+        rust:
+          cell: 3
+          pattern: "-> Pluralite \\w+, Borda \\w+ : (\\w+)\\."
+          transform: text
+    - id: rang_a_v3
+      description: "Rang de A pour V3 (3, dernier)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "Rang de A pour V3 : (\\d+)"
+          transform: int
+        csharp:
+          cell: 3
+          pattern: "Rang de A pour V3 : (\\d+)"
+          transform: int
+        rust:
+          cell: 3
+          pattern: "Rang de A pour V3 : (\\d+)"
+          transform: int
+    - id: tiebreak_a
+      description: "Pluralite sincère, departage A>B>C (vainqueur A)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "Tiebreak A>B>C : vainqueur = (\\w)"
+          transform: text
+        csharp:
+          cell: 6
+          pattern: "Tiebreak A>B>C : vainqueur = (\\w)"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "Tiebreak A>B>C : vainqueur = (\\w)"
+          transform: text
+    - id: tiebreak_b
+      description: "Pluralite sincère, departage B>A>C (vainqueur B)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "Tiebreak B>A>C : vainqueur = (\\w)"
+          transform: text
+        csharp:
+          cell: 6
+          pattern: "Tiebreak B>A>C : vainqueur = (\\w)"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "Tiebreak B>A>C : vainqueur = (\\w)"
+          transform: text
+    - id: tiebreak_c
+      description: "Pluralite sincère, departage C>B>A (vainqueur C)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "Tiebreak C>B>A : vainqueur = (\\w)"
+          transform: text
+        csharp:
+          cell: 6
+          pattern: "Tiebreak C>B>A : vainqueur = (\\w)"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "Tiebreak C>B>A : vainqueur = (\\w)"
+          transform: text
+    - id: borda_sincere_cell6
+      description: "Borda sincere, deterministe (vainqueur B)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "Borda sincere : vainqueur = (\\w)"
+          transform: text
+        csharp:
+          cell: 6
+          pattern: "Borda sincere : vainqueur = (\\w)"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "Borda sincere : vainqueur = (\\w)"
+          transform: text
+    - id: rang_a_v1
+      description: "Rang de A pour V1 (1)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "V1 \\(pref [^)]*\\) : rang de A = (\\d+)"
+          transform: int
+        csharp:
+          cell: 6
+          pattern: "V1 \\(pref [^)]*\\) : rang de A = (\\d+)"
+          transform: int
+        rust:
+          cell: 6
+          pattern: "V1 \\(pref [^)]*\\) : rang de A = (\\d+)"
+          transform: int
+    - id: rang_a_v2
+      description: "Rang de A pour V2 (2)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "V2 \\(pref [^)]*\\) : rang de A = (\\d+)"
+          transform: int
+        csharp:
+          cell: 6
+          pattern: "V2 \\(pref [^)]*\\) : rang de A = (\\d+)"
+          transform: int
+        rust:
+          cell: 6
+          pattern: "V2 \\(pref [^)]*\\) : rang de A = (\\d+)"
+          transform: int
+    - id: rang_a_v3_cell6
+      description: "Rang de A pour V3 (3, pire choix)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "V3 \\(pref [^)]*\\) : rang de A = (\\d+)"
+          transform: int
+        csharp:
+          cell: 6
+          pattern: "V3 \\(pref [^)]*\\) : rang de A = (\\d+)"
+          transform: int
+        rust:
+          cell: 6
+          pattern: "V3 \\(pref [^)]*\\) : rang de A = (\\d+)"
+          transform: int
+    - id: table_pluralite
+      description: "Cellule 12 : les 6 lignes du tableau des bulletins de V3 (bulletin, vainqueur, rang, gain, marqueur), a l'octet pres"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "((?:  \\['[A-C]', '[A-C]', '[A-C]'\\] +[A-C] +[0-9]+ +-?[0-9]+[^\\n]*\\n){6})"
+          transform: text
+        rust:
+          cell: 12
+          pattern: "((?:  \\['[A-C]', '[A-C]', '[A-C]'\\] +[A-C] +[0-9]+ +-?[0-9]+[^\\n]*\\n){6})"
+          transform: text
+    - id: temoin_bulletin
+      description: "Cellule 12 : premier bulletin temoin retenu (['B', 'A', 'C'])"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "V3 manipule +: +(\\['B', 'A', 'C'\\])"
+          transform: text
+        rust:
+          cell: 12
+          pattern: "V3 manipule +: +(\\['B', 'A', 'C'\\])"
+          transform: text
+    - id: temoin_vainqueur
+      description: "Cellule 12 : vainqueur obtenu par le bulletin insincere (B)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "Vainqueur manipule +: +(\\w) \\(rang"
+          transform: text
+        csharp:
+          cell: 12
+          pattern: "Vainqueur manipule +: +(\\w) \\(rang"
+          transform: text
+        rust:
+          cell: 12
+          pattern: "Vainqueur manipule +: +(\\w) \\(rang"
+          transform: text
+    - id: temoin_gain_avant
+      description: "Cellule 12 : rang sincere du temoin (3)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "GAIN : rang (\\d+) -> rang"
+          transform: int
+        csharp:
+          cell: 12
+          pattern: "GAIN : rang (\\d+) -> rang"
+          transform: int
+        rust:
+          cell: 12
+          pattern: "GAIN : rang (\\d+) -> rang"
+          transform: int
+    - id: temoin_gain_apres
+      description: "Cellule 12 : rang obtenu apres manipulation (2)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "GAIN : rang \\d+ -> rang (\\d+)"
+          transform: int
+        csharp:
+          cell: 12
+          pattern: "GAIN : rang \\d+ -> rang (\\d+)"
+          transform: int
+        rust:
+          cell: 12
+          pattern: "GAIN : rang \\d+ -> rang (\\d+)"
+          transform: int
+    - id: borda_sincere_cell18
+      description: "Cellule 18 : vainqueur Borda sincere (B, rang 2 pour V3)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "Vainqueur Borda sincere : (\\w) \\(rang"
+          transform: text
+        csharp:
+          cell: 18
+          pattern: "Vainqueur Borda sincere : (\\w) \\(rang"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "Vainqueur Borda sincere : (\\w) \\(rang"
+          transform: text
+    - id: table_borda
+      description: "Cellule 18 : les 6 lignes du tableau Borda de V3 (bulletin, vainqueur, rang, gain), a l'octet pres"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "((?:  \\['[A-C]', '[A-C]', '[A-C]'\\] +[A-C] +[0-9]+ +-?[0-9]+[^\\n]*\\n){6})"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "((?:  \\['[A-C]', '[A-C]', '[A-C]'\\] +[A-C] +[0-9]+ +-?[0-9]+[^\\n]*\\n){6})"
+          transform: text
+    - id: aucun_temoin_borda
+      description: "Cellule 18 : aucun temoin Borda pour V3 sur ce profil"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "(Borda : AUCUN temoin de manipulation pour V3 sur ce profil\\.)"
+          transform: text
+        csharp:
+          cell: 18
+          pattern: "(Borda : AUCUN temoin de manipulation pour V3 sur ce profil\\.)"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "(Borda : AUCUN temoin de manipulation pour V3 sur ce profil\\.)"
+          transform: text
+    - id: score_borda_b
+      description: "Cellule 18 : score Borda de B (4 points)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: " +B = (\\d+) points"
+          transform: int
+        csharp:
+          cell: 18
+          pattern: " +B = (\\d+) points"
+          transform: int
+        rust:
+          cell: 18
+          pattern: " +B = (\\d+) points"
+          transform: int
+    - id: score_borda_a
+      description: "Cellule 18 : score Borda de A (3 points)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: " +A = (\\d+) points"
+          transform: int
+        csharp:
+          cell: 18
+          pattern: " +A = (\\d+) points"
+          transform: int
+        rust:
+          cell: 18
+          pattern: " +A = (\\d+) points"
+          transform: int
+    - id: score_borda_c
+      description: "Cellule 18 : score Borda de C (2 points)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: " +C = (\\d+) points"
+          transform: int
+        csharp:
+          cell: 18
+          pattern: " +C = (\\d+) points"
+          transform: int
+        rust:
+          cell: 18
+          pattern: " +C = (\\d+) points"
+          transform: int
+    - id: marge_borda
+      description: "Cellule 18 : marge derivee du vainqueur sur le second (1)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "-> B devance A de (\\d+) point"
+          transform: int
+        csharp:
+          cell: 18
+          pattern: "-> B devance A de (\\d+) point"
+          transform: int
+        rust:
+          cell: 18
+          pattern: "-> B devance A de (\\d+) point"
+          transform: int
+    - id: verdict_pluralite
+      description: "Cellule 18 : verdict de manipulation de la Pluralite (MANIPULABLE)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "Pluralite : (MANIPULABLE|NON MANIPULABLE)"
+          transform: text
+        csharp:
+          cell: 18
+          pattern: "Pluralite : (MANIPULABLE|NON MANIPULABLE)"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "Pluralite : (MANIPULABLE|NON MANIPULABLE)"
+          transform: text
+    - id: verdict_borda
+      description: "Cellule 18 : verdict de manipulation de Borda pour V3 (NON MANIPULABLE)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "Borda +: +(MANIPULABLE|NON MANIPULABLE)"
+          transform: text
+        csharp:
+          cell: 18
+          pattern: "Borda +: +(MANIPULABLE|NON MANIPULABLE)"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "Borda +: +(MANIPULABLE|NON MANIPULABLE)"
+          transform: text
