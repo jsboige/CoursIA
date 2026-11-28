@@ -35,8 +35,8 @@
 | `Sudoku-13-SymbolicAutomata-CSharp.ipynb` | 0 | 5 | 18 | 5 |
 | `Infer-02-Gaussian-Mixtures.ipynb` | 0 | 0 | 19 | 26 |
 | `Sudoku-03-Genetic-Python.ipynb` | 3 | 0 | 6 | 4 |
-| `04-1-Educational-Audio-Content.ipynb` | 7 | 0 | 0 | 1 |
-| `04-6-Audiobook-Pipeline.ipynb` | 6 | 0 | 0 | 2 |
+| `Audio-04-1-Educational-Audio-Content-Python.ipynb` | 7 | 0 | 0 | 1 |
+| `Audio-04-6-Audiobook-Pipeline-Python.ipynb` | 6 | 0 | 0 | 2 |
 | `Sudoku-18-Comparison-CSharp.ipynb` | 2 | 0 | 3 | 0 |
 | `Sudoku-18-Comparison-Python.ipynb` | 1 | 2 | 2 | 0 |
 | `Infer-01b-Premiers-Modeles.ipynb` | 0 | 0 | 4 | 10 |
@@ -47,7 +47,7 @@
 | `Lean-07b-Examples-Python.ipynb` | 3 | 0 | 0 | 0 |
 | `Planners-08-Temporal-Python.ipynb` | 0 | 0 | 3 | 0 |
 | `00-3-API-Endpoints-Configuration.ipynb` | 0 | 2 | 0 | 0 |
-| `03-1-Multi-Model-Audio-Comparison.ipynb` | 0 | 0 | 2 | 1 |
+| `Audio-03-1-Multi-Model-Audio-Comparison-Python.ipynb` | 0 | 0 | 2 | 1 |
 | `04-3-Music-Composition-Workflow.ipynb` | 1 | 1 | 0 | 4 |
 | `04-7-TTS-Voice-Benchmark.ipynb` | 2 | 0 | 0 | 0 |
 | `03-3-Performance-Optimization.ipynb` | 0 | 0 | 2 | 0 |

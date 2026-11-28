@@ -71,7 +71,7 @@ def git(*args, cwd=None):
     Empty stdout is a valid result and is returned as ''.
     """
     try:
-        out = subprocess.run(["git", *args], cwd=cwd, capture_output=True,
+        out = subprocess.run(["git", "-c", "core.quotePath=false", *args], cwd=cwd, capture_output=True,
                              encoding="utf-8", errors="replace", check=False)
     except OSError as e:
         raise RuntimeError(f"git subprocess failed: {e}") from e

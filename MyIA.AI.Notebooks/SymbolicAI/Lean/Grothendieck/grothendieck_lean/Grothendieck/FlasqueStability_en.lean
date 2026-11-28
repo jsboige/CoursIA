@@ -43,11 +43,11 @@ site version of Part 79:
     `Subsingleton (H F (n+1))`. This theorem delivers its content in the
     statement, not the proof (`inferInstance`, the cancellation being a
     Mathlib instance already bridged in Part 20): it lays the stone where
-    Godement uses Zorn. **Correction (Part 94)**: the initial gloss
+    Godement uses Zorn. **Correction (Part 102)**: the initial gloss
     "flasque => injective (II.5.2)" is **false** — on a two-point discrete
     space every sheaf is flasque and the constant sheaf (Z, Z) is not
     injective in Ab x Ab. Godement's true statement is
-    *flasque => Γ-acyclic* (II.5.1): Part 94
+    *flasque => Γ-acyclic* (II.5.1): Part 102
     (`Grothendieck.FlasqueAcyclic`) delivers its unconditional degree 1,
     the shift step, and the conditional capstone whose only hypothesis is
     *injective => flasque* (II.4, `j_!` absent from Mathlib) — a boundary
@@ -71,7 +71,7 @@ References:
   - Mathlib, `Mathlib.CategoryTheory.Limits.FunctorCategory` (`piObjIso`).
   - Part 20 (`Grothendieck.SheafCohomology.Basic`): Ext cohomology.
   - Part 79 (`Grothendieck.Flasque`): `IsFlasqueSieves`.
-  - Part 94 (`Grothendieck.FlasqueAcyclic`): flasque => Γ-acyclic,
+  - Part 102 (`Grothendieck.FlasqueAcyclic`): flasque => Γ-acyclic,
     unconditional degree 1 + shift step + conditional capstone.
   - Part 63 (`Grothendieck.SheafCondition`): the product-equalizer
     decomposition of which flasqueness is the existence half.
@@ -224,7 +224,7 @@ for an abelian sheaf `F` flasque at the level of sieves (composed with
 `H^{n+1}` is trivial. The cancellation is the Mathlib instance already
 bridged by Part 20; this theorem consumes it in the flasque setting.
 The stone laid here precedes the unconditional degree-1 acyclicity
-delivered by Part 94 (`Grothendieck.FlasqueAcyclic`): Godement's true
+delivered by Part 102 (`Grothendieck.FlasqueAcyclic`): Godement's true
 theorem II.5.1 is *flasque => Γ-acyclic*, whose only missing link is
 *injective => flasque* (II.4) — a documented boundary of the lake,
 consciously not crossed. -/
