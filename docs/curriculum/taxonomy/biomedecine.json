@@ -1,0 +1,446 @@
+{
+  "schema_version": 1,
+  "series": "BioMedecine",
+  "hierarchy": [
+    "series",
+    "subseries",
+    "notebook",
+    "example",
+    "exercise"
+  ],
+  "notebooks": [
+    "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb"
+  ],
+  "notebook_tree": [
+    {
+      "level": "series",
+      "path": "BioMedecine",
+      "decimal_path": "1",
+      "depth": 0,
+      "label_fr": "Bio & Médecine"
+    },
+    {
+      "level": "subseries",
+      "path": "BioMedecine/Dynamiques",
+      "decimal_path": "1.1",
+      "depth": 1,
+      "label_fr": "Dynamiques du vivant"
+    },
+    {
+      "level": "notebook",
+      "path": "BioMedecine/Dynamiques/01",
+      "decimal_path": "1.1.1",
+      "depth": 2,
+      "label_fr": "Populations et épidémies",
+      "repository_path": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb"
+    }
+  ],
+  "concepts": [
+    {
+      "id": "4f1c9a02-7d3e-4b55-9e21-1a8c0d5b7e13",
+      "path": "biomedecine/controle-independant",
+      "decimal_path": "1",
+      "depth": 0,
+      "label_fr": "Contrôle indépendant",
+      "label_en": "Independent check",
+      "definition_fr": "Voie de calcul qui ne partage aucun code avec la voie principale et peut donc juger son résultat : solution analytique évaluée directement, invariant conservé, ou équation scalaire résolue séparément. L'accord porte alors sur la prédiction, pas sur une convention commune.",
+      "definition_en": "A computation route sharing no code with the main route and therefore able to judge its result: a closed form evaluated directly, a conserved invariant, or a scalar equation solved separately. The agreement then bears on the prediction, not on a shared convention.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "360f53c5"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "cd640236"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "0e60315c"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "8b2d6c14-3a7f-4e69-b0d2-5c9e7f1a4b28",
+      "path": "biomedecine/controle-independant/contre-temoin",
+      "decimal_path": "1.1",
+      "depth": 1,
+      "label_fr": "Contre-témoin",
+      "label_en": "Counter-witness",
+      "definition_fr": "Expérience construite pour échouer : on remplace la voie de calcul de référence par un schéma volontairement trop grossier, ou on se place sous un seuil où l'effet attendu ne peut pas apparaître. Un accord numérique ne prouve quelque chose que si le contrôle sait échouer.",
+      "definition_en": "An experiment built to fail: the reference computation route is replaced by a deliberately coarse scheme, or the setting falls below a threshold where the expected effect cannot appear. A numerical agreement proves something only if the check can fail.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "360f53c5"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "7a5aca77"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "1438d8d3"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "64083ebf"
+        }
+      ],
+      "prerequisites": [
+        "4f1c9a02-7d3e-4b55-9e21-1a8c0d5b7e13"
+      ]
+    },
+    {
+      "id": "c7a1e934-6b52-4d18-9f30-2e7b4c8d1a55",
+      "path": "biomedecine/controle-independant/statut-du-resultat",
+      "decimal_path": "1.2",
+      "depth": 1,
+      "label_fr": "Statut d'un résultat",
+      "label_en": "Status of a result",
+      "definition_fr": "Classe explicite de ce qu'un carnet établit : mesuré sur ce code, cité d'une source sans redémonstration, ou ouvert. Elle empêche qu'une conclusion soit lue au-delà de sa preuve, et sépare la validité du code de la validité du modèle biologique.",
+      "definition_en": "An explicit class for what a notebook establishes: measured on this code, cited from a source without proof, or open. It prevents a conclusion from being read beyond its evidence, and separates the validity of the code from the validity of the biological model.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "360f53c5"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "cd640236"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "05e5b60f"
+        }
+      ],
+      "prerequisites": [
+        "4f1c9a02-7d3e-4b55-9e21-1a8c0d5b7e13"
+      ]
+    },
+    {
+      "id": "1d9f3b60-4c28-4a71-8e5d-7b2f0c6a9e34",
+      "path": "biomedecine/croissance-logistique",
+      "decimal_path": "2",
+      "depth": 0,
+      "label_fr": "Croissance logistique",
+      "label_en": "Logistic growth",
+      "definition_fr": "Modèle d'effectif continu dN/dt = rN(1 − N/K) : croissance à taux r tant que la ressource est abondante, ralentissement à mesure que l'effectif approche la capacité de charge, puis saturation. Il suppose des individus identiques, une ressource homogène et des taux constants — hypothèses énoncées, non vérifiées.",
+      "definition_en": "Continuous population model dN/dt = rN(1 − N/K): growth at rate r while the resource is abundant, slowing as the size approaches the carrying capacity, then saturation. It assumes identical individuals, a homogeneous resource and constant rates — assumptions stated, not verified.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "e6ff9ed8"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "7f3a5835"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "5e4a2c81-9d17-4b63-a0f8-3c6b1e9d7a42",
+      "path": "biomedecine/croissance-logistique/capacite-de-charge",
+      "decimal_path": "2.1",
+      "depth": 1,
+      "label_fr": "Capacité de charge",
+      "label_en": "Carrying capacity",
+      "definition_fr": "Effectif K que le milieu peut soutenir durablement. Il annule la dérivée du modèle logistique et fixe donc le point stable que l'effectif rejoint : partant de 5, la simulation sature à K = 100.",
+      "definition_en": "The population size K the environment can sustain. It sets the derivative of the logistic model to zero and therefore fixes the stable point the population reaches: starting from 5, the simulation saturates at K = 100.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "e6ff9ed8"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "7f3a5835"
+        }
+      ],
+      "prerequisites": [
+        "1d9f3b60-4c28-4a71-8e5d-7b2f0c6a9e34"
+      ]
+    },
+    {
+      "id": "9c3b7d25-1e64-4f80-b5a9-8d0c2f4b6e71",
+      "path": "biomedecine/croissance-logistique/solution-analytique",
+      "decimal_path": "2.2",
+      "depth": 1,
+      "label_fr": "Solution analytique de la logistique",
+      "label_en": "Closed form of logistic growth",
+      "definition_fr": "Forme fermée N(t) = K N₀ e^{rt} / (K + N₀(e^{rt} − 1)), obtenue en séparant les variables. Évaluée directement, elle ne partage aucune ligne de code avec l'intégrateur : c'est elle qui sert de juge indépendant de la section.",
+      "definition_en": "Closed form N(t) = K N₀ e^{rt} / (K + N₀(e^{rt} − 1)), obtained by separation of variables. Evaluated directly, it shares no line of code with the integrator: it is the independent judge of the section.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "e6ff9ed8"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "7f3a5835"
+        }
+      ],
+      "prerequisites": [
+        "1d9f3b60-4c28-4a71-8e5d-7b2f0c6a9e34"
+      ]
+    },
+    {
+      "id": "2a8e5f47-6c93-4d21-9b70-e4f1a8c3d506",
+      "path": "biomedecine/schema-euler-explicite",
+      "decimal_path": "3",
+      "depth": 0,
+      "label_fr": "Schéma d'Euler explicite",
+      "label_en": "Explicit Euler scheme",
+      "definition_fr": "Discrétisation N_{k+1} = N_k + h r N_k (1 − N_k/K) : la dérivée est estimée au début du pas. Le schéma est simple et d'ordre un, mais un pas trop grand le fait quitter le domaine physique — sur Lotka-Volterra avec h = 0,5, l'effectif devient négatif au 31e pas.",
+      "definition_en": "Discretization N_{k+1} = N_k + h r N_k (1 − N_k/K): the derivative is evaluated at the start of the step. The scheme is simple and first order, but too large a step takes it outside the physical domain — on Lotka-Volterra with h = 0.5, the population turns negative at step 31.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "7a5aca77"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "1438d8d3"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "6f0b9d13-8a45-4c92-b7e1-0d5a3f8c2b94",
+      "path": "biomedecine/schema-euler-explicite/ordre-de-convergence",
+      "decimal_path": "3.1",
+      "depth": 1,
+      "label_fr": "Ordre de convergence",
+      "label_en": "Order of convergence",
+      "definition_fr": "Exposant p tel que l'erreur globale décroisse comme h^p. Il se mesure par le rapport des erreurs entre deux pas successifs — proche de 2 pour un ordre un, de 4 pour un ordre deux — ou par régression log-log. Sur la logistique, les rapports observés tombent entre 1,92 et 1,98 et l'ordre mesuré entre 0,94 et 0,98.",
+      "definition_en": "Exponent p such that the global error decreases as h^p. It is measured from the ratio of errors between successive step sizes — near 2 for first order, near 4 for second order — or by log-log regression. On the logistic model, observed ratios fall between 1.92 and 1.98 and the measured order between 0.94 and 0.98.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "7a5aca77"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "061dcd5d"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "60169505"
+        }
+      ],
+      "prerequisites": [
+        "2a8e5f47-6c93-4d21-9b70-e4f1a8c3d506"
+      ]
+    },
+    {
+      "id": "b3c7e508-2f19-4a84-8d6b-1f9c5e0a7d32",
+      "path": "biomedecine/integrateur-adaptatif",
+      "decimal_path": "4",
+      "depth": 0,
+      "label_fr": "Intégrateur adaptatif",
+      "label_en": "Adaptive integrator",
+      "definition_fr": "Intégrateur à pas variable qui ajuste le pas à une tolérance d'erreur locale, utilisé ici comme voie de calcul de référence face aux schémas à pas fixe. Sa tolérance explique l'ordre de grandeur de l'écart résiduel : sur la logistique, l'accord avec la formule exacte vaut 6,3×10⁻⁸ en absolu sur 400 points.",
+      "definition_en": "A variable-step integrator adapting the step to a local error tolerance, used here as the reference computation route against fixed-step schemes. Its tolerance explains the size of the residual gap: on the logistic model, agreement with the exact formula is 6.3×10⁻⁸ absolute over 400 points.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "2aca5d4b"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "7f3a5835"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "940c9568"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "e1a4c862-5b39-4f07-9c28-6d3b8e1f0a75",
+      "path": "biomedecine/lotka-volterra",
+      "decimal_path": "5",
+      "depth": 0,
+      "label_fr": "Système proie-prédateur de Lotka-Volterra",
+      "label_en": "Lotka-Volterra predator-prey system",
+      "definition_fr": "Système ẋ = αx − βxy, ẏ = δxy − γy : les proies se reproduisent seules au taux α, les prédateurs meurent au taux γ, et la rencontre agit proportionnellement au produit des effectifs. Le milieu est supposé homogène, sans migration, sans saison et sans autre espèce.",
+      "definition_en": "System ẋ = αx − βxy, ẏ = δxy − γy: prey reproduce on their own at rate α, predators die at rate γ, and encounters act in proportion to the product of the sizes. The environment is assumed homogeneous, with no migration, no season and no other species.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "ecd183e1"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "940c9568"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "7d2f0b95-4e18-4a63-b2c7-9f5d1a4e8c30",
+      "path": "biomedecine/lotka-volterra/point-fixe",
+      "decimal_path": "5.1",
+      "depth": 1,
+      "label_fr": "Point fixe non trivial de Lotka-Volterra",
+      "label_en": "Non-trivial fixed point of Lotka-Volterra",
+      "definition_fr": "Point (x*, y*) = (γ/δ, α/β) où croissance des proies et prédation s'équilibrent. Les extrema simulés des deux effectifs l'encadrent sans s'en écarter ni s'en approcher : avec α = 1,1, β = 0,4, δ = 0,1 et γ = 0,4, il vaut (4, 2,75) et les cycles tournent autour de lui.",
+      "definition_en": "Point (x*, y*) = (γ/δ, α/β) where prey growth and predation balance. The simulated extrema of both populations bracket it without drifting away or converging: with α = 1.1, β = 0.4, δ = 0.1 and γ = 0.4, it equals (4, 2.75) and the cycles revolve around it.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "ecd183e1"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "940c9568"
+        }
+      ],
+      "prerequisites": [
+        "e1a4c862-5b39-4f07-9c28-6d3b8e1f0a75"
+      ]
+    },
+    {
+      "id": "0c6b8e24-7d51-4f39-a8e2-3b9d6c1f5a87",
+      "path": "biomedecine/lotka-volterra/integrale-premiere",
+      "decimal_path": "5.2",
+      "depth": 1,
+      "label_fr": "Intégrale première",
+      "label_en": "First integral",
+      "definition_fr": "Quantité H(x, y) = δx − γ ln x + βy − α ln y dont la dérivée le long des trajectoires exactes est nulle, et qui doit donc rester constante quel que soit le point de départ. Un intégrateur qui dérive en H ne respecte pas la structure du système, même si ses trajectoires ressemblent à des cycles.",
+      "definition_en": "Quantity H(x, y) = δx − γ ln x + βy − α ln y whose derivative along exact trajectories is zero, and which must therefore remain constant whatever the starting point. An integrator that drifts in H does not respect the structure of the system, even if its trajectories look like cycles.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "ecd183e1"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "940c9568"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "1438d8d3"
+        }
+      ],
+      "prerequisites": [
+        "e1a4c862-5b39-4f07-9c28-6d3b8e1f0a75",
+        "7d2f0b95-4e18-4a63-b2c7-9f5d1a4e8c30"
+      ]
+    },
+    {
+      "id": "3f9a1d76-0b48-4e25-9d6c-8a2f5b7e1c04",
+      "path": "biomedecine/modele-sir",
+      "decimal_path": "6",
+      "depth": 0,
+      "label_fr": "Modèle SIR",
+      "label_en": "SIR model",
+      "definition_fr": "Système Ṡ = −βSI/N, İ = βSI/N − γI, Ṙ = γI sur une population fermée divisée en susceptibles, infectieux et retirés. Il suppose un mélange parfait, des taux constants, une immunité définitive et aucune démographie : c'est un modèle, sans donnée de patient.",
+      "definition_en": "System Ṡ = −βSI/N, İ = βSI/N − γI, Ṙ = γI over a closed population split into susceptible, infectious and removed. It assumes perfect mixing, constant rates, permanent immunity and no demography: it is a model, with no patient data.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "6e316582"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "0793d823"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "8e5c2a19-6f73-4b08-a1d9-4c7e0b3f6d52",
+      "path": "biomedecine/modele-sir/nombre-de-reproduction-base",
+      "decimal_path": "6.1",
+      "depth": 1,
+      "label_fr": "Nombre de reproduction de base",
+      "label_en": "Basic reproduction number",
+      "definition_fr": "R₀ = β/γ, nombre d'infections secondaires produites par un cas dans une population entièrement susceptible. Il fixe le seuil : à R₀ ≤ 1 l'infectieux décroît dès le départ et l'épidémie s'éteint ; au-dessus, elle démarre.",
+      "definition_en": "R₀ = β/γ, the number of secondary infections caused by one case in a fully susceptible population. It sets the threshold: at R₀ ≤ 1 the infectious count decreases from the start and the outbreak dies out; above it, the outbreak takes off.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "6e316582"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "0793d823"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "64083ebf"
+        }
+      ],
+      "prerequisites": [
+        "3f9a1d76-0b48-4e25-9d6c-8a2f5b7e1c04"
+      ]
+    },
+    {
+      "id": "a4d8f613-9c25-4e70-8b3a-5f1d2c9e7b48",
+      "path": "biomedecine/modele-sir/taille-finale",
+      "decimal_path": "6.2",
+      "depth": 1,
+      "label_fr": "Taille finale d'une épidémie",
+      "label_en": "Final outbreak size",
+      "definition_fr": "Part de la population encore susceptible à la fin, solution de l'équation transcendante S∞ = S₀ exp(−R₀(N − S∞)/N) obtenue en divisant Ṙ par Ṡ. Elle se résout par dichotomie sans jamais intégrer le système : c'est la voie indépendante de l'intégrateur, et l'écart mesuré avec la simulation vaut 2,4×10⁻⁷ en relatif.",
+      "definition_en": "The share of the population still susceptible at the end, solving the transcendental equation S∞ = S₀ exp(−R₀(N − S∞)/N) obtained by dividing Ṙ by Ṡ. It is solved by bisection without ever integrating the system: this is the route independent of the integrator, and the measured gap with the simulation is 2.4×10⁻⁷ relative.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "6e316582"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "0e60315c"
+        }
+      ],
+      "prerequisites": [
+        "3f9a1d76-0b48-4e25-9d6c-8a2f5b7e1c04",
+        "8e5c2a19-6f73-4b08-a1d9-4c7e0b3f6d52"
+      ]
+    },
+    {
+      "id": "d0b6e347-1a89-4c52-9f7e-2b4d8a0c5e19",
+      "path": "biomedecine/modele-sir/immunite-de-groupe",
+      "decimal_path": "6.3",
+      "depth": 1,
+      "label_fr": "Seuil d'immunité de groupe",
+      "label_en": "Herd immunity threshold",
+      "definition_fr": "Condition S/N < 1/R₀ sous laquelle chaque cas infecte moins d'une personne en moyenne, et où l'infectieux décroît. C'est la condition d'arrêt réelle de l'épidémie, atteinte bien avant l'épuisement du réservoir : à R₀ = 2,5 le seuil vaut 40 % et il reste 10,7 % de susceptibles à la fin.",
+      "definition_en": "Condition S/N < 1/R₀ under which each case infects fewer than one other on average, and the infectious count decreases. It is the actual stopping condition of the outbreak, reached well before the reservoir is exhausted: at R₀ = 2.5 the threshold is 40 % and 10.7 % of susceptibles remain at the end.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "0793d823"
+        }
+      ],
+      "prerequisites": [
+        "8e5c2a19-6f73-4b08-a1d9-4c7e0b3f6d52"
+      ]
+    },
+    {
+      "id": "5b1e7c98-3d40-4a96-8c25-e7f0a9b3d614",
+      "path": "biomedecine/modele-sir/approximation-de-branchement",
+      "decimal_path": "6.4",
+      "depth": 1,
+      "label_fr": "Approximation de branchement",
+      "label_en": "Branching-process approximation",
+      "definition_fr": "Estimation de la taille finale d'une épidémie naissante par I₀/(1 − R₀), valable sous le seuil. Elle prédit 25 et 100 cas pour R₀ = 0,6 et 0,9 ; la simulation retrouve 25 et 98,6, l'écart venant de ce que la population n'est pas infinie — ce qui situe le domaine de validité de l'approximation.",
+      "definition_en": "Estimate of the final size of an emerging outbreak as I₀/(1 − R₀), valid below the threshold. It predicts 25 and 100 cases for R₀ = 0.6 and 0.9; the simulation returns 25 and 98.6, the gap coming from the population not being infinite — which locates the approximation's range of validity.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb",
+          "cell_id": "64083ebf"
+        }
+      ],
+      "prerequisites": [
+        "3f9a1d76-0b48-4e25-9d6c-8a2f5b7e1c04",
+        "8e5c2a19-6f73-4b08-a1d9-4c7e0b3f6d52"
+      ]
+    }
+  ]
+}
