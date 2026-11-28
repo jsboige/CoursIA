@@ -1,6 +1,6 @@
 # Kernels & Runtime — Cluster CoursIA
 
-> REFERENCE — vivante — dernière révision 2026-11-24
+> REFERENCE — vivante — dernière révision 2026-11-25
 
 Document de référence détaillant l'inventaire kernels obligatoire sur toute machine du cluster (cf CLAUDE.md règle H.2).
 
@@ -409,16 +409,65 @@ Papermill **n'a pas** de traducteur Rust (seuls `python`, `R`, `Julia`, `.NET` s
 
 Prédicat #23997 re-attesté après retrait : `check_kernelspec_temp_paths.py --check-exists` → `CLEAN : aucun interpreteur sous un chemin temporaire`.
 
-### Ce que les quatre rangées mesurées établissent
+### MYIA-AI-01 (mesuré 2026-11-25T16:21Z — rangée d'origine : #24883, commentaire `7168022065`)
 
-1. **Même nom, même Python, numpy différent** : `python3` → numpy **2.5.2** (po-2023), **2.2.6** (po-2028), **2.4.2** (po-2024), **2.5.4** (po-2027). Le cas fondateur de #24883 en version mineure, désormais complet sur les quatre sièges mesurés — une re-exécution « python3 » produit des sorties non interchangeables dès que le carnet dépend de numpy.
-2. **Plusieurs noms, un seul environnement** (dual du cas fondateur) : po-2028 `python3` == `coursia-canonical` == `coursia-pymc` (même exécutable) ; po-2023 `python3` == `coursia-py313-argu`, `python3-lean` == `smartcontracts`, `argu-reexec-310` == `mcp-jupyter-py310` ; po-2027 `python3` == `coursia-venv-cu126`, `coursia-ml-training` == `python3-coursia2` == `sw14-coursia16120` (venv du second checkout), `py313` == `py313gpu` == `python3-lean`. Dans les deux sens, le nom ne dénote pas l'artefact.
-3. **`coursia-ml-training` lui-même diverge** : (3.11.16, 2.4.6) sur po-2023, (3.12.15, 2.5.4) sur po-2028, (3.11.15, 2.4.6) sur po-2024, **(3.13.15, 2.4.6) sur po-2027** — quatre environnements pour le nom le plus « canonique » du dépôt ; sur po-2027 il pointe sur le venv de l'autre checkout (`CoursIA-2`), partagé avec deux autres enregs.
-4. **Les enregs WSL rendent du Python réel mesuré** (po-2027) : trois enregs `*-wsl` exécutent des interpréteurs Linux distincts (`venv-coursia`, `.lean4-venv`, conda `rvc` — numpy 1.23.5, la plus ancienne du siège) : le préfixe « wsl » ne dénote pas non plus un environnement unique.
+31 enregs enregistrés sur ce siège : **23 lancés et sondés** (`status: ok`), 4 non-Python, 4 en échec de démarrage.
+
+| Kernelspec | Python | numpy | Executable |
+|---|---|---|---|
+| `.net-csharp` / `.net-fsharp` / `.net-powershell` | non-Python (dotnet) | - | `dotnet` |
+| `rust` | non-Python (evcxr) | - | `%LOCALAPPDATA%/rust-seat/evcxr-gnullvm/bin/evcxr_jupyter.exe` |
+| `python3` / `python3-lean` / `coursia-py313` / `coursia-py313-argu` | 3.13.16 | 2.5.3 | `%USERPROFILE%/miniconda3/envs/coursia-py313/python.exe` |
+| `coursia-genai-audio` / `python3-coursia2` | 3.13.16 | 2.5.3 | `%USERPROFILE%/miniconda3/envs/coursia-genai-audio/python.exe` |
+| `coursia-voi-py313` | 3.13.16 | 2.5.3 | `%USERPROFILE%/miniconda3/envs/coursia-voi-py313/python.exe` |
+| `ict-py313` | 3.13.16 | 2.5.3 | `%USERPROFILE%/miniconda3/envs/ict313/python.exe` |
+| `coursia-genai-video` | 3.12.13 | 2.5.2 | `%USERPROFILE%/miniconda3/envs/coursia-genai-video/python.exe` |
+| `coursia-sae` | 3.12.13 | 2.5.2 | `%USERPROFILE%/miniconda3/envs/coursia-sae/python.exe` |
+| `coursia-ml-training` | 3.11.15 | 2.4.3 | `%USERPROFILE%/miniconda3/envs/coursia-ml-training/python.exe` |
+| `python3-sl13b-pinned` | 3.13.16 | 2.4.4 | `%USERPROFILE%/miniconda3/envs/coursia-sl13b-pinned/Scripts/python.exe` |
+| `audiocraft-musicgen` | 3.10.22 | 1.26.4 | `%USERPROFILE%/miniconda3/envs/audiocraft-musicgen/python.exe` |
+| `gsplat310` | 3.10.22 | 1.26.4 | `%USERPROFILE%/miniconda3/envs/gsplat310/python.exe` |
+| `epita_symbolic_ai` | 3.10.18 | 2.2.6 | `%USERPROFILE%/.conda/envs/epita_symbolic_ai/python.exe` |
+| `pyphi` | 3.9.25 | 1.25.0 | `%USERPROFILE%/miniconda3/envs/pyphi/python.exe` |
+| `smartcontracts-win` | 3.13.18 | **numpy absent** | `%USERPROFILE%/miniconda3/envs/smartcontracts/python.exe` |
+| `python3-wsl` | 3.12.3 | 2.4.6 | `wsl.exe` → `~/.lean4-venv/bin/python3` (Ubuntu) |
+| `leandojo-v2` | 3.12.3 | 2.5.3 | `wsl.exe` → `~/venvs/leandojo-v2/bin/python` (Ubuntu) |
+| `lean4` / `lean4-wsl` / `smartcontracts` | **démarrage en échec** (RuntimeError) | - | `wsl.exe` → wrapper WSL — statut mesuré tel quel |
+| `.net-csharp-test-712001` | **démarrage en échec** (RuntimeError) | - | `%LOCALAPPDATA%/Temp/dotnet-tools-test/dotnet-interactive.exe` — classe #23997 |
+| `py313-mpl310` | 3.13.16 | 2.5.4 | `D:/CoursIA-2/.tmp/venv-py313-mpl310/Scripts/python.exe` — classe #23997 |
+| `python3-mpl310` | 3.12.13 | 2.5.4 | `D:/CoursIA-2/.tmp/venv-mpl310/Scripts/python.exe` — classe #23997 |
+| `search313` | 3.13.16 | 2.5.4 | `D:/CoursIA/.tmp/venv-search313/Scripts/python.exe` — classe #23997 |
+| `python313-tweety` | 3.13.16 | **numpy absent** | `D:/CoursIA/.tmp/venv-tweety313/Scripts/python.exe` — classe #23997 |
+
+**Canon de re-exécution ai-01** : `python3` → **(3.13.16, numpy 2.5.3)**, env `%USERPROFILE%/miniconda3/envs/coursia-py313`.
+
+**Classe #23997 — première attestation sur ce siège (25/11)** : `python scripts/notebook_tools/check_kernelspec_temp_paths.py --check-exists` rend `31 kernelspec(s) mesure(s), 1 racine(s) temporaire(s)` puis **« 5 kernelspec(s) a reprendre »** :
+
+| Classe de l'organe | Kernelspec | `argv[0]` |
+|---|---|---|
+| `TEMP_ROOT` | `.net-csharp-test-712001` | `%LOCALAPPDATA%/Temp/dotnet-tools-test/dotnet-interactive.exe` |
+| `REPO_TMP` | `py313-mpl310` | `D:/CoursIA-2/.tmp/venv-py313-mpl310/Scripts/python.exe` |
+| `REPO_TMP` | `python3-mpl310` | `D:/CoursIA-2/.tmp/venv-mpl310/Scripts/python.exe` |
+| `REPO_TMP` | `python313-tweety` | `D:/CoursIA/.tmp/venv-tweety313/Scripts/python.exe` |
+| `REPO_TMP` | `search313` | `D:/CoursIA/.tmp/venv-search313/Scripts/python.exe` |
+
+Les cinq interpréteurs **existent encore** (l'organe les classe `present`) : ils ne sont pas morts, ils sont **éphémères** — et 4 d'entre eux pointent dans le `.tmp` d'un **checkout** (`D:/CoursIA-2/.tmp`, `D:/CoursIA/.tmp`), que les nettoyages de session purgent : c'est exactement le mécanisme qui a tué `torch2121` sur po-2027. La classe #23997 ne se limite donc pas à `%TEMP%` — **un `.tmp` de dépôt est la même famille de pointeur**.
+
+**Les 5 n'ont aucun consommateur sur `main`** (mesuré : `git grep -l -F "<nom>" origin/main -- '*.ipynb'` → 0 carnet pour chacun) : le retrait serait donc possible, comme `torch2121` sur po-2027. Mais deux d'entre eux (`search313`, `python313-tweety`) pointent dans le checkout **d'un autre workspace** (`D:/CoursIA`), où ils peuvent servir un travail hors dépôt : ce retrait relève du propriétaire de ce checkout, pas de cette rangée. **Résiduel nommé**, pas une réparation opportuniste.
+
+**Les 4 enregs en échec de démarrage** (`lean4`, `lean4-wsl`, `smartcontracts`, `.net-csharp-test-712001`) sont **mesurés tels quels, pas interprétés**. Une vérification complémentaire bornee : l'interpréteur du wrapper `lean4` répond (`~/.lean4-venv/bin/python3` → 3.12.3 / numpy 2.4.6) et le wrapper **compile** (`py_compile` rc 0) — l'échec n'est donc pas un interpréteur absent ; il est dans la trajectoire de lancement du wrapper (outil Lean épinglé `repl-<tag>`), **hypothèse à instruire**, hors de cette rangée.
+
+### Ce que les cinq rangées mesurées établissent
+
+1. **Même nom, même Python, numpy différent** : `python3` → numpy **2.5.2** (po-2023), **2.2.6** (po-2028), **2.4.2** (po-2024), **2.5.4** (po-2027), **2.5.3** (ai-01). Le cas fondateur de #24883 en version mineure, désormais complet sur les cinq sièges mesurés — une re-exécution « python3 » produit des sorties non interchangeables dès que le carnet dépend de numpy.
+2. **Plusieurs noms, un seul environnement** (dual du cas fondateur) : ai-01 `python3` == `python3-lean` == `coursia-py313` == `coursia-py313-argu` (conda `coursia-py313`), `coursia-genai-audio` == `python3-coursia2` ; po-2028 `python3` == `coursia-canonical` == `coursia-pymc` (même exécutable) ; po-2023 `python3` == `coursia-py313-argu`, `python3-lean` == `smartcontracts`, `argu-reexec-310` == `mcp-jupyter-py310` ; po-2027 `python3` == `coursia-venv-cu126`, `coursia-ml-training` == `python3-coursia2` == `sw14-coursia16120` (venv du second checkout), `py313` == `py313gpu` == `python3-lean`. Dans les deux sens, le nom ne dénote pas l'artefact.
+3. **`coursia-ml-training` lui-même diverge** : (3.11.16, 2.4.6) sur po-2023, (3.12.15, 2.5.4) sur po-2028, (3.11.15, 2.4.6) sur po-2024, (3.13.15, 2.4.6) sur po-2027, **(3.11.15, 2.4.3) sur ai-01** — cinq environnements pour le nom le plus « canonique » du dépôt ; sur po-2027 il pointe sur le venv de l'autre checkout (`CoursIA-2`), partagé avec deux autres enregs.
+4. **Les enregs WSL rendent du Python réel mesuré** : po-2027 — trois enregs `*-wsl` exécutent des interpréteurs Linux distincts (`venv-coursia`, `.lean4-venv`, conda `rvc` — numpy 1.23.5, la plus ancienne du siège) ; ai-01 — `python3-wsl` → `~/.lean4-venv/bin/python3` (3.12.3 / numpy **2.4.6**) et `leandojo-v2` → `~/venvs/leandojo-v2/bin/python` (3.12.3 / numpy **2.5.3**) : **même numéro de Python, deux numpy**. Le préfixe « wsl » ne dénote ni un environnement unique, ni même un Python unique.
+5. **Le nom ne dénote pas l'emplacement non plus** (nouveau sur ai-01) : les 5 enregs de la classe #23997 portent des noms anodins (`search313`, `py313-mpl310`) qui ne disent rien de leur fragilité de chemin, et les 5 ont **0 consommateur sur `main`** — le prédicat de #23997 doit donc porter sur le **chemin** (`argv[0]`), jamais sur le nom.
 
 ### Sièges restants
 
-Non mesurés à la date de cette section : `ai-01`, `po-2025`, `po-2026`. La même sonde (ci-dessus) y produit la rangée manquante ; chaque rangée publiée cite sa date de mesure et son commentaire d'origine sur #24883.
+Non mesurés à la date de cette section : `po-2025`, `po-2026`. La même sonde (ci-dessus) y produit la rangée manquante ; chaque rangée publiée cite sa date de mesure et son commentaire d'origine sur #24883.
 
 ## Python 3.10+ (notebooks Python)
 
