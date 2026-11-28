@@ -1,0 +1,325 @@
+# Conformité différentielle de Z3-09-Enigme-Einstein (triplet Python + C# + Rust).
+#
+# Les trois carnets ont la MÊME structure de cellules — 29 cellules, dont 11
+# de code aux mêmes index bruts 1, 3, 5, 9, 13, 16, 18, 19, 22, 24, 27. La
+# correspondance est donc directe par index ; elle n'a pas besoin d'être
+# écrite à la main comme dans les triplets dont les structures divergent
+# (Sudoku, CSP).
+#
+# Écarts de rendu MESURÉS entre les trois côtés (aucun n'est supposé) —
+# relevés sur les sorties COMMITÉES des trois carnets :
+#   - cellule 1 : la ligne de version n'est comparable avec AUCUN des trois
+#     côtés — `z3 version : 5.4.1` (paquet PyPI `z3-solver`) côté Python,
+#     `Imports OK : Microsoft.Z3 version Z3 4.12.2.0` côté C#, `Imports OK :
+#     z3 crate 0.24.0 (libz3 5.3.3.0 …)` côté Rust. Trois moteurs, trois
+#     rendus : la ligne n'est donc pas mesurée ;
+#   - cellule 9 : le jumeau C# formate les nombres à la locale (`24 883 200
+#     000`, `248,8 s`) là où Python et Rust écrivent `24,883,200,000` et
+#     `248.8 s`. Les deux grandeurs restent COMPARABLES : la transformation
+#     `digits` retire les séparateurs, la transformation `float` lit la
+#     virgule décimale. Le C# n'est donc PAS déclaré absent sur ces deux
+#     mesures ;
+#   - cellule 9 : le TEMPS DE RÉSOLUTION (`Z3 solve temps : … ms`) est un
+#     temps mural — il dépend de la machine, de la charge et du moteur. La
+#     tolérance de l'organe est ABSOLUE : l'exiger produirait un faux rouge
+#     au prochain run. La ligne n'est donc pas mesurée ;
+#   - cellule 16 : le jumeau C# affiche en plus les quatre indices
+#     candidats (`Cat == Water : a completer`, …) — un scaffolding plus
+#     guide côté .NET, connu et assumé (cf. `twin_pairs.d/
+#     z3-python-09-enigme-einstein.yaml`). La mesure porte sur le message du
+#     stub, que les trois côtés portent à l'identique ;
+#   - cellule 22 : le jumeau C# écrit `elimination` sans accent là où
+#     Python et Rust écrivent `élimination` — le côté C# est déclaré absent
+#     pour cette mesure ;
+#   - cellule 24 : le jumeau C# écrit `Solution trouvee !` et `Nationalite :`
+#     sans accents là où Python et Rust écrivent `Solution trouvée !` et
+#     `Nationalité :` — le côté C# est déclaré absent pour ces deux mesures.
+#     La mesure du NOMBRE de solutions du mini-Zebra porte sur les trois
+#     côtés : elle est identique partout.
+#
+# Les deux jumeaux Rust et Python produisent des sorties LIGNE À LIGNE
+# identiques, à deux exceptions près, toutes deux documentées : la ligne de
+# version (moteurs différents) et le temps de résolution (temps mural).
+# L'unicité de la solution de l'énigme, le tableau des cinq maisons (avec
+# ses largeurs de colonnes), le verdict `sat` de l'exemple guidé 1, les
+# 17 puis 1 solutions après retrait d'indice et le mini-Zebra à une seule
+# solution sont identiques sur les trois côtés.
+#
+# Le jumeau Rust porte en outre une différence de moteur, DÉCLARÉE : la
+# crate `z3` 0.24.0 lie la bibliothèque native Z3 5.3.3 du poste, alors
+# que le jumeau Python utilise le paquet PyPI `z3-solver` et le jumeau C#
+# le paquet NuGet `Microsoft.Z3`. Les VERDICTS restent identiques (sat,
+# 1 solution, 17/1 sans indice 9/15, même témoin) ; seul le temps de
+# résolution diffère, mesure d'environnement et non de sémantique.
+- name: "Z3-09-Enigme-Einstein"
+  family: "SymbolicAI/SMT/Z3-API"
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Rust.ipynb
+  measures:
+    - id: c3_encode
+      description: "Cellule 3 — message d'encodage (25 variables de position, 5 groupes Distinct, 15 indices)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "(?m:^(Modele encode : 25 variables de position, 5 groupes Distinct, 15 indices\\.)\\r?$)"
+          transform: text
+        csharp:
+          cell: 3
+          pattern: "(?m:^(Modele encode : 25 variables de position, 5 groupes Distinct, 15 indices\\.)\\r?$)"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "(?m:^(Modele encode : 25 variables de position, 5 groupes Distinct, 15 indices\\.)\\r?$)"
+          transform: text
+    - id: c5_entete
+      description: "Cellule 5 — entête du tableau des cinq maisons (les largeurs de colonnes font partie de l'attendu)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "(?m:^(Maison\\s+Nationalite\\s+Couleur\\s+Boisson\\s+Cigarette\\s+Animal)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 5
+          pattern: "(?m:^(Maison\\s+Nationalite\\s+Couleur\\s+Boisson\\s+Cigarette\\s+Animal)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "(?m:^(Maison\\s+Nationalite\\s+Couleur\\s+Boisson\\s+Cigarette\\s+Animal)[ \\t]*\\r?$)"
+          transform: text
+    - id: c5_maison1
+      description: "Cellule 5 — première maison (Norvegien / Jaune / Eau / Dunhill / Chat) : ligne identique sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "(?m:^(1\\s+Norvegien\\s+Jaune\\s+Eau\\s+Dunhill\\s+Chat)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 5
+          pattern: "(?m:^(1\\s+Norvegien\\s+Jaune\\s+Eau\\s+Dunhill\\s+Chat)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "(?m:^(1\\s+Norvegien\\s+Jaune\\s+Eau\\s+Dunhill\\s+Chat)[ \\t]*\\r?$)"
+          transform: text
+    - id: c5_maison5
+      description: "Cellule 5 — cinquième maison (Suedois / Blanche / Biere / BlueMaster / Chien) : ligne identique sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "(?m:^(5\\s+Suedois\\s+Blanche\\s+Biere\\s+BlueMaster\\s+Chien)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 5
+          pattern: "(?m:^(5\\s+Suedois\\s+Blanche\\s+Biere\\s+BlueMaster\\s+Chien)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "(?m:^(5\\s+Suedois\\s+Blanche\\s+Biere\\s+BlueMaster\\s+Chien)[ \\t]*\\r?$)"
+          transform: text
+    - id: c5_reponse
+      description: "Cellule 5 — réponse de l'énigme (l'Allemand possède le Poisson, maison 4) : identique sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "(?m:^(>>> Reponse : c'est le Allemand qui possede le Poisson \\(maison 4\\)\\.)\\r?$)"
+          transform: text
+        csharp:
+          cell: 5
+          pattern: "(?m:^(>>> Reponse : c'est le Allemand qui possede le Poisson \\(maison 4\\)\\.)\\r?$)"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "(?m:^(>>> Reponse : c'est le Allemand qui possede le Poisson \\(maison 4\\)\\.)\\r?$)"
+          transform: text
+    - id: c9_espace
+      description: "Cellule 9 — taille de l'espace de recherche brut ((5!)^5) : le jumeau C# sépare les milliers par un espace, d'où la transformation `digits`"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "(?m:^Espace de recherche brut\\s+:\\s+\\(5!\\)\\^5 = ([0-9 ,\u202f]+) combinaisons\\r?$)"
+          transform: digits
+        csharp:
+          cell: 9
+          pattern: "(?m:^Espace de recherche brut\\s+:\\s+\\(5!\\)\\^5 = ([0-9 ,\u202f]+) combinaisons\\r?$)"
+          transform: digits
+        rust:
+          cell: 9
+          pattern: "(?m:^Espace de recherche brut\\s+:\\s+\\(5!\\)\\^5 = ([0-9 ,\u202f]+) combinaisons\\r?$)"
+          transform: digits
+    - id: c9_brute
+      description: "Cellule 9 — durée de force brute ESTIMÉE (valeur dérivée, pas une mesure murale) : le jumeau C# écrit la virgule décimale, d'où la transformation `float`"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "(?m:^Brute force estime \\(~1e8/s\\)\\s+:\\s+([0-9.,]+) s \\(hors test des 15 indices\\)\\r?$)"
+          transform: float
+        csharp:
+          cell: 9
+          pattern: "(?m:^Brute force estime \\(~1e8/s\\)\\s+:\\s+([0-9.,]+) s \\(hors test des 15 indices\\)\\r?$)"
+          transform: float
+        rust:
+          cell: 9
+          pattern: "(?m:^Brute force estime \\(~1e8/s\\)\\s+:\\s+([0-9.,]+) s \\(hors test des 15 indices\\)\\r?$)"
+          transform: float
+    - id: c18_solutions
+      description: "Cellule 18 — nombre de solutions de l'énigme d'Einstein (unicité prouvée) : identique sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "(?m:^Nombre de solutions de l'enigme d'Einstein : ([0-9]+) \\(attendu : [0-9]+\\)\\r?$)"
+          transform: int
+        csharp:
+          cell: 18
+          pattern: "(?m:^Nombre de solutions de l'enigme d'Einstein : ([0-9]+) \\(attendu : [0-9]+\\)\\r?$)"
+          transform: int
+        rust:
+          cell: 18
+          pattern: "(?m:^Nombre de solutions de l'enigme d'Einstein : ([0-9]+) \\(attendu : [0-9]+\\)\\r?$)"
+          transform: int
+    - id: c19_sans9
+      description: "Cellule 19 — nombre de solutions après retrait de l'indice 9 (Norvégien en maison 1) : identique sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "(?m:^Sans l'indice 9\\s+\\(Norvegien en maison 1\\) : ([0-9]+) solution\\(s\\)\\r?$)"
+          transform: int
+        csharp:
+          cell: 19
+          pattern: "(?m:^Sans l'indice 9\\s+\\(Norvegien en maison 1\\) : ([0-9]+) solution\\(s\\)\\r?$)"
+          transform: int
+        rust:
+          cell: 19
+          pattern: "(?m:^Sans l'indice 9\\s+\\(Norvegien en maison 1\\) : ([0-9]+) solution\\(s\\)\\r?$)"
+          transform: int
+    - id: c19_sans15
+      description: "Cellule 19 — nombre de solutions après retrait de l'indice 15 (Blend voisin de l'Eau) : identique sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "(?m:^Sans l'indice 15 \\(Blend voisin de l'Eau\\) : ([0-9]+) solution\\(s\\)\\r?$)"
+          transform: int
+        csharp:
+          cell: 19
+          pattern: "(?m:^Sans l'indice 15 \\(Blend voisin de l'Eau\\) : ([0-9]+) solution\\(s\\)\\r?$)"
+          transform: int
+        rust:
+          cell: 19
+          pattern: "(?m:^Sans l'indice 15 \\(Blend voisin de l'Eau\\) : ([0-9]+) solution\\(s\\)\\r?$)"
+          transform: int
+    - id: c24_solution
+      description: "Cellule 24 — message de solution du mini-Zebra (le jumeau C# écrit « Solution trouvee ! » sans accent, il est donc déclaré absent)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: "(?m:^(Solution trouvée !)\\r?$)"
+          transform: text
+        csharp:
+          absent: "le jumeau C# écrit « Solution trouvee ! » sans l'accent là où Python et Rust écrivent « Solution trouvée ! »"
+        rust:
+          cell: 24
+          pattern: "(?m:^(Solution trouvée !)\\r?$)"
+          transform: text
+    - id: c24_maison1
+      description: "Cellule 24 — première maison du mini-Zebra (le jumeau C# écrit « Nationalite » sans accent, il est donc déclaré absent)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: "(?m:^( {2}Nationalité : Espagnol)\\r?$)"
+          transform: text
+        csharp:
+          absent: "le jumeau C# écrit « Nationalite : Espagnol » sans l'accent là où Python et Rust écrivent « Nationalité : Espagnol »"
+        rust:
+          cell: 24
+          pattern: "(?m:^( {2}Nationalité : Espagnol)\\r?$)"
+          transform: text
+    - id: c24_solutions
+      description: "Cellule 24 — nombre de solutions du mini-Zebra (unicité du mini-puzzle) : identique sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: "(?m:^Nombre de solutions : ([0-9]+) \\(attendu : [0-9]+\\)\\r?$)"
+          transform: int
+        csharp:
+          cell: 24
+          pattern: "(?m:^Nombre de solutions : ([0-9]+) \\(attendu : [0-9]+\\)\\r?$)"
+          transform: int
+        rust:
+          cell: 24
+          pattern: "(?m:^Nombre de solutions : ([0-9]+) \\(attendu : [0-9]+\\)\\r?$)"
+          transform: int
+    - id: e16_message
+      description: "Cellule 16 — message du stub de l'exercice 1 (stub C.1, libellé exact de la source)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "(?m:^(Exercice a completer : classer les 4 indices candidats\\.)\\r?$)"
+          transform: text
+        csharp:
+          cell: 16
+          pattern: "(?m:^(Exercice a completer : classer les 4 indices candidats\\.)\\r?$)"
+          transform: text
+        rust:
+          cell: 16
+          pattern: "(?m:^(Exercice a completer : classer les 4 indices candidats\\.)\\r?$)"
+          transform: text
+    - id: e22_message
+      description: "Cellule 22 — message du stub de l'exercice 2 (le jumeau C# écrit « elimination » sans accent, il est donc déclaré absent)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 22
+          pattern: "(?m:^(Exercice a completer : élimination gloutonne des indices redondants\\.)\\r?$)"
+          transform: text
+        csharp:
+          absent: "le libellé du stub diffère (« elimination gloutonne… » là où Python et Rust écrivent « élimination gloutonne… »)"
+        rust:
+          cell: 22
+          pattern: "(?m:^(Exercice a completer : élimination gloutonne des indices redondants\\.)\\r?$)"
+          transform: text
+    - id: e27_message
+      description: "Cellule 27 — message du stub de l'exercice 3 (stub C.1, libellé exact de la source)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "(?m:^(Exercice a completer : l'enigme des cinq amies \\(5 maisons, 11 indices\\)\\.)\\r?$)"
+          transform: text
+        csharp:
+          cell: 27
+          pattern: "(?m:^(Exercice a completer : l'enigme des cinq amies \\(5 maisons, 11 indices\\)\\.)\\r?$)"
+          transform: text
+        rust:
+          cell: 27
+          pattern: "(?m:^(Exercice a completer : l'enigme des cinq amies \\(5 maisons, 11 indices\\)\\.)\\r?$)"
+          transform: text
