@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""L'OCCUPATION d'un grain : l'urne de cloture, et la PR qui le tient.
+"""L'OCCUPATION d'un grain : l'urne de cloture, la PR qui le tient, et le
+grain de harnais.
 
-Deux classes, deux marques, une seule decision :
+Trois classes, trois marques, une seule decision :
 
 - **`urne`** -- l'issue porte le label `candidate-delivered` : elle est
   RESERVEE au coordinateur et a l'adjoint (#15069). Une lane worker la
@@ -10,8 +11,11 @@ Deux classes, deux marques, une seule decision :
 - **`occupee:#PR`** -- une PR **ouverte d'une autre lane** cite l'issue : le
   travail est en cours ailleurs. La servir a une autre lane creerait la
   collision L898 (deux lanes sur les memes fichiers).
+- **`harnais`** -- l'issue porte le label `harnais` ou `coordination` : c'est
+  du travail de harnais ou de coordination, pas un grain de worker
+  (dispatch `c0035b`).
 
-Les deux se decident sur des **metadonnees seules** -- les labels de la
+Les trois se decident sur des **metadonnees seules** -- les labels de la
 lecture de selection et la liste des PRs ouvertes, que le tirage lit deja.
 Aucun appel reseau supplementaire, aucun cout de temps ajoute.
 
@@ -24,30 +28,30 @@ pour decouvrir que l'organe de claim refuse le grain qu'on lui a servi.
 numero de la PR qui occupe. L'issue n'est pas fermee -- elle reste dans le
 pool ; seule sa place dans la tete change. Le rendu est **plafonne**
 (`RENDU_MAX`) : au-dela, le compte est rendu, la liste complete reste dans
-la sortie JSON.
+la sortie JSON. Le rendu lui-meme vit dans `tapis_occupation_rapport`
+(extraction du 24/11).
 
 Les lanes qui **gerent** l'urne (coordinateur, adjoint, secretaire) ne
 perdent aucun grain : elles recoivent une section **courte** (`resume`),
-qui dit ce qui est a l'urne et ce qui est occupe.
+qui dit ce qui est a l'urne, ce qui est occupe et ce qui est du harnais.
 """
 from __future__ import annotations
 
 import re
 
+from coordination import (tapis_nature, tapis_occupation_base,
+                          tapis_occupation_reintroduction, tapis_occupation_rapport)
+
 #: Le label d'urne : il route l'issue vers la cloture, il ne la livre pas.
 LABEL_URNE = "candidate-delivered"
-
-#: Les trois lanes qui **gerent** l'urne et l'occupation : le coordinateur
-#: (`myia-ai-01:CoursIA`), l'adjoint (`myia-po-2025:CoursIA-2`) et le
-#: secretaire (`myia-po-2028:CoursIA-3`), qui **ferme** l'urne (Q167 b).
-#: Pour elles, les deux classes sont une information, pas une exclusion :
-#: elles arbitrent, elles ne perdent pas une opportunite de travail.
-LANES_PRIVILEGIEES = frozenset({"myia-ai-01:CoursIA", "myia-po-2025:CoursIA-2",
-                                "myia-po-2028:CoursIA-3"})
 
 #: Le code d'ecart de l'occupation (la qualification) : il rejoint les codes
 #: des neuf regles, qui sont tous des exclusions.
 CODE_OCCUPEE = "OCCUPEE"
+
+#: Le rendu des exclusions est plafonne (le rendu lui-meme vit dans
+#: `tapis_occupation_rapport`, extraction du 24/11).
+RENDU_MAX = tapis_occupation_rapport.RENDU_MAX
 
 #: La note d'urne : le label route l'issue, il ne prouve pas la livraison.
 NOTE_URNE = ("label candidate-delivered : urne de cloture (coordinateur, adjoint, "
@@ -62,15 +66,21 @@ _GRAIN_RE = re.compile(r"(?im)^[ \t>*]*Grain:.*$")
 _CITE_RE = re.compile(r"#(\d+)\b")
 _LANE_RE = re.compile(r"\blane\s+([A-Za-z0-9._-]+:[A-Za-z0-9._-]+)")
 
-#: Le rendu des exclusions est plafonne : une exclusion muette est interdite,
-#: mais une liste de 284 lignes n'est pas un rapport. Au-dela du plafond, le
-#: compte reste affiche -- l'exclusion n'est pas muette, elle est comptee.
-RENDU_MAX = 12
+#: Le rendu des exclusions et la section courte vivent dans le module
+#: extrait ; les alias gardent les appelants intacts.
+rendre_exclus = tapis_occupation_rapport.rendre_exclus
+resume = tapis_occupation_rapport.resume
+rendre_reintroduction = tapis_occupation_reintroduction.rendre_reintroduction
 
-
-def privilege(lane: str) -> bool:
-    """La lane gerante l'urne et l'occupation (coordinateur, adjoint)."""
-    return (lane or "") in LANES_PRIVILEGIEES
+#: Le **socle** de l'occupation (les lanes privilegiees, le retrait de la
+#: tete, le motif d'une marque) vit dans son propre module (extraction du
+#: 25/11) : le repli publie ses exclusions et sa reintroduction, et les
+#: deux decisions font passer ce module au-dessus de son plafond. Les
+#: alias gardent les appelants intacts.
+LANES_PRIVILEGIEES = tapis_occupation_base.LANES_PRIVILEGIEES
+privilege = tapis_occupation_base.privilege
+retirer = tapis_occupation_base.retirer
+motif = tapis_occupation_base.motif
 
 
 def lane_de_pr(pr: dict) -> str | None:
@@ -151,13 +161,23 @@ def marques_urne(metas: list[dict]) -> dict[int, str]:
     return marques
 
 
+def marques_harnais(metas: list[dict]) -> dict[int, str]:
+    """Les issues de **HARNAIS ou de COORDINATION** : `{numero: "harnais"}`."""
+    return tapis_nature.marques_harnais(metas)
+
+
 def marques(metas: list[dict], prs: list[dict], lane: str) -> dict[int, str]:
-    """Les deux classes, sur les metadonnees seules.
+    """Les trois classes, sur les metadonnees seules.
 
     L'urne l'emporte : c'est la classe la plus dure (une issue livree, dont
-    la cloture appartient au coordinateur).
+    la cloture appartient au coordinateur). L'ordre des `update` **l'ensure** :
+    l'urne passe en DERNIER, donc elle ecrase le harnais. Avant, le harnais
+    passait en dernier et ecrasait l'urne -- les quatre issues qui portent
+    les deux labels (#18763, #21822, #22938, #26337) sortaient de la section
+    « urne » du `resume` des lanes gerantes (mesure Hermes, 24/11).
     """
     m = marques_pr(prs, lane)
+    m.update(marques_harnais(metas))
     m.update(marques_urne(metas))
     return m
 
@@ -172,86 +192,55 @@ def marques_issues(issues: dict[int, dict], prs_par_issue_: dict[int, list[dict]
     return m
 
 
-def retirer(grains: list, conteneurs: list, occupation: dict[int, str],
-            lane: str) -> tuple[list, list, list[dict]]:
-    """Retire du tirage les issues occupees ou a l'urne.
+def retirer_harnais(grains: list, conteneurs: list, metas: list[dict],
+                    lane: str) -> tuple[list, list, list[dict], dict]:
+    """Retire les grains de **HARNAIS** pour une lane worker.
 
-    Rend `(grains, conteneurs, exclus)`. Les exclus sont **affiches** (numero
-    + marque + motif) : une exclusion silencieuse serait un grain perdu. Une
-    lane privilegiee ne perd rien : elle voit les marques sans perdre la tete.
+    Le repli sert le MEME pool que la voie legere : il ecarte donc les
+    memes grains. Fail-OPEN : si l'exclusion vide le pool, le pool reste
+    -- un tirage qui ne sert rien ne sert a rien (I1).
+
+    Rend `(grains, conteneurs, exclus, reintroduction)` : les **exclusions
+    effectives** (numero, marque, motif) et la **reintroduction** quand le
+    fail-OPEN a remis le pool. Les deux sont PUBLIEES par l'appelant : une
+    exclusion muette et une reintroduction muette sont **deux sorties
+    differentes annoncees comme identiques** (review du coordinateur du
+    25/11 sur #28435).
     """
-    if privilege(lane) or not occupation:
-        return grains, conteneurs, []
-    exclus: list[dict] = []
-
-    def _filtre(items: list) -> list:
-        restes = []
-        for e in items:
-            marque = occupation.get(e.numero)
-            if marque is None:
-                restes.append(e)
-            else:
-                exclus.append({"numero": e.numero, "marque": marque,
-                               "motif": motif(marque)})
-        return restes
-
-    return _filtre(grains), _filtre(conteneurs), exclus
-
-
-def motif(marque: str) -> str:
-    """Le motif lisible d'une marque d'occupation."""
-    if marque == "urne":
-        return ("label candidate-delivered : urne de cloture reservee au "
-                "coordinateur, a l'adjoint et au secretaire (#15069) -- la lane "
-                "worker rend la main")
-    if marque.startswith("occupee:#"):
-        return (f"PR ouverte {marque.split(':', 1)[1]} d'une autre lane la "
-                "cite : l'issue est occupee (collision L898 evitee)")
-    return marque
+    if not metas:
+        return grains, conteneurs, [], {}
+    g2, c2, exclus = retirer(grains, conteneurs,
+                             tapis_nature.marques_harnais(metas), lane)
+    if g2 or not grains:
+        return g2, c2, exclus, {}
+    # Fail-OPEN : l'exclusion vidait le pool, il revient. La
+    # reintroduction est signalee, avec le besoin de qualification : le
+    # grain reintroduit est un grain de HARTAIS, qu'une lane worker ne sert
+    # pas sans l'avoir qualifie sur son fil.
+    return (grains, conteneurs, exclus,
+            {"motif": "l'exclusion des grains de harnais a vide le pool : "
+                      "le pool est REINTRODUIT (fail-OPEN, I1)",
+             "numeros": [e.numero for e in grains],
+             "exclus_annules": [e["numero"] for e in exclus],
+             "qualification_requise": True})
 
 
-def rendre_exclus(exclus: list[dict], max_lignes: int = RENDU_MAX) -> list[str]:
-    """Les lignes de rendu des exclusions, **plafonnees**.
+def occupation_harnais(metas: list[dict], lane: str, exclus: list[dict],
+                        reintroduction: dict | None = None) -> dict:
+    """L'OCCUPATION **publiee** par le repli : marques, exclusions, reintroduction.
 
-    Une exclusion muette est interdite ; une liste de 284 lignes n'est pas un
-    rapport. Au-dela du plafond, le compte reste affiche.
+    Le repli n'applique que la regle **harnais** (celle que le cache local
+    permet de decider sans reseau) : son rapport publie donc les exclusions
+    de harnais **effectives**, avec leur motif, et la **reintroduction**
+    quand le fail-OPEN a remis le pool. Les deux sont des decisions
+    publiees : une exclusion muette, comme une reintroduction muette,
+    pretendent la meme chose et ne disent pas la meme chose (review du
+    coordinateur du 25/11 sur #28435).
     """
-    if not exclus:
-        return []
-    lignes = [f"  #{e['numero']}  {e['marque']}  {e['motif']}"
-              for e in exclus[:max_lignes]]
-    reste = len(exclus) - max_lignes
-    if reste > 0:
-        lignes.append(f"  ... et {reste} autre(s) exclusion(s) -- le compte "
-                      "complet est dans la sortie JSON")
-    return lignes
-
-
-def resume(occupation: dict[int, str], max_lignes: int = RENDU_MAX) -> list[str]:
-    """La section **Occupation courte** des lanes qui gerent l'urne.
-
-    Elles ne perdent rien : les deux classes sont pour elles une information,
-    pas une exclusion. La section dit ce qui est a l'urne et ce qui est
-    occupe, sans la liste complete.
-    """
-    if not occupation:
-        return []
-    urnes = sorted(n for n, m in occupation.items() if m == "urne")
-    occupees = sorted((n, m) for n, m in occupation.items()
-                       if m.startswith("occupee:"))
-    lignes: list[str] = []
-    if urnes:
-        apercu = ", ".join(f"#{n}" for n in urnes[:max_lignes])
-        reste = len(urnes) - max_lignes
-        lignes.append(f"  urne ({len(urnes)}) : {apercu}"
-                      + (f" ... et {reste}" if reste > 0 else ""))
-    if occupees:
-        apercu = ", ".join(f"#{n} ({m.split(':', 1)[1]})"
-                            for n, m in occupees[:max_lignes])
-        reste = len(occupees) - max_lignes
-        lignes.append(f"  occupee ({len(occupees)}) : {apercu}"
-                      + (f" ... et {reste}" if reste > 0 else ""))
-    return lignes
+    marques = tapis_nature.marques_harnais(metas)
+    return {"marques": marques, "exclus": exclus,
+            "resume": resume(marques) if privilege(lane) else [],
+            "reintroduction": reintroduction or {}}
 
 
 def urne_en_note(issues: dict[int, dict], lane: str = "") -> dict[int, str]:
@@ -292,7 +281,7 @@ def exclure(etats: list, occupation: dict[int, str], lane: str) -> list:
         marque = occupation.get(e.numero)
         if marque is None or marque == "urne" or e.ecart is not None:
             continue
-        e.ecart = CODE_OCCUPEE
+        e.ecart = tapis_nature.code_de(marque)
         e.motif = motif(marque)
         e.notes.append(e.motif)
     return etats

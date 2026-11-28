@@ -31,7 +31,7 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from coordination import gh_bulk, gh_selection, tapis_citations, tapis_equilibre, tapis_labels, tapis_rapide
+from coordination import gh_bulk, gh_selection, tapis_citations, tapis_equilibre, tapis_labels, tapis_nature, tapis_rapide
 from coordination.tapis_rapide import Etat, graine_defaut, ordonner
 # Le rapport a son propre fichier (extraction pour tenir le plafond de lignes
 # de ce module) ; l'alias garde les appelants intacts.
@@ -43,16 +43,13 @@ PROVENANCE = METADONNEES
 
 
 def _parent_de_titre(titre: str) -> int | None:
-    """La racine d'EPIC portee par le TITRE (le corps n'est pas lu ici).
+    """La racine de famille portee par le TITRE (le corps n'est pas lu ici).
 
-    Mêmes motifs que le tirage complet : `[EPIC] ... #12345` et `[#12345] ...`.
+    Delegue a `tapis_nature.parent_de_titre`, qui lit tout crochet de tete
+    portant un numero (`[ICT #20298] G4`, `[Audit #17073] ...`) -- et pas
+    seulement `[EPIC #N]` et `[#N]`.
     """
-    for motif in (r"^\s*\[\s*epic\b[^\]]{0,40}?#(\d+)", r"^\s*\[#(\d+)\b"):
-        import re
-        m = re.match(motif, titre or "", re.IGNORECASE)
-        if m:
-            return int(m.group(1))
-    return None
+    return tapis_nature.parent_de_titre(titre)
 
 
 def etats_leger(metas: list[dict], citations: dict[int, list[dict]],
@@ -73,6 +70,7 @@ def etats_leger(metas: list[dict], citations: dict[int, list[dict]],
     ecarteront un grain en pause. Le rapport les PUBLIE
     (`tapis_labels.ecartees`) : une exclusion n'est jamais silencieuse."""
     etats = []
+    racines = tapis_nature.racines_declarees(metas)
     for it in metas:
         n = int(it["number"])
         labels = list(it.get("labels") or [])
@@ -91,7 +89,8 @@ def etats_leger(metas: list[dict], citations: dict[int, list[dict]],
         titre = it.get("title") or ""
         parent = _parent_de_titre(titre)
         e = Etat(n, titre, labels, it.get("created_at") or "",
-                 parent, parent or n, tapis_rapide._conteneur_de(titre, labels),
+                 parent, parent or n,
+                 tapis_nature.est_parapluie(titre, labels, n, racines),
                  any(lab.strip().lower() == "consolidation" for lab in labels))
         cites = citations.get(n, []) + (citations_ouvertes or {}).get(n, [])
         e.derniere_visite, e.visites_total, e.visites = tapis_equilibre.compter(

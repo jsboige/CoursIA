@@ -755,8 +755,14 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # extraire sans deplacer le probleme, mesure : `_vise` (13 lignes) vers
 # `tapis_relache.py` le porterait a 103 pour un plafond de 100, et vers
 # `claim_grammar.py` a 2346 pour son entree de `script_size_ceilings.json`.
+#
+# 28/11, fusion de main dans cette PR (c0177) : tapis_repli.py passe de 157
+# a 165 lignes (+8 : l'echeance de main, la cause de la branche, les deux
+# phrases de docstring rendues, la lecture du cache extraite en `_cache` pour
+# tenir la fonction sous 60 lignes) et tapis_rapide.py de 523 a 524 (+1 : la ligne
+# d'import de `tapis_nature`, qui vient de la branche).
 
-@pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 523),
+@pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 524),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
                                               ("gh_cache.py", 130),
@@ -768,7 +774,7 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_reverif.py", 120),
                                               ("gh_issues.py", 80),
                                               ("tapis_leger.py", 220),
-                                              ("tapis_repli.py", 157),
+                                              ("tapis_repli.py", 166),
                                               ("tapis_qualification.py", 140),
                                               ("tapis_fil_complet.py", 100),
                                               ("tapis_prise_en_charge.py", 90),

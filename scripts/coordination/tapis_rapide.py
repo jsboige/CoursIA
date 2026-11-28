@@ -25,8 +25,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import (frozen_campaigns, gh_bulk, gh_recherche, tapis_acceptance, tapis_assiette,
-                         tapis_dernier_grain, tapis_ecarts_fond, tapis_equilibre, tapis_origami,
-                         tapis_attente, tapis_borne, tapis_sature, tapis_service, tapis_voie_leger)
+                         tapis_dernier_grain, tapis_ecarts_fond, tapis_equilibre, tapis_nature,
+                         tapis_origami, tapis_attente, tapis_borne, tapis_sature, tapis_service,
+                         tapis_voie_leger)
 from coordination.tapis_marqueurs import (
     _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _age, _dt, _iso, _rouverte,
     claims_ouverts, evenements, lane_de_pr)
@@ -46,7 +47,8 @@ PLAFOND_EPIC_J = 7
 RELACHE_J = tapis_attente.RELACHE_J
 PROFONDEUR_FAMILLE = 5
 LABEL_CONSOLIDATION = "consolidation"
-LABELS_CONTENEUR = frozenset({"epic", "umbrella"})
+# Les labels d'un conteneur declare vivent dans `tapis_nature` (regle
+# canonique, sans dependance de coordination) : cette voie y delègue.
 # Login partage : la lane habilitee a degeler se lit dans le marqueur, pas dans l'auteur.
 LANES_DEGEL = frozenset({"myia-ai-01:CoursIA", "myia-po-2025:CoursIA-2"})
 # EPAISSE, SATURE : barrieres de FOND d'un CONTENEUR (#26973) ; PAUSE : [RELEASED] conditionnelle (#27726).
@@ -100,12 +102,11 @@ def _conteneur_de(titre: str, labels: list[str]) -> bool:
     """Label EPIC/umbrella, ou titre `[EPIC...` qui ne nomme pas de parent
     (un `[EPIC #N] Phase 2` est une tranche).
 
-    Meme regle sur les **metadonnees seules** (titre + labels) que sur le corps
-    complet : la voie legere classe un conteneur sans lire son corps."""
-    if any(lab.strip().lower() in LABELS_CONTENEUR for lab in labels):
-        return True
-    titre = titre or ""
-    return titre.lstrip(" [").upper().startswith("EPIC") and not _TITRE_EPIC_RE.match(titre)
+    La regle est **canonique** dans `tapis_nature` (module sans dependance de
+    coordination, donc sans cycle) : cette voie y delègue au lieu de la
+    recopier -- une regle dupliquee derive, et Hermes l'a mesure sur le
+    pool reel (83 conteneurs a la voie legere, 80 a la voie lourde)."""
+    return tapis_nature.est_conteneur_declare(titre, labels)
 
 
 def _conteneur_propre(it: dict) -> bool:

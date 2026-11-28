@@ -34,7 +34,8 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from coordination import gh_bulk, tapis_cap_livraisons, tapis_leger_rapport, tapis_repli
+from coordination import (gh_bulk, tapis_cap_livraisons, tapis_leger_rapport,
+                         tapis_repli, tapis_repli_cause)
 from coordination import tapis_qualification as tq
 
 #: Le mur PROPRE de la qualification : il borne la LECTURE DES FILS quand
@@ -199,8 +200,10 @@ def servir(classe: dict, file: list, fenetre: dict, origami: dict, lane: str,
         file, classe["grains"] + classe["conteneurs"], lane, maintenant,
         classe["prs"], run=None, run_commande=run, echeance=fin_cap,
         pool_ouvert=bool(classe["grains"]),
-        repli=lambda: tapis_repli.replir(lane, grains, maintenant, jours, graine,
-                                         depot, echeance=echeance))
+        repli=lambda: tapis_repli.replir(
+            lane, grains, maintenant, jours, graine, depot, echeance=echeance,
+            cause=tapis_repli_cause.cap_livraisons(
+                tapis_cap_livraisons.FENETRE_J)))
     if rendu is not None:
         return rendu
     file, qualif, erreur = qualifier(file, lane, maintenant, jours,
@@ -209,7 +212,9 @@ def servir(classe: dict, file: list, fenetre: dict, origami: dict, lane: str,
         print(f"Qualification en echec ({erreur}) : repli chronologique.",
               file=sys.stderr)
         try:
-            return tapis_repli.replir(lane, grains, maintenant, jours, graine, depot)
+            return tapis_repli.replir(
+                lane, grains, maintenant, jours, graine, depot, echeance=echeance,
+                cause=tapis_repli_cause.qualification_echec(erreur))
         except gh_bulk.LectureIncomplete as exc:
             raise gh_bulk.LectureIncomplete(exc.lecture, exc.page,
                                             f"qualification : {erreur} ; repli : {exc.cause}") from exc
@@ -223,8 +228,11 @@ def servir(classe: dict, file: list, fenetre: dict, origami: dict, lane: str,
         # QUALIFIES restent DECLARES dans le rapport, jamais servis en
         # silence (fail-CLOSED).
         try:
-            r, code = tapis_repli.replir(lane, grains, maintenant, jours, graine,
-                                         depot, echeance=echeance)
+            r, code = tapis_repli.replir(
+                lane, grains, maintenant, jours, graine, depot, echeance=echeance,
+                cause=tapis_repli_cause.file_vide(
+                    "budget de qualification epuise" if qualif.get("budget_epuise")
+                    else "aucun grain confirme par la qualification"))
         except gh_bulk.LectureIncomplete as exc:
             cause = ("budget de qualification epuise" if qualif.get("budget_epuise")
                      else "aucun grain confirme par la qualification")
