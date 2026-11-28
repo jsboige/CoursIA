@@ -1292,15 +1292,15 @@
       "needs": {
         "gpu": true,
         "gpu_notebooks": [
-          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-10-Effets-Sonores-AudioLDM2.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-11-Text-to-Audio-Bruitages.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-12-SVS-Singing-Voice-RVC.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-1-Chatterbox-TTS-Python.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-10-Effets-Sonores-AudioLDM2-Python.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-11-Text-to-Audio-Bruitages-Python.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-12-SVS-Singing-Voice-RVC-Python.ipynb",
           "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb",
           "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb",
           "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-6-MIDI-Generation-Python.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-7-YuE2-Song-Generation-Python.ipynb",
           "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb"
         ],
         "api_key_count": 4,
@@ -1431,8 +1431,8 @@
       "needs": {
         "gpu": true,
         "gpu_notebooks": [
-          "MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb"
+          "MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/Audio-03-1-Multi-Model-Audio-Comparison-Python.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/Audio-03-2-Audio-Pipeline-Orchestration-Python.ipynb"
         ],
         "api_key_count": 2,
         "network_services": [
@@ -1560,7 +1560,7 @@
       "needs": {
         "gpu": true,
         "gpu_notebooks": [
-          "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-14-VoiceLeading-Rendu-GenAI.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/Audio-04-14-VoiceLeading-Rendu-GenAI-Python.ipynb",
           "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-2-Transcription-Pipeline.ipynb",
           "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-Music-Composition-Workflow.ipynb"
         ],
@@ -1821,11 +1821,11 @@
       "needs": {
         "gpu": true,
         "gpu_notebooks": [
-          "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/04-15-MERT2-Music-Understanding.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/04-16-SheetSage2-Audio-To-Score.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/04-18-Basic-Pitch-Transcription.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/04-20-Separation-Avancee-Qualite.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/04-21-SI-SDR-Contre-Epreuve.ipynb"
+          "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/Audio-04-15-MERT2-Music-Understanding-Python.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/Audio-04-16-SheetSage2-Audio-To-Score-Python.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/Audio-04-18-Basic-Pitch-Transcription-Python.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/Audio-04-20-Separation-Avancee-Qualite-Python.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/Audio-04-21-SI-SDR-Contre-Epreuve-Python.ipynb"
         ],
         "api_key_count": 0,
         "network_services": [],
@@ -3614,9 +3614,9 @@
       "needs": {
         "gpu": true,
         "gpu_notebooks": [
-          "MyIA.AI.Notebooks/GenAI/Image/05-History/05-0d-GANs-Portraits-Moment-NFT.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Image/05-History/05-1-DiscoDiffusion-CLIP-Guided-Diffusion.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Image/05-History/05-2-CLIPasso-Semantic-Sketching.ipynb"
+          "MyIA.AI.Notebooks/GenAI/Image/05-History/05-1-GANs-Portraits-Moment-NFT.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Image/05-History/05-2-DiscoDiffusion-CLIP-Guided-Diffusion.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Image/05-History/05-3-CLIPasso-Semantic-Sketching.ipynb"
         ],
         "api_key_count": 0,
         "network_services": [],
@@ -7221,7 +7221,7 @@
       "needs": {
         "gpu": true,
         "gpu_notebooks": [
-          "MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-01-Attention-Variants-SOTA.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-01-Attention-Variants-SOTA-Python.ipynb",
           "MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-02-MoE-SOTA.ipynb"
         ],
         "api_key_count": 0,

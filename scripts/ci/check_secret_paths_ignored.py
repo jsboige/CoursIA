@@ -1,15 +1,27 @@
 #!/usr/bin/env python3
-"""Verifie que les chemins sensibles sont ignores par une regle VERSIONNEE.
+"""Verifie que les chemins qui ne doivent jamais etre proposes au commit sont
+ignores par une regle VERSIONNEE.
 
-Le defaut vise est muet : un `.git/info/exclude` local masque un secret sur la machine
-qui l'a ecrit, et `git status` y reste propre. Sur tout autre clone -- une autre machine
-de la flotte, un runner, un fork -- la meme regle n'existe pas, et le secret est propose
-au commit. Les deux situations sont **indiscernables** a l'oeil : seule la source gagnante
-rendue par `git check-ignore -v` les separe.
+Deux familles, un seul mecanisme :
 
-Instance fondatrice : `.secrets/master.env`, puis -- un mois plus tard, au meme endroit --
-les cles privees d'App GitHub sous `.secrets/github-apps/`. Une lecon sans organe ne tient
-pas.
+1. **Les secrets** (`.secrets/`, `master.env`, cles d'App GitHub). Le defaut vise
+   est muet : un `.git/info/exclude` local masque un secret sur la machine qui
+   l'a ecrit, et `git status` y reste propre. Sur tout autre clone -- une autre
+   machine de la flotte, un runner, un fork -- la meme regle n'existe pas, et le
+   secret est propose au commit. Les deux situations sont **indiscernables** a
+   l'oeil : seule la source gagnante rendue par `git check-ignore -v` les separe.
+
+   Instance fondatrice : `.secrets/master.env`, puis -- un mois plus tard, au meme
+   endroit -- les cles privees d'App GitHub sous `.secrets/github-apps/`. Une lecon
+   sans organe ne tient pas.
+
+2. **Les artefacts de scratch a la racine du depot** (`scratchpad_*`, chemins
+   absolus aplatis). Meme famille de defaut : un `git add -A` les embarque dans
+   une PR, et le plafond CI de 512 Ko ne porte que sur `scripts/results/`.
+   Mesure du 2026-10-09 dans le clone `D:/Dev/CoursIA-3` : 23 fichiers non
+   suivis a la racine, 29 286 258 octets -- dont `pool_c422.json` a 28 888 916
+   octets, qu'aucun garde ne(attrapait. Regle : ce qui protege d'un commit
+   accidentel est une regle VERSIONNEE, pas une consigne d'agent.
 
 Sorties : 0 = tous les chemins couverts par une regle versionnee · 1 = defaut ·
 2 = mesure impossible (hors depot, git absent).
@@ -38,9 +50,35 @@ CHEMINS_SENSIBLES = (
     "docker-configurations/services/comfyui-qwen/.secrets/sonde",
 )
 
+# Artefacts de scratch a la racine du depot. Deux familles mesurees :
+#   * `scratchpad_*` -- dossiers de cycle ecrits dans le CWD faute de variable ;
+#   * un chemin ABSOLU aplati en nom de fichier -- les separateurs ont disparu et
+#     le `:` a ete remplace par U+F03A (usage prive), de sorte que le nom commence
+#     par la lettre de lecteur. Le marqueur conserve est le segment de chemin
+#     temporaire Windows (`AppDataLocalTemp`), present dans les 8 noms mesures.
+# Le motif du `.gitignore` est `/[A-Z]*AppDataLocalTemp*` : la lettre de lecteur
+# ouvre, le segment temp ferme -- `AppDataLocalTemp` ne peut apparaitre qu'au
+# milieu d'un chemin aplati.
+_SEPARATEUR_APLATI = "\uf03a"
+
+CHEMINS_SCRATCH_RACINE = (
+    "scratchpad_sonde.txt",
+    "C" + _SEPARATEUR_APLATI + "UsersjsboiAppDataLocalTempclaude-sonde.txt",
+    "D" + _SEPARATEUR_APLATI + "UsersjsboiAppDataLocalTempclaude-sonde.txt",
+)
+
 # Chemins qui doivent rester VISIBLES. Sans eux, un organe qui declarerait tout
 # ignore passerait au vert en ne mesurant rien.
 CONTROLES_POSITIFS = ("README.md", "CLAUDE.md")
+
+# Controles positifs de la famille scratch : `scratchpad.md` ne doit pas tomber
+# sous `/scratchpad_*` (le tiret bas fait partie du motif), et
+# `COURSE_CATALOG.generated.json` ne doit pas tomber sous un motif trop large
+# qui court-circuiterait la lettre de lecteur (mesure : `/C*` le couvre a tort).
+CONTROLES_POSITIFS_SCRATCH = ("scratchpad.md", "COURSE_CATALOG.generated.json")
+
+# Marqueurs de la famille scratch, vus sur un nom de fichier a la racine.
+MARQUEURS_SCRATCH = ("AppDataLocalTemp",)
 
 
 class MesureImpossible(RuntimeError):
@@ -76,7 +114,7 @@ def source_est_versionnee(source: str, suivis: frozenset[str]) -> bool:
     """Une source ne protege le DEPOT que si elle voyage avec lui.
 
     `.git/info/exclude` et le `core.excludesFile` de l'utilisateur sont locaux :
-    ils rendent le meme `git status` propre, et ne protegent que ce clone.
+    ils rendent le meme `git status` propre, et ne protègent que ce clone.
     """
     return source.replace("\\", "/") in suivis
 
@@ -86,6 +124,20 @@ def fichiers_suivis(cwd: Path) -> frozenset[str]:
     if res.returncode != 0:
         raise MesureImpossible(f"`git ls-files` a echoue : {res.stderr.strip()}")
     return frozenset(res.stdout.replace("\\", "/").splitlines())
+
+
+def est_nom_scratch_racine(nom: str) -> bool:
+    """Vrai pour un nom de fichier a la RACINE qui porte un marqueur de scratch.
+
+    La profondeur est discriminante : `scratchpad_*` a la racine est un artefact
+    de cycle ; le meme prefixe plus profond peut legitimement designer un
+    livrable. Les chemins absolus aplatis, eux, sont toujours a la racine.
+    """
+    if "/" in nom:
+        return False
+    if nom.startswith("scratchpad_"):
+        return True
+    return any(marqueur in nom for marqueur in MARQUEURS_SCRATCH)
 
 
 def verdict_chemin(chemin: str, cwd: Path, suivis: frozenset[str]) -> dict:
@@ -121,6 +173,8 @@ def analyser(
     cwd: Path,
     chemins: tuple[str, ...] = CHEMINS_SENSIBLES,
     controles_positifs: tuple[str, ...] = CONTROLES_POSITIFS,
+    chemins_scratch: tuple[str, ...] = CHEMINS_SCRATCH_RACINE,
+    controles_positifs_scratch: tuple[str, ...] = CONTROLES_POSITIFS_SCRATCH,
 ) -> dict:
     # Les sondes sont injectables pour que les tests puissent batir un depot
     # temoin minimal : un organe qu'on ne peut pas faire echouer a volonte
@@ -128,25 +182,40 @@ def analyser(
     suivis = fichiers_suivis(cwd)
     sensibles = [verdict_chemin(c, cwd, suivis) for c in chemins]
     controles = [verdict_chemin(c, cwd, suivis) for c in controles_positifs]
+    scratch = [verdict_chemin(c, cwd, suivis) for c in chemins_scratch]
+    controles_scratch = [verdict_chemin(c, cwd, suivis) for c in controles_positifs_scratch]
 
     defauts = [v for v in sensibles if v["statut"] != "VERSIONNEE"]
+    defauts_scratch = [v for v in scratch if v["statut"] != "VERSIONNEE"]
     # L'instrument se falsifie lui-meme : si un controle positif ressort ignore,
     # la mesure ne vaut rien -- et un vert serait pire qu'un rouge.
     instrument_casse = [v for v in controles if v["statut"] != "NON_IGNORE"]
+    instrument_casse += [v for v in controles_scratch if v["statut"] != "NON_IGNORE"]
 
     # Un secret deja SUIVI n'est protege par aucune regle : la regle arrive trop tard.
     suivis_sensibles = sorted(f for f in suivis if "/.secrets/" in f or f.startswith(".secrets/"))
+    # Idem pour le scratch : un artefact deja dans l'index ne sortira pas par une
+    # regle d'ignore, il faut un `git rm --cached`.
+    suivis_scratch = sorted(f for f in suivis if est_nom_scratch_racine(f))
 
     return {
         "sensibles": sensibles,
         "controles_positifs": controles,
+        "scratch": scratch,
+        "controles_positifs_scratch": controles_scratch,
         "defauts": defauts,
+        "defauts_scratch": defauts_scratch,
         "instrument_casse": instrument_casse,
         "chemins_sensibles_deja_suivis": suivis_sensibles,
+        "chemins_scratch_deja_suivis": suivis_scratch,
         "verdict": (
             "INSTRUMENT_CASSE"
             if instrument_casse
-            else "SUIVI" if suivis_sensibles else "DEFAUT" if defauts else "CLEAN"
+            else "SUIVI"
+            if (suivis_sensibles or suivis_scratch)
+            else "DEFAUT"
+            if (defauts or defauts_scratch)
+            else "CLEAN"
         ),
     }
 
@@ -174,7 +243,11 @@ def main(argv: list[str] | None = None) -> int:
         marque = "ok  " if v["statut"] == "VERSIONNEE" else "DEFAUT"
         origine = f'{v["source"]}:{v.get("ligne")}' if v["source"] else "aucune regle"
         print(f'  {marque} {v["chemin"]:<58} <- {origine}')
-    for v in rapport["controles_positifs"]:
+    for v in rapport["scratch"]:
+        marque = "ok  " if v["statut"] == "VERSIONNEE" else "DEFAUT"
+        origine = f'{v["source"]}:{v.get("ligne")}' if v["source"] else "aucune regle"
+        print(f'  {marque} {v["chemin"]:<58} <- {origine}')
+    for v in rapport["controles_positifs"] + rapport["controles_positifs_scratch"]:
         etat = "visible" if v["statut"] == "NON_IGNORE" else "IGNORE (!)"
         print(f'  ctl  {v["chemin"]:<58} -> {etat}')
 
@@ -186,9 +259,14 @@ def main(argv: list[str] | None = None) -> int:
         for f in rapport["chemins_sensibles_deja_suivis"]:
             print(f"    {f}")
         return EXIT_DEFECT
-    if rapport["defauts"]:
+    if rapport["chemins_scratch_deja_suivis"]:
+        print("\nSUIVI -- ces artefacts de scratch sont deja dans l'index :")
+        for f in rapport["chemins_scratch_deja_suivis"]:
+            print(f"    {f}")
+        return EXIT_DEFECT
+    if rapport["defauts"] or rapport["defauts_scratch"]:
         print("\nDEFAUT -- couverts par une regle LOCALE, donc sur ce clone seulement :")
-        for v in rapport["defauts"]:
+        for v in rapport["defauts"] + rapport["defauts_scratch"]:
             print(f'    {v["chemin"]}  <- {v["source"] or "aucune regle"}')
         print("  Remede : poser la regle dans le .gitignore VERSIONNE.")
         return EXIT_DEFECT
