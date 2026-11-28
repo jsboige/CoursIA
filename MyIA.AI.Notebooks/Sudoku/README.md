@@ -4,9 +4,9 @@ pagetitle: "Sudoku — comparer les méthodes de résolution"
 
 <!-- CATALOG-STATUS
 series: Sudoku
-pedagogical_count: 48
-breakdown: root=48
-maturity: BETA=48
+pedagogical_count: 50
+breakdown: root=50
+maturity: BETA=50
 -->
 
 [↑ Parcours de notebooks](../README.md) · [Search : recherche et contraintes](../Search/README.md)

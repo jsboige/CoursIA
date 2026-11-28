@@ -6,7 +6,7 @@ pagetitle: "QuantConnect AI Trading - Série Éducative CoursIA"
 series: QuantConnect
 pedagogical_count: 126
 breakdown: Python=66, projects=49, kelly_lean=6, ML-Training-Pipeline=4, CSharp=1
-maturity: BETA=84, DRAFT=33, ALPHA=8, TEMPLATE=1
+maturity: BETA=85, DRAFT=33, ALPHA=7, TEMPLATE=1
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ CaseStudies](../CaseStudies/README.md)

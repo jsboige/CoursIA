@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Planners
-pedagogical_count: 26
-breakdown: Planners=26
-maturity: BETA=26
+pedagogical_count: 29
+breakdown: Planners=29
+maturity: BETA=29
 -->
 
 La planification automatique répond à une question différente de celle de l'apprentissage : non pas « que prédire ? » mais « **que faire ?** ». À partir d'un modèle du monde — un état initial, des actions avec leurs préconditions et leurs effets, un but — un planificateur cherche une suite d'actions qui mène au but. C'est une technologie éprouvée : elle pilote des robots, ordonnance la logistique et a dirigé des engins spatiaux autonomes.

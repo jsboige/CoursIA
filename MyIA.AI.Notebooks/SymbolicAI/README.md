@@ -6,9 +6,9 @@ pagetitle: "SymbolicAI - Intelligence Artificielle Symbolique"
 
 <!-- CATALOG-STATUS
 series: SymbolicAI
-pedagogical_count: 459
-breakdown: Lean=181, SMT=66, ArgumentAnalysis=50, Tweety=39, SmartContracts=37, SemanticWeb=31, SymbolicLearning=28, Planners=26, root=1
-maturity: BETA=438, ALPHA=11, DRAFT=10
+pedagogical_count: 491
+breakdown: Lean=195, SMT=72, ArgumentAnalysis=58, Tweety=39, SmartContracts=37, SemanticWeb=32, Planners=29, SymbolicLearning=28, root=1
+maturity: BETA=470, ALPHA=12, DRAFT=9
 -->
 
 L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis dériver mécaniquement de nouvelles conclusions. C'est cette tradition — des systèmes experts des années 80 aux assistants de preuve modernes comme Lean 4 — que cette famille de séries explore.

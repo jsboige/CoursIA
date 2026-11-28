@@ -4,9 +4,9 @@ pagetitle: "CaseStudies - Études de cas interdisciplinaires"
 
 <!-- CATALOG-STATUS
 series: CaseStudies
-pedagogical_count: 6
-breakdown: Diagnostic-Medical=2, Planification-Oncologie=2, Reseau-Electrique-Intelligent=2
-maturity: BETA=6
+pedagogical_count: 7
+breakdown: Reseau-Electrique-Intelligent=3, Diagnostic-Medical=2, Planification-Oncologie=2
+maturity: BETA=7
 -->
 
 Le marqueur `CATALOG-STATUS` présente le décompte agrégé des carnets. Les études de cas combinent des outils hétérogènes en Python : résolution de contraintes avec Z3 et OR-Tools, recherche A*, algorithmes génétiques, graphes de connaissances avec rdflib et modélisation probabiliste avec Pyro. Les carnets utilisent le noyau Python et peuvent être exécutés avec Jupyter (`jupyter nbconvert --execute --inplace <carnet.ipynb>`) ou via le serveur MCP Jupyter.
