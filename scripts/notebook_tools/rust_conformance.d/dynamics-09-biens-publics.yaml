@@ -1,11 +1,14 @@
 # Triplet Dynamics-09 : jumeau Python + portage Rust (issue #27659, spec Rust portage).
-# Les deux carnets ont exactement la meme structure 24 cellules (meme indices) :
+# Les trois carnets ont exactement la meme structure 24 cellules (meme indices) :
 # les cotes se correspondent par index. Cote Rust = evcxr + ndarray 0.17.2 + plotters 0.3.
-# Le cote C# n'existe pas pour cette serie (Dynamics est Python + Rust seulement).
+# Le cote C# EXISTE (Dynamics-09-Biens-Publics-N-Personnes-CSharp.ipynb, 24 cellules,
+# 9 de code aux memes rangs) : il est declare dans `twin_pairs.d/dynamics-09-biens-publics.yaml`.
+# Ce registre differentiel-ci ne compare que Python et Rust ; les valeurs C# ne sont pas
+# mesurees ici (defaut de la redaction d'origine, corrige le 2026-11-27, PR #28661).
 # Les figures (E2b scatter, E3 bifurcation) sont QUALITATIVES : hors registre,
 # comparees a l'oeil dans le body de la PR (legendes markdown, memes couleurs).
-# La parite SHA par cote (twin_pairs.d, cote rust) attend le point 1 de #27098 :
-# declare ici, pas reimplemente.
+# La parite SHA par cote est portee par `twin_pairs.d/dynamics-09-biens-publics.yaml`
+# (cote `rust:` declare, attestation a la tete) : declaree la, pas reimplementee ici.
 - name: "Dynamics-09 Biens publics N-personnes"
   family: Dynamics
   python: MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb

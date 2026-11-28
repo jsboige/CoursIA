@@ -10,7 +10,8 @@ Ce que fait l'organe
 --------------------
 
 1. **Recensement** : il enumere les fichiers de dependances declares
-   (`requirements*.txt`, `environment*.yml`) et les rattache a la **serie** et
+   (`requirements*.txt`, `environment*.yml`, et la convention de carnet
+   `<Carnet>-requirements.txt`) et les rattache a la **serie** et
    a la **sous-serie** qui les portent ; il enumere les carnets de ces series
    et en lit le `kernelspec`, d'ou la **famille de noyau** (Python, .NET, Lean,
    Rust). Aucune serie du depot n'est absente de la table : une serie sans
@@ -173,6 +174,7 @@ from dependency_manifest_construction import (  # noqa: E402
     _specifier_bounds,
     _specifiers_compatible,
     build_manifest,
+    is_dependency_file,
 )
 from dependency_manifest_rendu import (  # noqa: E402
     FRESHNESS_IGNORED_COUNTS,
@@ -255,6 +257,7 @@ __all__ = [
     "compare_versions",
     "git_ls_files",
     "git_sha",
+    "is_dependency_file",
     "load_lib_manifest",
     "load_policy",
     "main",
