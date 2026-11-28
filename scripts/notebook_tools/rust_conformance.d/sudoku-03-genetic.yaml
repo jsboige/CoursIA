@@ -1,0 +1,240 @@
+# Conformité différentielle de Sudoku-03-Genetic (jumeau Rust std, #28097, lot #27778).
+#
+# Écrite à la livraison (myia-po-2024:CoursIA) depuis les sorties COMMITÉES des
+# carnets. Le portage Rust garde la structure de cellules du jumeau Python (35
+# cellules, 12 cellules code aux mêmes index), mais la source Python n'est pas
+# gréée (0 occurrence de `random_seed` / `np.random.seed` / `random.seed`) :
+# les trajectoires de l'algorithme génétique ne sont reproductibles sous aucun
+# moteur. Le registre ne porte donc QUE les grandeurs déterministes et les
+# propriétés attendues par la spec (#28097, « Attendus testables ») ; les lignes
+# de trajectoire sont exclues et listées ci-dessous avec leur motif.
+#
+# Grandeurs exclues (non comparables, spec #28097 « Tolérances ») :
+#   - temps et générations (cellules 8, 13, 16, 21, 25) : trajectoire non gréée,
+#     moteurs et horloges différents (Python interprété, Rust compilé) ;
+#   - erreurs finales du solveur par cellules (18 côté Python, 19 côté Rust en
+#     cellule 8 ; 19 et 13 en cellule 16) : la spec n'exige que « non résolu,
+#     erreurs > 0 » — porté par c8_cellules_non_resolu et
+#     c16_cellules_non_resolu ;
+#   - « Resolus: 1/3 » et erreurs des puzzles 2 et 3 (cellule 21) : issue
+#     stochastique, non listée par la spec ;
+#   - grille résultat du solveur par cellules (cellule 8) : non résolue, donc
+#     dépendante de la trajectoire ;
+#   - cellule 16 côté Python : une figure matplotlib (display_data) que le
+#     jumeau Rust remplace par un histogramme en texte — médias différents ;
+#   - cellule 1 : bandeau du moteur (« PyGAD version: 3.5.0 » contre « Moteur
+#     GA : Rust std (xorshift64*) ») — bandeau honnête propre à chaque côté ;
+#   - cellule 3 : la source imprime « ATTENTION: Dossier Puzzles non trouve »
+#     alors que la cellule 5 charge 5 puzzles (garde périmée, non propagée).
+#
+# Classe stochasticité — oracle 2-graines du carnet Python (commentaire du
+# 22/11 sur #28097, mesuré sur myia-po-2028 ; RAPPORTÉ, non remesuré ici) :
+# rejouée avec PYTHONHASHSEED=0 puis =1, la source donne 53 et 33 générations
+# en cellule 25 (21 committé), 22 et 17 erreurs finales en cellule 8
+# (18 committé). Les verdicts qualitatifs y sont stables d'une graine à
+# l'autre : « Resolu: False » en cellules 8 et 16, « Puzzle 1: OK » en
+# cellule 21. Ils sont portés par les mesures c8_cellules_non_resolu,
+# c16_cellules_non_resolu et c21_puzzle1_resolu.
+#
+# La grille solution (81 chiffres) est comparable aux TROIS côtés : le puzzle
+# Easy n'a qu'une solution (recherche exhaustive bornée à 2, 1 trouvée).
+#
+# Côté C# : autre structure (38 cellules, 13 cellules code aux index
+# 1, 4, 7, 11, 12, 15, 19, 20, 23, 26, 29, 30, 33) ; il n'imprime aucune des
+# lignes Python (0 occurrence mesurée pour chaque aiguille), sauf la grille
+# solution, dans son propre format. Déclaré absent avec son motif, mesure par
+# mesure.
+- name: "Sudoku-03-Genetic"
+  family: "Sudoku"
+  python: MyIA.AI.Notebooks/Sudoku/Sudoku-03-Genetic-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-03-Genetic-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/Sudoku/Sudoku-03-Genetic-Rust.ipynb
+  measures:
+    - id: c5_puzzles_charges
+      description: "Nombre de puzzles chargés (cellule 5)"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 5, pattern: 'Puzzles charges: (\d+)', transform: int}
+        rust: {cell: 5, pattern: 'Puzzles charges: (\d+)', transform: int}
+        csharp:
+          absent: "« Puzzles charges » : 0 occurrence dans les sorties du carnet C# (38 cellules, autre structure), mesuré à la rédaction ; la comparaison porte sur Python et Rust."
+    - id: c5_grille_test
+      description: "Grille de test affichée (cellule 5), texte identique"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 5, pattern: 'Grille de test:\n(.*?)\n\s*Erreurs initiales:', transform: text}
+        rust: {cell: 5, pattern: 'Grille de test:\n(.*?)\n\s*Erreurs initiales:', transform: text}
+        csharp:
+          absent: "« Grille de test » : 0 occurrence dans les sorties du carnet C# (il imprime le puzzle dans son propre format « | 9     2 | … »), mesuré à la rédaction ; la comparaison porte sur Python et Rust."
+    - id: c5_erreurs_initiales
+      description: "Erreurs de la grille de test avant résolution (cellule 5)"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 5, pattern: 'Erreurs initiales: (\d+)', transform: int}
+        rust: {cell: 5, pattern: 'Erreurs initiales: (\d+)', transform: int}
+        csharp:
+          absent: "« Erreurs initiales » : 0 occurrence dans les sorties du carnet C#, mesuré à la rédaction ; la comparaison porte sur Python et Rust."
+    - id: c8_cellules_vides
+      description: "Nombre de cellules vides du puzzle résolu par le chromosome par cellules (cellule 8)"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 8, pattern: 'Puzzle initial \((\d+) cellules vides\)', transform: int}
+        rust: {cell: 8, pattern: 'Puzzle initial \((\d+) cellules vides\)', transform: int}
+        csharp:
+          absent: "« cellules vides » : 0 occurrence dans les sorties du carnet C#, mesuré à la rédaction ; la comparaison porte sur Python et Rust."
+    - id: c8_cellules_non_resolu
+      description: "GA simple sur le puzzle Easy (cellule 8) : non résolu à la dernière génération (200 générations) — les erreurs finales ne sont pas comparées (source non gréée)"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 8, pattern: '(Resolu: False)\nErreurs finales: \d+\nTemps:', transform: text}
+        rust: {cell: 8, pattern: '(Resolu: False)\nErreurs finales: \d+\nTemps:', transform: text}
+        csharp:
+          absent: "« Resolu » : 0 occurrence dans les sorties du carnet C# (il imprime « Nombre d'erreurs réstantes »), mesuré à la rédaction ; la comparaison porte sur Python et Rust."
+    - id: c11_banniere_exercice
+      description: "Sortie de la cellule 11 (exercice 1), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 11, pattern: '\A\s*(.*?)\s*\Z', transform: text}
+        rust: {cell: 11, pattern: '\A\s*(.*?)\s*\Z', transform: text}
+        csharp:
+          absent: "La cellule C# 11 imprime « Exercice a completer » sans le nom de la fonction (0 occurrence de « Exercice weighted_fitness » dans ses sorties), mesuré à la rédaction ; la comparaison porte sur Python et Rust."
+    - id: c13_permutations_lignes
+      description: "Permutations valides par ligne sur le puzzle Easy (cellule 13) : les neuf comptes, 24 par ligne"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 13, pattern: '(Ligne 0: 24 permutations valides\nLigne 1: 24 permutations valides\nLigne 2: 24 permutations valides\nLigne 3: 24 permutations valides\nLigne 4: 24 permutations valides\nLigne 5: 24 permutations valides\nLigne 6: 24 permutations valides\nLigne 7: 24 permutations valides\nLigne 8: 24 permutations valides)\n', transform: text}
+        rust: {cell: 13, pattern: '(Ligne 0: 24 permutations valides\nLigne 1: 24 permutations valides\nLigne 2: 24 permutations valides\nLigne 3: 24 permutations valides\nLigne 4: 24 permutations valides\nLigne 5: 24 permutations valides\nLigne 6: 24 permutations valides\nLigne 7: 24 permutations valides\nLigne 8: 24 permutations valides)\n', transform: text}
+        csharp:
+          absent: "« permutations valides » : 0 occurrence dans les sorties du carnet C#, mesuré à la rédaction ; la comparaison porte sur Python et Rust."
+    - id: c13_resolu
+      description: "Solveur par permutations sur le puzzle Easy : résolu, zéro erreur (cellule 13)"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 13, pattern: '(Resolu: True\nErreurs finales: 0)\nTemps:', transform: text}
+        rust: {cell: 13, pattern: '(Resolu: True\nErreurs finales: 0)\nTemps:', transform: text}
+        csharp:
+          absent: "« Resolu » : 0 occurrence dans les sorties du carnet C# (il imprime « Nombre d'erreurs réstantes: N ») ; sa résolution est portée par la mesure c13_grille_solution, mesuré à la rédaction."
+    - id: c13_grille_solution
+      description: "Grille solution du puzzle Easy, 81 chiffres (cellule 13 côté Python et Rust ; cellule 33, premier « Sudoku renvoyé », côté C#). Ce puzzle n'a qu'une solution."
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 13, pattern: 'Resultat:\n(.*?)\n\s*\Z', transform: digits}
+        rust: {cell: 13, pattern: 'Resultat:\n(.*?)\n\s*\Z', transform: digits}
+        csharp: {cell: 33, pattern: 'Sudoku renvoyé:\n(.*?)\nNombre d', transform: digits}
+    - id: c16_cellules_non_resolu
+      description: "Comparaison des approches (cellule 16) : le codage par cellules n'est pas résolu (300 générations, 150 individus) — les erreurs finales ne sont pas comparées (source non gréée)"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 16, pattern: '(Resolu: False), Erreurs: \d+, Temps:', transform: text}
+        rust: {cell: 16, pattern: '(Resolu: False), Erreurs: \d+, Temps:', transform: text}
+        csharp:
+          absent: "« Resolu » : 0 occurrence dans les sorties du carnet C#, mesuré à la rédaction ; la comparaison porte sur Python et Rust."
+    - id: c16_permutations_resolu
+      description: "Comparaison des approches (cellule 16) : le codage par permutations est résolu, zéro erreur"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 16, pattern: '(Resolu: True, Erreurs: 0), Temps:', transform: text}
+        rust: {cell: 16, pattern: '(Resolu: True, Erreurs: 0), Temps:', transform: text}
+        csharp:
+          absent: "« Resolu » : 0 occurrence dans les sorties du carnet C#, mesuré à la rédaction ; la comparaison porte sur Python et Rust."
+    - id: c16_permutations_lignes
+      description: "Permutations valides par ligne sur le puzzle Easy (cellule 16) : les neuf comptes, 24 par ligne"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 16, pattern: '(Ligne 0: 24 permutations valides\nLigne 1: 24 permutations valides\nLigne 2: 24 permutations valides\nLigne 3: 24 permutations valides\nLigne 4: 24 permutations valides\nLigne 5: 24 permutations valides\nLigne 6: 24 permutations valides\nLigne 7: 24 permutations valides\nLigne 8: 24 permutations valides)\n', transform: text}
+        rust: {cell: 16, pattern: '(Ligne 0: 24 permutations valides\nLigne 1: 24 permutations valides\nLigne 2: 24 permutations valides\nLigne 3: 24 permutations valides\nLigne 4: 24 permutations valides\nLigne 5: 24 permutations valides\nLigne 6: 24 permutations valides\nLigne 7: 24 permutations valides\nLigne 8: 24 permutations valides)\n', transform: text}
+        csharp:
+          absent: "« permutations valides » : 0 occurrence dans les sorties du carnet C#, mesuré à la rédaction ; la comparaison porte sur Python et Rust."
+    - id: c19_banniere_exercice
+      description: "Sortie de la cellule 19 (exercice 2), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 19, pattern: '\A\s*(.*?)\s*\Z', transform: text}
+        rust: {cell: 19, pattern: '\A\s*(.*?)\s*\Z', transform: text}
+        csharp:
+          absent: "La cellule C# 19 imprime « Exercice a completer » sans le nom de la fonction (0 occurrence de « Exercice swap_mutation » dans ses sorties), mesuré à la rédaction ; la comparaison porte sur Python et Rust."
+    - id: c21_puzzle1_resolu
+      description: "Benchmark (cellule 21), puzzle 1 : résolu par le solveur par permutations — générations et temps non comparés (source non gréée)"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 21, pattern: '(Puzzle 1: OK), [\d.]+ ?m?s, \d+ gen', transform: text}
+        rust: {cell: 21, pattern: '(Puzzle 1: OK), [\d.]+ ?m?s, \d+ gen', transform: text}
+        csharp:
+          absent: "« Puzzle 1 » : 0 occurrence dans les sorties du carnet C#, mesuré à la rédaction ; la comparaison porte sur Python et Rust."
+    - id: c21_permutations_puzzle1
+      description: "Benchmark (cellule 21), puzzle 1 : les neuf comptes de permutations valides, 24 par ligne"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 21, pattern: '\(3 puzzles\) ===\n(Ligne 0: 24 permutations valides\nLigne 1: 24 permutations valides\nLigne 2: 24 permutations valides\nLigne 3: 24 permutations valides\nLigne 4: 24 permutations valides\nLigne 5: 24 permutations valides\nLigne 6: 24 permutations valides\nLigne 7: 24 permutations valides\nLigne 8: 24 permutations valides)\n', transform: text}
+        rust: {cell: 21, pattern: '\(3 puzzles\) ===\n(Ligne 0: 24 permutations valides\nLigne 1: 24 permutations valides\nLigne 2: 24 permutations valides\nLigne 3: 24 permutations valides\nLigne 4: 24 permutations valides\nLigne 5: 24 permutations valides\nLigne 6: 24 permutations valides\nLigne 7: 24 permutations valides\nLigne 8: 24 permutations valides)\n', transform: text}
+        csharp:
+          absent: "« permutations valides » : 0 occurrence dans les sorties du carnet C#, mesuré à la rédaction ; la comparaison porte sur Python et Rust."
+    - id: c21_permutations_puzzle2
+      description: "Benchmark (cellule 21), puzzle 2 : les neuf comptes de permutations valides, 720 / 120 / 120 / 120 / 5000 / 120 / 120 / 120 / 720"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 21, pattern: 'Puzzle 1: [^\n]*\n(Ligne 0: 720 permutations valides\nLigne 1: 120 permutations valides\nLigne 2: 120 permutations valides\nLigne 3: 120 permutations valides\nLigne 4: 5000 permutations valides\nLigne 5: 120 permutations valides\nLigne 6: 120 permutations valides\nLigne 7: 120 permutations valides\nLigne 8: 720 permutations valides)\n', transform: text}
+        rust: {cell: 21, pattern: 'Puzzle 1: [^\n]*\n(Ligne 0: 720 permutations valides\nLigne 1: 120 permutations valides\nLigne 2: 120 permutations valides\nLigne 3: 120 permutations valides\nLigne 4: 5000 permutations valides\nLigne 5: 120 permutations valides\nLigne 6: 120 permutations valides\nLigne 7: 120 permutations valides\nLigne 8: 720 permutations valides)\n', transform: text}
+        csharp:
+          absent: "« permutations valides » : 0 occurrence dans les sorties du carnet C#, mesuré à la rédaction ; la comparaison porte sur Python et Rust."
+    - id: c21_permutations_puzzle3
+      description: "Benchmark (cellule 21), puzzle 3 : les neuf comptes de permutations valides, 720 / 120 / 120 / 120 / 5000 / 120 / 120 / 120 / 720"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 21, pattern: 'Puzzle 2: [^\n]*\n(Ligne 0: 720 permutations valides\nLigne 1: 120 permutations valides\nLigne 2: 120 permutations valides\nLigne 3: 120 permutations valides\nLigne 4: 5000 permutations valides\nLigne 5: 120 permutations valides\nLigne 6: 120 permutations valides\nLigne 7: 120 permutations valides\nLigne 8: 720 permutations valides)\n', transform: text}
+        rust: {cell: 21, pattern: 'Puzzle 2: [^\n]*\n(Ligne 0: 720 permutations valides\nLigne 1: 120 permutations valides\nLigne 2: 120 permutations valides\nLigne 3: 120 permutations valides\nLigne 4: 5000 permutations valides\nLigne 5: 120 permutations valides\nLigne 6: 120 permutations valides\nLigne 7: 120 permutations valides\nLigne 8: 720 permutations valides)\n', transform: text}
+        csharp:
+          absent: "« permutations valides » : 0 occurrence dans les sorties du carnet C#, mesuré à la rédaction ; la comparaison porte sur Python et Rust."
+    - id: c25_resolu
+      description: "Solveur par permutations de blocs sur le puzzle Easy : résolu, zéro erreur (cellule 25)"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 25, pattern: '(Resolu: True, Erreurs: 0)\nGenerations:', transform: text}
+        rust: {cell: 25, pattern: '(Resolu: True, Erreurs: 0)\nGenerations:', transform: text}
+        csharp:
+          absent: "« Resolu » : 0 occurrence dans les sorties du carnet C# ; il n'a pas de solveur par permutations de blocs (cellule 26 : « TODO: Implementez SudokuBlockChromosome pour tester »), mesuré à la rédaction."
+    - id: c25_grille_solution
+      description: "Grille solution du puzzle Easy par le solveur par permutations de blocs, 81 chiffres (cellule 25). Ce puzzle n'a qu'une solution."
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 25, pattern: 'Resultat:\n(.*?)\n\s*\Z', transform: digits}
+        rust: {cell: 25, pattern: 'Resultat:\n(.*?)\n\s*\Z', transform: digits}
+        csharp:
+          absent: "Le carnet C# n'a pas de solveur par permutations de blocs (cellule 26 : « TODO: Implementez SudokuBlockChromosome pour tester » ; 0 occurrence de « Resultat: » dans ses sorties), mesuré à la rédaction ; la comparaison porte sur Python et Rust."
+    - id: c27_banniere_exercice
+      description: "Sortie de la cellule 27 (exercice 3), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 27, pattern: '\A\s*(.*?)\s*\Z', transform: text}
+        rust: {cell: 27, pattern: '\A\s*(.*?)\s*\Z', transform: text}
+        csharp:
+          absent: "La cellule C# 29 imprime « Exercice a completer » sans le nom de l'opérateur (0 occurrence de « uniform_crossover » dans les sorties du carnet C#), mesuré à la rédaction ; la comparaison porte sur Python et Rust."
+    - id: c32_texte
+      description: "Sortie de la cellule 32, texte identique au jumeau Python : les quatre constantes citées (29530, 1670, 143.7 et 14.6 ms), jamais remesurées, les trois « None » de l'exercice et sa bannière"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 32, pattern: '\A\s*(.*?)\s*\Z', transform: text}
+        rust: {cell: 32, pattern: '\A\s*(.*?)\s*\Z', transform: text}
+        csharp:
+          absent: "« Temps GA pire cas » et « Ratio GA / OR-Tools » : 0 occurrence dans les sorties du carnet C# (il n'a pas d'exercice Prong B), mesuré à la rédaction ; la comparaison porte sur Python et Rust."
