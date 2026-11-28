@@ -356,6 +356,45 @@ def test_un_carnet_absent_est_signale(tmp_path):
     assert any("fichier absent" in m for m in report["entries"][0]["missing"])
 
 
+def test_text_lf_neutralise_les_fins_de_ligne_et_rien_d_autre(tmp_path):
+    """`text_lf` neutralise la seule difference de plateforme (un carnet C#
+    execute sous Windows stocke ses sorties en CRLF) : la paire coincide, et
+    tout ecart de contenu reste detecte. Le temoin sous `text` brut prouve que
+    c'est bien la transformation qui rapproche les cotes, pas une extraction
+    complaisante."""
+    root = tmp_path / "repo"
+    _mini_notebook(root / "python.ipynb", "ligne 1\nligne 2\n")
+    _mini_notebook(root / "windows.ipynb", "ligne 1\r\nligne 2\r\n")
+    _mini_notebook(root / "altere.ipynb", "ligne 1\r\nligne 3\r\n")
+    pattern = "\\A\\s*(.*?)\\s*\\Z"
+
+    def _entry(rust_notebook: str, rust_transform: str) -> list[dict]:
+        return [{
+            "name": "fins de ligne", "python": "python.ipynb",
+            "rust": rust_notebook,
+            "measures": [{
+                "id": "texte", "reference": "python", "tolerance": 0,
+                "sides": {
+                    "python": {"cell": 0, "pattern": pattern, "transform": "text"},
+                    "rust": {"cell": 0, "pattern": pattern,
+                             "transform": rust_transform},
+                }}]}]
+
+    registry = _write_registry(tmp_path / "r_lf", _entry("windows.ipynb", "text_lf"))
+    rc, report = crc.run(registry, root)
+    assert rc == 0, report["entries"][0]["findings"]
+    assert report["entries"][0]["measures"][0]["status"] == "OK"
+
+    registry = _write_registry(tmp_path / "r_raw", _entry("windows.ipynb", "text"))
+    rc, report = crc.run(registry, root)
+    assert rc == 1, "sous `text` brut, CRLF et LF ne sont pas le meme texte"
+    assert report["entries"][0]["measures"][0]["status"] == "DIVERGENCE"
+
+    registry = _write_registry(tmp_path / "r_alt", _entry("altere.ipynb", "text_lf"))
+    rc, report = crc.run(registry, root)
+    assert rc == 1, "`text_lf` ne doit pas masquer un contenu different"
+
+
 def test_les_etiquettes_se_comparent_independantement_de_leur_ordre(tmp_path):
     """Transformation `labels` : deux cores qui portent les MEMES etiquettes
     dans un ordre different sont conformes.

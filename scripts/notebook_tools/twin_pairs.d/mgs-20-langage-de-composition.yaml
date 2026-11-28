@@ -1,0 +1,26 @@
+- name: "MGS-20 Langage de Composition"
+  family: Search/Part4-Metaheuristics
+  python: MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-20-Langage-de-Composition.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-20-Langage-de-Composition-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: |
+    Python = langage de composition ecrit pour le carnet (primitives Mutate / Select / Seq / Repeat / Switch /
+    ParallelOp, combinateurs, boucle evolutionnaire parametrique sur les compositions), sur numpy et matplotlib seuls :
+    aucun solveur externe, aucune directive #r (13 cellules de code, aucune dependance metaheuristique).
+    C# = le MEME langage reecrit en C# -- copie pedagogique declaree, son motif est ecrit dans le body de la PR --
+    PLUS un pont vers l'organe natif de la serie : les assemblies MetaGeneticSharp.Domain / .Infrastructure /
+    .Extensions chargees par #r depuis le sous-module voisin, la composition trouvee rejouee sur
+    MetaGeneticAlgorithm et comparee a la boucle du carnet a population et generations egales.
+    Verdict SOTA-OK : le moteur de la serie est reellement invoque, et c'est lui qui porte la mesure du pont
+    (2 934 a 3 084 evaluations par course selon la graine, 3 013 en moyenne, contre 4 050 pour la boucle du
+    carnet ; score de la composition trouvee plus de cent fois superieur a celui de la composition de depart).
+    La reproduction locale du langage n'est pas un contournement du moteur : le moteur est appele a cote, et la
+    reproduction sert de temoin pour mesurer ce que le langage coute et ce que le moteur economise.
+  known_differences:
+    - "Asymetrie de pont, assumee et declaree : le jumeau Python n'invoque ni DEAP ni MetaGeneticSharp (numpy seul, aucune directive #r) ; seul le jumeau C# charge le moteur natif de la serie et mesure l'ecart avec la boucle du carnet. Le pont est l'apport propre du portage, pas une equivalence entre les deux carnets."
+    - "Realisations aleatoires distinctes : les deux carnets tirent leurs compositions par le meme protocole mais avec des flux aleatoires independants, donc la composition gagnante differe d'un cote a l'autre. Aucune equivalence de composition, de score ni de courbe n'est revendiquee entre les jumeaux ; le jumeau C# l'ecrit dans ses limites."
+    - "Placement des exercices : le jumeau Python annonce ses trois exercices dans sa conclusion (cellule 22) puis les traite en fin de carnet (exercice 1 en 23-24, exercice 2 en 25-26, exercice 3 en 27-28) ; le jumeau C# les distribue apres la section dont chacun depend (exercice 1 en 10-11, exercice 2 en 22-23, exercice 3 en 27-28). Le decoupage differe."
+    - "Sujet des exercices : un seul des trois est commun aux deux carnets. Exercice 1 : Python fait ecrire search_fast_first_hit, la recherche selon une nouvelle specification comportementale ; C# fait ecrire le combinateur Islands. Exercice 2 : Python fait ajouter le combinateur Islands ; C# fait ecrire la troisieme specification (CumulativeMin, ScoreBestEver). Exercice 3 : les deux remplacent le tirage aleatoire par une descente gloutonne. Le score fast-first-hit existe cote C# (ScoreFastFirstHit, cellule 16) sans exercice qui le fasse ecrire ; CumulativeMin et ScoreBestEver n'apparaissent pas dans le jumeau Python."
+    - "Idiomes de figure : le jumeau Python trace avec matplotlib (plt.show, 3 cellules) ; le jumeau C# rend des SVG inline via SvgChartHelper charge par #load depuis ../../Probas/Infer/, sans JavaScript ni CDN, conformement a la regle de la serie."
+    - "Structure : 33 cellules (13 de code) cote Python, 37 cellules (13 de code) cote C# -- l'ecart vient des cellules de transition et du pont, pas d'un contenu manquant d'un cote."

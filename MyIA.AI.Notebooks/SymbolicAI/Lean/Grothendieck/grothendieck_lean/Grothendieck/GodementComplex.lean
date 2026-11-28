@@ -716,7 +716,7 @@ godementFunctor` (tranche 2).
 
 La **frontière nommée** reste la SES degreewise des complexes canoniques
 eux-mêmes (`ShortExact` de complexes, pas de préfaisceaux en un ouvert) : elle
-exige le relèvement flasque (`epi_of_shortExact_of_isFlasqueSieves`, Partie 94)
+exige le relèvement flasque (`epi_of_shortExact_of_isFlasqueSieves`, Partie 82)
 ou l'échelle de séparabilité — c'est la tranche 2, pour la Partie 99.
 -/
 
@@ -838,7 +838,7 @@ Partie 86, l'épi et l'exactitude pointwise la Partie 98.
 La **frontière nommée** reste le rang `n + 1` : les étages du complexe
 canonique sont `C^{n+2} = C⁰(coker dⁿ)` (P92), donc l'itération exige la SES
 des conoyaux, dont le connecteur serpent `δ = -kernel.ι ≫ cokernel.π`
-(`kernelCokernelCompSequence`) doit s'annuler — relèvement flasque (Partie 94)
+(`kernelCokernelCompSequence`) doit s'annuler — relèvement flasque (Partie 82)
 ou échelle de séparabilité. C'est la tranche suivante.
 -/
 
@@ -976,7 +976,7 @@ l'épi (`epi_godementMapHom_of_epi`) et l'exactitude pointwise (`exact_app_`
 `godementMapHom`) la Partie 98, l'assemblage par le pont
 `shortComplex_exact_iff_app` de cette Partie. C'est la fondation rang 0 de
 l'itération ; le rang `n + 1` (étages `C^{n+2} = C⁰(coker dⁿ)`, P92) exige en
-plus l'annulation du connecteur serpent — relèvement flasque (P94) ou échelle
+plus l'annulation du connecteur serpent — relèvement flasque (P82) ou échelle
 de séparabilité, tranche suivante. -/
 theorem shortExact_map_godementFunctor {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
     (hS : S.ShortExact) : (S.map godementFunctor).ShortExact := by
@@ -1174,40 +1174,6 @@ theorem godementCanonicalMap_comp_zero {S : ShortComplex (X.Presheaf AddCommGrpC
         godementCokernelMap_comp m (ih (m + 1) (Nat.lt_succ_self (m + 1))),
         godementMapHom_zero]
 
-/- **Cible prover : hard — la SES des étages à tout degré, par récursion**
-(P99 rang `n + 1`). Pour une SES `S` de préfaisceaux dont le terme droit est
-**séparé** (`hsep : Mono (toGodement S.X₃)` : tue le connecteur à
-l'amorçage, `ker μ_{X₃} = 0` sur les verticales `μ = toGodement`) et dont la
-résolution canonique est exacte en chaque degré (`hres` : tue le connecteur
-aux crans suivants, `ker dⁿ = im d^{n-1}`), la suite des étages
-`0 → Cⁿ(S.X₁) → Cⁿ(S.X₂) → Cⁿ(S.X₃) → 0` est courte exacte à tout degré `n`.
-Le rang 0 est `shortExact_map_godementFunctor` ; le cran `n + 1` exige la SES
-des conoyaux (serpent, `δ = 0`), que le rang 0 itère ensuite — c'est le
-théorème d'exactitude degreewise du foncteur « complexe canonique de
-Godement » [God58, Chap. II §4.1]. Ce qui a été tenté : architecture
-consignée (instance `SnakeInput` sur les SES d'étages `n`/`n+1` — dix champs,
-`h₀`/`h₃` par `kernel.isLimit`/`cokernel.isColimit` — puis annulation de
-`S.δ` par remontée le long de `im d^{n-1}` et lecture de `L₃_exact`).
-
-**Énoncé retiré du code compilé** (arbitrage ai-01 du 2026-11-19 sur #25661) :
-l'acceptance des issues mères #25599/#25605 exige `distinct_code_sorry` 0 → 0 ;
-tant que la preuve n'est pas livrée, l'énoncé reste documenté ici, hors
-compilation, et la garde bloquante (`axiom-fail-on-sorry`) reste armée —
-`sorry-baseline` du lake inchangée à 0. À ressusciter verbatim lorsque la
-preuve sera prête (organe : lemme du serpent, instance `SnakeInput` des SES
-d'étages, `δ` annulé par `hsep`/`hres`) :
-
-    theorem shortExact_godementCanonicalObj {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
-        (hS : S.ShortExact) (hsep : Mono (toGodement S.X₃))
-        (hres : ∀ m : ℕ, (ShortComplex.mk (godementCanonicalD S.X₃ m)
-            (godementCanonicalD S.X₃ (m + 1)) (godementCanonicalD_comp_zero S.X₃ m)).Exact)
-        (n : ℕ) :
-        (ShortComplex.mk (godementCanonicalMap S.X₁ S.X₂ S.f n)
-          (godementCanonicalMap S.X₂ S.X₃ S.g n)
-          (godementCanonicalMap_comp_zero n)).ShortExact := by
-      -- preuve attendue : serpent (SnakeInput des SES d'étages), cran n+1 par
-      -- SES des conoyaux puis itération du rang 0. -/
-
 /-! ### Partie 101 - SES des images `C⁰` au niveau préfaisceau, degré zéro aux tiges
 
 La Partie 98 établissait la SES des images `C⁰` ouvert par ouvert. Les
@@ -1296,5 +1262,331 @@ theorem shortExact_stalk_godementCanonicalMap_zero
         (by rw [← godementMapHom_comp, S.zero, godementMapHom_zero])).map
         (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀)).zero)).ShortExact :=
   shortExact_stalk_godementMapHom hS x₀
+/-- **Partie 103 — la tranche degré 0 de la cible hard** : la SES des étages au
+cran `0`, dans la forme exacte de l'énoncé retiré.
+
+Au cran `0`, l'étage du complexe canonique est `C⁰` du terme
+(`godementCanonicalObj_zero`) et la flèche d'étage est `C⁰` de la flèche du
+short complexe (`godementCanonicalMap_zero`) : la SES des étages au cran `0`
+est donc la SES `C⁰`-image de la SES `S` — c'est `shortExact_map_godementFunctor`
+(Partie 99, rang 0), dont le champ `exact` est transporté jusqu'à la forme de
+l'énoncé retiré. Le mono vient de la Partie 86 (`godementMapHom_mono`), l'épi
+de la Partie 98 (`epi_godementMapHom_of_epi`).
+
+Ce que la tranche laisse ouvert — et c'est l'essentiel : les crans `n ≥ 1`. Là,
+l'étage est `C⁰(coker dⁿ)` et la flèche d'étage est `C⁰` de la flèche de
+conoyaux (`godementCanonicalMap_succ_two`) : la SES des étages exige la SES
+des conoyaux `0 → coker dⁿ_{X₁} → coker dⁿ_{X₂} → coker dⁿ_{X₃} → 0`, donc
+(a) l'annulation du connecteur `δ` par le lemme du serpent (`SnakeInput`) —
+`hsep` tuant `ker μ_{X₃}` au cran d'amorçage, `hres` tuant `ker dⁿ` aux crans
+suivants —, et (b) la monicité des flèches de conoyaux, qui passe par
+`mono_cokernel_map_of_isPullback` : le carré des unités doit être un pullback.
+`hsep` ne porte que sur le terme **droit** ; la séparéité du terme gauche est
+une hypothèse à établir (ou à ajouter à l'énoncé) avant même le cran `1`.
+**Réfutée par la Partie 104 ci-dessous** : la séparéité du terme gauche n'est
+pas requise. -/
+theorem shortExact_godementCanonicalObj_zero
+    {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})} (hS : S.ShortExact) :
+    (ShortComplex.mk (godementCanonicalMap S.X₁ S.X₂ S.f 0)
+      (godementCanonicalMap S.X₂ S.X₃ S.g 0)
+      (godementCanonicalMap_comp_zero 0)).ShortExact := by
+  have : Mono S.f := hS.mono_f
+  have : Epi S.g := hS.epi_g
+  refine ShortComplex.ShortExact.mk' ?_ (godementMapHom_mono S.f)
+    (epi_godementMapHom_of_epi S.g)
+  exact (shortExact_map_godementFunctor hS).exact
+
+/- **Cible prover : hard — la SES des étages à tout degré, par récursion**
+(P99 rang `n + 1`). Pour une SES `S` de préfaisceaux dont le terme droit est
+**séparé** (`hsep : Mono (toGodement S.X₃)` : tue le connecteur à
+l'amorçage, `ker μ_{X₃} = 0` sur les verticales `μ = toGodement`) et dont la
+résolution canonique est exacte en chaque degré (`hres` : tue le connecteur
+aux crans suivants, `ker dⁿ = im d^{n-1}`), la suite des étages
+`0 → Cⁿ(S.X₁) → Cⁿ(S.X₂) → Cⁿ(S.X₃) → 0` est courte exacte à tout degré `n`.
+Le rang 0 est `shortExact_map_godementFunctor` ; le cran `n + 1` exige la SES
+des conoyaux (serpent, `δ = 0`), que le rang 0 itère ensuite — c'est le
+théorème d'exactitude degreewise du foncteur « complexe canonique de
+Godement » [God58, Chap. II §4.1]. Ce qui a été tenté : architecture
+consignée (instance `SnakeInput` sur les SES d'étages `n`/`n+1` — dix champs,
+`h₀`/`h₃` par `kernel.isLimit`/`cokernel.isColimit` — puis annulation de
+`S.δ` par remontée le long de `im d^{n-1}` et lecture de `L₃_exact`).
+
+**Tranche livrée (Partie 103)** : le cran `n = 0` est PROUVÉ et COMPILÉ —
+`shortExact_godementCanonicalObj_zero` : la SES des étages au degré `0`, dans
+la forme exacte de l'énoncé ci-dessous. Les crans `n ≥ 1` restent ouverts :
+ils exigent la SES des conoyaux, donc l'annulation du connecteur `δ` par le
+serpent **et** la monicité des flèches de conoyaux (pullback des carrés des
+unités) — le détail est dans la Partie 103.
+
+**Énoncé retiré du code compilé** (arbitrage ai-01 du 2026-11-19 sur #25661) :
+l'acceptance des issues mères #25599/#25605 exige `distinct_code_sorry` 0 → 0 ;
+tant que la preuve n'est pas livrée, l'énoncé reste documenté ici, hors
+compilation, et la garde bloquante (`axiom-fail-on-sorry`) reste armée —
+`sorry-baseline` du lake inchangée à 0. **Le cran `n = 0` de cet énoncé est
+désormais compilé** (`shortExact_godementCanonicalObj_zero`, Partie 103) ; les
+crans `n ≥ 1` restent à ressusciter verbatim lorsque la preuve sera prête
+(organe : lemme du serpent, instance `SnakeInput` des SES d'étages, `δ` annulé
+par `hsep`/`hres`, monicité des flèches de conoyaux) :
+
+    theorem shortExact_godementCanonicalObj {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+        (hS : S.ShortExact) (hsep : Mono (toGodement S.X₃))
+        (hres : ∀ m : ℕ, (ShortComplex.mk (godementCanonicalD S.X₃ m)
+            (godementCanonicalD S.X₃ (m + 1)) (godementCanonicalD_comp_zero S.X₃ m)).Exact)
+        (n : ℕ) :
+        (ShortComplex.mk (godementCanonicalMap S.X₁ S.X₂ S.f n)
+          (godementCanonicalMap S.X₂ S.X₃ S.g n)
+          (godementCanonicalMap_comp_zero n)).ShortExact := by
+      -- preuve attendue : serpent (SnakeInput des SES d'étages), cran n+1 par
+      -- SES des conoyaux puis itération du rang 0. -/
+
+/-!
+### Partie 104 — le carré des unités est un pullback : la séparéité du terme
+gauche n'est pas requise
+
+La Partie 103 a livré le cran `n = 0` de `shortExact_godementCanonicalObj` et
+a nommé la frontière du cran `1` : la séparéité du terme **gauche** (`X₁`)
+y paraissait requise — le commentaire de la Partie 103 l'écrit : « `hsep` ne
+porte que sur le terme **droit** ; la séparéité du terme gauche est une
+hypothèse à établir (ou à ajouter à l'énoncé) avant même le cran `1` ».
+
+**Elle ne l'est pas.** Le lemme ci-dessous montre que le carré des unités
+
+    X₁ ──f──▶ X₂        C⁰X₁ ──C⁰f──▶ C⁰X₂
+    │         │          │            │
+   μ₁        μ₂         μ₁           μ₂
+
+est un **pullback** dès que le terme **droit** est séparé (`Mono (toGodement
+S.X₃)`) et que la suite `0 → X₁ → X₂ → X₃ → 0` est courte exacte : la fibre du
+carré est **bijective** — existence par `godementUnits_pullback`, unicité par
+`godementUnits_pullback_unique`. C'est la brique qui débloque le cran `1` : la
+forme `IsPullback` du même carré, obtenue par `mono_cokernel_map_of_isPullback`,
+donnera la monicité de la flèche de conoyaux `coker μ₁ → coker μ₂` **sans
+aucune hypothèse sur `X₁`**.
+
+L'argument est **local** et ne mobilise que des faits de tige :
+
+1. `C⁰f(z) = μ₂(y)` donne composante par composante `fₓ(z x) = germ_x(y)` ;
+2. en composant par `gₓ` et en utilisant `g ∘ f = 0`, les germes de `g(y)` sont
+   nuls — donc `g(y) = 0`, par **injectivité de l'unité de `X₃`** (c'est la
+   seule séparéité employée, et elle porte sur le terme droit) ;
+3. l'exactitude `ker g = im f` donne alors `x₀ ∈ X₁(U)` avec `f(x₀) = y` ;
+4. `fₓ` injectif (mono de `S.f` transporté à la tige par AB5) donne
+   `germ_x(x₀) = z x` ;
+5. l'**unicité** ne demande que la monicité de `f` : deux sections de `X₁` sur
+   `U` dont l'image par `f` est la même sont égales.
+
+Aucun passage par le lemme du serpent n'est requis à ce niveau : la rigidité
+des produits de tiges (`C⁰F(U) = ∏_{x ∈ U} Fₓ`) suffit.
+-/
+
+/-- **Le carré des unités est un pullback** : si la suite `0 → X₁ → X₂ → X₃ → 0`
+est courte exacte et si `X₃` est **séparé** (`Mono (toGodement S.X₃)`), alors
+toute section de Godement `z` de `C⁰X₁` dont l'image par `C⁰f` est une unité
+de `C⁰X₂` provient d'une section de `X₁`.
+
+La séparéité du terme **gauche** n'est pas requise : c'est le contenu de la
+Partie 104. L'**unicité** de la section est le lemme
+`godementUnits_pullback_unique` : elle ne demande que la monicité de `f`. -/
+theorem godementUnits_pullback {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (hS : S.ShortExact) (hsep : Mono (toGodement S.X₃)) (U : Opens X)
+    (y : ↥(S.X₂.obj (op U))) (z : godementSection S.X₁ U)
+    (h : godementHomApp S.f U z = (toGodement S.X₂).app (op U) y) :
+    ∃ x : ↥(S.X₁.obj (op U)),
+      S.f.app (op U) x = y ∧ (toGodement S.X₁).app (op U) x = z := by
+  -- L'unité de `X₃` est injective sur l'ouvert `U` : c'est la séparéité du
+  -- terme droit, et la seule séparéité employée.
+  have hinj : Function.Injective ((toGodement S.X₃).app (op U)) :=
+    (AddCommGrpCat.mono_iff_injective _).mp ((NatTrans.mono_iff_mono_app _).mp hsep (op U))
+  -- Les germes de `g(y)` sont nuls, composante par composante.
+  have hgerm : ∀ x : U, S.X₃.germ U (x : X) x.2 (S.g.app (op U) y) = 0 := by
+    intro x
+    have hx := congrFun h x
+    change (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map S.f (z x)
+      = S.X₂.germ U (x : X) x.2 y at hx
+    have hmg : (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map S.g
+        (S.X₂.germ U (x : X) x.2 y)
+        = S.X₃.germ U (x : X) x.2 (S.g.app (op U) y) :=
+      TopCat.Presheaf.stalkFunctor_map_germ_apply U (x : X) x.2 S.g y
+    have hzf : (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map S.g
+        ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map S.f (z x)) = 0 := by
+      have happ : ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map S.f
+          ≫ (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map S.g) (z x)
+          = (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map S.g
+            ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map S.f (z x)) :=
+        CategoryTheory.comp_apply _ _ _
+      rw [← happ]
+      have hcomp : (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map S.f
+          ≫ (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map S.g
+          = (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map (S.f ≫ S.g) :=
+        (CategoryTheory.Functor.map_comp _ _ _).symm
+      rw [hcomp, S.zero, CategoryTheory.Functor.map_zero]
+      rfl
+    have hgm2 : S.X₃.germ U (x : X) x.2 (S.g.app (op U) y)
+        = (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map S.g
+            (S.X₂.germ U (x : X) x.2 y) := hmg.symm
+    rw [hgm2, ← hx]
+    exact hzf
+  -- L'unité de `X₃` étant injective, `g(y)` est nul.
+  have hunit : (toGodement S.X₃).app (op U) (S.g.app (op U) y)
+      = (toGodement S.X₃).app (op U) 0 := by
+    funext x
+    change S.X₃.germ U (x : X) x.2 (S.g.app (op U) y) = S.X₃.germ U (x : X) x.2 0
+    rw [hgerm x]
+    exact (map_zero (ConcreteCategory.hom (S.X₃.germ U (x : X) x.2))).symm
+  have hgzero : S.g.app (op U) y = 0 := hinj hunit
+  -- L'exactitude de la suite donne `x₀ ∈ X₁(U)` avec `f(x₀) = y`.
+  have hx0 : ∃ x : ↥(S.X₁.obj (op U)), S.f.app (op U) x = y := by
+    have hU : (ShortComplex.mk (S.f.app (op U)) (S.g.app (op U))
+        (shortComplex_app_zero U)).Exact :=
+      (shortComplex_exact_iff_app (S := S)).mp hS.exact U
+    rw [ShortComplex.ab_exact_iff] at hU
+    exact hU y hgzero
+  obtain ⟨x₀, hfx₀⟩ := hx0
+  refine ⟨x₀, hfx₀, ?_⟩
+  funext x
+  change S.X₁.germ U (x : X) x.2 x₀ = z x
+  have hgm : (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map S.f
+      (S.X₁.germ U (x : X) x.2 x₀)
+      = S.X₂.germ U (x : X) x.2 (S.f.app (op U) x₀) :=
+    TopCat.Presheaf.stalkFunctor_map_germ_apply U (x : X) x.2 S.f x₀
+  have hx := congrFun h x
+  change (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map S.f (z x)
+    = S.X₂.germ U (x : X) x.2 y at hx
+  have hzf : (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map S.f (z x)
+      = (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map S.f
+          (S.X₁.germ U (x : X) x.2 x₀) := by
+    rw [← hfx₀] at hx
+    rw [← hgm] at hx
+    exact hx
+  have hinjst : Function.Injective
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map S.f) := by
+    refine TopCat.Presheaf.stalkFunctor_map_injective_of_app_injective (fun U => ?_) (x : X)
+    exact (AddCommGrpCat.mono_iff_injective (S.f.app (op U))).mp
+      ((NatTrans.mono_iff_mono_app S.f).mp hS.mono_f (op U))
+  exact hinjst hzf.symm
+
+/-- **Unicité de la section du carré des unités** : deux sections de `X₁` sur
+`U` dont l'image par `f` est la même sont égales. Seule la **monicité de
+`f`** est employée — ni la séparéité de `X₁`, ni celle de `X₃`.
+
+C'est le complément de `godementUnits_pullback` : la fibre du carré des unités
+est donc **bijective**, ce qui donne le pullback annoncé au cran `1`. -/
+theorem godementUnits_pullback_unique {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (hS : S.ShortExact) (U : Opens X) (y : ↥(S.X₂.obj (op U)))
+    (x x' : ↥(S.X₁.obj (op U))) (hx : S.f.app (op U) x = y) (hx' : S.f.app (op U) x' = y) :
+    x = x' := by
+  have hinjf : Function.Injective (S.f.app (op U)) :=
+    (AddCommGrpCat.mono_iff_injective _).mp
+      ((NatTrans.mono_iff_mono_app _).mp hS.mono_f (op U))
+  exact hinjf (hx.trans hx'.symm)
+
+/-!
+### Partie 105 — la fibre du carré des unités est compatible avec la restriction
+
+La Partie 104 a établi que la fibre du carré des unités est **bijective** —
+existence par `godementUnits_pullback`, unicité par
+`godementUnits_pullback_unique`. Mais une bijection **point par point** n'est
+pas encore une construction **globale** : pour poser la forme `IsPullback` du
+carré des unités — et tirer de là la monicité de la flèche de conoyaux
+`coker μ₁ → coker μ₂` par `mono_cokernel_map_of_isPullback` — il faut que les
+fibres se **recollent** en un morphisme de préfaisceaux, c'est-à-dire que la
+bijection de fibre **respecte les restrictions**.
+
+C'est ce que prouve la Partie 105 :
+
+1. **Préservation** (`godementUnits_pullback_res`) : si `x` est un élément de
+   fibre au-dessus de `V` (c'est-à-dire `f(x) = y` et `unit(x) = z`), alors la
+   restriction de `x` à `U ⊆ V` est encore un élément de fibre au-dessus de
+   `U` : les **deux** équations de fibre y sont transportées. La première
+   vient de la **naturalité** de `S.f` (le morphisme de préfaisceaux commute
+   aux restrictions) ; la seconde du fait que **le germe commute à la
+   restriction** (`TopCat.Presheaf.germ_res_apply`).
+2. **Unicité restreinte** (`godementUnits_pullback_res_unique`) : l'élément de
+   fibre au-dessus de `U` n'est pas *un* élément de fibre, c'est **le**
+   restreint de celui au-dessus de `V` — l'unicité de la Partie 104 appliquée
+   en `U` identifie toute section de `X₁` dont l'image par `f` vaut
+   `S.X₂.map i.op y` à la restriction de `x`.
+
+Le premier lemme n'emploie **aucune hypothèse de short-exactitude** : c'est un
+fait de naturalité. Le second en employe une (l'unicité de la Partie 104 en
+dépend), mais **aucune** sur `X₁` : la séparéité du terme gauche reste
+inutilisée, comme en Partie 104.
+
+Ce qui manque encore, et que la Partie 105 ne fait pas : la moitié **existence**
+du recollement — garantir que la donnée restreinte `(y', z')` relève bien, au
+niveau de `U`, de la forme que la Partie 104 consomme (une section de Godement
+de `C⁰X₁(U)`), de sorte que l'unicité restreinte puisse s'appliquer à un
+élément qui **existe**. La Partie 105 fournit la moitié **unicité** ; la
+question laissée ouverte est une **descente sur les tiges**, non une
+difficulté d'algèbre.
+-/
+
+/-- **La fibre du carré des unités se restreint** : les deux équations de la
+fibre — `f(x) = y` et `unit(x) = z` — sont **préservées par la restriction** à
+un sous-ouvert `U ⊆ V`, et l'élément de fibre restreint est exactement
+l'élément de `X₁(U)` obtenu par restriction de `x`.
+
+C'est la **compatibilité par restriction** de la bijection de fibre de la
+Partie 104, et c'est l'une des deux briques qui manquent pour la
+**globaliser** : sans elle, la construction du pullback global du carré des
+unités ne peut pas passer du point (`godementUnits_pullback`) au global — les
+fibres ne se recollent pas en morphisme de préfaisceaux. Avec elle, la
+compatibilité des fibres est acquise ; il reste la moitié **existence** du
+recollement (la Partie 105 le dit en clair), et la forme `IsPullback` du même
+carré, puis la monicité de la flèche de conoyaux `coker μ₁ → coker μ₂` par
+`mono_cokernel_map_of_isPullback`, **sans aucune hypothèse sur `X₁`**.
+
+L'argument est **local** et n'emploie **aucune hypothèse de short-exactitude**
+— c'est un fait de naturalité, pas d'algèbre :
+
+1. la première équation vient de la **naturalité** de `S.f` : le morphisme de
+   préfaisceaux commute aux restrictions, donc `f` transporte l'image par
+   restriction de `V` à l'image par restriction de `U` ;
+2. la seconde vient du fait que **le germe commute à la restriction**
+   (`TopCat.Presheaf.germ_res_apply`) : le germe en `x` de la section
+   restreinte est le germe en `x` de la section d'origine. -/
+theorem godementUnits_pullback_res {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    {U V : Opens X} (i : U ⟶ V) (y : ↥(S.X₂.obj (op V))) (z : godementSection S.X₁ V)
+    (x : ↥(S.X₁.obj (op V))) (hx1 : S.f.app (op V) x = y)
+    (hx2 : (toGodement S.X₁).app (op V) x = z) :
+    S.f.app (op U) (S.X₁.map i.op x) = S.X₂.map i.op y ∧
+      (toGodement S.X₁).app (op U) (S.X₁.map i.op x) = (godementPresheaf S.X₁).map i.op z := by
+  refine ⟨?_, ?_⟩
+  · have hnat : S.X₁.map i.op ≫ S.f.app (op U) = S.f.app (op V) ≫ S.X₂.map i.op :=
+      S.f.naturality i.op
+    have happ := congrArg
+      (fun m : S.X₁.obj (op V) ⟶ S.X₂.obj (op U) => m x) hnat
+    rw [CategoryTheory.comp_apply, CategoryTheory.comp_apply] at happ
+    rw [hx1] at happ
+    exact happ
+  · funext xU
+    change S.X₁.germ U (xU : X) xU.2 (S.X₁.map i.op x) = _
+    rw [godementPresheaf_map_apply]
+    rw [← hx2]
+    rw [TopCat.Presheaf.germ_res_apply]
+    rfl
+
+/-- **L'élément de fibre sur `U` est la restriction de l'élément de fibre sur
+`V`** : l'unicité de la Partie 104 (`godementUnits_pullback_unique`),
+appliquée en `U`, identifie toute section de `X₁` dont l'image par `f` est
+`S.X₂.map i.op y` à la restriction de `x`.
+
+C'est la **compatibilité de la bijection de fibre avec la restriction** : la
+bijection `fibre ↦ section` de la Partie 104 respecte les restrictions, et
+c'est la condition pour que les fibres se recollent point par point en un
+morphisme de préfheaux — le geste qui manque encore pour poser la forme
+`IsPullback` du carré des unités, et par là la monicité de la flèche de
+conoyaux au cran `1`. -/
+theorem godementUnits_pullback_res_unique {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (hS : S.ShortExact) {U V : Opens X} (i : U ⟶ V)
+    (y : ↥(S.X₂.obj (op V))) (z : godementSection S.X₁ V)
+    (x : ↥(S.X₁.obj (op V))) (hx1 : S.f.app (op V) x = y)
+    (hx2 : (toGodement S.X₁).app (op V) x = z)
+    (x' : ↥(S.X₁.obj (op U)))
+    (hx'1 : S.f.app (op U) x' = S.X₂.map i.op y)
+    (_hx'2 : (toGodement S.X₁).app (op U) x' = (godementPresheaf S.X₁).map i.op z) :
+    x' = S.X₁.map i.op x := by
+  exact godementUnits_pullback_unique (S := S) hS U (S.X₂.map i.op y) x'
+    (S.X₁.map i.op x) hx'1 (godementUnits_pullback_res (S := S) i y z x hx1 hx2).1
 
 end Grothendieck
