@@ -1,0 +1,56 @@
+# Triplet AgentSystems-02 : jumeau Python + portage Rust (issue #27949, lot #27948).
+# Les deux carnets ont exactement la meme structure 18 cellules (meme indices) :
+# les cotes se correspondent par index. Cote Rust = evcxr, std seul (aucun :dep).
+# Le cote C# n'existe pas au depot a la generation de ce registre (PR #27671
+# ouverte, non fusionnee) : paire Python + Rust seulement.
+# Cellules 13-15 (exercices etudiants) : sorties commitees VIDES des deux cotes
+# (stubs None sans println) - non comparables, absentes du registre.
+# Flottants : uniquement +, *, / et comparaisons IEEE754 dans le meme ordre que
+# la source, arrondis a l'affichage ({:.3}/{:.2}/{:.1}) - bit-identiques
+# CPython/Rust, egalite stricte du texte (dont evoi(analyse concurrentielle) =
+# +0.0 exact, jamais -0.00, et la valeur nette 0.40000000000000036 qui
+# s'affiche 0.40 des deux cotes).
+- name: "AgentSystems-02-Perception-Active-Valeur-Information"
+  family: "cross-series/AgentSystems"
+  python: MyIA.AI.Notebooks/cross-series/AgentSystems/AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb
+  rust: MyIA.AI.Notebooks/cross-series/AgentSystems/AgentSystems-02-Perception-Active-Valeur-Information-Rust.ipynb
+  measures:
+    - id: c3_text
+      description: "Sortie de la cellule 3 (seuil bayesien 0.231, decision, risque 18.00), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c6_text
+      description: "Sortie de la cellule 6 (tableau capteur/EVOI/cout/valeur nette, alignements <24/>8/>7/>14), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c9_text
+      description: "Sortie de la cellule 9 (blocs POLITIQUE ACTIVE/NAIVE avec ligne vide et couts 10.0/20.0), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
