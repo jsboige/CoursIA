@@ -495,7 +495,7 @@ class TestPurgeQuarantine:
         ok, msg, info = pmw.purge_quarantine(tmp_path / "absent")
         assert (ok, msg) == (True, "")
         assert info == {"root": str(tmp_path / "absent"),
-                        "removed": [], "bytes": 0}
+                        "removed": [], "bytes": 0, "preserved": []}
 
     def test_racine_sans_marqueur_refusee(self, tmp_path):
         root = tmp_path / "q"
@@ -519,6 +519,30 @@ class TestPurgeQuarantine:
         assert info["bytes"] == 10
         assert not (root / "d1").exists()
         assert (root / pmw.QUARANTINE_MARKER).exists()
+        assert info["preserved"] == []
+
+    def test_purge_preserve_et_nomme_les_archives_de_tete(self, tmp_path):
+        """#DISK Maintenance (26/11) : une archive de `--max-pr-open-days`
+        est la SEULE copie de la tete d'une PR encore OUVERTE -- le pruneur
+        ne supprime jamais la branche, et celle-ci peut ne rien pousser. La
+        purge emporte les entrees de sous-modules et NOMME ce qu'elle garde.
+        """
+        root = tmp_path / "q"
+        entry = root / pmw.PR_OPEN_ARCHIVE_SUBDIR / "20261126T090000-7-wt-x"
+        entry.mkdir(parents=True)
+        (entry / "head.bundle").write_bytes(b"bundle")
+        (entry / "MANIFEST.txt").write_text("m", encoding="utf-8")
+        (root / "d2").mkdir()
+        (root / "d2" / "obj.bin").write_bytes(b"0123456789")
+        (root / pmw.QUARANTINE_MARKER).write_text("x", encoding="utf-8")
+        ok, msg, info = pmw.purge_quarantine(root)
+        assert (ok, msg) == (True, "")
+        assert info["removed"] == [str(root / "d2")]
+        assert info["bytes"] == 10
+        assert info["preserved"] == [str(root / pmw.PR_OPEN_ARCHIVE_SUBDIR)]
+        assert (entry / "head.bundle").exists()
+        assert (entry / "MANIFEST.txt").exists()
+        assert not (root / "d2").exists()
 
 
 # ---------------------------------------------------------------------------
@@ -552,6 +576,20 @@ class TestCliWiring:
         assert proc.returncode == 1
         assert "quarantine-root-not-ours" in proc.stderr
         assert (root / "autre").exists()
+
+    def test_purge_texte_nomme_les_archives_preservees(self, tmp_path):
+        """En mode texte aussi : « quarantine purgee » sans dire qu'une
+        archive de tete survive se lirait « quarantaine videe »."""
+        root = tmp_path / "q"
+        entry = root / pmw.PR_OPEN_ARCHIVE_SUBDIR / "e"
+        entry.mkdir(parents=True)
+        (entry / "head.bundle").write_bytes(b"b")
+        (root / pmw.QUARANTINE_MARKER).write_text("x", encoding="utf-8")
+        proc = self._run("--purge-quarantine", "--quarantine-root", str(root))
+        assert proc.returncode == 0, proc.stderr
+        assert "1 archive(s) preservee(s)" in proc.stdout
+        assert pmw.PR_OPEN_ARCHIVE_SUBDIR in proc.stdout
+        assert entry.exists()
 
     def test_le_drapeau_de_quarantaine_existe_et_est_opt_in(self):
         proc = self._run("--help")

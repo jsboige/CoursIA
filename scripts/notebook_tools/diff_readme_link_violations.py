@@ -105,7 +105,7 @@ def _git_rename_evidence(
     three_point = f"{base_sha}...{head_sha}"
     try:
         proc = subprocess.run(
-            ["git", "diff", "--name-status", "--find-renames",
+            ["git", "-c", "core.quotePath=false", "diff", "--name-status", "--find-renames",
              "--diff-filter=R", three_point],
             capture_output=True, text=True, encoding="utf-8",
             errors="replace", timeout=60,

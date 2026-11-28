@@ -216,6 +216,9 @@ La formalisation couvre **l'ensemble des modules leaf** + **1 umbrella** `Grothe
 | 98 | `Grothendieck/GodementComplex.lean` | `GodementComplex_en.lean` | **L'exactitude de `C⁰` : épi, exactitude et courte exactitude en chaque ouvert** — tranche 1 de la brique 3 de la Partie 95 (la suite exacte longue). La face mono était déjà fermée (P86 `godementMapHom_mono`) ; cette Partie referme les faces restantes, **évaluées en chaque ouvert `U`** : `godementHomApp_zero_mor` + `godementMapHom_zero` + l'instance `godementFunctor_preservesZeroMorphisms` (débloque `ShortComplex.map godementFunctor`, tranche 2, via `Presheaf.stalkFunctor.Additive` du pin) ; `godementHomApp_surjective_of_epi` (la surjectivité descend aux sections de Godement, `epi_stalkFunctor_map_of_epi` P93, liberté du produit) ; `epi_godementMapHom_of_epi` (`NatTrans.epi_iff_epi_app`) ; `exact_godementHomApp` (le cœur élément par élément : relèvement germe par germe via `stalkFunctor_map_exact` P93) ; `exact_app_godementMapHom` (`ShortComplex.ab_exact_iff` referme le transfert) ; le titre `shortExact_app_godementMapHom` (mono P86 + épi + exactitude, `ShortComplex.ShortExact.mk'`). Rien ne dépend de la faisceification abélienne. Disclaimer P84 mis à jour (mono P86, épi et exactitude P98). **Non posé**, frontière nommée : SES degreewise des complexes canoniques (`ShortExact` de complexes) — relèvement flasque (`epi_of_shortExact_of_isFlasqueSieves`, P94) ou échelle de séparabilité, tranche 2 pour la Partie 99. | 626 |
 | 99 | `Grothendieck/GodementComplex.lean` | `GodementComplex_en.lean` | **Le pont d'exactitude composante par composante, puis `C⁰` préserve les suites exactes courtes (rang 0)** — `shortComplex_exact_iff_app` établit `S.Exact ↔ ∀ U, (S.f(U) ⟶ S.g(U)).Exact` par homologie : `exact_iff_isZero_homology`, l'isomorphisme `mapHomologyIso` (l'évaluation préserve les (co)limites finies) et `Functor.isZero_iff`, en transportant `IsZero` le long d'isomorphismes plutôt que de réécrire un diagramme dépendant. `shortExact_map_godementFunctor` assemble la SES `S.map godementFunctor` au niveau des transformations naturelles : mono P86, épi et exactitude pointwise P98. **Non posé** : rang `n + 1`, qui exige l'annulation du connecteur serpent des conoyaux — relèvement flasque P94 ou échelle de séparabilité. | 798 |
 | 100 | `Grothendieck/GodementComplex.lean` | `GodementComplex_en.lean` | **La SES des étages de complexes, par récursion à deux temps** — la frontière nommée par les Parties 98-99 (`ShortExact` *de complexes*, non de sections évaluées). `godementDChainMap` porte l'état complet du carré (les deux verticales et leur commutation), ce qui rompt la circularité de `cokernel.map` qui prend la verticale droite en donnée ; `godementCanonicalMap` en est la verticale gauche et `godementCokernelMap` la flèche de conoyaux de degré `n`. **Cible easy `godementCanonicalMap_comp_zero` (champ `zero` des SES d'étages) — PROUVÉE à tout degré sans aucune hypothèse** : cran `0` par `godementMapHom_comp` d'un composé nul ; maillon générique `P (n+1) → Q n → P (n+2)` par `cancel_epi` sur `cokernel.π` (épi par construction) et transport `cokernel.π_desc` (`godementCokernelMap_comp`) ; rang `1` (forme `μ`) par la même mécanique sur les flèches de conoyaux des unités — `π₁ ≫ c₁μ ≫ c₂μ = C⁰(S.f) ≫ C⁰(S.g) ≫ π₃ = C⁰(S.f ≫ S.g) ≫ π₃ = 0` par `godementMapHom_comp`/`S.zero`/`godementMapHom_zero`, puis `cancel_epi` (`godementCokernelMap_comp_rank_one`) — **le serpent n'y entre pas** ; l'induction complète `n = 0 \| 1 \| m + 2` ferme l'énoncé. **Cible hard `shortExact_godementCanonicalObj`** (mono/épi des étages et SES des conoyaux) : énoncé **retiré du code compilé** (arbitrage ai-01 2026-11-19 sur #25661 — l'acceptance des mères #25599/#25605 exige `distinct_code_sorry` 0 → 0), documenté en commentaire du module pour ressuscitation verbatim ; organe `SnakeInput` avec connecteur `δ` tué par `hsep` (`Mono (toGodement S.X₃)`) et `hres` (exactitude de la résolution) ; 0 `sorry`, `sorry-baseline` du lake inchangée à 0. | 1050 |
+| 101 | `Grothendieck/GodementComplex.lean` | `GodementComplex_en.lean` | **La SES des images `C⁰` catégorifiée, et le degré zéro aux tiges** — l'angle catégorique et tigué, complément des Parties 98-100. `shortExact_godementMapHom` : si `S` est courte exacte, la suite des images `C⁰` l'est **dans la catégorie des préfaisceaux** — la Partie 98 l'avait ouvert par ouvert ; les foncteurs d'évaluation préservent limites et colimites finies (instances de `Limits.FunctorCategory.Finite`) et reflètent conjointement les isomorphismes (`jointlyReflectIsomorphisms_evaluationPresheaf`, une ligne par `NatTrans.isIso_iff_isIso_app`), donc `JointlyReflectIsomorphisms.shortExact_iff` transporte l'énoncé évalué en énoncé catégorique. `shortExact_stalk_godementMapHom` : la version tigée, par exactitude du foncteur tige (`exact_tfae.out 2 0`, instance `stalkFunctor_preservesHomology` P93). `shortExact_stalk_godementCanonicalMap_zero` : la rangée de degré `0` des complexes canoniques, lue en chaque tige, est courte exacte — la base `n = 0` de la SES degreewise, `godementCanonicalMap_zero` étant `rfl` (la rangée de degré 0 **est** la rangée des images `C⁰`). **Non posé**, frontière nommée : les degrés `n + 1` (lemme du serpent aux tiges, annulation du morphisme connectant via `isZero_stalk_homology_godementCanonicalComplex` P93b) et l'assemblage `shortExact_iff_degreewise_shortExact` vers la SES des complexes canoniques. | 1252 |
+| 102 | `Grothendieck/FlasqueAcyclic.lean` | `FlasqueAcyclic_en.lean` | **L'acyclicité des faisceaux flasques — et la correction d'une glose** : la Partie 80 créditait Godement d'un « flasque ⇒ injectif » (II.5.2), énoncé **faux** (espace discret à deux points : tous les faisceaux sont flasques, le constant (ℤ,ℤ) n'est pas injectif dans Ab×Ab) ; l'énoncé vrai est **flasque ⇒ Γ-acyclique** (II.5.1). Livrés : `shortExact_of_injectivePresentation` (le pont présentation injective ⇒ suite exacte courte, que Mathlib ne fournit pas sous la forme `ShortComplex.ShortExact`), `subsingleton_H_one_of_flasque` (**le degré 1, inconditionnel** — aucune hypothèse sur le quotient : Ext, identification H⁰ ≃ Γ, surjectivité Γ de la Partie 82 par Zorn, nullité par `comp_extClass`), le corollaire inconditionnel sur présentation injective, `subsingleton_H_succ_of_flasque_decalage` (**le décalage** : Hⁿ(X₃)=0 ⇒ H^{n+1}(X₁)=0) et le **capstone conditionnel** `subsingleton_H_succ_of_flasque_all` (Γ-acyclicité pour tout n sous l'unique hypothèse « injectif ⇒ flasque »). **Frontière nommée** : `injectif ⇒ flasque` exige l'extension par zéro `j_!` des faisceaux ouverts, absente de Mathlib. *Numéro de tranche assigné par extension de cette table : l'en-tête du module portait 94, numéro déjà tenu par la tranche 94 (`GodementComplex`, flascuité de la tour canonique).* | 357 |
+| hors-série | `Grothendieck/Monodromie.lean` | `Monodromie_en.lean` | **La monodromie, première marche du plan épointé** — la transformation subie par une fibre transportée le long d'un lacet, maniée quatre fois dans la série sans jamais y être définie (mesure du 18/10/2026). Sur l'exemple calculable de bout en bout, la couverture `z ↦ z²` de `ℂ*` : la boucle générateur `t ↦ exp(2πi·t)` se relève depuis `1` en `t ↦ exp(πi·t)` et finit en `-1` ; la monodromie est la transposition `x ↦ -x` de la fibre `{1, -1}`, d'ordre 2, de valeur propre non triviale `-1`, racine de l'unité (`finiteOrderEigenvaluesRootsOfUnity`, `Prop` documentaire). La quasi-unipotence de Grothendieck (SGA 7, XII) n'est pas formalisée par Mathlib et ce module ne la remplace pas. Volet de la distillation #19333-G.beta (issue #21308) — module sans numéro de Partie déclaré. | 166 |
 | 35 (complément) | `Grothendieck/ExceptionalTriple.lean` | `ExceptionalTriple_en.lean` | **Triade d'images exceptionnelles** : `f_! ⊣ f^* ⊣ f_*` au niveau préfaisceau — complément à la Partie 35, autour de l'image réciproque (pont avec Partie 34 `ExceptionalDirect` et Partie 33 `DirectImage`) | — |
 | hors-série | `Grothendieck/Fppf.lean` | `Fppf_en.lean` | **Topologie fppf** : forme flèche de la topologie fidèlement plate de présentation finie — module sans numéro de Partie déclaré | — |
 
@@ -247,6 +250,35 @@ formalisation d'EGA/SGA.
 - **The Stacks Project.** [stacks.math.columbia.edu](https://stacks.math.columbia.edu) — Référence pour schémas, faisceautisation et cohomologie des faisceaux (Parties 13, 20-23).
 - **The Mathlib Community.** *Mathlib4, Category Theory and Sites*. [mathlib4 docs](https://leanprover-community.github.io/mathlib4_docs/) — La bibliothèque que cette visite indexe (Partie 4) ; voir de Moura & Ullrich, « The Lean 4 Theorem Prover » (2021).
 - **nLab.** [ncatlab.org](https://ncatlab.org) — Entrées *Grothendieck topology*, *sieve*, *site*, *sheaf*, *sheafification*.
+
+## État de l'art — le dépôt Stacks d'AxiomMath
+
+Ce lac n'est pas la seule formalisation Lean du langage grothendieckien. Le dépôt
+[AxiomMath/Stacks](https://github.com/AxiomMath/Stacks) (public, **Apache-2.0**, branche `main`,
+fichier `lean-toolchain` : `leanprover/lean4:` suivi de la version `v4.35.0`, relevé le 2026-11-19 ;
+découvert via #26786) le développe à
+une autre échelle, en deux couches `StacksCore` et `StacksFrontier`, et porte notamment une
+formalisation dédiée de la résolution de Godement : la recherche code `Godement repo:AxiomMath/Stacks`
+confirme que ce travail couvre un ensemble substantiel de fichiers. La lecture de l'arbre
+`git/trees/main?recursive=1` étant tronquée (`truncated: true`), cette confirmation qualitative
+s'appuie sur la recherche et les chemins cités ci-dessous, pas sur une énumération exhaustive.
+
+| Ce que ce lac prouve | Où AxiomMath/Stacks le traite |
+|---|---|
+| `Grothendieck/GodementComplex.lean` — `godementCanonicalComplex` (le complexe canonique), `isZero_stalk_homology_godementCanonicalComplex` (annulation tigée degré par degré), `isFlasque_godementCanonicalComplex`, `shortExact_stalk_godementMapHom` | `StacksFrontier/Topology/Sheaves/Cohomology/GodementResolution/Basic.lean`, `Stalk.lean`, `StalkHomotopy.lean` ; `StacksFrontier/AlgebraicGeometry/Cohomology/GodementBoundedBelowResolution.lean` |
+| … dont la même ancre que la nôtre, sous une forme plus forte | `Stalk.lean` prouve `singleConstantHomotopyEquiv : A[0] ≃ constantComplex A` (une **équivalence d'homotopie** par homotopie contractante, tag [Stacks 0FKS](https://stacks.math.columbia.edu/tag/0FKS)), là où notre `isZero_stalk_homology_godementCanonicalComplex` établit l'annulation tigée degré par degré |
+
+**Ce qu'on en tire, honnêtement.** L'équivalence d'homotopie ci-dessus subsume l'annulation tigée :
+une reconstruction degré par degré de cette annulation serait la réimplémentation d'un cas
+particulier de leur comparaison. La suite de l'issue #2159 s'appuie donc sur ce travail (citation,
+alignement des énoncés quand les API diffèrent, présentation) plutôt qu'elle ne le refait.
+
+**Contrainte réelle, non résolue ici** : les deux lacs sont séparés — la version de Mathlib de
+§Build & état chez nous, la toolchain relevée ci-dessus et l'arborescence `StacksCore`/`StacksFrontier`
+chez eux. L'import
+direct n'est pas mécanique ; ajouter `StacksFrontier` en dépendance de ce lake est une décision de
+structure qui revient au coordinateur et au mainteneur, pas à une lane. Cette section fait
+l'appui par **citation et présentation** ; elle ne modifie aucune dépendance.
 
 ## Voir aussi
 
@@ -300,3 +332,40 @@ Quatre frictions réelles, documentées à la source :
 ### Point 7 — chemin de découverte (comblement)
 
 Le chemin n'est pas une reconstruction — c'est une **visite indexée**, et ce fait est la découverte centrale : « le langage grothendieckien vit déjà dans Mathlib 4 ». L'ordre pédagogique (sites → cribles/topologies → faisceaux → faisceautisation → cohomologie, ancré par Spec/Zariski et par l'index `#check`) est un **chemin de lecture**, pas la trace d'un développement. Le point d'entrée pour un apprenant : README → compagnons (`GROTH-02` à `GROTH-04`) → modules, avec Mac Lane–Moerdijk et SGA 4 comme lecture d'accompagnement. Ce qui a été **écarté** et pourquoi (le choix « hommage, pas formalisation d'EGA/SGA ») est explicite dans §L'esprit de la visite et §Le périmètre, honnêtement — mais la trace du développement réel (quels tentatives ont été abandonnées) n'est pas consignée par `Partie` ; c'est la limite de cette digestion, à compléter par un grain qui interroge les auteurs.
+## État de l'art — correspondance Stacks (mesure par énoncé)
+
+Relevé de la question #28537 : pour chaque énoncé de la famille Godent, la position de
+Stacks (`AxiomMath/Stacks`), citée des deux côtés (`fichier:ligne` du lac, `fichier:ligne`
+de Stacks). La lecture de Stacks s'est faite par l'API `contents` — l'arbre récursif de
+GitHub est tronqué et `Topology/Sheaves` n'y apparaît pas — sur
+`StacksFrontier/Topology/Sheaves/Cohomology/GodementResolution/{Basic,Stalk,StalkHomotopy}.lean`,
+`Topology/Sheaves/Sheaf/Abelian.lean`, `Topology/Sheaves/Modules/Exactness.lean`,
+`Topology/Sheaves/Stalk/{Product,Separated}.lean` et
+`Topology/Sheaves/Cohomology/CechDerivedEffaceability/GodementResolution.lean`. Un verdict
+« absent » est l'absence d'**énoncé nommé** dans ces fichiers, non une absence de contenu.
+
+| Module du lac | Énoncés | Couverts | Partiels | Absents | Ancre Stacks principale | Écart de cadre |
+|---|---|---|---|---|---|---|
+| `Godement.lean` | 10 | 2 | 6 | 2 | `Basic.lean:499` `isFlasque_godementComplex` (0FKS) ; `Sheaf/Abelian.lean:149` `restrict_eq_zero_of_germ_eq_zero` | Stacks : faisceaux de modules sur espace annelé ; ici : préfaisceaux de groupes abéliens sur espace topologique |
+| `GodementResolution.lean` | 3 | 0 | 3 | 0 | `Basic.lean:429` `godementSimplicial_left_obj` (0G5N) ; `StalkHomotopy.lean:558` `quasiIso_godementAugmentation` | l'itération y passe par la résolution standard de la comonade, pas par l'unité de notre construction |
+| `GodementFunctor.lean` | 11 | 1 | 3 | 7 | `Basic.lean:416` `godementComonad` ; `Basic.lean:475` `godementAugmentation` | l'action de `C⁰` sur les **germes** n'a pas d'énoncé nommé ; Stacks l'a sur les sections |
+| `GodementMono.lean` | 4 | 0 | 0 | 4 | — | « `C⁰` préserve les monomorphismes » n'est pas énoncé chez Stacks ; le fait voisin (`f_*` exact à droite) ne l'est pas non plus |
+| `GodementAcyclicity.lean` | 3 | 0 | 2 | 1 | `StalkHomotopy.lean:558` `quasiIso_godementAugmentation` ; `StalkHomotopy.lean:370` `hasNaturalStalkHomotopy_godementAugmentation` | Stacks porte l'acyclicité sur le **complexe**, pas sur la suite des unités |
+| `GodementCanonicalDiff.lean` | 4 | 0 | 4 | 0 | `Basic.lean:329` `resolutionComplex` ; `Basic.lean:337` `resolutionAugmentationCondition` | Stacks construit la différentielle par le complexe de cofFaces alterné, nous par le conoyau de l'unité |
+| **Total** | **35** | **3** | **18** | **14** | | |
+
+Le verdict énoncé par énoncé est écrit dans la docstring de chaque déclaration, avec le
+nom du théorème de Stacks et l'écart — pas seulement dans ce tableau.
+
+### Modules du relevé restants
+
+| # | Module | Statut du relevé | Où |
+|---|---|---|---|
+| 1 | `GodementComplex.lean` | en cours | PR #27153 (ouverte) — pont pédagogique et tête de README |
+| 9-10 | `Flasque.lean`, `FlasqueAcyclic.lean` | mesuré (couvert / absent selon l'énoncé) | commentaire du 25/11 sur #28537 (`myia-po-2024:CoursIA`) |
+| 11 | `Stalks.lean`, `StalkSeparated.lean`, `StalkGluing.lean` | mesuré (absent / partiel) | commentaire du 25/11 sur #28537 (`myia-po-2026:CoursIA-2`) |
+| 12 | `SheafCohomology/` | non mesuré | groupe distinct |
+
+Les renvois « énoncé par énoncé » de ces modules restent à écrire dans leurs docstrings :
+les mesures sont dans le fil de #28537, les renvois dans le lac sont le travail d'un groupe
+par PR.

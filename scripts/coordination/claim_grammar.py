@@ -1763,6 +1763,17 @@ def _lint_claim_events(
       what the reducer actually kept against the caller).
     Without these args, the lint falls back to the legacy behaviour (every
     epic-wide marker prints `il bloque`), which is the bug #12327 names.
+
+    #28669 (scoped liveness): the SCOPED branch below used to WARN on every
+    dead glob of every open/override marker, including markers their lane has
+    since superseded or released -- 90 of the 99 dead globs on the recorded
+    batch (`scripts/tests/fixtures/claim_grammar/batch.json`, 14 issues) were
+    carried by a marker that no longer holds anything. When `active_claims`
+    is provided, a dead glob WARNs only when the marker IS its lane's active
+    claim; the others are counted and restated as ONE `INFO:` line at the end
+    of the function (observability: the organ says what it withheld). Without
+    `active_claims` the branch is unchanged, exactly like #12327's fallback.
+    A marker with no lane token cannot be proven inactive and keeps its WARN.
     """
     if tracked is None:
         tracked = _git_tracked_files(repo_root)
@@ -1779,6 +1790,13 @@ def _lint_claim_events(
             # already walked (events are built from `comment` dicts that have
             # both body and url -- see `_parse_claim_events`).
             pass  # the real source of bodies is `payload["comments"]` below
+    # #28669 -- compteur des globs morts ETENDUS (marqueur non actif). Une
+    # bride silencieuse doit se dire : l'organe nomme en une ligne ce qu'il
+    # n'a pas signale, sinon la qualification ressemble a une reparation du
+    # defaut qu'elle masque.
+    silenced_dead_globs: dict[str, int] = {}
+    silenced_superseded = 0
+    silenced_released = 0
     for ev in events:
         if ev.get("action") not in ("open", "override"):
             continue
@@ -1856,6 +1874,22 @@ def _lint_claim_events(
                 file=sys.stderr,
             )
             continue
+        # #28669 -- la branche SCOPEE n'avait aucune qualification de
+        # vivacite : tout evenement open/override portant un glob mort
+        # produisait son WARN, y compris un marqueur que sa lane a depuis
+        # superseded ou libere. Le WARN ne parle que sur le claim ACTIF de sa
+        # lane -- le seul cas ou l'auteur peut encore corriger sa clause, et
+        # le seul ou le glob mort decrit un perimetre courant. Mesure sur le
+        # lot enregistre (14 issues) : 90 des 99 globs morts portaient un
+        # marqueur non actif. Sans `active_claims` (appelant qui n'a pas
+        # reduit), la branche garde son comportement d'origine, comme la
+        # branche epic-wide de #12327. Un marqueur SANS lane ne peut pas etre
+        # prouve non actif : il garde son WARN.
+        ev_lane = ev.lane or "?"
+        ev_active = (active_claims.get(ev.lane)
+                     if (active_claims is not None and ev.lane) else None)
+        marker_is_live = (active_claims is None or ev.lane is None
+                          or ev_active is ev)
         # #26657 -- les resolutions de scope de l'evenement (calculees par
         # l'appelant), indexees par glob mort.
         resolved_map = {note["glob"]: note
@@ -1882,6 +1916,17 @@ def _lint_claim_events(
                     file=sys.stderr,
                 )
             if tracked is not None and not _glob_matches_tracked(g, tracked):
+                if not marker_is_live:
+                    # #28669 -- marqueur superseded ou libere : le glob mort
+                    # ne decrit plus aucun perimetre courant. On compte pour
+                    # le dire en une ligne a la fin, on ne WARN pas.
+                    silenced_dead_globs[ev_lane] = (
+                        silenced_dead_globs.get(ev_lane, 0) + 1)
+                    if ev_active is None:
+                        silenced_released += 1
+                    else:
+                        silenced_superseded += 1
+                    continue
                 print(
                     f'WARN: glob sans correspondance : "{g}" '
                     f"(lane {ev.lane or '?'})",
@@ -1910,6 +1955,25 @@ def _lint_claim_events(
                         f"#13129 motif A/C)",
                         file=sys.stderr,
                     )
+    # #28669 -- restitution de la bride. Le WARN ne parle plus sur un
+    # marqueur non actif, mais l'organe ne se tait pas : il dit combien de
+    # globs morts il a etendus, sur quelles lanes, et pourquoi. Un lecteur
+    # qui voit disparaitre 90 WARN doit pouvoir verifier que rien n'est
+    # cache ; un marqueur superseded reste une dette d'hygiene
+    # (`[RELEASED]` l'ancien), pas une alerte de perimetre.
+    if silenced_dead_globs:
+        total_silenced = sum(silenced_dead_globs.values())
+        detail = ", ".join(
+            f"{lane}: {n}" for lane, n in sorted(silenced_dead_globs.items())
+        )
+        print(
+            f"INFO: {total_silenced} glob(s) mort(s) porte(s) par des "
+            f"marqueurs NON ACTIFS, non signale(s) "
+            f"({silenced_superseded} superseded, {silenced_released} sans "
+            f"claim actif) -- le WARN ne parle que sur le claim actif de sa "
+            f"lane (#28669). Par lane : {detail}.",
+            file=sys.stderr,
+        )
 
 
 def _event_is_active_for(legacy: ClaimEvent, active: ClaimEvent) -> bool:

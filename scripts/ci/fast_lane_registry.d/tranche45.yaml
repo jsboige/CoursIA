@@ -1,0 +1,28 @@
+# TRANCHE45 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE45
+guards:
+  # Sans filtre, comme le declencheur d'origine (contrat
+  # check_absorbed_path_parity : un `pull_request` sans filtre exige un
+  # registre sans filtre). C'est aussi le choix de conception du
+  # workflow absorbe : « PAS de paths: ici : un seul evenement manquant
+  # = la garde ne protege rien » (auto-couverture #14391/#14429 -- une
+  # PR qui ne touche que le workflow ou le detecteur re-evalue la
+  # garde). La PORTEE de l'analyse reste le perimetre notebooks via
+  # `iterate_paths` ; une PR sans carnet change rend le no-op rc=0 du
+  # moteur (« iterates_paths vide »), equivalent exact du « No
+  # notebooks changed -- clean. » de la boucle d'origine.
+  -
+    name: "No notebook plan loss in changed notebooks"
+    argv: ["python", "scripts/notebook_tools/detect_notebook_plan_loss.py", "--base", "{base_ref}", "--check", "{changed_paths}"]
+    source: "notebook-plan-loss-gate.yml"
+    paths: []
+    blocking: true
+    needs_base: true
+    iterates_paths: true
+    absorbed: true
+    warn_rc:
+      -
+        2
+    fail_on_all_warn: true
+    iterate_paths: ["MyIA.AI.Notebooks/**/*.ipynb"]
+    pre_argv: ["python", "-m", "pytest", "-q", "scripts/notebook_tools/tests/test_detect_notebook_plan_loss.py"]

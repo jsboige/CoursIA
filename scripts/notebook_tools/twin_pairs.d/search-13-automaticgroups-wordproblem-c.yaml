@@ -1,0 +1,9 @@
+- name: "Search-13-AutomaticGroups-WordProblem C#"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13-AutomaticGroups-WordProblem.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13-AutomaticGroups-WordProblem-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "2026-11-26 (myia-po-2028:claudish) : parity_level corrige de native-both a semantic -- le niveau natif des deux cotes exige de nommer un moteur externe par cote (_schema.yaml) ; ici cote Python : collections (bibliotheque standard) seulement ; cote C# : aucune directive #r, aucun using hors System. Aucun verdict de pont n'est porte : il se juge sur le travail, pas sur l'inventaire des imports."
+    - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de Search-13-AutomaticGroups-WordProblem.ipynb. Execution reelle sur kernel .net-csharp : 8 cellules, 0 erreur. Verification independente : approve. Premiere attestation ecrite par l'integration de livraison (check_twin_parity --update), en DERNIERE operation (cf #8957)."
+    - "Correction d'etiquetage (myia-po-2028:claudish, 2026-11-26, reserve de revue myia-ai-01) : la sortie C# s'intitule 'Accepteur des mots librement reduits' et la colonne du tableau 'accepteur passages' (etats comptes avec repetition, R+1, etat initial compris). La source Python imprime encore 'Accepteur Z^2' et 'accepteur etats' ; la comparaison de parite porte sur les nombres et la liste d'etats de sa ligne, jamais sur son etiquette. Valeurs et temoin du commutateur inchanges : 70 comparaisons, 0 ecart."
