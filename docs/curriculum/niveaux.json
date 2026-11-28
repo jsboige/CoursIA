@@ -78,7 +78,7 @@
       ],
       "notebooks": [
         "IIT/IIT-01-IntroToPyPhi-Python.ipynb",
-        "IIT/ICT-Series/ICT-01-PhiTrajectories-Python.ipynb",
+        "IIT/ICT-Series/ICT-02-PhiTrajectories-Python.ipynb",
         "SymbolicAI/Lean/Lean-06-Mathlib-Essentials-Lean.ipynb",
         "SymbolicAI/Lean/Lean-08-Agentic-Proving-Python.ipynb",
         "GameTheory/GameTheory-15b-Lean-CooperativeGames-Lean.ipynb",

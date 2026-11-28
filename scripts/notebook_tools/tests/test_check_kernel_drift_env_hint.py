@@ -25,7 +25,7 @@ import check_kernel_drift as ckd
 REPO_ROOT = HERE.parents[3]
 
 ICT_NOTEBOOK = ("MyIA.AI.Notebooks/IIT/ICT-Series/"
-                "ICT-01-PhiTrajectories-Python.ipynb")
+                "ICT-02-PhiTrajectories-Python.ipynb")
 
 
 def _write(path, text):

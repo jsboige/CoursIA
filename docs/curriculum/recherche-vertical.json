@@ -65,7 +65,7 @@
       "description": "La serie la plus experimentale du depot, revue RESEARCH : trajectoires de Phi en IIT, MDL et code en deux parties, grokking lu comme progres de compression, trajectoires d'auto-expressions (SAE). Des carnets qui ne demontrent pas un resultat connu : ils explorent un phenomene emergent et documentent ce qui apparait.",
       "notebooks": [
         "IIT/IIT-01-IntroToPyPhi-Python.ipynb",
-        "IIT/ICT-Series/ICT-01-PhiTrajectories-Python.ipynb",
+        "IIT/ICT-Series/ICT-02-PhiTrajectories-Python.ipynb",
         "IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb",
         "IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb",
         "IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-21-SAETrajectoires-Python.ipynb"

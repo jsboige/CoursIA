@@ -1,6 +1,6 @@
 # Kernels & Runtime — Cluster CoursIA
 
-> REFERENCE — vivante — dernière révision 2026-11-24
+> REFERENCE — vivante — dernière révision 2026-11-27
 
 Document de référence détaillant l'inventaire kernels obligatoire sur toute machine du cluster (cf CLAUDE.md règle H.2).
 
@@ -561,8 +561,8 @@ Les **4 notebooks de la strate Φ** — ceux dont les outputs **committés** vie
 
 | Notebook (strate Φ) | cellules · tokens float | `diff_signatures` | `diff_kernel` | santé | durée |
 |---|---|---:|---|---|---|
-| `ICT-01-PhiTrajectories-Python` | 10 · 4 → 4 | aucune dérive | aucun | 0 `exec_count` nul, 0 erreur | — |
-| `ICT-05-CausalEmergence-Python` | 10 · 0 → 0 | aucune dérive | aucun | 0 / 0 | 12 s |
+| `ICT-02-PhiTrajectories-Python` | 10 · 4 → 4 | aucune dérive | aucun | 0 `exec_count` nul, 0 erreur | — |
+| `ICT-04-CausalEmergence-Python` | 10 · 0 → 0 | aucune dérive | aucun | 0 / 0 | 12 s |
 | `ICT-18-ArrowOfTimeReversibilization-Python` | 14 · 1 → 1 | aucune dérive | aucun | 0 / 0 | 7 s |
 | `ICT-Synthese-CrossSubstrat-Python` | 14 · 1 → 1 | aucune dérive | aucun | 0 / 0 | 55 s |
 

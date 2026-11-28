@@ -273,17 +273,17 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [ICT-1 — Trajectoires de $\Phi$](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-01-PhiTrajectories-Python.ipynb) | BETA | Oui |
-| 2 | [ICT-2 — Le tri comme morphogenèse minimale…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb) | BETA | Oui |
-| 3 | [ICT-3 — Robustesse & délai de gratification : étude…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb) | BETA | Oui |
-| 4 | [ICT-4 — Tableaux chimériques & agrégation émergente («…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb) | BETA | Oui |
-| 5 | [ICT-5 : Émergence causale — quelle échelle décrit le…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb) | BETA | Oui |
-| 6 | [ICT-6 — Du tri a la chaîne de Markov : emergence…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) | BETA | Oui |
-| 7 | [ICT-7 — Signatures *scale-free* & criticalite](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb) | BETA | Oui |
-| 8 | [ICT-8 — Paysages d'attracteurs & signaux precurseurs :…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb) | BETA | Oui |
-| 9 | [ICT-9 — Agence & regeneration : *reparer sa forme, ou…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb) | BETA | Oui |
-| 10 | [ICT-10 — Grammaire des catastrophes : *l'obstacle qui…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb) | BETA | Oui |
-| 11 | [ICT-11 — Profils d'agence causale : à quelle échelle…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-11-CausalAgencyProfiles-Python.ipynb) | BETA | Oui |
+| 1 | [ICT-02 — Trajectoires de $\Phi$](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-PhiTrajectories-Python.ipynb) | BETA | Oui |
+| 2 | [ICT-03 — Le tri comme morphogenèse minimale…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-SelfSortingMorphogenesis-Python.ipynb) | BETA | Oui |
+| 3 | [ICT-03b — Robustesse & délai de gratification : étude…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03b-RobustnessDelayedGratification-Python.ipynb) | BETA | Oui |
+| 4 | [ICT-03c — Tableaux chimériques & agrégation émergente («…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03c-ChimericArraysKinAggregation-Python.ipynb) | BETA | Oui |
+| 5 | [ICT-04 : Émergence causale — quelle échelle décrit le…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04-CausalEmergence-Python.ipynb) | BETA | Oui |
+| 6 | [ICT-04b — Du tri a la chaîne de Markov : emergence…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04b-SortingToTPM-CausalEmergence-Python.ipynb) | BETA | Oui |
+| 7 | [ICT-04c — Signatures *scale-free* & criticalite](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04c-ScaleFreeSignatures-Python.ipynb) | BETA | Oui |
+| 8 | [ICT-05 — Paysages d'attracteurs & signaux precurseurs :…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-AttractorLandscapesEWS-Python.ipynb) | BETA | Oui |
+| 9 | [ICT-05b — Agence & regeneration : *reparer sa forme, ou…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05b-AgencyRegeneration-Python.ipynb) | BETA | Oui |
+| 10 | [ICT-06 — Grammaire des catastrophes : *l'obstacle qui…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-CatastropheGrammar-Python.ipynb) | BETA | Oui |
+| 11 | [ICT-07 — Profils d'agence causale : à quelle échelle…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-CausalAgencyProfiles-Python.ipynb) | BETA | Oui |
 | 12 | [ICT-12 — Champs de valence et animats : rôles mesures,…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb) | BETA | Oui |
 | 13 | [ICT-12b — Valence APPRISE, transférable, réversible :…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12b-LearnedValence-Python.ipynb) | BETA | Oui |
 | 14 | [ICT-12c — Animat prégnance/valence incarné : la…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12c-PregnanceAnimat-Python.ipynb) | BETA | Oui |
@@ -348,7 +348,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 73 | [ICT-38 — S-Lens : la représentation porte-t-elle la…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-38-SLens-SelfLocation-Python.ipynb) | BETA | Non |
 | 74 | [ICT-39 — Composition de regards](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-39-CompositionRegards-Python.ipynb) | BETA | Oui |
 | 75 | [ICT-40a — Triangulation causale : SAE x J-Lens x F-Lens…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-40a-TriangulationCausale-Python.ipynb) | BETA | Non |
-| 76 | [ICT-40b — Cognition analogique : les ondes cérébrales…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-40b-AnalogCognitionWaves-Python.ipynb) | BETA | Non |
+| 76 | [ICT-05c — Cognition analogique : les ondes cérébrales…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05c-AnalogCognitionWaves-Python.ipynb) | BETA | Non |
 | 77 | [ICT-42 — Inoculation et bifurcation représentationnelle…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-InoculationBifurcation-Pilot-Python.ipynb) | BETA | Oui |
 | 78 | [ICT-42b — Inoculation et bifurcation : la troisième…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb) | BETA | Oui |
 | 79 | [ICT-42c — Hystérésis de l'inoculation (insertion…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42c-InoculationHysteresis-Python.ipynb) | BETA | Oui |
@@ -369,7 +369,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 94 | [Argumentation strate 6 — Acceptabilité QBF :…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-QBFAcceptance-Python.ipynb) | BETA | Oui |
 | 95 | [ICT — Substrat argumentation : maintenance de la…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-TruthMaintenance-Python.ipynb) | BETA | Oui |
 | 96 | [ICT -- Dissociation F2 Dehaene : le self-model…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb) | BETA | Oui |
-| 97 | [Boucle auto-referentielle p_hat (case 2 / Epic #9533)](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb) | BETA | Oui |
+| 97 | [Boucle auto-referentielle p_hat (case 2 / Epic #9533)](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06b-Dissociation-PhatSelfReference-Python.ipynb) | BETA | Oui |
 | 98 | [ICT -- Dissociation saillance / pregnance (case s ⟂ π)](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb) | BETA | Oui |
 | 99 | [ICT-Greffe2 — Le quadruplet $(A, F, r, \pi)$ : rendre «…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-CSharp.ipynb) | BETA | Oui |
 | 100 | [ICT-Greffe2 — Le quadruplet $(A, F, r, \pi)$ : rendre «…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-Python.ipynb) | BETA | Oui |

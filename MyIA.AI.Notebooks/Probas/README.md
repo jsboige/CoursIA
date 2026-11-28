@@ -107,7 +107,7 @@ Sur le mélange du cycliste, VMP attribue à la première composante une moyenne
 |---|---|---|
 | Que devient le système si l’on impose une valeur ? | [Raisonnement symbolique](../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) et [Infer-05](Infer/Infer-05-Causal-Inference.ipynb) | Modifier le mécanisme qui fixe la variable, non enregistrer une observation supplémentaire. |
 | Quel effet serait identifiable, puis estimable ? | [Calcul do](Causalite/Causalite-01-Calcul-Do-Python.ipynb) et [PyMC-05](PyMC/PyMC-05-Causal-Inference.ipynb) | Le graphe justifie une expression ; le moteur estime une distribution. Un placebo peut révéler un défaut, jamais certifier le graphe. |
-| Quelle échelle de description retenir ? | [Émergence causale](../IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb) et [matrice de transition](../IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) | Comparer l’information effective des descriptions fine et grossière, plutôt que changer le traitement dans un graphe fixé. |
+| Quelle échelle de description retenir ? | [Émergence causale](../IIT/ICT-Series/ICT-04-CausalEmergence-Python.ipynb) et [matrice de transition](../IIT/ICT-Series/ICT-04b-SortingToTPM-CausalEmergence-Python.ipynb) | Comparer l’information effective des descriptions fine et grossière, plutôt que changer le traitement dans un graphe fixé. |
 
 ### Applications autonomes et fondations — licence avancée et master
 

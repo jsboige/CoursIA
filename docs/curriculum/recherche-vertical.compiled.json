@@ -379,7 +379,7 @@
           }
         },
         {
-          "path": "IIT/ICT-Series/ICT-01-PhiTrajectories-Python.ipynb",
+          "path": "IIT/ICT-Series/ICT-02-PhiTrajectories-Python.ipynb",
           "title": "ICT-1 — Trajectoires de $\\Phi$",
           "duration_minutes": 30,
           "kernel": "Python 3.9 (PyPhi/IIT)",
