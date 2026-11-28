@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Measure GitHub Actions queued-run health, isolating known ghost classes.
 
-The CoursIA repo carries unpurgeable ghost runs in its queued list from two
-measured incidents, both refusing every API mutation (cancel = 409/422,
+The CoursIA repo carries ghost runs in its queued list from measured
+incidents. The first two refuse every API mutation (cancel = 409/422,
 delete = 403, rerun = "already running"):
 
 * 2026-08-19 03:03-05:15Z : 18 runs stranded by server-side state-machine
@@ -14,11 +14,19 @@ delete = 403, rerun = "already running"):
   that has not been queued yet" (#18215). Isolated structurally: a queued
   run whose pull request is closed can never be admitted -- ghost class
   "pr-closed", regardless of age.
+* 2026-11-11 20:31-20:54Z : 82 runs (60 `issue_comment` on main, 9
+  `pull_request_review` on PR branches, 13 `push` on main) never admitted
+  -- empty `jobs` list when probed 2026-11-26, 80 of them identical across
+  the eight daily watch payloads of 2026-11-16..25 (#26357); 42 further runs
+  of the same evening sit on since-closed pull requests and are already
+  "pr-closed" ghosts. The 82 carry no pull request, so "pr-closed" cannot
+  reach them: the watch recognises them by identity
+  (LIMBO_2026_11_11_RUN_IDS).
 
-Both classes are reported as ghosts with a `reason` field, so the live count
-stays unbiased and the ghost floor is auditable. A queued run that is
-neither pre-cutoff nor pr-closed stays live: a live queue that never drains
-is the drift signal the watch exists to surface.
+The first two classes are reported as ghosts with a `reason` field, so the
+live count stays unbiased and the ghost floor is auditable. A queued run
+that is neither pre-cutoff nor pr-closed stays live: a live queue that
+never drains is the drift signal the watch exists to surface.
 
 A fourth class is available but OFF by default -- "no-job" (issue #26357,
 measured 2026-11-14): a queued run whose `jobs` list is EMPTY. The run was
@@ -142,6 +150,36 @@ KNOWN_ZOMBIE_RUN_IDS = frozenset({
     34749036141, 34749036144, 34749036149, 34749036157, 34749036169,
     34749036262, 34749066861,
 })
+# Third admission incident (issue #26357, measured 2026-11-26 on CoursIA): 82
+# runs created 2026-11-11 20:31-20:54Z (60 Variation Tag Guard on
+# `issue_comment`, 9 perimeter-review-guard on `pull_request_review`, 13
+# `push` runs on main), each with an EMPTY `jobs` list when probed that day,
+# 80 of them present in all eight daily watch payloads of 2026-11-16..25.
+# The same evening left 42 further runs on since-closed pull requests
+# (created 20:32-20:57Z), which the pr-closed class already reports as
+# ghosts. The 82 carry no pull request, so that class cannot reach them, and
+# `--watch` never pays the per-run probe of the no-job class: the watch kept
+# counting them as stale live runs, and its 2026-11-26 payload reported DRIFT
+# while holding no live run outside this stock. Recognised
+# by IDENTITY like the second incident -- the set is the measured stock of
+# one evening, never a rule: a job-less run outside this set stays in
+# `stale_live` and still alarms.
+LIMBO_2026_11_11_RUN_IDS = frozenset({
+    43096520914, 43096525827, 43096525833, 43096525885, 43096525895, 43096525943, 43096525962,
+    43096652180, 43096677466, 43096682040, 43096682066, 43096682068, 43096682143, 43096682168,
+    43096682188, 43096682340, 43096707463, 43096852609, 43097136035, 43097150293, 43097167062,
+    43097180764, 43097182345, 43097185229, 43097191839, 43097194029, 43097211269, 43097222060,
+    43097240324, 43097252005, 43097263593, 43097278434, 43097293583, 43097308453, 43097320456,
+    43097334319, 43097344426, 43097358360, 43097367506, 43097371541, 43097383778, 43097396147,
+    43097411132, 43097428709, 43097439461, 43097453542, 43097465726, 43097595705, 43097606650,
+    43097618425, 43097623881, 43097636590, 43097649235, 43097665040, 43097671332, 43097678043,
+    43097685269, 43097701150, 43097717039, 43097731845, 43097745512, 43097761303, 43097773864,
+    43097781896, 43097787335, 43097795267, 43097798562, 43097802620, 43097805803, 43097808805,
+    43097811487, 43097844484, 43097855112, 43097859307, 43097862382, 43097865785, 43097873262,
+    43098308644, 43098389661, 43098584161, 43098688143, 43098738366,
+})
+#: Every run the watch recognises by identity, whatever the incident.
+KNOWN_ZOMBIE_IDS = KNOWN_ZOMBIE_RUN_IDS | LIMBO_2026_11_11_RUN_IDS
 # A live run queued longer than this is no longer backlog: it is a candidate
 # zombie. Below it, a queued run is ordinary pool saturation, not drift.
 DEFAULT_STALE_HOURS = 24.0
@@ -575,7 +613,9 @@ def watch_verdict(ghosts: int, live: int, parse_failures: int) -> str:
     saturated pool no longer count as drift. The pr-closed classification
     (#18215) routes closed-PR runs to ghosts BEFORE split_live runs, so the
     known-zombie ID set is a defensive net for runs whose PR state could
-    not be resolved.
+    not be resolved. The 2026-11-11 set (#26357) is the only route, not a
+    net: its runs carry no pull request, and the scheduled watch does not
+    pay the per-run probe that would prove them job-less.
 
     """
     v = verdict(ghosts, live, parse_failures)
@@ -599,8 +639,9 @@ def _count_by_event(runs: list[dict]) -> dict[str, int]:
 def split_live(live: list[dict], now: datetime, stale_hours: float) -> dict:
     """Split the live bucket for the watch mode (#18131).
 
-    * `known_zombies` : runs of the 2026-09-13 incident (KNOWN_ZOMBIE_RUN_IDS),
-      permanent and unpurgeable, reported but never alarming.
+    * `known_zombies` : runs of a measured incident recognised by identity
+      (KNOWN_ZOMBIE_IDS: the 2026-09-13 and the 2026-11-11 stocks),
+      reported but never alarming.
     * `stale_live`    : other runs queued for more than `stale_hours` -- the
       candidate NEW zombies, the only live runs the watch alarms on.
     * `fresh_live`    : runs queued for less than `stale_hours` -- ordinary
@@ -613,7 +654,7 @@ def split_live(live: list[dict], now: datetime, stale_hours: float) -> dict:
     stale: list[dict] = []
     fresh: list[dict] = []
     for run in live:
-        if run.get("id") in KNOWN_ZOMBIE_RUN_IDS:
+        if run.get("id") in KNOWN_ZOMBIE_IDS:
             known.append(run)
             continue
         created = datetime.fromisoformat(str(run["created_at"]).replace("Z", "+00:00"))
@@ -1537,8 +1578,8 @@ def main(argv: list[str] | None = None) -> int:
             # `verdict_measurement` so the alert payload remains
             # diagnosable by the receiver of the JSON.
             # The watch alarms on live runs only when they are stale AND
-            # unknown (#18131): the 2026-09-13 zombies and a saturated
-            # pool's fresh backlog are reported, never alarmed on.
+            # unknown (#18131): the 2026-09-13 and 2026-11-11 stocks and a
+            # saturated pool's fresh backlog are reported, never alarmed on.
             # The watch split measures report time: on a replay without an
             # explicit --now the classification instant is None (frozen
             # verdict above), so split_live ages runs against this
