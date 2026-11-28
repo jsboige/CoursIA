@@ -380,12 +380,27 @@ def attach_library(project_id: int, library_project_id: int) -> dict:
     attachment works — the library may live in another organization than the
     consumer, and `access` then comes back true.
 
+    The libraries already attached are read first and the new one is ADDED to
+    them: the update payload carries the union, never the single new id — an
+    update that carried only the new id would drop the libraries the consumer
+    already had.
+
     Returns the libraries now attached, and the files the consumer sees with
     `isLibrary: true` — the proof of attachment.
     """
+    avant = _api_post("/projects/read", {"projectId": project_id})
+    proj_avant = (
+        avant.get("projects", [{}])[0] if avant.get("projects") else avant
+    )
+    deja = [
+        lib.get("projectId")
+        for lib in (proj_avant.get("libraries") or [])
+        if lib.get("projectId")
+    ]
+    cibles = list(dict.fromkeys([*deja, library_project_id]))
     _api_post(
         "/projects/update",
-        {"projectId": project_id, "libraries": [library_project_id]},
+        {"projectId": project_id, "libraries": cibles},
     )
     data = _api_post("/projects/read", {"projectId": project_id})
     proj = data.get("projects", [{}])[0] if data.get("projects") else data

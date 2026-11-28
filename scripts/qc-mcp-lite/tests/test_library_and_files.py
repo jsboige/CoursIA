@@ -72,11 +72,12 @@ class TestAttachLibrary:
                 {"name": "pouches_pcm.py", "content": "y" * 20, "isLibrary": True},
             ]
         })
-        with patch("requests.post", side_effect=[update, project, files]) as mock_post:
+        with patch("requests.post", side_effect=[project, update, project, files]) as mock_post:
             result = attach_library(42, 37966475)
 
-        assert mock_post.call_args_list[0].args[0].endswith("/projects/update")
-        assert mock_post.call_args_list[0].kwargs["json"] == {
+        assert mock_post.call_args_list[0].args[0].endswith("/projects/read")
+        assert mock_post.call_args_list[1].args[0].endswith("/projects/update")
+        assert mock_post.call_args_list[1].kwargs["json"] == {
             "projectId": 42,
             "libraries": [37966475],
         }
@@ -97,9 +98,59 @@ class TestAttachLibrary:
             }]
         })
         files = _mock_api_response({"files": []})
-        with patch("requests.post", side_effect=[update, project, files]):
+        with patch("requests.post", side_effect=[project, update, project, files]):
             result = attach_library(42, 37966475)
         assert result["libraries"][0]["access"] is True
+
+    def test_keeps_the_libraries_already_attached(self):
+        """A consumer that already carried a library must not lose it: the
+        update payload carries the UNION of the existing ids and the new one,
+        never the new one alone."""
+        avant = _mock_api_response({
+            "projects": [{
+                "projectId": 42,
+                "libraries": [
+                    {"projectId": 111, "libraryName": "Autre", "access": True},
+                ],
+            }]
+        })
+        update = _mock_api_response({"success": True})
+        apres = _mock_api_response({
+            "projects": [{
+                "projectId": 42,
+                "libraries": [
+                    {"projectId": 111, "libraryName": "Autre", "access": True},
+                    {"projectId": 37966475, "libraryName": "SharedPCM", "access": True},
+                ],
+            }]
+        })
+        files = _mock_api_response({"files": []})
+        with patch("requests.post", side_effect=[avant, update, apres, files]) as mock_post:
+            result = attach_library(42, 37966475)
+
+        assert mock_post.call_args_list[1].kwargs["json"] == {
+            "projectId": 42,
+            "libraries": [111, 37966475],
+        }
+        assert [lib["projectId"] for lib in result["libraries"]] == [111, 37966475]
+
+    def test_attaching_the_same_library_twice_does_not_duplicate_it(self):
+        """The union is deduplicated: re-attaching an already attached library
+        must not put its id twice in the payload."""
+        project = _mock_api_response({
+            "projects": [{
+                "projectId": 42,
+                "libraries": [
+                    {"projectId": 37966475, "libraryName": "SharedPCM", "access": True},
+                ],
+            }]
+        })
+        update = _mock_api_response({"success": True})
+        files = _mock_api_response({"files": []})
+        with patch("requests.post", side_effect=[project, update, project, files]) as mock_post:
+            attach_library(42, 37966475)
+
+        assert mock_post.call_args_list[1].kwargs["json"]["libraries"] == [37966475]
 
 
 @patch.dict("os.environ", _DUMMY_ENV)
