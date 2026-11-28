@@ -163,7 +163,7 @@ def load_cells(ref: str, path: str) -> list | None:
 
 def changed_notebooks(base: str, head: str) -> list[str]:
     r = subprocess.run(
-        ["git", "diff", "--name-only", "%s...%s" % (base, head), "--", "*.ipynb"],
+        ["git", "-c", "core.quotePath=false", "diff", "--name-only", "%s...%s" % (base, head), "--", "*.ipynb"],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
         cwd=REPO_ROOT)
     return [l for l in r.stdout.splitlines() if l.strip()]

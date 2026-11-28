@@ -131,6 +131,86 @@ def test_une_regle_qui_redevient_auto_chargee_compte_comme_croissance():
     assert resultat["delta_bytes"] == 900
 
 
+def test_inventaire_incomplet_detecte_une_regle_path_gatee_non_referencee(
+        tmp_path):
+    inventaire_principal = tmp_path / "CLAUDE.md"
+    inventaire_reference = tmp_path / "claude-code-config.md"
+    inventaire_principal.write_text("`autre-regle`", encoding="utf-8")
+    inventaire_reference.write_text("| `autre-regle` | règle |",
+                                    encoding="utf-8")
+    snapshot = _instantane(100, gated=[("regle-absente.md", 12)])
+    base = _instantane(100, gated=[("regle-absente.md", 12)])
+
+    absentes = delta.unlisted_rules_against_inventory(
+        snapshot, (inventaire_principal, inventaire_reference))
+    resultat = delta.compare(
+        base, snapshot, (inventaire_principal, inventaire_reference))
+
+    assert absentes == ["regle-absente.md"]
+    assert resultat["verdict"] == "INVENTAIRE INCOMPLET"
+    assert resultat["regles_path_gatees_non_listees"] == absentes
+    assert delta.RC[resultat["verdict"]] == 1
+    assert "regle-absente.md" in delta.render(resultat)
+
+
+def test_inventaire_complet_reconnait_le_nom_exact_dans_les_deux_fichiers(
+        tmp_path):
+    inventaire_principal = tmp_path / "CLAUDE.md"
+    inventaire_reference = tmp_path / "claude-code-config.md"
+    inventaire_principal.write_text(
+        "(`regle-a` · `autre-regle`)", encoding="utf-8")
+    inventaire_reference.write_text("| `regle-b` | règle |",
+                                    encoding="utf-8")
+    snapshot = _instantane(100, gated=[("regle-a.md", 12),
+                                      ("regle-b.md", 15)])
+
+    assert delta.unlisted_rules_against_inventory(
+        snapshot, (inventaire_principal, inventaire_reference)) == []
+
+
+def test_inventaire_reconnait_liste_de_regles_sur_une_ligne(tmp_path):
+    inventaire_principal = tmp_path / "CLAUDE.md"
+    inventaire_reference = tmp_path / "claude-code-config.md"
+    inventaire_principal.write_text(
+        "(`regle-a` · `regle-b`)", encoding="utf-8")
+    inventaire_reference.write_text("", encoding="utf-8")
+    snapshot = _instantane(100, gated=[("regle-a.md", 12),
+                                      ("regle-b.md", 15)])
+
+    assert delta.unlisted_rules_against_inventory(
+        snapshot, (inventaire_principal, inventaire_reference)) == []
+
+
+def test_mention_en_prose_ne_compte_pas_comme_entree_inventaire(tmp_path):
+    inventaire_principal = tmp_path / "CLAUDE.md"
+    inventaire_reference = tmp_path / "claude-code-config.md"
+    inventaire_principal.write_text(
+        "Exemple de prose : `regle-a` s'applique ici.", encoding="utf-8")
+    inventaire_reference.write_text("", encoding="utf-8")
+    snapshot = _instantane(100, gated=[("regle-a.md", 12)])
+
+    assert delta.unlisted_rules_against_inventory(
+        snapshot, (inventaire_principal, inventaire_reference)) == ["regle-a.md"]
+
+
+def test_inventaire_absent_est_un_incident_et_pas_un_quitus(tmp_path):
+    present = tmp_path / "CLAUDE.md"
+    present.write_text("", encoding="utf-8")
+    absente = tmp_path / "claude-code-config.md"
+    snapshot = _instantane(100, gated=[("regle-a.md", 12)])
+
+    with pytest.raises(delta.Incident, match="inventaire de règles absent"):
+        delta.unlisted_rules_against_inventory(snapshot, (present, absente))
+
+
+def test_snapshot_synthetique_sans_inventaire_ne_change_pas_le_verdict():
+    base = _instantane(100, gated=[("r.md", 10)])
+    head = _instantane(100, gated=[("r.md", 10)])
+
+    assert delta.compare(base, head)["verdict"] == "OK"
+    assert delta.compare(base, head)["inventory_complete"] is False
+
+
 def test_une_regle_path_gatee_qui_disparait_de_la_surface_reduit_le_total():
     base = {"autoloaded_total_bytes": 1000, "autoloaded_rules": [
                 {"name": "r.md", "bytes": 900}],
@@ -397,6 +477,9 @@ def test_le_cliquet_est_cable_dans_la_voie_rapide():
     assert "TRANCHE40" in source, (
         "la liste effective des gardes ne cite pas la tranche du cliquet : "
         "le garde ne sera jamais selectionne")
+    assert fast_lane.guard_applies(
+        g, ["docs/reference/claude-code-config.md"]
+    ), "le cliquet doit etre selectionne par un diff limite a l'inventaire"
     assert fast_lane.guard_applies(g, ["CLAUDE.md"]), (
         "le cliquet doit etre selectionne par le chemin qu'il surveille")
     assert fast_lane.guard_applies(g, [".claude/rules/git-workflow.md"]), (
