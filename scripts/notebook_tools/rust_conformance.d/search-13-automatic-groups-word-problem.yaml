@@ -11,12 +11,21 @@
 # modifie aucune sortie, et laisse les index des cellules mesurées (3, 6, 9,
 # 11, 14) inchangés.
 #
-# Le côté C# n'est PAS COUVERT par cette entrée : un jumeau C# existe
-# désormais sur `main` (`Search-13-AutomaticGroups-WordProblem-CSharp.ipynb`,
-# ajouté par po-2028:claudish, attesté par le registre `twin_pairs.d`), mais la
-# présente entrée certifie la paire Python↔Rust seulement — le port Rust n'est
-# pas comparé au port C#. Le côté C# est donc déclaré non couvert, avec son
-# motif ; l'organe signale un côté explicitement absent sans le faire échouer.
+# Le côté C# n'est PAS COUVERT par cette entrée — et c'est une **mesure**, pas
+# une absence. Le jumeau C# existe sur `main` depuis #28702 (livré par
+# myia-po-2028:claudish, attesté par le registre `twin_pairs.d`, niveau de
+# parité `semantic`). Re-mesuré le 2026-11-28 sur les sorties committées : les
+# cinq cellules de calcul ne sont PAS identiques au caractère près au jumeau
+# Python — la cellule 6 s'intitule « Accepteur des mots librement réduits » côté
+# C# contre « Accepteur Z^2 » côté Python, la cellule 11 titled « accepteur
+# passages » contre « accepteur etats », et la cellule 14 compte treize lignes
+# côté Python contre vingt côté C#. L'écart est d'**étiquette et de
+# présentation**, pas de valeur : c'est exactement ce que l'attestation
+# `twin_pairs.d` déclare (`parity_level: semantic` — la comparaison porte sur
+# les nombres et la liste d'états, jamais sur l'étiquette). Une égalité de
+# texte à tolérance 0 ne peut donc pas certifier le côté C# : l'entrée certifie
+# la paire Python↔Rust, et le côté C# est déclaré non couvert avec son motif —
+# l'organe signale un côté explicitement absent sans le faire échouer.
 #
 # Les cellules d'exercice (19, 20, 21) ne produisent AUCUNE sortie des deux
 # côtés : elles ne sont pas déclarées en mesures, l'organe traitant une
@@ -43,10 +52,12 @@
           transform: text
         csharp:
           absent: >-
-            Cote C# non couvert par cette entree : le jumeau C# existe sur
-            origin/main (Search-13-AutomaticGroups-WordProblem-CSharp.ipynb,
-            ajoute par po-2028:claudish), mais l'entree certifie la paire
-            Python<->Rust ; le port Rust n'est pas compare au port C#.
+            Cote C# non couvert par cette entree : il existe sur origin/main
+            depuis #28702, et sa parite avec le jumeau Python est SEMANTIQUE
+            (etiquette et presentation differentes, valeurs identiques) --
+            attestee par twin_pairs.d, ou parite_level: semantic. Une egalite
+            de texte a tolerance 0 ne peut pas le certifier ; l'entree certifie
+            la paire Python<->Rust.
     - id: c6_accepteur
       description: "Cellule 6 — l'accepteur Z^2 (6 états, 5 acceptants) et le verdict des assertions de propriétés : texte identique au jumeau Python"
       tolerance: 0
