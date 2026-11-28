@@ -136,6 +136,48 @@ jobs:
           rm -rf .tmp-out
           exit $rc
 
+      - name: Demarrage de l'image avec sa commande par defaut (JupyterLab)
+        # L'image doit demarrer **seule** : c'est son CMD qui est execute, sans
+        # commande ajoutee par l'appelant. Le repli local documente
+        # (`docker run -p 8888:8888 <image>`) et le devcontainer dependent de
+        # ce CMD ; il a ete casse (`jupyterlab` au lieu de `jupyter-lab`) sans
+        # que les temoins ne le voient, parce qu'ils surchargent la commande
+        # (#27547). Ce pas est le temoin du CMD.
+        id: demarrage
+        run: |
+          set -uo pipefail
+          debut=$(date +%s%3N)
+          docker rm -f coursia-demarrage >/dev/null 2>&1 || true
+          if ! docker run -d --name coursia-demarrage \
+               -p 8888:8888 \
+               "${{ env.IMAGE }}:smoke"; then
+            echo "::error::l'image ne demarre pas avec sa commande par defaut"
+            exit 1
+          fi
+          rc=1
+          for i in $(seq 1 120); do
+            etat="$(docker inspect -f '{{.State.Status}}' coursia-demarrage 2>/dev/null || echo absent)"
+            if [ "$etat" = "exited" ] || [ "$etat" = "absent" ]; then
+              break
+            fi
+            if [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8888/api)" = "200" ]; then
+              rc=0
+              break
+            fi
+            sleep 1
+          done
+          duree=$(( ($(date +%s%3N) - debut) / 1000 ))
+          echo "--- journal du conteneur ---"
+          docker logs coursia-demarrage 2>&1 | tail -20 || true
+          docker rm -f coursia-demarrage >/dev/null 2>&1 || true
+          if [ "$rc" != "0" ]; then
+            echo "::error::JupyterLab ne repond pas sur 8888 avec la commande par defaut de l'image (acceptance #27547)"
+            exit 1
+          fi
+          echo "JupyterLab repond apres ${duree}s (commande par defaut de l'image)"
+          echo "duree_s=${duree}" >> "$GITHUB_OUTPUT"
+
+
       - name: Relever temps et taille
         if: always()
         run: |
@@ -149,6 +191,9 @@ jobs:
               echo "- taille : ${taille} octets ($(( taille / 1024 / 1024 / 1024 )) Gio)"
             fi
             echo "- publication : job `publier` (absent sur evenement pull_request)"
+            if [ -n "${{ steps.demarrage.outputs.duree_s }}" ]; then
+              echo "- demarrage avec la commande par defaut : ${{ steps.demarrage.outputs.duree_s }} s (JupyterLab pret)"
+            fi
             echo
             echo "_Le temps de construction par etape est dans le journal du job ;_"
             echo "_le premier run apres un changement du Dockerfile est la mesure a froid._"

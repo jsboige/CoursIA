@@ -242,10 +242,18 @@ RUN set -eux; \
 # --- 4) Point d'entree de l'image d'apprentissage ---------------------------
 # L'ENTRYPOINT du runner est neutralise : l'image d'apprentissage demarre
 # JupyterLab, elle n'execute pas un carnet en lot.
+#
+# Le CMD nomme l'executable TEL QU'IL EST INSTALLE : `jupyterlab` n'existe pas
+# dans le PATH de l'image (le script installe par pip est `jupyter-lab`), si
+# bien que `docker run ghcr.io/jsboige/coursia-learning:latest` echouait
+# immediatement sur `exec: "jupyterlab": executable file not found in $PATH`
+# et que le repli local documente ne demarrait rien (#27547). Le workflow
+# `learning-image-ghcr` demarre desormais l'image avec sa commande par defaut
+# et exige une reponse HTTP sur le port 8888 : le defaut ne peut pas revenir.
 ENV PATH="/root/.elan/bin:/root/.cargo/bin:/root/.dotnet/tools:${PATH}" \
     LEAN_TOOLCHAIN="${LEAN_TOOLCHAIN}"
 WORKDIR /notebooks
 EXPOSE 8888
 ENTRYPOINT []
-CMD ["jupyterlab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root"]
+CMD ["jupyter-lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root"]
 

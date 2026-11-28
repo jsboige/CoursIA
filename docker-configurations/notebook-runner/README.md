@@ -78,6 +78,24 @@ docker run -p 8888:8888 ghcr.io/jsboige/coursia-learning:latest
 # -> http://localhost:8888 — JupyterLab, les 7 noyaux canoniques
 ```
 
+L'image **demarre seule** : sa commande par defaut est JupyterLab, aucune
+commande n'est a ajouter. Le workflow `learning-image-ghcr` le verifie a chaque
+construction — il lance l'image sans surcharge de commande et exige une
+reponse HTTP sur le port 8888 ; c'est le temoin de la commande par defaut
+(#27547).
+
+**Le jeton** : JupyterLab en demande un, tire au hasard a chaque demarrage et
+affiche dans le journal du conteneur (`docker logs <conteneur>`) ; sans lui,
+`/lab` redirige vers la page de connexion. Le jeton n'est ni fixe ni desactive
+dans l'image : la posture d'authentification d'un paquet public est une
+decision du mainteneur, pas un effet de bord de ce pli.
+
+Mesure relevee sur la machine de l'auteur (4 vCPU, 16 Go, `hostRequirements`
+du devcontainer) : **4,3 s** entre le lancement du conteneur et la reponse de
+JupyterLab, puis **8,1 s** pour le carnet temoin Python et **10,1 s** pour le
+carnet temoin C# (`witness-net-csharp`). Ces trois durees dependent de la
+machine hote ; le workflow en releve une a chaque build.
+
 La premiere publication et la visibilite publique du paquet dependent du
 reglage du paquet GHCR cote mainteneur ; les etiquettes datees
 (`20261120-1930`) et `sha-<commit>` restent disponibles pour figer une

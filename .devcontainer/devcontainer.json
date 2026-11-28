@@ -1,6 +1,7 @@
 {
   "name": "CoursIA - image d'apprentissage (7 noyaux canoniques)",
   "image": "ghcr.io/jsboige/coursia-learning:latest",
+  "remoteUser": "root",
   "hostRequirements": {
     "cpus": 4,
     "memory": "16gb"
