@@ -267,15 +267,36 @@ jobs:
 
       - name: Set up Python 3.9
         uses: actions/setup-python@v5
+        id: py
         with:
           python-version: '3.9'
-          cache: pip
+
+
+      # #27727 tranche 1 : pip cache « main-only save » (pattern
+      # #19658 des caches lake-*) : `cache: pip` ecrivait une entree
+      # de ~610 Mo par ref de PR (mesure 2026-11-21 : 6.1 Go du
+      # quota de 10 Go, dont 5.3 Go de duplication pure) et
+      # evictait les caches lake-* en quelques heures.
+      - name: Restore pip cache
+        id: pip-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-py${{ steps.py.outputs.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: pip-${{ runner.os }}-
 
       - name: Install ICT-Series package
         working-directory: MyIA.AI.Notebooks/IIT/ICT-Series
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e .
+
+      - name: Save pip cache (main only)
+        if: github.ref == 'refs/heads/main' && steps.pip-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ steps.pip-cache.outputs.cache-primary-key }}
 
       - name: Run ict-tests suite
         id: pytest
@@ -451,8 +472,23 @@ jobs:
           filter: blob:none
 
       - uses: actions/setup-python@v5
+        id: py
         with:
           python-version: '3.11'
+
+
+      # #27727 tranche 1 : pip cache « main-only save » (pattern
+      # #19658 des caches lake-*) : `cache: pip` ecrivait une entree
+      # de ~610 Mo par ref de PR (mesure 2026-11-21 : 6.1 Go du
+      # quota de 10 Go, dont 5.3 Go de duplication pure) et
+      # evictait les caches lake-* en quelques heures.
+      - name: Restore pip cache
+        id: pip-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-py${{ steps.py.outputs.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: pip-${{ runner.os }}-
 
       - name: "Dependances de la suite (script partage)"
         # L'environnement du lot est celui de la jambe `Scripts Tests` --
@@ -463,6 +499,13 @@ jobs:
         # rien (une dependance manquante rend la PR « non mesurable » au
         # lieu de la faire echouer).
         run: bash scripts/ci/install_scripts_tests_deps.sh
+
+      - name: Save pip cache (main only)
+        if: github.ref == 'refs/heads/main' && steps.pip-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ steps.pip-cache.outputs.cache-primary-key }}
 
       - name: "Planifier le lot"
         env:
