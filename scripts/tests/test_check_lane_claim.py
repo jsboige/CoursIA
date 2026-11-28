@@ -9575,3 +9575,33 @@ def test_backticked_scope_is_not_read_as_epic_wide():
 def test_lane_reference_index_deduplicates_repeated_issue():
     prs = [{"number": 9, "body": "[CLAIMED] lane myia-a:CoursIA -- #45\nVoir #45"}]
     assert clc._lane_open_prs_referencing(45, "myia-a:CoursIA", prs) == [9]
+
+
+# --- #21436 -- le jeu de repertoires suit la liste suivie ---------------------
+
+
+def test_tracked_dirs_is_memoised_per_tracked_list_and_follows_its_mutations():
+    # La phase de claims du tapis lourd reconstruisait cet ensemble 2 235 fois
+    # pour un resultat identique. Les deux appelants (`_resolve_dead_scope`,
+    # `_scope_is_creation`) ne font que tester l'appartenance : l'ensemble
+    # memoise est servi tel quel, et une mutation de la liste l'invalide.
+    tracked = clc._TrackedFiles(["a/b/c.txt", "a/d.txt", "top.txt"])
+    first = clc._tracked_dirs(tracked)
+    assert first == {"a", "a/b"}
+    assert clc._tracked_dirs(tracked) is first
+
+    tracked.append("a/b/e/f.txt")
+    assert clc._tracked_dirs(tracked) == {"a", "a/b", "a/b/e"}
+    tracked[0] = "x/y.txt"
+    # `a/b` reste : il est encore l'ancetre de `a/b/e/f.txt`.
+    assert clc._tracked_dirs(tracked) == {"a", "a/b", "a/b/e", "x"}
+
+    # Une liste brute n'est jamais memoisee (contrat du module) : le resultat
+    # reste juste, il est seulement recalcule.
+    plain = ["a/b/c.txt", "a/d.txt", "top.txt"]
+    once = clc._tracked_dirs(plain)
+    assert once == {"a", "a/b"}
+    assert clc._tracked_dirs(plain) is not once
+
+    assert clc._tracked_dirs(None) == set()
+    assert clc._tracked_dirs([]) == set()
