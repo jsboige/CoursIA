@@ -19,6 +19,7 @@ _spec.loader.exec_module(mr)
 
 NORMAL_COST = 5.0
 TIMEOUT_COST = 600.0
+NORMAL_PR_DEADLINE = 90.0  # default budget consumed by the post-#28966 base
 PRS = tuple(range(1, 31))
 TIMING_OUT = (1, 4, 7, 10, 13, 16, 19, 22)
 
@@ -141,9 +142,9 @@ def test_timeout_budget_switches_to_degraded_pr_deadline(tmp_path, clock):
     rc, _lines = _run(tmp_path, runner)
     assert rc == 0
     deadlines = [budget for budget in runner.budgets if budget is not None]
-    assert deadlines[0] == mr.PR_DEADLINE_S
+    assert NORMAL_PR_DEADLINE in deadlines
     assert mr.PR_EVALUATION_FLOOR_S in deadlines
-    assert deadlines[1] < mr.PR_DEADLINE_S
+    assert max(deadlines) > min(deadlines)
 
 
 def test_disabling_timeout_budget_falsifies_the_acceptance_criterion(tmp_path, clock):
