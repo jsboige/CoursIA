@@ -107,7 +107,11 @@ _CV3_NARRATOR_REFERENCE_ID: str = "cosyvoice3-zeroshot-narrator-fr-v4"
 _NARRATOR_ENGINE_REFERENCE_IDS: dict[str, str] = {
     "qwen_voicedesign": _QWEN_NARRATOR_REFERENCE_ID,
     "cosyvoice3": _CV3_NARRATOR_REFERENCE_ID,
-    "zonos3": "zonos3-zeroshot-narrator-fr-v1",
+    # v2: the ZONOS3 request changed (served French speaker id, `fr_fr`,
+    # non-streaming, doses centred on the served calibration, text sent
+    # without any bracket prefix), so an MP3 cached under v1 is not what
+    # this code renders.
+    "zonos3": "zonos3-zeroshot-narrator-fr-v2",
 }
 
 # ---------------------------------------------------------------------------
@@ -129,19 +133,27 @@ _NARRATOR_ENGINE_REFERENCE_IDS: dict[str, str] = {
 # being silently dropped (`v4/zonos3_steering.py`).
 #
 # This branch stays OFF by default (NARRATOR_ZONOS3_ROUTING=0) until the
-# service is up and the bench run has produced the measured numbers the
-# issue asks for (WER / RTF / VRAM on `extract_C`). The no-silent-swap
-# contract of #15002 acceptance 6 carries over: any 4xx/5xx, an empty
-# render, or a degenerate short render raises NarratorZonos3Unavailable.
+# bench run has produced the measured numbers the issue asks for (WER /
+# RTF / VRAM on `extract_C`). The no-silent-swap contract of #15002
+# acceptance 6 carries over: any wake failure, 4xx/5xx, an empty render,
+# a degenerate short render or a render cut at the request ceiling raises
+# NarratorZonos3Unavailable.
 _NARRATOR_ZONOS3_ROUTING: bool = os.getenv("NARRATOR_ZONOS3_ROUTING", "0") == "1"
+# Speaker embedding id the delivered service serves for French ("Gaspard
+# fr M 1", the French default voice of `GET /v2/speakers`).  The id is not
+# a free label: one the server does not list is answered 400.
+_ZONOS3_DEFAULT_SPEAKER_ID: str = "default_517319c805b927e9"
 # Zero-shot cloning from a raw reference clip: the path to the reference
-# clip, or an empty string to use the registered embedding id instead.
+# clip, or an empty string to use the speaker embedding id instead.  A
+# raw clip needs the service's `raw-reference` weights, outside the
+# minimal set it fetches by default (its README, section « Poids : jeu
+# minimal »), so cloning is an explicit opt-in, not the default path.
 _ZONOS3_NARRATOR_REFERENCE_CLIP: str = os.getenv(
     "NARRATOR_ZONOS3_REFERENCE_CLIP", ""
 )
-# Registered speaker embedding id, used when no raw clip is configured.
+# Served speaker embedding id, used when no raw clip is configured.
 _ZONOS3_NARRATOR_REFERENCE_ID: str = os.getenv(
-    "NARRATOR_ZONOS3_REFERENCE_ID", "zonos3-zeroshot-narrator-fr-v1"
+    "NARRATOR_ZONOS3_REFERENCE_ID", _ZONOS3_DEFAULT_SPEAKER_ID
 )
 
 # ---------------------------------------------------------------------------
@@ -1660,8 +1672,9 @@ def _synthesize_narrator_qwen(
 
 class NarratorZonos3Unavailable(RuntimeError):
     """Raised when ZONOS3 Mini cannot synthesize a narrator segment
-    (service unreachable, 4xx/5xx, an empty render, or a degenerate
-    short render). Same contract as the three other narrator engines
+    (service not woken, unreachable, 4xx/5xx, an empty render, a
+    degenerate short render, or a render cut at the one-request
+    ceiling). Same contract as the three other narrator engines
     (#15002 acceptance 6): hard failure, never a silent fall back to
     FishAudio.
     """
@@ -1689,13 +1702,18 @@ def _synthesize_narrator_zonos3(
 ) -> TTSResult:
     """Synthesize a narrator segment via ZONOS3 Mini (`POST /v2/generate`).
 
-    The segment's FishAudio bracket tags are stripped (ZONOS3 does not
-    read them — it would vocalize them); the continuous steering comes
-    from the annotation sidecar resolved by `v4.zonos3_steering` against
-    the directions the served checkpoint actually exposes. A render that
-    cannot be steered on an axis degrades that axis to its FishAudio tag
-    (honest degradation, never a silent drop). Any transport failure,
-    empty render, or degenerate short render raises
+    The segment's FishAudio bracket tags are stripped: ZONOS3 reads the
+    request text literally and has no tag grammar.  The continuous
+    steering comes from the annotation sidecar, resolved by
+    `v4.zonos3_steering` against the directions the served bundle
+    actually exposes, with the doses centred on the served calibration;
+    `control_spans` offsets are code points of the stripped text.  An axis
+    the bundle cannot steer is reported as degraded — its FishAudio tag is
+    named in the log, never re-injected into the text.
+
+    The container does not stay resident, so the service is woken first.
+    Any wake failure, transport failure, empty render, degenerate short
+    render, or render cut at the one-request ceiling raises
     NarratorZonos3Unavailable.
     """
     plain_text = _strip_brackets_for_qwen(fishaudio_text)
@@ -1707,24 +1725,50 @@ def _synthesize_narrator_zonos3(
     # Imported here (not at module top) so hermetic tests need neither the
     # ZONOS3 service nor pydub — the guards above run network-free.
     from .zonos3_client import (
+        FRAME_SECONDS,
+        MAX_RENDER_SECONDS,
         audio_duration_wav,
         zonos3_controls,
+        zonos3_ensure_up,
         zonos3_tts,
     )
     from .zonos3_steering import fallback_text, resolve_steering
 
+    # Wake before reading the bundle or rendering: a stopped container
+    # answers nothing, and a silent fall back to another engine would be
+    # the failure #15002 acceptance 6 forbids.
+    if not zonos3_ensure_up():
+        raise NarratorZonos3Unavailable(
+            f"seg {seg.seg_index}: ZONOS3 service could not be woken "
+            f"(container tts-zonos3 not healthy)"
+        )
+
     # Resolve the segment's steering against what the server serves. The
     # controls index is read live so the request only steers directions
-    # the loaded bundle exposes.
-    from .schemas import Zonos3Annotation
-
+    # the loaded bundle exposes, at doses centred on its own calibration.
+    controls_index = zonos3_controls()
+    if not controls_index:
+        logger.warning(
+            "seg %s: ZONOS3 /v2/controls unreadable — no axis steered on "
+            "this render",
+            seg.seg_index,
+        )
     annotations = _zonos3_annotations_for_segment(seg)
-    resolution = resolve_steering(annotations, zonos3_controls())
+    resolution = resolve_steering(annotations, controls_index)
 
-    # An axis the bundle cannot steer degrades to its FishAudio tag: the
-    # intent is still expressed, in the vocabulary this path can carry.
-    degraded_prefix = fallback_text(resolution.fallback_tags)
-    text = f"{degraded_prefix} {plain_text}".strip() if degraded_prefix else plain_text
+    # An axis the bundle cannot steer is reported, with the tag its intent
+    # is left to.  The tag is NOT put into the text: ZONOS3 renders what it
+    # is given (measured: a bracketed prefix lengthened the render by 0.87 s
+    # at the same seed).
+    if resolution.is_degraded:
+        logger.warning(
+            "seg %s: ZONOS3 axes not steered: %s (FishAudio tags left out "
+            "of the text: %s)",
+            seg.seg_index,
+            resolution.degraded_axes,
+            fallback_text(resolution.fallback_tags) or "none",
+        )
+    text = plain_text
 
     audio, seed_used = zonos3_tts(
         text,
@@ -1750,6 +1794,18 @@ def _synthesize_narrator_zonos3(
             f"seg {seg.seg_index}: ZONOS3 render {duration_s:.2f}s is under "
             f"the plausibility floor {floor_s:.2f}s for {len(plain_text)} "
             f"chars — degenerate render, not fast speech"
+        )
+
+    # The server cuts a render at its frame budget without any signal
+    # (measured 2026-11-27: 1 991 audio frames = 132.733 s, and a longer
+    # text lands exactly there).  A render at the ceiling was cut, so the
+    # segment cannot ship as rendered.
+    ceiling_s = MAX_RENDER_SECONDS - 2 * FRAME_SECONDS
+    if duration_s >= ceiling_s:
+        raise NarratorZonos3Unavailable(
+            f"seg {seg.seg_index}: ZONOS3 render reached the one-request "
+            f"ceiling ({duration_s:.3f}s >= {ceiling_s:.3f}s) for "
+            f"{len(text)} chars — the text was cut, split the segment"
         )
 
     # Write the rendered audio: the narrator engine contract is an MP3 at

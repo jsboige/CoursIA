@@ -435,6 +435,12 @@ CI_EXCLUDED_PLAN: dict[str, str] = {
 # pour aucun fichier, le dossier Causalite n'a jamais ete dans la population.
 # #27482 : BitcoinRegimeGate-QC/tests quitte la population (marqueur leve,
 # dossier cable des trois cotes) : 24 marqueurs, 66 fichiers, 1083 items.
+# #25835 : la suite zonos3 de `v4/tests` grandit de 29 a 53 items (24
+# fonctions de test ajoutees, mesurees par collectible_item_count — pas des
+# cas parametres). Le repertoire est sous exclusion motivee (`quotidien`
+# dans CI_EXCLUDED_PLAN), donc sa croissance est declaree ici plutot que
+# silencieuse : marqueurs et fichiers ne bougent pas, seuls les items
+# suivent la suite (1083 + 24 = 1107, mesure sur l'arbre fusionne).
 # #19694 : le marqueur de 04-Applications/v4/tests est au niveau du DOSSIER,
 # donc tout test ajoute dans ses limites compte dans la population meme
 # lorsqu'une jambe le joue. `test_p5_audiocpp_fish_route.py` (21 tests
@@ -442,7 +448,10 @@ CI_EXCLUDED_PLAN: dict[str, str] = {
 # est cable dans scripts-tests.yml comme ses cinq voisins : 67 fichiers,
 # 1104 items. L'exclusion du dossier n'est pas levee pour autant (les tests
 # restants du dossier ne sont toujours pas joues par la CI).
-CI_EXCLUDED_BASELINE = {"marqueurs": 24, "fichiers": 67, "items": 1104}
+# Les deux croissances se composent sur l'arbre fusionne avec main le 28/11
+# (fusion de #25835) : 67 fichiers, 1083 + 24 + 21 = 1128 items — valeur
+# re-mesuree par cet organe sur l'arbre fusionne, pas recopiee d'un cote.
+CI_EXCLUDED_BASELINE = {"marqueurs": 24, "fichiers": 67, "items": 1128}
 
 # Une suite de tests de la famille `scripts/**/tests/` : le repertoire doit
 # porter au moins un `test_*.py` pour compter comme suite (#22735).
