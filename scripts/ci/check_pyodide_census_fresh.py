@@ -18,6 +18,15 @@ Usage :
 
     python scripts/ci/check_pyodide_census_fresh.py
     python scripts/ci/check_pyodide_census_fresh.py --json
+    python scripts/ci/check_pyodide_census_fresh.py --base origin/main
+
+**Attribution (#28841).** Une derive n'est imputable a la PR que si la PR a
+touche une entree du census -- un carnet, le generateur, le lock, le cache, ou
+les deux fichiers du census eux-memes. Sans `--base`, l'organe garde son
+verdict absolu (fail-closed). Avec `--base`, une derive que la PR n'a pas
+causee passe en avertissement : elle appartient a `main`, et le geste de
+regeneration est nomme au lieu d'etre exige de la PR. La mecanique et ses
+bornes : `scripts/ci/freshness_attribution.py`.
 """
 from __future__ import annotations
 
@@ -29,6 +38,10 @@ import sys
 import tempfile
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from freshness_attribution import attribuer, fichiers_propres, message  # noqa: E402
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 GENERATEUR = Path("scripts") / "notebook_tools" / "pyodide_eligibility.py"
@@ -36,6 +49,25 @@ RAPPORT = Path("docs") / "reference" / "pyodide-eligibilite.md"
 REFUS = Path("docs") / "reference" / "pyodide-refus.tsv"
 LOCK = Path("docs") / "reference" / "pyodide-lock.json"
 CACHE = Path("docs") / "reference" / "pyodide-wheel-cache.json"
+
+# Entrees du census : ce dont le generateur derive son contenu, plus la page
+# elle-meme (une page reecrite a la main est un geste de la PR, pas un retard
+# de la base).
+MOTIFS_ENTREE: tuple[str, ...] = (
+    "*.ipynb",
+    str(GENERATEUR).replace("\\", "/"),
+    str(RAPPORT).replace("\\", "/"),
+    str(REFUS).replace("\\", "/"),
+    str(LOCK).replace("\\", "/"),
+    str(CACHE).replace("\\", "/"),
+)
+
+GESTE = ("python scripts/notebook_tools/pyodide_eligibility.py --format md "
+         "--out docs/reference/pyodide-eligibilite.md "
+         "--refus-out docs/reference/pyodide-refus.tsv "
+         "--pyodide-lock docs/reference/pyodide-lock.json "
+         "--wheel-cache docs/reference/pyodide-wheel-cache.json")
+
 
 
 def regenerer(repo: Path, cible: Path) -> tuple[int, str]:
@@ -91,10 +123,22 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", default=str(REPO_ROOT),
                         help="racine du depot (defaut : auto)")
+    parser.add_argument("--base", default=None,
+                        help="reference de base : active l'attribution (#28841). "
+                             "Absente -> verdict absolu, comme avant.")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
     repo = Path(args.repo).resolve()
     verdict = verifier(repo)
+
+    attribution = None
+    if args.base is not None:
+        attribution = attribuer(not verdict["ok"],
+                                fichiers_propres(repo, args.base),
+                                MOTIFS_ENTREE)
+        verdict["attribution"] = attribution
+        verdict["base"] = args.base
+
     if args.json:
         print(json.dumps(verdict, indent=1, ensure_ascii=False))
     else:
@@ -110,7 +154,16 @@ def main() -> int:
                 print(f"... ({len(verdict['ecarts']) - 60} lignes de plus)", file=sys.stderr)
             if verdict["sortie"]:
                 print(verdict["sortie"], file=sys.stderr)
+            if attribution is not None:
+                print(message(attribution["verdict"], GESTE), file=sys.stderr)
+                if attribution["fichiers_entree"]:
+                    print("   entrees touchees : %s"
+                          % ", ".join(attribution["fichiers_entree"][:10]),
+                          file=sys.stderr)
+    if attribution is not None:
+        return 0 if not attribution["bloquant"] else 1
     return 0 if verdict["ok"] else 1
+
 
 
 if __name__ == "__main__":
