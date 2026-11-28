@@ -214,7 +214,7 @@ theorem cechComplexFunctor_map_comp (U : ι → C) {P Q R : Cᵒᵖ ⥤ A}
 
 end Naturality
 
-/-! ## 6. Correspondance Stacks (groupe #12 de #28537, relevé du 26/11)
+/-! ## 6. Correspondance Stacks (groupe #12 de #28537, relevé du 26/11/2026)
 
 Comparaison **énoncé par énoncé** avec le référentiel `AxiomMath/Stacks`
 (`StacksFrontier/Topology/Sheaves/Cohomology/`). Références données par

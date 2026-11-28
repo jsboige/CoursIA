@@ -3587,7 +3587,7 @@ theorem tricolorable_forward_redraw {d₁ d₂ : KnotDiagram} (hred : Redraws d�
       -- a Fin equality by Fin.ext and to colours by congrArg, in term mode:
       -- TriColoring is a semireducible def, and a rewrite crossing a colouring
       -- argument fails its motive at the implicit transparency level
-      -- (measured 2026-10-19, Invariant_en.lean:3587).
+      -- (measured 2026-10-19, `Invariant.lean:3683`).
       have hval : (e.symm (e l - 1 + 1) - 1) % d₁.numEdges = (l - 1) % d₁.numEdges := by
         rw [show (e l - 1) + 1 = e l from by omega, Equiv.symm_apply_apply]
       exact congrArg (coloring : Fin d₁.numEdges → TriColor)

@@ -3684,7 +3684,7 @@ theorem tricolorable_forward_redraw {d₁ d₂ : KnotDiagram} (hred : Redraws d�
       -- relancee en Fin par Fin.ext et en couleurs par congrArg, en mode terme :
       -- TriColoring est une def semireductible, un rw traversant un argument de
       -- coloriage echoue sur le motive au niveau de transparence implicit
-      -- (mesure build 2026-10-19, Invariant.lean:3683).
+      -- (mesure build 2026-10-19, `Invariant.lean:3683`).
       have hval : (e.symm (e l - 1 + 1) - 1) % d₁.numEdges = (l - 1) % d₁.numEdges := by
         rw [show (e l - 1) + 1 = e l from by omega, Equiv.symm_apply_apply]
       exact congrArg (coloring : Fin d₁.numEdges → TriColor)

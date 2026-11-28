@@ -333,7 +333,7 @@ noncomputable def cohomologyAt
     AddCommGrpCat.{w'} :=
   CategoryTheory.Sheaf.H' F n X
 
-/-! ## 9. Correspondance Stacks (groupe #12 de #28537, relevé du 26/11)
+/-! ## 9. Correspondance Stacks (groupe #12 de #28537, relevé du 26/11/2026)
 
 Comparaison **énoncé par énoncé** entre ce module et le référentiel
 `AxiomMath/Stacks` (`StacksFrontier/Topology/Sheaves/Cohomology/`). Chaque
