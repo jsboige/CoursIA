@@ -687,6 +687,33 @@ def test_skip_draft(tmp_path):
     assert not any("check_unaddressed_nits.py" in flat for flat in runner.flat())
 
 
+def test_skip_pr_deja_fusionnee_sans_organe(tmp_path):
+    """#28887 : une PR fusionnee pendant la passe est ecartee a l'etape 0,
+    sans payer fichiers, approbation, index de pile ni sondage REST."""
+    view = default_view()
+    view["state"] = "MERGED"
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped"
+    assert lines[-1]["reason"] == "not-open:merged"
+    # Seul le rechauffage de debut de passe lit la PR en REST : apres la vue
+    # `gh pr view 123`, plus aucun appel (ni fichiers, ni pile, ni B.0).
+    flat = runner.flat()
+    vue = max(i for i, f in enumerate(flat) if f.startswith("gh pr view 123"))
+    assert flat[vue + 1:] == []
+
+
+def test_pr_ouverte_avec_etat_reste_evaluee(tmp_path):
+    """#28887 : le champ `state` a OPEN ne change rien au parcours."""
+    view = default_view()
+    view["state"] = "OPEN"
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert rc == 0
+    assert lines[-1]["verdict"] == "would-merge"
+
+
 def test_pr_sans_aucun_dossier_comment_merges(tmp_path):
     """Retrait du dossier (2026-11-05) : une PR SANS AUCUN commentaire
     ``[ADJOINT PREFLIGHT]``, avec l'approbation ``myia-ai-01`` a la tete et

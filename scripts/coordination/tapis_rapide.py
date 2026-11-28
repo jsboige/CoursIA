@@ -238,7 +238,9 @@ def _decider(e: Etat, it: dict, evts: list[Evt], ancetres: list[int], ctx: dict)
         ("PAUSE", lambda: tapis_attente.pause(evts, ctx)),
         ("COUVERTE", lambda: None if e.conteneur else _couverte(
             e.numero, ctx["lane"], ctx["prs_par_issue"])),
-        ("RELACHEE", lambda: tapis_attente.relachee(evts, ctx["maintenant"])),
+        # Portee par les CHEMINS (#28899) puis par la LANE (#28440).
+        ("RELACHEE", lambda: tapis_attente.relachee(
+            evts, ctx["maintenant"], ctx["lane"], ctx.get("chemins"))),
         ("PLAFOND", lambda: _plafond(e, evts, ctx["filles"].get(e.numero, []),
                                      ctx["lane"], ctx["maintenant"])),
     ]
@@ -259,7 +261,7 @@ def _prs_par_issue(prs: list[dict]) -> dict[int, list[dict]]:
 
 
 def _contexte(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
-              jours: int = 45):
+              jours: int = 45, chemins: list[str] | None = None):
     """Issues ouvertes, parents, naissances et contexte de decision -- partages
     par `etats` et la re-decision sur fil complet (#27179)."""
     ouvertes = {it["number"]: it for it in lecture.issues}
@@ -271,6 +273,7 @@ def _contexte(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
             filles.setdefault(p, []).append((n, ouvertes[n].get("created_at")))
     ctx = {"lane": lane, "maintenant": maintenant, "citations": lecture.citations,
            "limite": maintenant - timedelta(days=jours), "filles": filles,
+           "chemins": chemins,  # demandes par le consommateur (#28899) ; None au tirage
            "prs_par_issue": _prs_par_issue(lecture.prs),
            # Les numeros encore ouverts (issues ET PRs) : la levee d'une pause
            # se mesure sur l'etat de la cible citee (#27726).
@@ -280,9 +283,9 @@ def _contexte(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
 
 
 def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
-          jours: int = 45) -> list[Etat]:
+          jours: int = 45, chemins: list[str] | None = None) -> list[Etat]:
     """Un `Etat` par issue ouverte, decide sur la seule lecture."""
-    ouvertes, parents, filles, ctx = _contexte(lecture, lane, maintenant, jours)
+    ouvertes, parents, filles, ctx = _contexte(lecture, lane, maintenant, jours, chemins)
     nommes = {p for p in parents.values() if p is not None}
     resultat = []
     depuis = maintenant - timedelta(days=tapis_equilibre.FENETRE_J)

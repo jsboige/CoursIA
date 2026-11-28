@@ -998,7 +998,7 @@ Let's compare the generation before and after fine-tuning.
 
 **Reading criterion before running**: compare the three committed generations along two distinct axes -- the **lexicon** (proper nouns, literary register: expect Jean Valjean, Cosette, dark streets) and the **syntax** (agreements, clause construction: expect fractures). The three prompts are different openings on the same universe; the question is not ""is it beautiful?"" but ""what has been learned (lexicon) and what has not (grammar)?"". The detailed reading follows the outputs.
 ",,,,,,,183e5fec31b4982b,f130b0822a90df64,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ca2a65b6,code,fr,5975b0529665b0ff,"# Comparaison avant/apres fine-tuning : base NF4 (sans adaptateur) vs QLoRA fine-tune
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ca2a65b6,code,fr,b71f7b958d68834c,"# Comparaison avant/apres fine-tuning : base NF4 (sans adaptateur) vs QLoRA fine-tune
 # Le meme prompt, le meme decodage, le meme seed -- seule change l'application de l'adaptateur LoRA.
 
 torch.manual_seed(0)  # Graine globale pour reproductibilite
@@ -1017,7 +1017,7 @@ def generate_comparatif(prompt, max_new_tokens=100, temperature=0.8, do_sample=T
     """"""Genere la suite d'un prompt avec la base NF4 (avant) puis avec QLoRA (apres).
     Vide la VRAM entre les deux appels pour eviter un pic cumule sur les sessions 8 Go.
 
-    Note F3 -- **valide par execution le 2026-10-21** (lane `myia-po-2024`,
+    Note F3 -- **valide par execution le 2026-10-21** (
     RTX 3070 Laptop 8 Go) : `model_4bit` partage ses parametres avec `model_qlora`
     (PEFT mute in-place), et `with model_qlora.disable_adapter():` redonne bien un
     forward path sans adaptateur -- les deux cotes divergent des la premiere
@@ -1064,7 +1064,7 @@ for p in prompts:
     print(f""\n[AVANT -- base NF4, aucun adaptateur]\n  {avant}"")
     print(f""\n[APRES -- QLoRA fine-tune (r=16, 15ep)]\n  {apres}"")
     print()
-",,,,,,,,5975b0529665b0ff,,,,,,,,,,,,,,,
+",,,,,,,,b71f7b958d68834c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,acf6d40f,markdown,fr,2404a27bf92b5a4e,"## 8. Comparaison LoRA vs QLoRA
 
 Chargeons le même modèle en FP16 (sans quantization) pour comparer l'empreinte memoire.

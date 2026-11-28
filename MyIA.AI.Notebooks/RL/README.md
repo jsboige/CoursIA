@@ -23,6 +23,14 @@ La série couvre les **fondements théoriques** (bandits, MDP, équation de Bell
 
 **Note de frontière — algorithmes online.** Deux carnets d'algorithmique online ont longtemps vécu dans cette série : ils relèvent de l'**analyse compétitive** (garanties de pire cas contre l'optimum offline, sans boucle d'apprentissage) plutôt que du RL stricto sensu. Ils sont désormais rangés dans la série [Complexity](../InformationCalcul/Complexity/README.md), comme lettres **04c** (k-server, work function) et **04d** (secrétaire matroïdal) de la marche 04, qui les présente dans son fil.
 
+## Comment lire ce README
+
+Cette série se lit à plusieurs vitesses ; le principe est exposé une fois pour tout le dépôt dans [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture).
+
+- **Vous découvrez le RL** : suivez la table du [socle du parcours principal](#socle-du-parcours-principal), du carnet 01 au carnet 19, sans ouvrir les approfondissements.
+- **Vous creusez un palier** : ouvrez les [approfondissements](#approfondissements) de la marche qui vous intéresse — `01b` et `01c` autour de 01, `06b` à `06f` autour de 06, `07b` autour de 07.
+- **Vous cherchez la recherche en cours** : la sous-série [PostTraining](PostTraining/README.md) a son propre README, et les ponts vers les autres séries sont en fin de page.
+
 ## Objectifs d'apprentissage
 
 À l'issue de la série, vous saurez :
@@ -43,7 +51,7 @@ Les kernels sont relevés dans les carnets eux-mêmes (`metadata.kernelspec.name
 
 Les numéros nus constituent le parcours principal. Les liens de la dernière colonne ouvrent les approfondissements facultatifs rattachés à leur marche.
 
-| # | Notebook | Kernel | Contenu | Durée | Approfondissements |
+| # | Notebook | Kernel | Ce qu'on y apprend | Durée | Approfondissements |
 |---|----------|--------|---------|-------|---------------------|
 | 01 | [RL-01-Premiers-Pas-Stable-Baselines3-Python](RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb) | python3 | Premier agent PPO sur CartPole avec Stable Baselines3 : boucle reset/step, évaluation avant/après, sauvegarde du modèle. L'usage avant la théorie | 25-30 min | [Autour de 01](#autour-de-01) |
 | 02 | [RL-02-Wrappers-Sauvegarde-Callbacks-Python](RL-02-Wrappers-Sauvegarde-Callbacks-Python.ipynb) | python3 | Outils de production : wrappers Gym, sauvegarde et chargement de modèles, multiprocessing, callbacks de suivi, environnement personnalisé | 35-40 min | |
@@ -71,14 +79,14 @@ Les lettres restent des extensions facultatives de leur parent : leurs identifia
 
 #### Autour de 01
 
-| # | Notebook | Kernel | Contenu | Durée |
+| # | Notebook | Kernel | Ce qu'on y apprend | Durée |
 |---|----------|--------|---------|-------|
 | 01b | [RL-01b-Synthese-Logique-Bitwise-Python](RL-01b-Synthese-Logique-Bitwise-Python.ipynb) | python3 | Synthèse logique d'un contrôleur CartPole : lire le bit de signe IEEE-754 de l'observation, en tirer un contrôleur à quatre règles, le confronter au PPO appris (taux de désaccord), étude de rupture et ablation | 20-25 min |
 | 01c | [RL-01c-Distillation-Politique-Prolog-Python](RL-01c-Distillation-Politique-Prolog-Python.ipynb) | python3 | Distiller une politique PPO en programme Prolog exécuté par le vrai moteur SWI-Prolog (image Docker officielle, version journalisée dans la sortie) : enseignant PPO à graine fixe, recensement exhaustif de T-bar, induction gloutonne type FOIL, liste de décision avec cuts, one-pass contre DAgger | 45-60 min |
 
 #### Autour de 06
 
-| # | Notebook | Kernel | Contenu | Durée |
+| # | Notebook | Kernel | Ce qu'on y apprend | Durée |
 |---|----------|--------|---------|-------|
 | 06b | [RL-06b-Actor-Critic-Python](RL-06b-Actor-Critic-Python.ipynb) · [C#](RL-06b-Actor-Critic-CSharp.ipynb) | python3 / .net-csharp | A2C : critic, avantage, bonus d'entropie, réduction de variance par rapport à REINFORCE, et ouverture vers PPO | 45-50 min |
 | 06c | [RL-06c-PPO-Depuis-Zero-Python](RL-06c-PPO-Depuis-Zero-Python.ipynb) · [C#](RL-06c-PPO-Depuis-Zero-CSharp.ipynb) | python3 / .net-csharp | PPO depuis zéro : ratios d'échantillonnage d'importance, surrogate clippé, GAE, comparaison A2C contre PPO, et pont vers le RLHF | 45-50 min |
@@ -88,7 +96,7 @@ Les lettres restent des extensions facultatives de leur parent : leurs identifia
 
 #### Autour de 07
 
-| # | Notebook | Kernel | Contenu | Durée |
+| # | Notebook | Kernel | Ce qu'on y apprend | Durée |
 |---|----------|--------|---------|-------|
 | 07b | [RL-07b-Sur-Generalisation-Climbing-Game-Python](RL-07b-Sur-Generalisation-Climbing-Game-Python.ipynb) | python3 | Sur-généralisation relative dans le Climbing Game : même agent tabulaire, IQL contre Hysteretic Q-learning, protocole multi-graines, IQM et intervalle bootstrap, ablation du pessimisme | 40-45 min |
 
