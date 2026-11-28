@@ -55,18 +55,35 @@ CACHE_PATH = HERE / "oversight-nim-llm-cache.json"
 
 # Quatre modeles de niveaux differents. `route` designe le point d'entree.
 #
-# Conservation deliberee (#22783, classe C de docs/genai/model-mapping-openai.md) :
-# ce dict est a la fois l'echelle de comparaison du tournoi (quatre niveaux) et
-# la source des cles de cache -- la cle vaut `PROTOCOL|cle_de ce dict|...`, et
-# le cache commite porte 94 entrees `v2|gpt-4o-mini|...`. Renommer l'echelon
-# orphelinerait le cache commite, et le tournoi enregistre
-# (oversight-nim-llm-cache.tournament.json, 40 parties par modele) dirait alors
-# avoir ete mesure sur un modele qui n'a pas ete interroge. Le nom est donc
-# conserve comme donnee de protocole mesuree, pas comme cible d'execution.
+# Conservation deliberee (#22783), declaree dans
+# docs/genai/model-mapping-openai.md (classe I) :
+#
+# - la CLE `gpt-4o-mini` est une donnee de protocole MESUREE : elle entre dans
+#   la cle de cache (`PROTOCOL|cle|...`), le cache commite porte 94 entrees
+#   `v2|gpt-4o-mini|...`, et le tournoi enregistre
+#   (oversight-nim-llm-cache.tournament.json, 40 parties par modele) porte
+#   l'echelle de comparaison. Renommer l'echelon orphelinerait le cache
+#   commite et ferait dire au tournoi qu'un modele a ete interroge qui ne
+#   l'a pas ete ;
+# - l'IDENTIFIANT `openai/gpt-4o-mini` est en revanche une CIBLE D'APPEL
+#   REELLE : `call_model()` l'atteint par la route OpenRouter. La
+#   conservation porte donc sur la donnee de protocole, pas sur une mention
+#   documentaire.
+#
+# Aucun marqueur de mention documentaire ici : un tel marqueur n'exonere
+# jamais un appel chat reel (il est reserve aux mentions non consommees, cf
+# scripts/notebook_tools/check_obsolete_chat_model.py), et poser dirait
+# documentaire un site qui appelle le reseau. Attention : la detection de ce
+# marqueur est TEXTUELLE (un motif applique a la cellule), donc en citer la
+# formule en toutes lettres dans un commentaire le reactiverait -- c'est
+# pour cela qu'elle n'est pas reprise ici. L'organe ne voit d'ailleurs pas
+# cet appel (l'URL de `urlopen` est portee par une variable : angle mort
+# connu, cf la tranche du 2026-11-28 du mapping) -- d'ou la declaration
+# ecrite ci-dessus, qui est la seule piece de preuve lisible par un tiers.
+#
 # Cible recommandee pour une campagne neuve (protocole v3) : `gpt-5.6-luna`
 # pour l'echelon distant, l'alias Swift local (`swift-1.5-27b`) pour l'echelon
 # local -- et une regeneration complete du cache, donc des cles v3.
-# obsolescence: DOC
 MODELS = {
     "gpt-4o-mini": {"route": "openrouter", "id": "openai/gpt-4o-mini"},
     "gemini-flash": {"route": "openrouter", "id": "google/gemini-3.8-flash"},
