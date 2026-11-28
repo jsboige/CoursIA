@@ -57,7 +57,7 @@ Les numéros nus constituent le parcours principal. Les liens de la dernière co
 | 02 | [RL-02-Wrappers-Sauvegarde-Callbacks-Python](RL-02-Wrappers-Sauvegarde-Callbacks-Python.ipynb) | python3 | Outils de production : wrappers Gym, sauvegarde et chargement de modèles, multiprocessing, callbacks de suivi, environnement personnalisé | 35-40 min | |
 | 03 | [RL-03-Experience-Replay-HER-Python](RL-03-Experience-Replay-HER-Python.ipynb) | python3 | Hindsight Experience Replay sur `parking-v0` : ré-étiqueter des échecs en succès par changement d'objectif, avec SAC et DDPG comme moteurs off-policy | 40-45 min | |
 | 04 | [RL-04-Bandits-Manchots-Python](RL-04-Bandits-Manchots-Python.ipynb) | python3 | Bandit à K bras Bernoulli : epsilon-greedy et ses décroissances, UCB, regret cumulé comparé au tirage uniforme ; Thompson Sampling proposé en exercice | 30-35 min | |
-| 05 | [RL-05-MDP-Programmation-Dynamique-Q-Learning-Python](RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb) | python3 | Formalisation MDP, équation de Bellman, value et policy iteration exactes, puis Q-Learning tabulaire et ses variantes (SARSA, expected, n-step) sur FrozenLake et CliffWalking | 45-50 min | |
+| 05 | [RL-05-MDP-Programmation-Dynamique-Q-Learning-Python](RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb) · [C#](RL-05-MDP-Programmation-Dynamique-Q-Learning-CSharp.ipynb) | python3 / .net-csharp | Formalisation MDP, équation de Bellman, value et policy iteration exactes, puis Q-Learning tabulaire et ses variantes (SARSA, expected, n-step) sur FrozenLake et CliffWalking ; jumeau C# BCL .NET, sans Gymnasium | 45-50 min | |
 | 06 | [RL-06-DQN-Policy-Gradient-Python](RL-06-DQN-Policy-Gradient-Python.ipynb) | python3 | DQN complet en PyTorch pur (replay buffer, target network) et REINFORCE, sur le même environnement : la comparaison off-policy / on-policy | 50-55 min | [Autour de 06](#autour-de-06) |
 | 07 | [RL-07-Apprentissage-Multi-Agent-Python](RL-07-Apprentissage-Multi-Agent-Python.ipynb) | python3 | Apprentissage multi-agent avec PettingZoo : API AEC, apprentissage indépendant (IQL) sur des jeux coopératifs, auto-jeu sur TicTacToe | 45-50 min | [Autour de 07](#autour-de-07) |
 | 08 | [RL-08-Dyna-Q-Planification-Python](RL-08-Dyna-Q-Planification-Python.ipynb) · [C#](RL-08-Dyna-Q-Planification-CSharp.ipynb) | python3 / .net-csharp | Model-based : modèle tabulaire, Q-Learning, Dyna-Q/Dyna-Q+, Blocking Maze et rollouts ; jumeau C# BCL .NET 9 | 45-50 min | |
@@ -588,6 +588,16 @@ Les trajectoires et retours mesurés diffèrent entre langages, car NumPy et .NE
 ### Options hiérarchiques en C#
 
 [RL-14 Python](RL-14-RL-Hierarchique-Options-Python.ipynb) et [RL-14 C#](RL-14-RL-Hierarchique-Options-CSharp.ipynb) présentent FourRooms, les options BFS et le crédit SMDP. Le port C# utilise la BCL et un graphique SVG ; les générateurs aléatoires des deux langages produisent des mesures distinctes.
+
+### Le socle du RL en C#
+
+[RL-05 en Python](RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb) a maintenant un [jumeau C#](RL-05-MDP-Programmation-Dynamique-Q-Learning-CSharp.ipynb). Les deux carnets suivent le même plan — MDP, itération de valeur, itération de politique, Q-Learning tabulaire, CliffWalking, SARSA, Expected SARSA, n-step TD — mais le port C# **reconstruit FrozenLake et CliffWalking à la main**, sans Gymnasium et sans NuGet : il n'invoque que la BCL .NET.
+
+La reconstruction est fidèle sur un point mesurable : sur FrozenLake glissant à $\gamma = 0{,}99$, le carnet C# obtient $V^*(\text{départ}) = 0{,}542$, la valeur publiée de `FrozenLake-v1` 4x4 `is_slippery=True`. Les deux implémentations partagent ensuite le même protocole sur CliffWalking (10 000 épisodes, $\alpha = 0{,}1$, $\gamma = 0{,}99$, $\varepsilon$ de $1{,}0$ à $0{,}01$, quatre graines) et les mêmes retours gloutons : Q-Learning $-13{,}0$, Expected SARSA $-15{,}0$, SARSA $-17{,}0$.
+
+L'ablation n-step, elle, **diverge** entre les deux carnets, et le carnet C# nomme la divergence au lieu de la lisser : le `n_step_sarsa` du carnet Python amorce sur `argmax(Q[s'])`, donc il calcule ce que le port C# appelle « n-step Q ». Le port C# implémente les **deux** variantes derrière un même drapeau, ce qui donne deux contrôles exacts — à $n = 1$, l'amorçage sur l'action jouée reproduit SARSA ($-17{,}0$) et l'amorçage glouton reproduit Q-Learning ($-13{,}0$). L'écart résiduel du carnet Python (écart-type $0{,}87$ et une graine à $-19$ sur $n = 5$) n'est pas reproduit par la mesure C#, et **cette mesure n'établit pas la cause** de cet écart.
+
+Les sept exercices du port C# restent volontairement non résolus — contrairement à ceux du carnet Python, dont deux squilibres livrent la solution.
 
 ## Licence
 
