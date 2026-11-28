@@ -34,48 +34,15 @@ from __future__ import annotations
 import hashlib
 import math
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 
-from coordination import tapis_avantages, tapis_seance
-from coordination.tapis_marqueurs import FERME, VISITE, Evt, _dt, _iso
-from coordination.tapis_dernier_grain import cle_tri, seances
+from coordination import tapis_avantages
+from coordination.tapis_compte import FENETRE_J, compter  # noqa: F401  (re-export)
+from coordination.tapis_dernier_grain import cle_tri
 
-FENETRE_J = 7  # le tour : un tour de flotte complet mesure en 4 a 8 jours (16/11)
 MARATHONS = frozenset({26070, 26510})  # racines : parite C# (Marathon II), parite Rust
 TETE = 24  # tete de niveau decalee par lane, pour que deux lanes divergent
 _MARATHON_RE = re.compile(r"^\s*\[?\s*marathon\b", re.IGNORECASE)
-
-
-def compter(evts: list[Evt], citations: list[dict],
-            maintenant: datetime) -> tuple[str | None, int, int]:
-    """La derniere visite (ISO), les visites au total, celles du tour.
-
-    Le compte **historique** de la **voie legere** (elle ne lit pas le fil) :
-    marqueurs et citations, le plus grand des deux ; le classement lui passe
-    par `tapis_dernier_grain.compter_grains` (les grains seuls). Les seances
-    des marqueurs suivent `tapis_seance.par_lane` (une livraison en ouvre une
-    neuve, #27338), celles des citations `seances` ; les citations des PRs
-    **ouvertes** comptent UNE visite chacune (elles ne sont pas mergees).
-    """
-    par_lane: dict[str, list[Evt]] = {}
-    visites: list[datetime] = []
-    for ev in evts:
-        if ev.marque in VISITE:
-            visites.append(ev.quand)
-            par_lane.setdefault(ev.lane or "?", []).append(ev)
-        elif ev.marque in FERME:
-            par_lane.setdefault(ev.lane or "?", []).append(ev)
-    en_cours = [d for c in citations if c.get("ouvert") and (d := _dt(c.get("date")))]
-    commits = [d for c in citations if not c.get("ouvert") and (d := _dt(c.get("date")))]
-    tous = visites + commits + en_cours
-
-    def compte(depuis: datetime | None) -> int:
-        marques = sum(tapis_seance.par_lane(evs, depuis) for evs in par_lane.values())
-        fen = [d for d in en_cours if depuis is None or d >= depuis]
-        return max(marques, seances(commits, depuis)) + len(fen)
-
-    return ((_iso(max(tous)) if tous else None), compte(None),
-            compte(maintenant - timedelta(days=FENETRE_J)))
 
 
 def est_marathon(e) -> bool:
@@ -112,10 +79,20 @@ def niveau(e, conso: set[int], maintenant: datetime) -> float:
 
 
 def raisons(e, conso: set[int], maintenant: datetime) -> list[str]:
-    """Ce que le rapport dit du rang d'un grain."""
+    """Ce que le rapport dit du rang d'un grain.
+
+    Mandat du 19/11 : le rapport annonce la **cle de service** -- la date de
+    la derniere PR qui **couvre** le grain, a defaut sa creation -- et le
+    compte des visites. La cle est un **departage** (l'ecart au niveau
+    decide du rang), pas un rang a elle seule.
+    """
     if est_marathon(e):
         return ["marathon : hors equilibrage (harnais sk-agent)"]
     r = [f"{e.visites} visite(s) en {FENETRE_J} j ({e.visites_total} au total)"]
+    if getattr(e, "cle_service", ""):
+        r.append(f"cle de service : {e.cle_service} ({e.cle_origine})")
+    else:
+        r.append(f"cle de service : aucune PR -- creation {e.cree_le or '?'}")
     r.extend(bonus(e, conso, maintenant)[1])
     return r
 
@@ -139,16 +116,34 @@ def _decaler(tour: list, graine: str, cle: float) -> list:
     return tete + list(tour[TETE:])
 
 
+def _cle_tapis(e) -> tuple:
+    """Le tri du classement : l'etat de grain, puis le **service** (19/11).
+
+    `cle_tri` (`tapis_dernier_grain`) range par etat de grain puis par
+    **creation** ; la creation est remplacee par la CLE DE SERVICE -- la date
+    de la derniere PR qui couvre le grain, la creation n'en restant que le
+    repli. Le reste du tri (etat de grain, derniere visite, numero) ne
+    bouge pas : la cle est un departage, pas un rang.
+    """
+    rang, _cree, derniere, numero = cle_tri(e)
+    return (rang, getattr(e, "cle_service", "") or _cree, derniere, numero)
+
+
 def ordre(etats_, servables, graine: str, maintenant: datetime,
           rotation: bool = True) -> list:
     """Niveau croissant ; dans un niveau, la jamais visitee puis la plus
     ancienne d'abord, les familles servies a tour de role.
 
+    A niveau egal, le **service** decide (mandat du 19/11) : le grain dont la
+    derniere PR est la plus ancienne passe devant. La cle ne **primarise**
+    pas : le niveau reste le premier critere, parce que l'invariant de
+    couverture du 16/11 (#27590) est merge et execute.
+
     `rotation=False` : l'ordre **fair**, sans rotation de tete par lane
     (la fenetre qui avance decide de la rotation, pas le pool)."""
     conso = familles_consolidation(etats_)
     niveaux: dict[float, dict[int, list]] = {}
-    for e in sorted(servables, key=cle_tri):
+    for e in sorted(servables, key=_cle_tapis):
         niveaux.setdefault(niveau(e, conso, maintenant), {}).setdefault(e.famille, []).append(e)
     tour: list = []
     for n in sorted(niveaux):

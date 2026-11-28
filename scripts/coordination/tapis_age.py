@@ -47,6 +47,17 @@ def _cree(g) -> str:
     return getattr(g, "cree_le", "") or ""
 
 
+def _date_ref(g) -> str:
+    """La date de REFERENCE d'un grain : son **service**, sinon sa creation.
+
+    Mandat du 19/11 : « sans PR, vieillissement depuis la creation ». Avec une
+    PR qui couvre le grain, c'est la date de **cette PR** qui fait
+    l'anciennete : un grain recemment servi n'est pas un grain ancien. C'est
+    la CLE DE SERVICE (`coordination.tapis_cle`), posee sur l'etat.
+    """
+    return (getattr(g, "cle_service", "") or "") or _cree(g)
+
+
 def _dt(brut: str) -> datetime | None:
     if not brut:
         return None
@@ -58,8 +69,8 @@ def _dt(brut: str) -> datetime | None:
 
 
 def age_h(g, maintenant: datetime) -> float:
-    """L'age de l'issue en heures, depuis sa creation."""
-    d = _dt(_cree(g))
+    """L'age de l'issue en heures, depuis sa creation -- ou son service."""
+    d = _dt(_date_ref(g))
     if d is None:
         return 0.0
     return (maintenant - d).total_seconds() / 3600.0
@@ -101,7 +112,7 @@ def est_consolidation(g, racines: set | None = None) -> bool:
 
 def cle(g, maintenant: datetime, seuil_h: float = SEUIL_FRAICHES_H,
         racines: set | None = None) -> tuple:
-    """La cle de l'ordre : (bande, consolidation, jamais_visitee, creation, numero).
+    """La cle de l'ordre : (bande, consolidation, jamais_visitee, service, numero).
 
     La bande passe devant tout : une issue de moins de `seuil_h` heures va
     en fin de file, meme si elle n'a jamais ete visitée — **sauf** si elle est
@@ -109,12 +120,16 @@ def cle(g, maintenant: datetime, seuil_h: float = SEUIL_FRAICHES_H,
 
     La consolidation passe ensuite devant la non-consolidation de meme
     bande : le mandat du cycle veut « priorite consolidation ET anciennete ».
+
+    Le **service** (la date de la derniere PR qui couvre le grain, 19/11) est
+    le departage a classe egale : il remplace la creation, qui ne sert plus
+    que de repli quand aucune PR ne couvre le grain.
     """
     conso = est_consolidation(g, racines)
     return (1 if (frais(g, maintenant, seuil_h) and not conso) else 0,
             0 if conso else 1,
             0 if jamais_visite(g) else 1,
-            _cree(g),
+            _date_ref(g),
             int(g.numero))
 
 
